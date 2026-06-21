@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-01-15T03:54:15.749658Z",
+  "git": {
+    "commit_sha": "a269a24a6e8ac8b356a1248acadbbc85926ca4ae",
+    "commit_sha_short": "a269a24",
+    "branch": "main",
+    "commit_message": "feat(ci): add Gate 1 Semantic Integrity checker (v1.1 REPORT-ONLY)\n\n- Implement AST-based Optional-aware semantic checker\n- Enforce: Optional contracts, silent exception prohibition, predicate clarity, docstring intent\n- Scope: mahoun/core/**, mahoun/domain/**, mahoun/orchestrator/** only\n- Exclude: api/**, tests/**, ci/** (Gate 0 already handles API boundaries)\n- Mode: REPORT-ONLY (exit 0), future v1.2 can block on ERROR\n- Initial scan: 0 errors, 4 warnings (docstring clarity)\n- Policy: Gate 1 enforces semantic intent, not perfection\n\nGate 1 is layered on top of frozen Gate 0 baseline.\nNo changes to existing codebase or Gate 0 logic.",
+    "commit_author": "hajmamali <mhs.safari@proton.me>",
+    "commit_date": "2026-01-08 05:23:22 +0330"
+  },
+  "environment": {
+    "python_version": "Python 3.12.3",
+    "pip_version": "pip 25.3 from /home/haji/Desktop/Platform/venv/lib/python3.12/site-packages/pip (python 3.12)",
+    "dependency_hash": "e3b0c44298fc1c14"
+  },
+  "gates": {},
+  "tests": {},
+  "artifacts": [],
+  "status": "UNKNOWN"
+}

@@ -1,0 +1,214 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "MAHOUN Governance & Fortress Monitoring Dashboard",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "🛡️ Governance Status",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Governance Lock Mode",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "mahoun_governance_lock_initialized",
+          "legendFormat": "Lock Status"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "STRICT ✅", "color": "green" }, "0": { "text": "NOT INIT ⚠️", "color": "red" } } }
+          ],
+          "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 1, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Fortress Validator Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "targets": [
+        {
+          "expr": "mahoun_fortress_strict_mode",
+          "legendFormat": "Strict Mode"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "STRICT ✅", "color": "green" }, "0": { "text": "DISABLED ❌", "color": "red" } } }
+          ],
+          "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 1, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Bypass Attempts (24h)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "increase(mahoun_governance_bypass_attempts_total[24h])",
+          "legendFormat": "Bypass Attempts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 1, "color": "red" }] },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "title": "Ledger Integrity",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "expr": "mahoun_ledger_integrity_valid",
+          "legendFormat": "Integrity"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "VALID ✅", "color": "green" }, "0": { "text": "COMPROMISED ❌", "color": "red" } } }
+          ],
+          "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 1, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "⚡ Fortress Validation",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Fortress Validations Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(mahoun_fortress_validation_total[5m])",
+          "legendFormat": "Total Validations/s"
+        },
+        {
+          "expr": "rate(mahoun_fortress_validation_passed_total[5m])",
+          "legendFormat": "Passed/s"
+        },
+        {
+          "expr": "rate(mahoun_fortress_validation_failed_total[5m])",
+          "legendFormat": "Failed/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    },
+    {
+      "title": "Fortress Validation Pass Rate",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(mahoun_fortress_validation_passed_total[5m]) / rate(mahoun_fortress_validation_total[5m])",
+          "legendFormat": "Pass Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 0.9, "color": "yellow" }, { "value": 0.95, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Security Breach Events",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(mahoun_security_breaches_total[5m])",
+          "legendFormat": "{{ type }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "fillOpacity": 30 }
+        }
+      }
+    },
+    {
+      "title": "📊 Governance Context",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Missing Governance Context Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "targets": [
+        {
+          "expr": "rate(mahoun_governance_missing_context_total[5m])",
+          "legendFormat": "Missing Context/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "fillOpacity": 20 }
+        }
+      }
+    },
+    {
+      "title": "Provenance Tracking",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "targets": [
+        {
+          "expr": "rate(mahoun_provenance_tracking_total[5m])",
+          "legendFormat": "Tracked/s"
+        },
+        {
+          "expr": "rate(mahoun_provenance_tracking_failures_total[5m])",
+          "legendFormat": "Failures/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["governance", "fortress", "security", "mahoun"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "MAHOUN Governance & Fortress Monitor",
+  "uid": "mahoun-governance-monitor",
+  "version": 1
+}

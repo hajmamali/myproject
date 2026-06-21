@@ -1,0 +1,318 @@
+# ============================================================================
+# MAHOUN Backend - Production Makefile
+# ============================================================================
+# Zero-Hallucination AI Reasoning Platform
+# Focus: Backend-only deployment and operations
+# ============================================================================
+
+.PHONY: help
+help: ## Show this help
+	@echo "═══════════════════════════════════════════════════════════"
+	@echo "MAHOUN Backend - Zero-Hallucination AI Reasoning Platform"
+	@echo "═══════════════════════════════════════════════════════════"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+# ============================================================================
+# Quick Start
+# ============================================================================
+
+.PHONY: start
+start: ## Start backend with all databases
+	docker-compose -f docker-compose.backend.yml up -d
+	@echo "✅ Backend started!"
+	@echo "📊 API: http://localhost:8000"
+	@echo "📚 Docs: http://localhost:8000/docs"
+	@echo "🔍 Health: http://localhost:8000/system/health"
+
+.PHONY: stop
+stop: ## Stop all services
+	docker-compose -f docker-compose.backend.yml down
+
+.PHONY: restart
+restart: stop start ## Restart all services
+
+# ============================================================================
+# Build Commands
+# ============================================================================
+
+.PHONY: build
+build: ## Build backend image
+	docker-compose -f docker-compose.backend.yml build backend
+
+.PHONY: build-no-cache
+build-no-cache: ## Build backend without cache
+	docker-compose -f docker-compose.backend.yml build --no-cache backend
+
+.PHONY: build-gpu
+build-gpu: ## Build backend image with GPU support (Server only)
+	docker-compose -f docker-compose.backend.yml build --build-arg ENABLE_GPU=true backend
+
+.PHONY: build-gpu-no-cache
+build-gpu-no-cache: ## Build backend with GPU support without cache
+	docker-compose -f docker-compose.backend.yml build --no-cache --build-arg ENABLE_GPU=true backend
+
+.PHONY: pull
+pull: ## Pull latest images
+	docker-compose -f docker-compose.backend.yml pull
+
+# ============================================================================
+# Development
+# ============================================================================
+
+.PHONY: dev
+dev: ## Start in development mode
+	docker-compose -f docker-compose.dev.yml up
+
+.PHONY: dev-build
+dev-build: ## Build and start development
+	docker-compose -f docker-compose.dev.yml up --build
+
+# ============================================================================
+# Monitoring & Logs
+# ============================================================================
+
+.PHONY: logs
+logs: ## Show all logs
+	docker-compose -f docker-compose.backend.yml logs -f
+
+.PHONY: logs-backend
+logs-backend: ## Show backend logs only
+	docker-compose -f docker-compose.backend.yml logs -f backend
+
+.PHONY: logs-neo4j
+logs-neo4j: ## Show Neo4j logs
+	docker-compose -f docker-compose.backend.yml logs -f neo4j
+
+.PHONY: logs-postgres
+logs-postgres: ## Show PostgreSQL logs
+	docker-compose -f docker-compose.backend.yml logs -f postgres
+
+.PHONY: stats
+stats: ## Show resource usage
+	docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+
+.PHONY: ps
+ps: ## Show running containers
+	docker-compose -f docker-compose.backend.yml ps
+
+# ============================================================================
+# Health & Status
+# ============================================================================
+
+.PHONY: health
+health: ## Check health of all services
+	@echo "🔍 Checking service health..."
+	@echo "\n📊 Backend:"
+	@curl -s http://localhost:8000/system/health | jq . || echo "❌ Backend not responding"
+	@echo "\n🗄️ Neo4j:"
+	@curl -s http://localhost:7474 > /dev/null && echo "✅ Neo4j: OK" || echo "❌ Neo4j: DOWN"
+	@echo "\n🐘 PostgreSQL:"
+	@docker exec mahoun-postgres pg_isready -U mahoun && echo "✅ PostgreSQL: OK" || echo "❌ PostgreSQL: DOWN"
+	@echo "\n🔴 Redis:"
+	@docker exec mahoun-redis redis-cli ping && echo "✅ Redis: OK" || echo "❌ Redis: DOWN"
+	@echo "\n📦 ChromaDB:"
+	@curl -s http://localhost:8001/api/v1/heartbeat > /dev/null && echo "✅ ChromaDB: OK" || echo "❌ ChromaDB: DOWN"
+
+.PHONY: status
+status: ## Show detailed status
+	@echo "═══════════════════════════════════════════════════════════"
+	@echo "MAHOUN Backend Status"
+	@echo "═══════════════════════════════════════════════════════════"
+	@docker-compose -f docker-compose.backend.yml ps
+	@echo "\n📊 Resource Usage:"
+	@docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+
+# ============================================================================
+# Shell Access
+# ============================================================================
+
+.PHONY: shell
+shell: ## Open shell in backend container
+	docker exec -it mahoun-backend /bin/bash
+
+.PHONY: shell-neo4j
+shell-neo4j: ## Open Neo4j cypher-shell
+	docker exec -it mahoun-neo4j cypher-shell -u neo4j
+
+.PHONY: shell-postgres
+shell-postgres: ## Open PostgreSQL shell
+	docker exec -it mahoun-postgres psql -U mahoun -d mahoun
+
+.PHONY: shell-redis
+shell-redis: ## Open Redis CLI
+	docker exec -it mahoun-redis redis-cli
+
+# ============================================================================
+# Database Operations
+# ============================================================================
+
+.PHONY: db-backup
+db-backup: ## Backup all databases
+	@echo "📦 Backing up databases..."
+	@mkdir -p ./backups
+	@echo "Backing up PostgreSQL..."
+	@docker exec mahoun-postgres pg_dump -U mahoun mahoun > ./backups/postgres_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "Backing up Neo4j..."
+	@docker exec mahoun-neo4j neo4j-admin database dump neo4j --to-path=/tmp
+	@docker cp mahoun-neo4j:/tmp/neo4j.dump ./backups/neo4j_$$(date +%Y%m%d_%H%M%S).dump
+	@echo "✅ Backup complete! Files in ./backups/"
+
+.PHONY: db-restore-postgres
+db-restore-postgres: ## Restore PostgreSQL (requires BACKUP_FILE=path)
+	@test -n "$(BACKUP_FILE)" || (echo "❌ Error: BACKUP_FILE not set" && exit 1)
+	docker exec -i mahoun-postgres psql -U mahoun mahoun < $(BACKUP_FILE)
+	@echo "✅ PostgreSQL restored from $(BACKUP_FILE)"
+
+.PHONY: db-restore-neo4j
+db-restore-neo4j: ## Restore Neo4j (requires BACKUP_FILE=path)
+	@test -n "$(BACKUP_FILE)" || (echo "❌ Error: BACKUP_FILE not set" && exit 1)
+	docker cp $(BACKUP_FILE) mahoun-neo4j:/tmp/restore.dump
+	docker exec mahoun-neo4j neo4j-admin database load neo4j --from-path=/tmp --overwrite-destination=true
+	@echo "✅ Neo4j restored from $(BACKUP_FILE)"
+
+# ============================================================================
+# Testing
+# ============================================================================
+
+.PHONY: test
+test: ## Run tests in Docker
+	docker build -t mahoun/backend:test -f Dockerfile.backend --target testing .
+	docker run --rm mahoun/backend:test
+
+.PHONY: test-unit
+test-unit: ## Run unit tests only
+	docker run --rm mahoun/backend:test pytest tests/ -v -m "not integration and not slow"
+
+.PHONY: test-integration
+test-integration: ## Run integration tests
+	docker run --rm --network mahoun_backend_network mahoun/backend:test pytest tests/ -v -m "integration"
+
+# ============================================================================
+# Security
+# ============================================================================
+
+.PHONY: scan
+scan: ## Scan images for vulnerabilities
+	@echo "🔍 Scanning backend image..."
+	docker scan mahoun/backend:latest || echo "⚠️ Docker scan not available"
+
+.PHONY: generate-secrets
+generate-secrets: ## Generate secure secrets
+	@echo "🔐 Generated Secrets (add to .env):"
+	@echo "════════════════════════════════════════════════════════"
+	@echo "SECURITY_JWT_SECRET=$$(openssl rand -base64 32)"
+	@echo "API_KEY=$$(openssl rand -base64 32)"
+	@echo "DB_NEO4J_PASSWORD=$$(openssl rand -base64 32)"
+	@echo "DB_POSTGRES_PASSWORD=$$(openssl rand -base64 32)"
+	@echo "REDIS_PASSWORD=$$(openssl rand -base64 32)"
+	@echo "════════════════════════════════════════════════════════"
+
+# ============================================================================
+# Maintenance
+# ============================================================================
+
+.PHONY: clean
+clean: ## Remove stopped containers
+	docker-compose -f docker-compose.backend.yml down
+	docker container prune -f
+	docker image prune -f
+
+.PHONY: clean-volumes
+clean-volumes: ## Remove all volumes (WARNING: deletes data!)
+	@echo "⚠️  WARNING: This will delete ALL data!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker-compose -f docker-compose.backend.yml down -v; \
+		echo "✅ Volumes removed"; \
+	fi
+
+.PHONY: prune
+prune: ## Deep clean (containers, images, volumes)
+	@echo "⚠️  WARNING: This will remove EVERYTHING!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker-compose -f docker-compose.backend.yml down -v; \
+		docker system prune -af --volumes; \
+		echo "✅ System pruned"; \
+	fi
+
+# ============================================================================
+# Monitoring
+# ============================================================================
+
+.PHONY: monitoring
+monitoring: ## Start with Prometheus
+	docker-compose -f docker-compose.backend.yml --profile monitoring up -d
+	@echo "✅ Monitoring started!"
+	@echo "📊 Prometheus: http://localhost:9090"
+
+.PHONY: metrics
+metrics: ## Show Prometheus metrics
+	@curl -s http://localhost:8000/metrics
+
+# ============================================================================
+# CI/CD
+# ============================================================================
+
+.PHONY: ci-build
+ci-build: ## Build for CI/CD
+	docker build -t mahoun/backend:$(VERSION) -f Dockerfile.backend --target production .
+
+.PHONY: ci-test
+ci-test: ## Run CI tests
+	docker build -t mahoun/backend:test -f Dockerfile.backend --target testing .
+	docker run --rm mahoun/backend:test pytest tests/ -v --tb=short --timeout=90 -m "not slow"
+
+.PHONY: ci-push
+ci-push: ## Push to registry
+	docker push mahoun/backend:$(VERSION)
+
+# ============================================================================
+# Code Quality Commands
+# ============================================================================
+
+.PHONY: lint
+lint: ## Run pre-commit checks on all files (requires pre-commit installed)
+	pre-commit run --all-files
+
+.PHONY: format
+format: ## Format code using ruff (runs through pre-commit)
+	pre-commit run ruff-format --all-files
+
+# ============================================================================
+# Utilities
+# ============================================================================
+
+.PHONY: env-check
+env-check: ## Check environment variables
+	@echo "🔍 Checking required environment variables..."
+	@test -f .env || (echo "❌ .env file not found! Copy from .env.example" && exit 1)
+	@grep -q "SECURITY_JWT_SECRET=CHANGE_ME" .env && echo "⚠️  JWT_SECRET not set!" || echo "✅ JWT_SECRET set"
+	@grep -q "DB_NEO4J_PASSWORD=CHANGE_ME" .env && echo "⚠️  NEO4J_PASSWORD not set!" || echo "✅ NEO4J_PASSWORD set"
+	@grep -q "DB_POSTGRES_PASSWORD=CHANGE_ME" .env && echo "⚠️  POSTGRES_PASSWORD not set!" || echo "✅ POSTGRES_PASSWORD set"
+	@grep -q "REDIS_PASSWORD=CHANGE_ME" .env && echo "⚠️  REDIS_PASSWORD not set!" || echo "✅ REDIS_PASSWORD set"
+
+.PHONY: version
+version: ## Show versions
+	@echo "MAHOUN Backend Versions:"
+	@echo "════════════════════════════════════════════════════════"
+	@docker-compose -f docker-compose.backend.yml exec backend python --version
+	@docker-compose -f docker-compose.backend.yml exec neo4j neo4j --version
+	@docker-compose -f docker-compose.backend.yml exec postgres postgres --version
+	@docker-compose -f docker-compose.backend.yml exec redis redis-server --version
+
+# ============================================================================
+# Quick Deploy
+# ============================================================================
+
+.PHONY: deploy
+deploy: env-check build start health ## Full deployment (check, build, start, verify)
+	@echo "✅ Deployment complete!"
+	@echo "📊 Backend: http://localhost:8000"
+	@echo "📚 API Docs: http://localhost:8000/docs"
+
+.PHONY: update
+update: pull restart health ## Update to latest images
+	@echo "✅ Update complete!"

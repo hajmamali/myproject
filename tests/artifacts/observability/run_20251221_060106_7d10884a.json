@@ -1,0 +1,232 @@
+{
+  "run_id": "7d10884a",
+  "timestamp": "20251221_060106",
+  "duration_s": 6.333078622817993,
+  "input": {
+    "args": [],
+    "kwargs": {}
+  },
+  "output": {
+    "success": true,
+    "workflow_id": "83cccc14",
+    "dag_name": "observability_test_workflow",
+    "duration_seconds": 3.50777530670166,
+    "node_results": {
+      "parsing": {
+        "doc_id": "fallback_1766284272",
+        "verdict_struct": {
+          "case_meta": {
+            "case_number": "fallback_1766284272"
+          },
+          "sections": {
+            "verdict": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است."
+          },
+          "parties": {},
+          "_fallback_mode": true,
+          "_parsing_quality": {
+            "completeness": 0.3
+          }
+        },
+        "entities": {},
+        "chunks": [
+          {
+            "text": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است.",
+            "index": 0,
+            "metadata": {
+              "fallback": true
+            }
+          }
+        ],
+        "chunks_count": 1,
+        "storage_result": null,
+        "quality_metrics": {
+          "fallback_used": true,
+          "completeness": 0.3
+        },
+        "fallback_used": true
+      },
+      "dispute_analysis": {
+        "success": true,
+        "disputes": [],
+        "violations": [],
+        "related_clauses": [],
+        "citations": [],
+        "dispute_types": {},
+        "risk_assessment": {
+          "overall_risk": "low",
+          "risk_score": 0.0,
+          "critical_disputes": 0,
+          "high_disputes": 0,
+          "violations": 0,
+          "recommendation": "نیاز به بررسی دوره‌ای"
+        },
+        "legal_references": [],
+        "recommendations": [],
+        "metadata": {
+          "total_disputes": 0,
+          "total_violations": 0,
+          "total_citations": 0,
+          "critical_count": 0,
+          "high_risk": false
+        }
+      },
+      "integrity_check": {
+        "faithfulness_score": 0.5,
+        "status": "warning",
+        "message": "No context provided for validation.",
+        "hallucinations": []
+      }
+    },
+    "final_data": {
+      "query": "تحلیل اختلافات و صحت‌سنجی",
+      "doc_id": "fallback_1766284272",
+      "verdict_struct": {
+        "case_meta": {
+          "case_number": "fallback_1766284272"
+        },
+        "sections": {
+          "verdict": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است."
+        },
+        "parties": {},
+        "_fallback_mode": true,
+        "_parsing_quality": {
+          "completeness": 0.3
+        }
+      },
+      "entities": {},
+      "chunks": [
+        {
+          "text": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است.",
+          "index": 0,
+          "metadata": {
+            "fallback": true
+          }
+        }
+      ],
+      "chunks_count": 1,
+      "storage_result": null,
+      "quality_metrics": {
+        "fallback_used": true,
+        "completeness": 0.3
+      },
+      "fallback_used": true,
+      "_parsing": {
+        "doc_id": "fallback_1766284272",
+        "verdict_struct": {
+          "case_meta": {
+            "case_number": "fallback_1766284272"
+          },
+          "sections": {
+            "verdict": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است."
+          },
+          "parties": {},
+          "_fallback_mode": true,
+          "_parsing_quality": {
+            "completeness": 0.3
+          }
+        },
+        "entities": {},
+        "chunks": [
+          {
+            "text": "قرارداد شماره ۱۲۳: مبلغ ۵۰۰ میلیون تومان پرداخت نشده است.",
+            "index": 0,
+            "metadata": {
+              "fallback": true
+            }
+          }
+        ],
+        "chunks_count": 1,
+        "storage_result": null,
+        "quality_metrics": {
+          "fallback_used": true,
+          "completeness": 0.3
+        },
+        "fallback_used": true
+      },
+      "success": true,
+      "disputes": [],
+      "violations": [],
+      "related_clauses": [],
+      "citations": [],
+      "dispute_types": {},
+      "risk_assessment": {
+        "overall_risk": "low",
+        "risk_score": 0.0,
+        "critical_disputes": 0,
+        "high_disputes": 0,
+        "violations": 0,
+        "recommendation": "نیاز به بررسی دوره‌ای"
+      },
+      "legal_references": [],
+      "recommendations": [],
+      "metadata": {
+        "total_disputes": 0,
+        "total_violations": 0,
+        "total_citations": 0,
+        "critical_count": 0,
+        "high_risk": false
+      },
+      "_dispute_analysis": {
+        "success": true,
+        "disputes": [],
+        "violations": [],
+        "related_clauses": [],
+        "citations": [],
+        "dispute_types": {},
+        "risk_assessment": {
+          "overall_risk": "low",
+          "risk_score": 0.0,
+          "critical_disputes": 0,
+          "high_disputes": 0,
+          "violations": 0,
+          "recommendation": "نیاز به بررسی دوره‌ای"
+        },
+        "legal_references": [],
+        "recommendations": [],
+        "metadata": {
+          "total_disputes": 0,
+          "total_violations": 0,
+          "total_citations": 0,
+          "critical_count": 0,
+          "high_risk": false
+        }
+      },
+      "faithfulness_score": 0.5,
+      "status": "warning",
+      "message": "No context provided for validation.",
+      "hallucinations": [],
+      "_integrity_check": {
+        "faithfulness_score": 0.5,
+        "status": "warning",
+        "message": "No context provided for validation.",
+        "hallucinations": []
+      }
+    }
+  },
+  "health_snapshot": {
+    "status": "error",
+    "message": "asyncio.run() cannot be called from a running event loop",
+    "healthy": false
+  },
+  "metrics_snapshot": {
+    "status": "error",
+    "message": "'MetricsCollector' object has no attribute 'get_metrics_summary'"
+  },
+  "invariants": [
+    {
+      "name": "No Masking (Postgres)",
+      "passed": false,
+      "message": "Postgres marked healthy despite being disabled!"
+    },
+    {
+      "name": "Explicit Fallback",
+      "passed": true,
+      "message": "Fallback usage: False"
+    }
+  ],
+  "exception": null,
+  "env": {
+    "python": "3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]",
+    "mode": "test"
+  }
+}

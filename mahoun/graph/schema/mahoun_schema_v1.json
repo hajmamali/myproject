@@ -1,0 +1,816 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mahoun.ai/schema/mahoun-1.0.json",
+  "title": "Mahoun JSONL Family Schema v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "mahoun-1.0"
+    },
+    "record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provenance_uri": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 32
+        },
+        "page_map": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "provenance_uri",
+        "sha256"
+      ]
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "split": {
+      "type": "string",
+      "enum": [
+        "train",
+        "dev",
+        "test",
+        "holdout"
+      ]
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ruleset": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ruleset"
+      ]
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "task": {
+      "type": "string",
+      "enum": [
+        "DOC",
+        "QA",
+        "KBQA",
+        "NLI",
+        "CLS",
+        "DIALOG"
+      ]
+    },
+    "doc": {
+      "$ref": "#/$defs/docSection"
+    },
+    "qa": {
+      "$ref": "#/$defs/qaSection"
+    },
+    "kbqa": {
+      "$ref": "#/$defs/kbqaSection"
+    },
+    "nli": {
+      "$ref": "#/$defs/nliSection"
+    },
+    "cls": {
+      "$ref": "#/$defs/clsSection"
+    },
+    "dialog": {
+      "$ref": "#/$defs/dialogSection"
+    }
+  },
+  "required": [
+    "schema_version",
+    "record_id",
+    "created_at",
+    "source",
+    "jurisdiction",
+    "language",
+    "split",
+    "normalization",
+    "task"
+  ],
+  "$defs": {
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string"
+        },
+        "attrs": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "start",
+        "end",
+        "text"
+      ]
+    },
+    "lawRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "article": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "article"
+      ]
+    },
+    "docSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "court": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "parties": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "role",
+              "name"
+            ]
+          }
+        },
+        "text_raw": {
+          "type": "string"
+        },
+        "text_norm": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "label",
+              "start",
+              "end"
+            ]
+          }
+        },
+        "entities_gold": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "citations_gold": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "law_code": {
+                "type": "string"
+              },
+              "article": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "law_code",
+              "article",
+              "start",
+              "end",
+              "text"
+            ]
+          }
+        },
+        "outcomes": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "verdict": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "penalty": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "articles_applied": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/lawRef"
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "text_raw",
+        "text_norm",
+        "sections"
+      ]
+    },
+    "qaSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "type": "string"
+        },
+        "question_norm": {
+          "type": "string"
+        },
+        "q_type": {
+          "type": "string",
+          "enum": [
+            "KD",
+            "CA"
+          ]
+        },
+        "answer_type": {
+          "type": "string",
+          "enum": [
+            "extractive",
+            "generative",
+            "multi_choice"
+          ]
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "doc_id": {
+                "type": "string"
+              },
+              "text_norm": {
+                "type": "string"
+              },
+              "spans": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/span"
+                }
+              }
+            },
+            "required": [
+              "doc_id",
+              "text_norm"
+            ]
+          }
+        },
+        "choices": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "answer_gold": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "reasoning": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "law_refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/lawRef"
+              }
+            },
+            "error_taxonomy": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "question_norm",
+        "q_type",
+        "answer_type",
+        "context",
+        "answer_gold"
+      ]
+    },
+    "kbqaSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "question_norm": {
+          "type": "string"
+        },
+        "entities_linked": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mention": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "kb_id": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              }
+            },
+            "required": [
+              "mention",
+              "start",
+              "end",
+              "kb_id"
+            ]
+          }
+        },
+        "candidate_relations": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "query_graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "kb_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "constraints": {
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "type"
+                ]
+              }
+            },
+            "edges": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "src": {
+                    "type": "string"
+                  },
+                  "dst": {
+                    "type": "string"
+                  },
+                  "relation": {
+                    "type": "string"
+                  },
+                  "qualifiers": {
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "src",
+                  "dst",
+                  "relation"
+                ]
+              }
+            }
+          },
+          "required": [
+            "nodes",
+            "edges"
+          ]
+        },
+        "answer_gold": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "evidence_paths": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "question_norm",
+        "query_graph",
+        "answer_gold"
+      ]
+    },
+    "nliSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "premise": {
+          "type": "string"
+        },
+        "hypothesis": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "enum": [
+            "entailment",
+            "contradiction",
+            "neutral"
+          ]
+        },
+        "law_refs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/lawRef"
+          }
+        }
+      },
+      "required": [
+        "premise",
+        "hypothesis",
+        "label"
+      ]
+    },
+    "clsSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text_norm": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "text_norm",
+        "labels"
+      ]
+    },
+    "dialogSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "turns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "assistant"
+                ]
+              },
+              "text_norm": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "role",
+              "text_norm"
+            ]
+          }
+        },
+        "final_artifact": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "memo",
+                "brief",
+                "opinion",
+                "qa_summary"
+              ]
+            },
+            "text": {
+              "type": "string"
+            },
+            "citations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/lawRef"
+              }
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "turns"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "DOC"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "doc"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "QA"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "qa"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "KBQA"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "kbqa"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "NLI"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "nli"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "CLS"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "cls"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "const": "DIALOG"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "dialog"
+        ]
+      }
+    }
+  ]
+}

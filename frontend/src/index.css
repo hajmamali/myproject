@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  @keyframes slide-in {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+}
+
+/* Base styles for RTL Persian text */
+html {
+  direction: rtl;
+}
+
+:root {
+  /* Dark Theme - Professional Black/Slate */
+  --paper: #0f1419;
+  --paper-strong: #1a1f26;
+  --ink: #e8eaed;
+  --ink-muted: #9ca3af;
+  --accent: #c4b08a;
+  --accent-deep: #9d8c6f;
+  --border: #2d333b;
+}
+
+body {
+  font-family: 'Vazirmatn', Tahoma, Arial, sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  @apply antialiased;
+}
+
+.app-shell {
+  background:
+    radial-gradient(900px circle at 85% 10%, rgba(212, 165, 116, 0.05), transparent 60%),
+    radial-gradient(700px circle at 10% 90%, rgba(96, 165, 250, 0.04), transparent 60%),
+    linear-gradient(135deg, #0f1419 0%, #151b23 45%, #1a1f26 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-900 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-700 rounded hover:bg-slate-600;
+}
+
+/* Line clamp utility for truncating text */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Focus styles */
+input:focus,
+textarea:focus,
+select:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-opacity-50 border-primary-500;
+}
+
+/* RTL-aware input padding */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  @apply px-3 py-2;
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pill/badge component */
+.pill {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.pill-primary {
+  @apply bg-primary-100 text-primary-800;
+}
+
+.pill-accent {
+  @apply bg-accent-100 text-accent-800;
+}
+
+.pill-gray {
+  @apply bg-slate-100 text-slate-700;
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.card-hover:hover {
+  @apply shadow-lg -translate-y-0.5;
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: fade-rise 480ms ease-out both;
+}
+
+.stagger-enter {
+  animation: fade-rise 560ms ease-out both;
+}

@@ -1,0 +1,134 @@
+"""
+MAHOUN Governance Kernel - Tier 0
+=================================
+
+Classification: KERNEL / ZERO-DEPENDENCY / NON-BYPASSABLE
+Purpose: Core governance state and boundary enforcement.
+
+TIER 0 RULES:
+- MUST use ONLY stdlib imports.
+- FORBIDDEN: any external library (torch, neo4j, etc.).
+- Purpose: Ensure governance remains functional even if high-level dependencies fail.
+"""
+
+import contextvars
+import enum
+import hashlib
+import json
+import logging
+import re
+import unicodedata
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple, Generator
+
+# ============================================================================
+# KERNEL ENUMS
+# ============================================================================
+
+class QueryType(str, enum.Enum):
+    READ = "READ"
+    WRITE = "WRITE"
+    DDL = "DDL"  # Schema/Index/Constraint operations
+    FORBIDDEN = "FORBIDDEN"
+
+class ViolationCategory(str, enum.Enum):
+    ARCHITECTURE_BOUNDARY = "ARCHITECTURE_BOUNDARY"
+    MISSING_PROVENANCE = "MISSING_PROVENANCE"
+    ONTOLOGY_VIOLATION = "ONTOLOGY_VIOLATION"
+    AUDIT_FAILURE = "AUDIT_FAILURE"
+    GOVERNANCE_BYPASS = "GOVERNANCE_BYPASS"
+
+class ViolationSeverity(str, enum.Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+
+# ============================================================================
+# KERNEL EXCEPTIONS
+# ============================================================================
+
+@dataclass(frozen=True)
+class GovernanceViolation:
+    category: ViolationCategory
+    severity: ViolationSeverity
+    message: str
+    details: Dict[str, Any]
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    source: str = ""
+    correlation_id: Optional[str] = None
+
+class GovernanceViolationError(Exception):
+    def __init__(self, violation: GovernanceViolation) -> None:
+        self.violation = violation
+        super().__init__(f"[GOVERNANCE KERNEL VIOLATION] {violation.message}")
+
+# ============================================================================
+# MUTATION AUTHORIZATION BOUNDARY
+# ============================================================================
+
+_authorized_write_ctx: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "_authorized_write_ctx", default=False
+)
+
+class KernelMutationBoundary:
+    """Zero-dependency Cypher inspector."""
+
+    MUTATION_KEYWORDS = frozenset({"MERGE", "CREATE", "DELETE", "SET", "REMOVE", "DROP", "DETACH"})
+    FORBIDDEN_PROCEDURES = frozenset({"apoc", "dbms", "plugin", "custom"})
+
+    @staticmethod
+    def classify_query(query: str) -> QueryType:
+        """Classify Cypher intent without external dependencies."""
+        normalized = unicodedata.normalize('NFKC', query)
+        # Strip comments
+        clean = re.sub(r"/\*.*?\*/", " ", normalized, flags=re.DOTALL)
+        clean = re.sub(r"//.*$", "", clean, flags=re.MULTILINE)
+        
+        tokens = re.findall(r"[\w\.]+", clean)
+        is_mutation = False
+        
+        for token in tokens:
+            t_upper = token.upper()
+            if t_upper in KernelMutationBoundary.MUTATION_KEYWORDS:
+                is_mutation = True
+            if "." in token:
+                prefix = token.split(".")[0].lower()
+                if prefix in KernelMutationBoundary.FORBIDDEN_PROCEDURES:
+                    return QueryType.FORBIDDEN
+        
+        return QueryType.WRITE if is_mutation else QueryType.READ
+
+    @staticmethod
+    def inspect(query: str) -> None:
+        """Kernel-level enforcement gate."""
+        q_type = KernelMutationBoundary.classify_query(query)
+        
+        if q_type == QueryType.READ:
+            return
+
+        if _authorized_write_ctx.get():
+            return
+
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ARCHITECTURE_BOUNDARY,
+                severity=ViolationSeverity.CRITICAL,
+                message="Mutation Cypher detected outside authorized governed context.",
+                details={"query_preview": query[:100], "type": q_type.value},
+                source="KernelMutationBoundary"
+            )
+        )
+
+# ============================================================================
+# KERNEL CONTEXT MANAGEMENT
+# ============================================================================
+
+def is_governance_authorized() -> bool:
+    return _authorized_write_ctx.get()
+
+def set_governance_authority(state: bool) -> Any:
+    """Set authority state and return token for reset."""
+    return _authorized_write_ctx.set(state)
+
+def reset_governance_authority(token: Any) -> None:
+    _authorized_write_ctx.reset(token)

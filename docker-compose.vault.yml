@@ -1,0 +1,96 @@
+# ============================================================================
+# MAHOUN Platform - Vault Integration for Secrets Management
+# ============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.vault.yml up -d
+# ============================================================================
+
+services:
+  # HashiCorp Vault for secrets management
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: mahoun-vault
+    restart: unless-stopped
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-dev-only-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+      - ./config/vault:/vault/config:ro
+    networks:
+      - mahoun_secure_tier
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    command: server
+
+  # Vault Agent for automatic secret injection
+  vault-agent:
+    image: hashicorp/vault:1.15
+    container_name: mahoun-vault-agent
+    restart: unless-stopped
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./config/vault-agent:/vault/config:ro
+      - vault_secure_secrets:/vault/secrets/secure
+      - vault_llm_secrets:/vault/secrets/llm
+    networks:
+      - mahoun_secure_tier
+    command: agent -config=/vault/config/agent.hcl
+
+  # Update backend to use restricted secure secrets
+  backend:
+    depends_on:
+      vault-agent:
+        condition: service_started
+    volumes:
+      - vault_secure_secrets:/vault/secrets/secure:ro
+    environment:
+      # Point to Vault-injected secrets (Full DB Credentials)
+      VAULT_SECRETS_PATH: /vault/secrets/secure
+
+  # Infrastructure-LLM layer access policy isolation
+  infrastructure-llm:
+    image: mahoun/infrastructure-llm:latest
+    depends_on:
+      vault-agent:
+        condition: service_started
+    volumes:
+      - vault_llm_secrets:/vault/secrets/llm:ro
+    environment:
+      # ONLY API keys, NO database credentials
+      VAULT_SECRETS_PATH: /vault/secrets/llm
+
+volumes:
+  vault_data:
+    driver: local
+    name: mahoun_vault_data
+  vault_logs:
+    driver: local
+    name: mahoun_vault_logs
+  vault_secure_secrets:
+    driver: local
+    name: mahoun_vault_secure_secrets
+  vault_llm_secrets:
+    driver: local
+    name: mahoun_vault_llm_secrets
+
+networks:
+  mahoun_access_tier:
+    external: true
+    name: mahoun_access_tier
+  mahoun_secure_tier:
+    external: true
+    name: mahoun_secure_tier

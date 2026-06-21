@@ -1,0 +1,599 @@
+# ============================================================================
+# MAHOUN Platform - Security-Hardened .gitignore
+# ============================================================================
+# CLASSIFICATION: MISSION-CRITICAL / PUBLIC-RELEASE-READY
+# PURPOSE: Prevent exposure of sensitive data, credentials, and proprietary logic
+# ============================================================================
+
+# ============================================================================
+# CRITICAL SECURITY: CREDENTIALS & SECRETS (NEVER COMMIT)
+# ============================================================================
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+!.env.backend.example
+*.env
+*.env.local
+*.env.production
+*.env.staging
+*.env.development
+
+# API Keys & Tokens
+**/api_keys.txt
+**/api_keys.json
+**/*_api_key*
+**/*_token*
+**/*_secret*
+**/*_password*
+**/credentials.json
+**/credentials.yaml
+**/credentials.yml
+**/auth_config.*
+**/oauth_config.*
+
+# SSH & Cryptographic Keys
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.cer
+*.der
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.pub
+!*.pub.example
+secrets/
+.secrets/
+private/
+.private/
+
+# Cloud Provider Credentials
+**/.aws/credentials
+**/.aws/config
+**/.azure/credentials
+**/.gcloud/credentials
+**/gcp-credentials.json
+**/aws-credentials.json
+**/azure-credentials.json
+
+# Database Credentials
+**/database.ini
+**/db_config.json
+**/db_credentials.*
+**/connection_strings.*
+
+# MCP & AI Service Keys
+**/mcp_keys.*
+**/openai_key.*
+**/anthropic_key.*
+**/huggingface_token.*
+**/.cursor/mcp.json
+**/.kiro/settings/mcp.json
+
+# ============================================================================
+# PROPRIETARY LOGIC & INTELLECTUAL PROPERTY
+# ============================================================================
+
+# Proprietary algorithms (if marked as confidential)
+**/proprietary/
+**/confidential/
+**/internal/
+**/*_proprietary.*
+**/*_confidential.*
+
+# Business logic documentation (if sensitive)
+**/business_logic/
+**/trade_secrets/
+
+# Customer data & PII
+**/customer_data/
+**/pii/
+**/personal_data/
+**/user_data/
+**/patient_data/
+**/medical_records/
+
+# Legal & compliance documents (if sensitive)
+**/legal/internal/
+**/compliance/internal/
+**/audit/internal/
+
+# ============================================================================
+# PYTHON BUILD ARTIFACTS
+# ============================================================================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+*.so
+*.dylib
+*.dll
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+wheels/
+pip-wheel-metadata/
+*.manifest
+*.spec
+
+# ============================================================================
+# TESTING & COVERAGE
+# ============================================================================
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+coverage.xml
+*.cover
+.basedpyright/
+test-results/
+test-reports/
+junit.xml
+pytest_results.xml
+
+# ============================================================================
+# VIRTUAL ENVIRONMENTS
+# ============================================================================
+
+venv/
+env/
+ENV/
+.venv/
+venv*/
+.venv*/
+env*/
+virtualenv/
+.virtualenv/
+pipenv/
+.pipenv/
+poetry.lock.local
+
+# ============================================================================
+# IDE & EDITOR FILES
+# ============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.\#*
+.emacs.desktop
+.emacs.desktop.lock
+
+# Sublime Text
+*.sublime-*
+.sublime-project
+.sublime-workspace
+
+# Eclipse
+.project
+.pydevproject
+.settings/
+.classpath
+
+# Cursor AI
+.cursor/
+!.cursor/.gitkeep
+
+# Kiro AI
+.kiro/
+!.kiro/steering/
+!.kiro/specs/
+.kilo/
+
+# DeepSeek / AI Caches
+.deepseek/
+.aider/
+.copilot/
+
+# ============================================================================
+# OPERATING SYSTEM FILES
+# ============================================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.fseventsd
+.TemporaryItems
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# DATABASE FILES & DATA STORES
+# ============================================================================
+
+# SQLite
+*.sqlite3
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+
+# Neo4j
+neo4j_data/
+**/neo4j/data/
+**/neo4j/logs/
+**/neo4j/import/
+**/neo4j/plugins/
+
+# Vector Stores
+vector_store_data/
+**/chroma_db/
+**/faiss_index/
+**/pinecone_data/
+**/weaviate_data/
+**/qdrant_data/
+
+# Redis
+dump.rdb
+appendonly.aof
+
+# PostgreSQL
+*.pgdata/
+pg_data/
+
+# ============================================================================
+# RUNTIME DATA & CACHES
+# ============================================================================
+
+# Application runtime
+runtime/
+data/
+output/
+uploads/
+downloads/
+temp/
+tmp/
+cache/
+.cache/
+
+# Models & Weights
+models/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.h5
+*.pkl
+*.pickle
+model_cache/
+huggingface_cache/
+transformers_cache/
+
+# Embeddings
+embeddings/
+**/embeddings_cache/
+
+# ============================================================================
+# LOGS & MONITORING
+# ============================================================================
+
+# Log files
+*.log
+*.log.*
+logs/
+log/
+*.out
+*.err
+
+# Monitoring data
+monitoring/data/
+prometheus_data/
+grafana_data/
+metrics/
+traces/
+spans/
+
+# Profiling
+*.prof
+*.profile
+*.pstats
+
+# ============================================================================
+# DOCKER & CONTAINERS
+# ============================================================================
+
+# Docker volumes
+docker_volumes/
+**/docker/volumes/
+
+# Docker Compose overrides (may contain secrets)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ============================================================================
+# JUPYTER & NOTEBOOKS
+# ============================================================================
+
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+Untitled*.ipynb
+*-checkpoint.ipynb
+
+# ============================================================================
+# DOCUMENTATION BUILD ARTIFACTS
+# ============================================================================
+
+docs/_build/
+docs/.doctrees/
+site/
+.mkdocs_cache/
+
+# ============================================================================
+# BACKUP & TEMPORARY FILES
+# ============================================================================
+
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+\#*\#
+
+# ============================================================================
+# COMPRESSED ARCHIVES
+# ============================================================================
+
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.rar
+*.7z
+*.gz
+*.bz2
+*.xz
+
+# ============================================================================
+# CI/CD & DEPLOYMENT
+# ============================================================================
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes secrets
+**/k8s/secrets/
+**/kubernetes/secrets/
+*-secret.yaml
+*-secret.yml
+
+# Helm
+**/charts/*.tgz
+
+# Ansible
+*.retry
+**/ansible/vault_pass.txt
+
+# ============================================================================
+# MAHOUN PRIVATE: AI AGENT CONFIGURATIONS (NEVER PUBLIC)
+# ============================================================================
+
+# AI Agent directories - contain proprietary prompts and workflows
+.claude/
+.kiro/
+.kilo/
+.qoder/
+.cursor/
+.windsurf/
+.aider/
+.copilot/
+
+# Agent configuration files
+**/agent-config.json
+**/agent-settings.json
+**/mcp.json
+**/mcp-config.json
+
+# ============================================================================
+# MAHOUN PRIVATE: INTERNAL DOCUMENTATION (NEVER PUBLIC)
+# ============================================================================
+
+# Internal analysis and forensic reports
+*FORENSIC*.md
+FORENSIC_*.md
+*_FORENSIC_*.md
+
+# Internal phase documentation
+*PHASE_*.md
+PHASE_*.md
+
+# Executive summaries and internal reports
+*EXECUTIVE_SUMMARY*.md
+EXECUTIVE_SUMMARY_*.md
+
+# Completion reports
+*_COMPLETE.md
+*_COMPLETION_*.md
+
+# Internal documentation
+*_INTERNAL*.md
+*INTERNAL_*.md
+INTERNAL_*.md
+
+# Manifests and internal configs
+core_manifest.yaml
+non_core_manifest.yaml
+internal_manifest.*
+
+# Agent rules and internal guidelines
+Agentrules.md
+AgentRules.md
+*_agent_rules.md
+
+# ============================================================================
+# MAHOUN PRIVATE: DATA & MODELS (NEVER PUBLIC)
+# ============================================================================
+
+# Training and production data
+data/
+datasets/
+training_data/
+test_data/
+production_data/
+
+# Model weights and checkpoints
+models/
+model_weights/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.h5
+*.pkl
+*.pickle
+
+# Vector stores and embeddings
+vector_store_data/
+embeddings/
+embeddings_cache/
+chroma_db/
+faiss_index/
+pinecone_data/
+weaviate_data/
+qdrant_data/
+
+# User uploads and outputs
+uploads/
+downloads/
+output/
+outputs/
+results/
+
+# Runtime data
+runtime/
+runtime_data/
+cache_data/
+
+# Ledger data (may contain sensitive transactions)
+ledger/
+ledger_data/
+
+# ============================================================================
+# MAHOUN PRIVATE: ARCHIVES & REPORTS (NEVER PUBLIC)
+# ============================================================================
+
+# Archives
+archive/
+archives/
+old/
+legacy/
+deprecated/
+backup/
+backups/
+
+# Internal reports
+reports/
+!reports/.gitkeep
+!reports/ci_perf_baseline.json
+internal_reports/
+
+# ============================================================================
+# MAHOUN PRIVATE: TEMPORARY TEST FILES (NEVER PUBLIC)
+# ============================================================================
+
+# Root-level test files (temporary)
+/test_*.py
+!/tests/
+!/tests/**
+reasoning_tests.log
+test_results_*.log
+test_output_*.txt
+*.report.md
+ENVIRONMENT_CANONICALIZATION_REPORT.md
+SECURITY_GOVERNANCE_REPORT.md
+
+# ============================================================================
+# PROJECT-SPECIFIC EXCLUSIONS
+# ============================================================================
+
+# MAHOUN-specific
+/net-commander
+proof_pack/
+
+# Experimental / WIP
+experimental/
+wip/
+scratch/
+sandbox/
+
+# ============================================================================
+# ALLOW CRITICAL EXAMPLES & TEMPLATES
+# ============================================================================
+
+# Explicitly allow example files
+!.env.example
+!.env.backend.example
+!config.example.json
+!credentials.example.json
+!docker-compose.example.yml
+
+# ============================================================================
+# END OF SECURITY-HARDENED .gitignore
+# ============================================================================

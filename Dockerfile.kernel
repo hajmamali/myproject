@@ -1,0 +1,139 @@
+# ============================================================================
+# MAHOUN Governance Kernel - Ultra-Optimized Container
+# ============================================================================
+# Purpose: Pure governance runtime with minimal attack surface
+# Target Size: <87MB (vs 1.2GB monolith)
+# Security: Hardened, non-root, minimal dependencies
+# ============================================================================
+
+ARG PYTHON_VERSION=3.12.7
+ARG ALPINE_VERSION=3.19
+
+# ============================================================================
+# Stage 1: Builder - Compile governance dependencies only
+# ============================================================================
+FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+WORKDIR /build
+
+# Install build dependencies (minimal set)
+RUN apk add --no-cache --virtual .build-deps \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    && apk add --no-cache \
+    curl \
+    ca-certificates
+
+# Create optimized requirements for kernel only
+RUN echo "fastapi>=0.104.1,<0.105.0" > requirements-kernel.txt && \
+    echo "uvicorn[standard]>=0.24.0,<0.25.0" >> requirements-kernel.txt && \
+    echo "pydantic>=2.6.0,<3.0.0" >> requirements-kernel.txt && \
+    echo "pydantic-settings>=2.1.0,<3.0.0" >> requirements-kernel.txt && \
+    echo "prometheus-client>=0.19.0,<0.20.0" >> requirements-kernel.txt && \
+    echo "loguru>=0.7.2,<0.8.0" >> requirements-kernel.txt && \
+    echo "python-json-logger>=2.0.7,<3.0.0" >> requirements-kernel.txt && \
+    echo "httpx>=0.27.0,<0.28.0" >> requirements-kernel.txt && \
+    echo "cryptography>=42.0.0,<43.0.0" >> requirements-kernel.txt && \
+    echo "python-jose[cryptography]>=3.3.0,<4.0.0" >> requirements-kernel.txt
+
+# Install Python dependencies system-wide (for governance kernel stability)
+RUN pip install --no-cache-dir \
+    --disable-pip-version-check \
+    --no-compile \
+    -r requirements-kernel.txt
+
+# ============================================================================
+# Stage 2: Runtime - Ultra-minimal governance kernel
+# ============================================================================
+FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS runtime
+
+# Security: Create dedicated governance user
+RUN addgroup -g 1001 governance \
+    && adduser -u 1001 -G governance -s /bin/sh -D governance \
+    && mkdir -p /app/audit /tmp/governance \
+    && chown -R governance:governance /app /tmp/governance \
+    && chmod 700 /app/audit /tmp/governance
+
+WORKDIR /app
+
+# Install only essential runtime packages
+RUN apk add --no-cache \
+    curl \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# Copy Python packages from builder (system-wide installation)
+COPY --from=builder --chown=governance:governance \
+    /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder --chown=governance:governance \
+    /usr/local/bin /usr/local/bin
+
+# Copy only GOVERNANCE KERNEL code (ultra-minimal subset)
+COPY --chown=governance:governance \
+    mahoun/core/models.py \
+    mahoun/core/exceptions.py \
+    mahoun/core/protocols.py \
+    mahoun/core/fortress_validator.py \
+    mahoun/core/runtime_config.py \
+    mahoun/core/config_validator.py \
+    mahoun/core/settings.py \
+    mahoun/core/environment.py \
+    ./mahoun/core/
+
+# Copy governance kernel module
+COPY --chown=governance:governance \
+    mahoun/core/governance_kernel/ ./mahoun/core/governance_kernel/
+
+# Copy essential schemas (minimal)
+COPY --chown=governance:governance \
+    mahoun/schemas/contracts/ ./mahoun/schemas/contracts/
+
+# Copy ledger write gate (governance enforcement)
+COPY --chown=governance:governance \
+    mahoun/ledger/write_gate.py ./mahoun/ledger/
+
+# Copy security essentials
+COPY --chown=governance:governance \
+    mahoun/security/rbac.py \
+    mahoun/security/api_keys.py \
+    ./mahoun/security/
+
+# Copy crypto for provenance
+COPY --chown=governance:governance \
+    mahoun/crypto/ ./mahoun/crypto/
+
+# Create minimal main.py for governance kernel
+COPY --chown=governance:governance governance_kernel_main.py ./main.py
+
+# Set proper environment and path (system-wide Python)
+ENV PATH="/usr/local/bin:$PATH" \
+    PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Security: Switch to non-root user
+USER governance:governance
+
+# Expose governance port
+EXPOSE 8080
+
+# Health check with proper governance context
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Governance kernel entrypoint
+CMD ["python", "main.py"]
+
+# ============================================================================
+# Build optimization labels
+# ============================================================================
+LABEL maintainer="MAHOUN Platform Team" \
+      service="governance-kernel" \
+      version="1.0.0" \
+      description="MAHOUN Governance Kernel - Pure validation service" \
+      org.opencontainers.image.source="https://github.com/mahoun/platform" \
+      org.opencontainers.image.description="Governance enforcement microservice" \
+      org.opencontainers.image.version="1.0.0"

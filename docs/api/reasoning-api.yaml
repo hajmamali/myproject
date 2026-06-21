@@ -1,0 +1,740 @@
+openapi: 3.0.3
+info:
+  title: MAHOUN Reasoning API
+  version: 1.0.0
+  description: |
+    # MAHOUN Zero-Hallucination Reasoning API
+    
+    Evidence-linked verdict generation with cryptographic proofs and blockchain audit trails.
+    
+    ## Core Guarantees
+    
+    - **Zero Hallucination**: Every conclusion linked to graph evidence
+    - **Full Auditability**: Complete blockchain-based audit trail
+    - **Cryptographic Proofs**: Tamper-evident verification
+    - **Deterministic Resolution**: Predictable contradiction handling
+    
+    ## Architecture
+    
+    - **Evidence-Linked Verdict Engine**: Graph-based reasoning
+    - **Immutable Ledger**: Blockchain audit trail
+    - **Cryptographic Proofs**: Non-repudiation guarantees
+    - **Runtime Guardrails**: Zero-hallucination enforcement
+    
+    ## Modes
+    
+    - **ENTERPRISE_FULL**: Full graph reasoning (production)
+    - **DESKTOP_MINIMAL**: Limited mode (development only)
+    
+    ## Authentication
+    
+    API key required for all endpoints (except health check).
+    
+    ```
+    Authorization: Bearer YOUR_API_KEY
+    ```
+    
+  contact:
+    name: MAHOUN Platform
+    email: support@mahoun.ai
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.mahoun.ai/v1
+    description: Production server
+  - url: https://staging-api.mahoun.ai/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Local development
+
+tags:
+  - name: Reasoning
+    description: Evidence-linked verdict generation
+  - name: Verification
+    description: Cryptographic proof verification
+  - name: Ledger
+    description: Blockchain audit trail queries
+  - name: Health
+    description: System health and status
+
+paths:
+  /reasoning/generate-verdict:
+    post:
+      tags:
+        - Reasoning
+      summary: Generate evidence-linked verdict
+      description: |
+        Generate legal verdict with zero-hallucination guarantee.
+        
+        **Process:**
+        1. Build case graph from facts
+        2. Find applicable rules and precedents
+        3. Detect and resolve contradictions
+        4. Generate verdict steps with evidence links
+        5. Write to immutable ledger
+        6. Generate cryptographic proof
+        
+        **Guarantees:**
+        - Every conclusion linked to graph evidence
+        - Complete audit trail in blockchain ledger
+        - Cryptographic proof for verification
+        - Deterministic contradiction resolution
+        
+        **Performance:**
+        - Typical response time: 2-5 seconds
+        - Max facts: 100 per request
+        - Timeout: 30 seconds
+        
+      operationId: generateVerdict
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerdictGenerationRequest'
+            examples:
+              contract_termination:
+                summary: Contract termination case
+                value:
+                  question: "Is contract termination valid under Article 219?"
+                  facts:
+                    - value: "Contract signed on 2024-01-01"
+                      type: "CONTRACT_EVENT"
+                    - value: "Termination notice sent on 2024-06-01"
+                      type: "CONTRACT_EVENT"
+                  generate_proof: true
+              
+              empty_facts:
+                summary: Query without facts
+                value:
+                  question: "What are the requirements for contract termination?"
+                  facts: []
+                  generate_proof: false
+                  
+      responses:
+        '200':
+          description: Verdict generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerdictGenerationResponse'
+              examples:
+                success:
+                  summary: Successful verdict generation
+                  value:
+                    success: true
+                    verdict_id: "verdict_abc123"
+                    case_id: "case_xyz789"
+                    final_verdict: "Contract termination is valid under Article 219"
+                    steps:
+                      - statement: "Article 219 of Civil Code applies"
+                        evidence:
+                          - node_id: "rule_219"
+                            node_type: "LegalRule"
+                            edge_id: "edge_0"
+                            justification: "Article 219 applies to contract termination"
+                            confidence: 0.95
+                    unresolved_conflicts: []
+                    confidence_score: 0.95
+                    proof:
+                      graph_state_hash: "a1b2c3..."
+                      reasoning_chain_hash: "d4e5f6..."
+                      evidence_merkle_root: "g7h8i9..."
+                      timestamp: "2024-01-15T10:30:00Z"
+                      signature: "j0k1l2..."
+                      verdict_id: "verdict_abc123"
+                      case_id: "case_xyz789"
+                      confidence: 0.95
+                    ledger_entry_id: "verdict_abc123"
+                    processing_time_ms: 2345.67
+                    metadata:
+                      total_steps: 3
+                      total_evidence: 5
+                      has_unresolved_conflicts: false
+                      generated_at: "2024-01-15T10:30:00Z"
+                      
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  summary: Validation error
+                  value:
+                    error: "invalid_request"
+                    message: "Question cannot be empty"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+        '503':
+          description: Service unavailable (resource constraints)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                desktop_minimal:
+                  summary: DESKTOP_MINIMAL mode
+                  value:
+                    error: "service_unavailable"
+                    message: "Reasoning API requires ENTERPRISE_FULL mode"
+                    details:
+                      current_mode: "DESKTOP_MINIMAL"
+                      required_mode: "ENTERPRISE_FULL"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reasoning/verify-verdict:
+    post:
+      tags:
+        - Verification
+      summary: Verify cryptographic proof
+      description: |
+        Verify cryptographic proof of verdict.
+        
+        **Verification checks:**
+        1. Signature validity
+        2. Timestamp validity (not in future)
+        3. Confidence range [0, 1]
+        4. Graph state integrity
+        5. Reasoning chain integrity
+        
+        **Use cases:**
+        - Audit trail verification
+        - Tamper detection
+        - Regulatory compliance
+        - Legal evidence validation
+        
+      operationId: verifyVerdict
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerdictVerificationRequest'
+              
+      responses:
+        '200':
+          description: Verification completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerdictVerificationResponse'
+              examples:
+                valid:
+                  summary: Valid proof
+                  value:
+                    success: true
+                    verdict_id: "verdict_abc123"
+                    is_valid: true
+                    verification_details:
+                      signature_valid: true
+                      timestamp_valid: true
+                      confidence_valid: true
+                      verdict_id_match: true
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+                invalid:
+                  summary: Invalid proof (tampered)
+                  value:
+                    success: true
+                    verdict_id: "verdict_abc123"
+                    is_valid: false
+                    verification_details:
+                      signature_valid: false
+                      timestamp_valid: true
+                      confidence_valid: true
+                      verdict_id_match: true
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+        '500':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reasoning/query-ledger:
+    post:
+      tags:
+        - Ledger
+      summary: Query blockchain ledger
+      description: |
+        Query immutable ledger for audit trail.
+        
+        **Query options:**
+        - By case_id: All verdicts for a case
+        - By verdict_id: Specific verdict entry
+        - By node_id: All verdicts using a node
+        - By time range: Entries in time window
+        
+        **Use cases:**
+        - Audit trail review
+        - Impact analysis (when rule changes)
+        - Case history
+        - Compliance reporting
+        
+      operationId: queryLedger
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerQueryRequest'
+            examples:
+              by_verdict_id:
+                summary: Query by verdict ID
+                value:
+                  verdict_id: "verdict_abc123"
+                  
+              by_case_id:
+                summary: Query by case ID
+                value:
+                  case_id: "case_xyz789"
+                  
+              by_time_range:
+                summary: Query by time range
+                value:
+                  start_time: "2024-01-01T00:00:00Z"
+                  end_time: "2024-01-31T23:59:59Z"
+                  
+      responses:
+        '200':
+          description: Query completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerQueryResponse'
+                
+        '500':
+          description: Query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reasoning/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: |
+        Check if reasoning API is available and operational.
+        
+        **Returns:**
+        - System status (healthy/unavailable)
+        - Current mode (ENTERPRISE_FULL/DESKTOP_MINIMAL)
+        - Component health
+        - Ledger integrity status
+        
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Healthy system
+                  value:
+                    status: "healthy"
+                    mode: "ENTERPRISE_FULL"
+                    graph_enabled: true
+                    components:
+                      verdict_engine: "initialized"
+                      immutable_ledger: "initialized"
+                      proof_system: "initialized"
+                      ledger_integrity: true
+                      ledger_blocks: 1234
+                    timestamp: "2024-01-15T10:30:00Z"
+                    
+                unavailable:
+                  summary: Unavailable (DESKTOP_MINIMAL)
+                  value:
+                    status: "unavailable"
+                    mode: "DESKTOP_MINIMAL"
+                    graph_enabled: false
+                    message: "Reasoning API requires ENTERPRISE_FULL mode"
+                    timestamp: "2024-01-15T10:30:00Z"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        API key authentication. Format: `Bearer YOUR_API_KEY`
+        
+        Contact support@mahoun.ai to obtain an API key.
+
+  schemas:
+    VerdictGenerationRequest:
+      type: object
+      required:
+        - question
+        - facts
+      properties:
+        question:
+          type: string
+          description: Legal question to answer
+          minLength: 1
+          example: "Is contract termination valid under Article 219?"
+        facts:
+          type: array
+          description: Case facts
+          items:
+            $ref: '#/components/schemas/FactInput'
+        case_id:
+          type: string
+          description: Case identifier (optional)
+          example: "case_xyz789"
+        generate_proof:
+          type: boolean
+          description: Generate cryptographic proof
+          default: true
+          
+    FactInput:
+      type: object
+      required:
+        - value
+      properties:
+        id:
+          type: string
+          description: Fact identifier (optional)
+        value:
+          type: string
+          description: Fact text
+          minLength: 1
+          example: "Contract signed on 2024-01-01"
+        type:
+          type: string
+          description: Fact type
+          default: "UNKNOWN"
+          example: "CONTRACT_EVENT"
+        confidence:
+          type: number
+          format: float
+          description: Fact confidence
+          minimum: 0.0
+          maximum: 1.0
+          default: 1.0
+          
+    VerdictGenerationResponse:
+      type: object
+      required:
+        - success
+        - verdict_id
+        - case_id
+        - final_verdict
+        - steps
+        - unresolved_conflicts
+        - confidence_score
+        - processing_time_ms
+      properties:
+        success:
+          type: boolean
+          description: Operation success
+        verdict_id:
+          type: string
+          description: Verdict identifier
+        case_id:
+          type: string
+          description: Case identifier
+        final_verdict:
+          type: string
+          description: Final verdict text
+        steps:
+          type: array
+          description: Reasoning steps
+          items:
+            $ref: '#/components/schemas/VerdictStepResponse'
+        unresolved_conflicts:
+          type: array
+          description: Unresolved conflicts
+          items:
+            type: string
+        confidence_score:
+          type: number
+          format: float
+          description: Overall confidence
+          minimum: 0.0
+          maximum: 1.0
+        proof:
+          $ref: '#/components/schemas/CryptographicProofResponse'
+          nullable: true
+        ledger_entry_id:
+          type: string
+          description: Ledger entry identifier
+          nullable: true
+        processing_time_ms:
+          type: number
+          format: float
+          description: Processing time in milliseconds
+        metadata:
+          type: object
+          description: Additional metadata
+          
+    VerdictStepResponse:
+      type: object
+      required:
+        - statement
+        - evidence
+      properties:
+        statement:
+          type: string
+          description: Step statement
+        evidence:
+          type: array
+          description: Evidence references
+          items:
+            $ref: '#/components/schemas/EvidenceReferenceResponse'
+            
+    EvidenceReferenceResponse:
+      type: object
+      required:
+        - node_id
+        - node_type
+        - justification
+        - confidence
+      properties:
+        node_id:
+          type: string
+          description: Graph node identifier
+        node_type:
+          type: string
+          description: Node type
+          enum: [Fact, LegalRule, LegalPrecedent, System]
+        edge_id:
+          type: string
+          description: Graph edge identifier
+          nullable: true
+        justification:
+          type: string
+          description: Evidence justification
+        confidence:
+          type: number
+          format: float
+          description: Evidence confidence
+          minimum: 0.0
+          maximum: 1.0
+          
+    CryptographicProofResponse:
+      type: object
+      required:
+        - graph_state_hash
+        - reasoning_chain_hash
+        - evidence_merkle_root
+        - timestamp
+        - signature
+        - verdict_id
+        - case_id
+        - confidence
+      properties:
+        graph_state_hash:
+          type: string
+          description: SHA-256 hash of graph state
+          pattern: '^[a-f0-9]{64}$'
+        reasoning_chain_hash:
+          type: string
+          description: SHA-256 hash of reasoning chain
+          pattern: '^[a-f0-9]{64}$'
+        evidence_merkle_root:
+          type: string
+          description: Merkle root of evidence
+          pattern: '^[a-f0-9]{64}$'
+        timestamp:
+          type: string
+          format: date-time
+          description: Proof generation timestamp (ISO 8601)
+        signature:
+          type: string
+          description: Ed25519 signature
+          pattern: '^[a-f0-9]{128}$'
+        verdict_id:
+          type: string
+          description: Verdict identifier
+        case_id:
+          type: string
+          description: Case identifier
+        confidence:
+          type: number
+          format: float
+          description: Verdict confidence
+          minimum: 0.0
+          maximum: 1.0
+          
+    VerdictVerificationRequest:
+      type: object
+      required:
+        - verdict_id
+        - proof
+      properties:
+        verdict_id:
+          type: string
+          description: Verdict identifier
+        proof:
+          $ref: '#/components/schemas/CryptographicProofResponse'
+          
+    VerdictVerificationResponse:
+      type: object
+      required:
+        - success
+        - verdict_id
+        - is_valid
+        - verification_details
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          description: Operation success
+        verdict_id:
+          type: string
+          description: Verdict identifier
+        is_valid:
+          type: boolean
+          description: Proof validity
+        verification_details:
+          type: object
+          description: Detailed verification results
+        timestamp:
+          type: string
+          format: date-time
+          description: Verification timestamp
+          
+    LedgerQueryRequest:
+      type: object
+      properties:
+        case_id:
+          type: string
+          description: Case identifier
+          nullable: true
+        verdict_id:
+          type: string
+          description: Verdict identifier
+          nullable: true
+        node_id:
+          type: string
+          description: Node identifier
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+          description: Start time (ISO 8601)
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          description: End time (ISO 8601)
+          nullable: true
+          
+    LedgerQueryResponse:
+      type: object
+      required:
+        - success
+        - entries
+        - total_count
+        - query_time_ms
+      properties:
+        success:
+          type: boolean
+          description: Operation success
+        entries:
+          type: array
+          description: Ledger entries
+          items:
+            type: object
+        total_count:
+          type: integer
+          description: Total entries found
+        query_time_ms:
+          type: number
+          format: float
+          description: Query time in milliseconds
+          
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          description: System status
+          enum: [healthy, unavailable, unhealthy]
+        mode:
+          type: string
+          description: Current mode
+          enum: [ENTERPRISE_FULL, DESKTOP_MINIMAL]
+        graph_enabled:
+          type: boolean
+          description: Graph operations enabled
+        components:
+          type: object
+          description: Component health
+        message:
+          type: string
+          description: Status message
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+          
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error code
+          enum:
+            - invalid_request
+            - missing_parameter
+            - invalid_parameter
+            - resource_not_found
+            - unauthorized
+            - forbidden
+            - rate_limit_exceeded
+            - internal_error
+            - service_unavailable
+            - verdict_generation_failed
+            - ledger_write_failed
+            - proof_generation_failed
+            - verification_failed
+            - graph_operation_failed
+            - resource_constraint
+            - mode_not_supported
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        request_id:
+          type: string
+          description: Request identifier for tracing
+          nullable: true

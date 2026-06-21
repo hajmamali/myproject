@@ -1,0 +1,549 @@
+# ============================================================================
+# MAHOUN Enterprise Monitoring & Observability Stack
+# ============================================================================
+# Components: Prometheus, Grafana, Loki, Tempo, Alertmanager
+# Purpose: Complete observability solution with distributed tracing
+# ============================================================================
+
+version: '3.9'
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  monitoring:
+    name: mahoun_monitoring
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+volumes:
+  prometheus-data:
+    name: mahoun_prometheus_data
+  grafana-data:
+    name: mahoun_grafana_data
+  loki-data:
+    name: mahoun_loki_data
+  tempo-data:
+    name: mahoun_tempo_data
+  alertmanager-data:
+    name: mahoun_alertmanager_data
+
+services:
+  # ==========================================================================
+  # PROMETHEUS - Metrics Collection & Storage
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: mahoun-prometheus-enterprise
+    restart: unless-stopped
+    user: "65534:65534"  # nobody user
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.retention.size=50GB'
+      - '--storage.tsdb.wal-compression'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--query.max-concurrency=50'
+      - '--query.timeout=5m'
+      - '--query.lookback-delta=5m'
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - ./prometheus/recording-rules:/etc/prometheus/recording-rules:ro
+      - prometheus-data:/prometheus
+    
+    networks:
+      - monitoring
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=prometheus"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # GRAFANA - Visualization & Dashboards
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: mahoun-grafana-enterprise
+    restart: unless-stopped
+    user: "472:472"  # grafana user
+    
+    environment:
+      # Server Configuration
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN:-localhost}
+      GF_SERVER_PROTOCOL: ${GRAFANA_PROTOCOL:-http}
+      GF_SERVER_CERT_FILE: ${GRAFANA_CERT_FILE:-}
+      GF_SERVER_CERT_KEY: ${GRAFANA_CERT_KEY:-}
+      
+      # Security
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD required}
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:?GRAFANA_SECRET_KEY required}
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "strict"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: "true"
+      
+      # Users & Permissions
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_USERS_AUTO_ASSIGN_ORG: "true"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Viewer"
+      
+      # Auth Configuration
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_AUTH_DISABLE_SIGNOUT_MENU: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      
+      # Database (SQLite with WAL)
+      GF_DATABASE_TYPE: "sqlite3"
+      GF_DATABASE_PATH: "/var/lib/grafana/grafana.db"
+      GF_DATABASE_WAL: "true"
+      GF_DATABASE_CACHE_MODE: "shared"
+      
+      # Analytics & Telemetry (Disabled for privacy)
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_SNAPSHOTS_EXTERNAL_ENABLED: "false"
+      
+      # Plugins
+      GF_INSTALL_PLUGINS: >-
+        grafana-clock-panel,
+        grafana-piechart-panel,
+        grafana-polystat-panel,
+        grafana-worldmap-panel,
+        vonage-status-panel,
+        redis-datasource,
+        redis-app
+      
+      # Alerting
+      GF_ALERTING_ENABLED: "true"
+      GF_ALERTING_EXECUTE_ALERTS: "true"
+      GF_UNIFIED_ALERTING_ENABLED: "true"
+      
+      # Performance
+      GF_DATAPROXY_TIMEOUT: "300"
+      GF_DATAPROXY_KEEP_ALIVE_SECONDS: "300"
+      GF_DATAPROXY_MAX_IDLE_CONNECTIONS: "100"
+      
+      # Logging
+      GF_LOG_LEVEL: "info"
+      GF_LOG_MODE: "console file"
+      GF_LOG_FILTERS: "alerting.notifier:debug"
+    
+    ports:
+      - "3000:3000"
+    
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/plugins:/var/lib/grafana/plugins
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+    
+    networks:
+      - monitoring
+    
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=grafana"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # LOKI - Log Aggregation
+  # ==========================================================================
+  loki:
+    image: grafana/loki:2.9.6
+    container_name: mahoun-loki-enterprise
+    restart: unless-stopped
+    user: "10001:10001"  # loki user
+    
+    command: -config.file=/etc/loki/loki.yaml
+    
+    ports:
+      - "3100:3100"
+    
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    
+    networks:
+      - monitoring
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=loki"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # PROMTAIL - Log Shipper
+  # ==========================================================================
+  promtail:
+    image: grafana/promtail:2.9.6
+    container_name: mahoun-promtail-enterprise
+    restart: unless-stopped
+    
+    command: -config.file=/etc/promtail/promtail.yaml
+    
+    volumes:
+      - ./loki/promtail-config.yaml:/etc/promtail/promtail.yaml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    
+    networks:
+      - monitoring
+    
+    depends_on:
+      loki:
+        condition: service_healthy
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=promtail"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # TEMPO - Distributed Tracing
+  # ==========================================================================
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: mahoun-tempo-enterprise
+    restart: unless-stopped
+    user: "10001:10001"  # tempo user
+    
+    command: -config.file=/etc/tempo/tempo.yaml
+    
+    ports:
+      - "3200:3200"   # tempo HTTP
+      - "4317:4317"   # otlp grpc
+      - "4318:4318"   # otlp http
+      - "9411:9411"   # zipkin
+      - "14268:14268" # jaeger ingest
+    
+    volumes:
+      - ./tempo/tempo-config.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/tempo
+    
+    networks:
+      - monitoring
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=tempo"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # ALERTMANAGER - Alert Management & Routing
+  # ==========================================================================
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: mahoun-alertmanager-enterprise
+    restart: unless-stopped
+    user: "65534:65534"  # nobody user
+    
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--data.retention=168h'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.listen-address='
+    
+    ports:
+      - "9093:9093"
+    
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/templates:/etc/alertmanager/templates:ro
+      - alertmanager-data:/alertmanager
+    
+    networks:
+      - monitoring
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=alertmanager"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # NODE EXPORTER - Hardware/OS Metrics
+  # ==========================================================================
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: mahoun-node-exporter
+    restart: unless-stopped
+    
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.netclass.ignored-devices=^(veth|docker|br-).*'
+      - '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector'
+    
+    ports:
+      - "9100:9100"
+    
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    
+    networks:
+      - monitoring
+    
+    pid: host
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=node-exporter"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # CADVISOR - Container Metrics
+  # ==========================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: mahoun-cadvisor
+    restart: unless-stopped
+    privileged: true
+    
+    command:
+      - '--docker_only=true'
+      - '--housekeeping_interval=30s'
+      - '--max_housekeeping_interval=60s'
+      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
+    
+    ports:
+      - "8080:8080"
+    
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    
+    networks:
+      - monitoring
+    
+    devices:
+      - /dev/kmsg
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=cadvisor"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # POSTGRES EXPORTER - PostgreSQL Metrics
+  # ==========================================================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: mahoun-postgres-exporter
+    restart: unless-stopped
+    
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-mahoun_admin}:${DB_POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mahoun}?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
+      PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
+      PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
+    
+    ports:
+      - "9187:9187"
+    
+    volumes:
+      - ./exporters/postgres-queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    
+    networks:
+      - monitoring
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=postgres-exporter"
+      - "com.mahoun.monitoring=true"
+
+  # ==========================================================================
+  # REDIS EXPORTER - Redis Metrics
+  # ==========================================================================
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.58.0
+    container_name: mahoun-redis-exporter
+    restart: unless-stopped
+    
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_EXPORTER_CHECK_KEYS: "rate_limit:*,embedding:*"
+      REDIS_EXPORTER_CHECK_SINGLE_KEYS: "governance:lock,system:health"
+      REDIS_EXPORTER_DEBUG: "false"
+    
+    ports:
+      - "9121:9121"
+    
+    networks:
+      - monitoring
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    
+    logging: *default-logging
+    
+    labels:
+      - "com.mahoun.service=redis-exporter"
+      - "com.mahoun.monitoring=true"

@@ -1,0 +1,129 @@
+groups:
+  - name: deployment_monitoring_alerts
+    interval: 30s
+    rules:
+      # ================================================================
+      # Deployment Health Alerts
+      # ================================================================
+
+      - alert: ServiceDown
+        expr: up{job="mcp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: deployment
+          team: platform
+        annotations:
+          summary: "CRITICAL: MCP Server is DOWN"
+          description: "The MCP backend server has been unreachable for over 1 minute. Immediate investigation required."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+          team: platform
+        annotations:
+          summary: "High 5xx error rate detected"
+          description: "More than 5% of HTTP requests are returning 5xx errors (Current: {{ $value | humanizePercentage }})."
+
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: high
+          component: api
+          team: platform
+        annotations:
+          summary: "P99 latency exceeds 5 seconds"
+          description: "The 99th percentile request latency has exceeded 5 seconds for 5 minutes."
+
+      # ================================================================
+      # Governance Runtime Alerts
+      # ================================================================
+
+      - alert: GovernanceLockNotInitialized
+        expr: mahoun_governance_lock_initialized == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: governance_kernel
+          team: security
+        annotations:
+          summary: "CRITICAL: GovernanceLock not initialized"
+          description: "The GovernanceLock has not been initialized within 2 minutes of startup. The system is running in fail-closed STRICT mode by default, but this indicates a startup issue."
+
+      - alert: GovernanceLockBypassAttempts
+        expr: increase(mahoun_governance_lock_bypass_attempts_total[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: governance_kernel
+          team: security
+        annotations:
+          summary: "CRITICAL: GovernanceLock bypass attempt detected"
+          description: "{{ $value }} attempts to bypass or reinitialize the GovernanceLock have been detected in the last 5 minutes."
+
+      - alert: FortressValidatorNotStrict
+        expr: mahoun_fortress_strict_mode == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: fortress_validator
+          team: security
+        annotations:
+          summary: "CRITICAL: FortressValidator running in non-strict mode"
+          description: "The FortressValidator is not running in strict mode. All production deployments MUST use strict_mode=True."
+
+      # ================================================================
+      # Resource Alerts
+      # ================================================================
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 2048
+        for: 10m
+        labels:
+          severity: high
+          component: backend
+          team: platform
+        annotations:
+          summary: "High memory usage detected (>2GB)"
+          description: "Backend process memory usage has exceeded 2GB for 10 minutes (Current: {{ $value | humanize }}MB)."
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: high
+          component: backend
+          team: platform
+        annotations:
+          summary: "High CPU usage detected (>80%)"
+          description: "Backend process CPU usage has exceeded 80% for 10 minutes."
+
+      # ================================================================
+      # Ledger & Provenance Alerts
+      # ================================================================
+
+      - alert: LedgerIntegrityFailure
+        expr: mahoun_ledger_integrity_valid == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: immutable_ledger
+          team: security
+        annotations:
+          summary: "CRITICAL: Immutable ledger integrity check failed"
+          description: "The blockchain ledger has failed its integrity verification. This indicates potential tampering or corruption."
+
+      - alert: ProvenanceTrackingFailure
+        expr: rate(mahoun_provenance_tracking_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: high
+          component: provenance
+          team: security
+        annotations:
+          summary: "Provenance tracking failures detected"
+          description: "Provenance tracking is failing at a rate of {{ $value }} per second. Audit trail integrity may be compromised."

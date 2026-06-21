@@ -1,0 +1,109 @@
+groups:
+  - name: legal_monitoring_alerts
+    interval: 30s
+    rules:
+      # Critical Alerts
+      - alert: LegalQueryErrorRateHigh
+        expr: legal_query_error_rate > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: legal_retrieval
+        annotations:
+          summary: "High error rate in legal queries"
+          description: "Legal query error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          
+      - alert: LegalQueryLatencyP95High
+        expr: legal_query_latency_seconds_p95 > 1.0
+        for: 5m
+        labels:
+          severity: critical
+          component: legal_retrieval
+        annotations:
+          summary: "High P95 latency for legal queries"
+          description: "Legal query P95 latency is {{ $value }}s (threshold: 1.0s)"
+      
+      # High Priority Alerts
+      - alert: LegalSLAComplianceLow
+        expr: legal_sla_compliance_rate < 0.95
+        for: 10m
+        labels:
+          severity: high
+          component: legal_retrieval
+        annotations:
+          summary: "Legal SLA compliance below target"
+          description: "Legal SLA compliance is {{ $value | humanizePercentage }} (target: 95%)"
+      
+      - alert: LegalCacheHitRateLow
+        expr: legal_cache_hit_rate < 0.50
+        for: 15m
+        labels:
+          severity: high
+          component: legal_retrieval
+        annotations:
+          summary: "Low cache hit rate for legal metadata"
+          description: "Legal cache hit rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+      
+      # Medium Priority Alerts
+      - alert: LegalAuthorityScoreLow
+        expr: legal_authority_score < 0.70
+        for: 15m
+        labels:
+          severity: medium
+          component: legal_retrieval
+        annotations:
+          summary: "Low average authority score"
+          description: "Average legal authority score is {{ $value }} (threshold: 0.70)"
+      
+      - alert: LegalQueryLatencyP99High
+        expr: legal_query_latency_seconds_p99 > 2.0
+        for: 10m
+        labels:
+          severity: medium
+          component: legal_retrieval
+        annotations:
+          summary: "High P99 latency for legal queries"
+          description: "Legal query P99 latency is {{ $value }}s (threshold: 2.0s)"
+      
+      # Warning Alerts
+      - alert: LegalQueryThroughputLow
+        expr: rate(legal_query_throughput_total[5m]) < 0.1
+        for: 20m
+        labels:
+          severity: warning
+          component: legal_retrieval
+        annotations:
+          summary: "Low legal query throughput"
+          description: "Legal query rate is {{ $value }} queries/sec (threshold: 0.1)"
+      
+      - alert: LegalDocumentsFilteredHigh
+        expr: rate(legal_documents_filtered_total[5m]) > 100
+        for: 15m
+        labels:
+          severity: warning
+          component: legal_retrieval
+        annotations:
+          summary: "High document filtering rate"
+          description: "Documents are being filtered at {{ $value }} docs/sec - may indicate overly restrictive filters"
+      
+      # Court Rank Distribution Alerts
+      - alert: SupremeCourtQueriesLow
+        expr: legal_court_rank_distribution{court_rank="SUPREME_COURT"} < 10
+        for: 30m
+        labels:
+          severity: info
+          component: legal_retrieval
+        annotations:
+          summary: "Low Supreme Court query volume"
+          description: "Supreme Court queries: {{ $value }} (may indicate data quality issues)"
+      
+      # Legal Domain Alerts
+      - alert: LegalDomainImbalance
+        expr: stddev(legal_legal_domain_distribution) > 50
+        for: 30m
+        labels:
+          severity: info
+          component: legal_retrieval
+        annotations:
+          summary: "Imbalanced legal domain distribution"
+          description: "Legal domain distribution shows high variance (stddev: {{ $value }})"

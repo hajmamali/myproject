@@ -1,0 +1,260 @@
+{
+  "dashboard": {
+    "title": "Legal-Aware Monitoring Dashboard",
+    "tags": ["legal", "monitoring", "mahoun"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Legal Query Throughput",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(legal_query_throughput_total[5m])",
+            "legendFormat": "Queries/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Queries/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Legal Query Latency (Percentiles)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "legal_query_latency_seconds_p50",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "legal_query_latency_seconds_p95",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "legal_query_latency_seconds_p99",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Latency"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [1.0], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["B", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High P95 Latency",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_query_error_rate",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "Error Rate", "max": 0.1},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0.01, "colorMode": "critical", "op": "gt", "fill": true, "line": true}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 8, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_cache_hit_rate",
+            "legendFormat": "Cache Hit Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "Hit Rate", "min": 0, "max": 1},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0.7, "colorMode": "custom", "op": "lt", "fill": false, "line": true, "lineColor": "yellow"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "SLA Compliance Rate",
+        "type": "singlestat",
+        "gridPos": {"x": 16, "y": 8, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_sla_compliance_rate",
+            "refId": "A"
+          }
+        ],
+        "format": "percentunit",
+        "valueName": "current",
+        "thresholds": "0.90,0.95",
+        "colors": ["#d44a3a", "#e0b400", "#299c46"],
+        "colorBackground": true,
+        "gauge": {
+          "show": true,
+          "minValue": 0,
+          "maxValue": 1,
+          "thresholdMarkers": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "Authority Score",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 14, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_authority_score",
+            "legendFormat": "Avg Authority Score",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Score", "min": 0, "max": 1},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0.75, "colorMode": "custom", "op": "lt", "fill": false, "line": true, "lineColor": "yellow"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Court Rank Distribution",
+        "type": "piechart",
+        "gridPos": {"x": 12, "y": 14, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_court_rank_distribution",
+            "legendFormat": "{{court_rank}}",
+            "refId": "A"
+          }
+        ],
+        "pieType": "donut"
+      },
+      {
+        "id": 8,
+        "title": "Legal Domain Distribution",
+        "type": "bargauge",
+        "gridPos": {"x": 0, "y": 20, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_legal_domain_distribution",
+            "legendFormat": "{{legal_domain}}",
+            "refId": "A"
+          }
+        ],
+        "orientation": "horizontal"
+      },
+      {
+        "id": 9,
+        "title": "Documents Filtered Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 20, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(legal_documents_filtered_total[5m])",
+            "legendFormat": "Docs Filtered/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Docs/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Error Distribution by Type",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 26, "w": 24, "h": 6},
+        "targets": [
+          {
+            "expr": "legal_errors_by_type_total",
+            "legendFormat": "{{error_type}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "styles": [
+          {
+            "pattern": "error_type",
+            "type": "string",
+            "alias": "Error Type"
+          },
+          {
+            "pattern": "Value",
+            "type": "number",
+            "alias": "Count",
+            "decimals": 0
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Recent Alerts",
+        "type": "alertlist",
+        "gridPos": {"x": 0, "y": 32, "w": 24, "h": 6},
+        "show": "current",
+        "limit": 10,
+        "stateFilter": ["alerting", "pending"],
+        "tags": ["legal"]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{component=\"legal_retrieval\"}",
+          "iconColor": "red",
+          "name": "Legal Alerts",
+          "tagKeys": "severity",
+          "textFormat": "{{alertname}}: {{description}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

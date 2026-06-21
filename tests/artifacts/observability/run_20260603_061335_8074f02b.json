@@ -1,0 +1,36 @@
+{
+  "run_id": "8074f02b",
+  "timestamp": "20260603_061335",
+  "duration_s": 0.0006310939788818359,
+  "input": {
+    "args": [],
+    "kwargs": {}
+  },
+  "output": null,
+  "health_snapshot": {
+    "status": "error",
+    "message": "asyncio.run() cannot be called from a running event loop",
+    "healthy": false
+  },
+  "metrics_snapshot": {
+    "status": "error",
+    "message": "'MetricsCollector' object has no attribute 'get_metrics_summary'"
+  },
+  "invariants": [
+    {
+      "name": "No Masking (Postgres)",
+      "passed": false,
+      "message": "Postgres marked healthy despite being disabled!"
+    },
+    {
+      "name": "Explicit Fallback",
+      "passed": true,
+      "message": "Fallback usage: False"
+    }
+  ],
+  "exception": "type object 'UltraAgentFactory' has no attribute 'create_agent'",
+  "env": {
+    "python": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
+    "mode": "test"
+  }
+}

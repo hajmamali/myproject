@@ -1,0 +1,1728 @@
+
+======================================================================
+MAHOUN ARCHITECTURAL STRESS TEST SUITE
+======================================================================
+Testing: Kernel ownership, governance enforcement, dependency integrity
+Environment: desktop_minimal mode
+======================================================================
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /home/haji/Desktop/KingMahouN/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/haji/Desktop/KingMahouN
+configfile: pyproject.toml
+plugins: cov-7.1.0, tornasync-0.6.0.post2, asyncio-1.4.0, twisted-1.14.3, pytest_time-0.4.2, anyio-4.13.0, trio-0.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 41 items
+
+tests/stress/test_agent_resilience.py::TestAgentRefactorResilience::test_kernel_api_stability_after_mock_refactor PASSED [  2%]
+tests/stress/test_agent_resilience.py::TestAgentRefactorResilience::test_governance_lock_cannot_be_disabled_by_agent PASSED [  4%]
+tests/stress/test_agent_resilience.py::TestAgentRefactorResilience::test_fortress_validator_contract_immutable PASSED [  7%]
+tests/stress/test_agent_resilience.py::TestGovernanceLockBypassPrevention::test_governance_lock_state_protected PASSED [  9%]
+tests/stress/test_agent_resilience.py::TestGovernanceLockBypassPrevention::test_lock_cannot_be_reentrant_bypassed PASSED [ 12%]
+tests/stress/test_agent_resilience.py::TestProvenanceChainImmutability::test_provenance_entries_immutable PASSED [ 14%]
+tests/stress/test_agent_resilience.py::TestProvenanceChainImmutability::test_provenance_chain_integrity_verification PASSED [ 17%]
+tests/stress/test_agent_resilience.py::TestRuntimeContractEnforcement::test_mutation_boundary_contract_enforced PASSED [ 19%]
+tests/stress/test_agent_resilience.py::TestRuntimeContractEnforcement::test_query_classification_contract PASSED [ 21%]
+tests/stress/test_agent_resilience.py::TestRuntimeContractEnforcement::test_authorization_context_contract PASSED [ 24%]
+tests/stress/test_agent_resilience.py::TestAgentModificationDetection::test_governance_violations_logged PASSED [ 26%]
+tests/stress/test_agent_resilience.py::TestAgentModificationDetection::test_violation_details_comprehensive PASSED [ 29%]
+tests/stress/test_agent_resilience.py::TestAgentCodeInjectionPrevention::test_no_unsafe_eval_in_core PASSED [ 31%]
+tests/stress/test_agent_resilience.py::TestAgentCodeInjectionPrevention::test_monkeypatch_detection PASSED [ 34%]
+tests/stress/test_dependency_direction.py::TestDependencyDirection::test_kernel_no_reverse_dependencies PASSED [ 36%]
+tests/stress/test_dependency_direction.py::TestDependencyDirection::test_core_governance_no_reasoning_imports PASSED [ 39%]
+tests/stress/test_dependency_direction.py::TestDependencyDirection::test_fortress_validator_dependency_chain PASSED [ 41%]
+tests/stress/test_dependency_direction.py::TestDependencyDirection::test_governance_lock_imports PASSED [ 43%]
+tests/stress/test_dependency_direction.py::TestDependencyDirection::test_no_circular_imports_between_core_modules PASSED [ 46%]
+tests/stress/test_dependency_direction.py::TestImportFirewall::test_import_firewall_blocks_unsafe_imports PASSED [ 48%]
+tests/stress/test_dependency_direction.py::TestDependencyInjection::test_runtime_config_no_service_dependency PASSED [ 51%]
+tests/stress/test_dependency_direction.py::TestLayerBoundaries::test_layer_0_kernel_pure_stdlib PASSED [ 53%]
+tests/stress/test_dependency_direction.py::TestLayerBoundaries::test_layer_1_core_only_kernel_imports FAILED [ 56%]
+tests/stress/test_dependency_direction.py::TestLayerBoundaries::test_core_can_import_from_governance_kernel PASSED [ 58%]
+tests/stress/test_dependency_direction.py::TestModuleInterdependence::test_no_module_circular_references PASSED [ 60%]
+tests/stress/test_dependency_direction.py::TestModuleInterdependence::test_lazy_imports_prevent_circular_deps PASSED [ 63%]
+tests/stress/test_runtime_configuration.py::TestMinimalModeConfiguration::test_minimal_mode_disables_graph PASSED [ 65%]
+tests/stress/test_runtime_configuration.py::TestMinimalModeConfiguration::test_minimal_mode_disables_lora_training PASSED [ 68%]
+tests/stress/test_runtime_configuration.py::TestMinimalModeConfiguration::test_minimal_mode_uses_lightweight_backends PASSED [ 70%]
+tests/stress/test_runtime_configuration.py::TestMinimalModeConfiguration::test_minimal_mode_respects_environment_overrides PASSED [ 73%]
+tests/stress/test_runtime_configuration.py::TestConfigurationConsistency::test_runtime_settings_immutability PASSED [ 75%]
+tests/stress/test_runtime_configuration.py::TestConfigurationConsistency::test_configuration_caching PASSED [ 78%]
+tests/stress/test_runtime_configuration.py::TestConfigurationConsistency::test_all_backends_configured PASSED [ 80%]
+tests/stress/test_runtime_configuration.py::TestConfigurationConsistency::test_neo4j_uri_configured SKIPPED [ 82%]
+tests/stress/test_runtime_configuration.py::TestBackendFallback::test_graph_fallback_when_disabled PASSED [ 85%]
+tests/stress/test_runtime_configuration.py::TestBackendFallback::test_lora_disabled_doesnt_crash PASSED [ 87%]
+tests/stress/test_runtime_configuration.py::TestEnvironmentVariableParsing::test_boolean_env_var_parsing FAILED [ 90%]
+tests/stress/test_runtime_configuration.py::TestEnvironmentVariableParsing::test_string_env_var_preservation FAILED [ 92%]
+tests/stress/test_runtime_configuration.py::TestEnvironmentVariableParsing::test_missing_env_vars_use_defaults PASSED [ 95%]
+tests/stress/test_runtime_configuration.py::TestRuntimeConfigIsolation::test_config_determinism PASSED [ 97%]
+tests/stress/test_runtime_configuration.py::TestRuntimeConfigIsolation::test_config_no_side_effects PASSED [100%]
+======================================================================
+STRESS TEST SUITE COMPLETE
+======================================================================
+Exit Status: 1
+======================================================================
+
+
+
+=================================== FAILURES ===================================
+__________ TestLayerBoundaries.test_layer_1_core_only_kernel_imports ___________
+tests/stress/test_dependency_direction.py:248: in test_layer_1_core_only_kernel_imports
+    assert pattern not in source, (
+E   AssertionError: fortress_validator.py violates layer boundary by importing from mahoun.reasoning
+E   assert 'from mahoun.reasoning' not in '"""\nMAHOUN Fortress Validator\n==========================\n\nClassification: MISSION-CRITICAL / SECURITY-ENFORCEMENT / NON-BYPASSABLE\nPurpose: Final forensic validation layer for all reasoning outputs\n\nThis module implements the Fortress Validator, a standalone wrapper that intercepts\nALL outputs from unified_reasoning_service.py and performs mandatory forensic checks\nbefore allowing responses to proceed.\n\nCore Responsibilities:\n- Enforce RedLines.yaml governance thresholds\n- Validate proof_tree existence and integrity\n- Verify agreement_score >= 0.85\n- Block responses that violate zero-hallucination guarantees\n- Generate forensic audit trails\n- Raise SecurityBreachException on violations\n\nAuthor: MahouN AEO Governance Council\nVersion: 1.0.0\nLast Updated: 2026-05-13\n"""\n\nfrom __future__ import annotations\n\nimport hashlib\nimport time\nimport uuid\nfrom dataclasses import dataclass, field\nfrom datetime import UTC, datetime\nfrom enum import Enum\nfrom pathlib import Path\nfrom typing import Any, TypeVar\n\nimport yaml\nfrom pydantic import BaseModel, ConfigDict, Field\n\n# TYPE_CHECKING for type hints only - no runtime import\nfrom typing import TYPE_CHECKING, Any, Dict, Union\n\nif TYPE_CHECKING:\n    # Type hints only - not imported at runtime\n    from mahoun.reasoning.unified_reasoning_service import ReasoningResponse\nelse:\n    # Runtime placeholder\n    ReasoningResponse = Any\n\n# These remain with fallback due to optional dependency\ntry:\n    from reasoning_logic.parser import FOLConverter, ParseError\nexcept ImportError:\n    FOLConverter = Any  # type: ignore\n    ParseError = Exception  # type: ignore\n\ntry:\n    from mahoun.core.logging_config import get_logger\nexcept ImportError:\n    import logging\n\n    def get_logger(name: str) -> logging.Logger:\n        return logging.getLogger(name)\n\ntry:\n    from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector\n    METRICS_AVAILABLE = True\nexcept ImportError:\n    METRICS_AVAILABLE = False\n\n\nlog = get_logger(__name__)\n\n# ============================================================================\n# TYPE DEFINITIONS\n# ============================================================================\n\nT = TypeVar("T")\n\n\nclass ViolationSeverity(str, Enum):\n    """Severity classification for RedLine violations"""\n\n    CRITICAL = "CRITICAL"  # Immediate block, security breach\n    HIGH = "HIGH"  # Block response, log incident\n    MEDIUM = "MEDIUM"  # Warn, allow with audit\n    LOW = "LOW"  # Log only\n\n\nclass ViolationType(str, Enum):\n    """Types of RedLine violations"""\n\n    MISSING_PROOF_TREE = "MISSING_PROOF_TREE"\n    LOW_AGREEMENT_SCORE = "LOW_AGREEMENT_SCORE"\n    MISSING_EVIDENCE = "MISSING_EVIDENCE"\n    SEMANTIC_DRIFT = "SEMANTIC_DRIFT"\n    DETERMINISM_FAILURE = "DETERMINISM_FAILURE"\n    AUDIT_TRAIL_INCOMPLETE = "AUDIT_TRAIL_INCOMPLETE"\n    CONTRADICTION_DETECTED = "CONTRADICTION_DETECTED"\n    RESOURCE_VIOLATION = "RESOURCE_VIOLATION"\n    SILENT_FAILURE = "SILENT_FAILURE"\n\n\nclass ExecutionMode(str, Enum):\n    """System execution modes"""\n\n    DESKTOP_MINIMAL = "DESKTOP_MINIMAL"\n    ENTERPRISE_FULL = "ENTERPRISE_FULL"\n\n\n# ============================================================================\n# EXCEPTIONS\n# ============================================================================\n\n\nfrom mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach\n\n\nclass SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]\n    """Legacy alias that now inherits the canonical deterministic error contract (403)."""\n    pass\n    """\n    Raised when a RedLine violation is detected.\n\n    This exception is NON-BYPASSABLE and indicates a critical\n    governance failure that must be addressed immediately.\n    """\n\n    def __init__(\n        self,\n        message: str,\n        violation_type: ViolationType,\n        severity: ViolationSeverity,\n        forensic_context: dict[str, Any],\n        correlation_id: str | None = None,\n    ):\n        self.message = message\n        self.violation_type = violation_type\n        self.severity = severity\n        self.forensic_context = forensic_context\n        self.correlation_id = correlation_id\n        self.timestamp = datetime.now(UTC).isoformat()\n\n        super().__init__(self._format_message())\n\n    def _format_message(self) -> str:\n        """Format exception message with forensic context"""\n        return (\n            f"[SECURITY BREACH] {self.severity.value}\\n"\n            f"Violation: {self.violation_type.value}\\n"\n            f"Message: {self.message}\\n"\n            f"Correlation ID: {self.correlation_id}\\n"\n            f"Timestamp: {self.timestamp}\\n"\n            f"Forensic Context: {self.forensic_context}"\n        )\n\n\n# ============================================================================\n# PYDANTIC MODELS\n# ============================================================================\n\n\nclass RedLinesConfig(BaseModel):\n    """Pydantic model for RedLines.yaml configuration"""\n\n    class ThresholdsConfig(BaseModel):\n        min_agreement_score: float = Field(ge=0.0, le=1.0)\n        min_confidence_score: float = Field(ge=0.0, le=1.0)\n        max_reasoning_time_ms: int = Field(gt=0)\n        max_recursion_depth: int = Field(gt=0)\n\n    class ProofRequirementsConfig(BaseModel):\n        proof_tree_required: bool\n        min_proof_depth: int = Field(ge=0)\n        evidence_linkage_required: bool\n        audit_trail_required: bool\n\n    class HallucinationPreventionConfig(BaseModel):\n        require_graph_evidence: bool\n        require_source_attribution: bool\n        reject_contradictions: bool\n        require_determinism: bool\n\n    class DualModeConfig(BaseModel):\n        enforce_semantic_equivalence: bool\n        allow_resource_scaling_only: bool\n        fail_on_semantic_drift: bool\n\n    class ExceptionsConfig(BaseModel):\n        violation_exception: str\n        allow_silent_failures: bool\n        require_exception_logging: bool\n        require_forensic_context: bool\n\n    thresholds: ThresholdsConfig\n    proof_requirements: ProofRequirementsConfig\n    hallucination_prevention: HallucinationPreventionConfig\n    dual_mode: DualModeConfig\n    exceptions: ExceptionsConfig\n\n\nclass ValidationResult(BaseModel):\n    """Result of fortress validation"""\n\n    passed: bool\n    correlation_id: str\n    timestamp: str\n    execution_time_ms: float\n    violations: list[dict[str, Any]] = Field(default_factory=list)\n    warnings: list[str] = Field(default_factory=list)\n    forensic_hash: str\n    metadata: dict[str, Any] = Field(default_factory=dict)\n\n    model_config = ConfigDict(frozen=False)\n\n\n# Removed redundant ReasoningResponse BaseModel definition to avoid shadowing the dataclass\n\n\n# ============================================================================\n# FORTRESS VALIDATOR CORE\n# ============================================================================\n\n\n@dataclass\nclass ForensicContext:\n    """Forensic context for audit trail"""\n\n    correlation_id: str\n    timestamp: str\n    execution_mode: ExecutionMode\n    response_hash: str\n    validation_checks: list[str] = field(default_factory=list)\n    violations_detected: list[dict[str, Any]] = field(default_factory=list)\n    metadata: dict[str, Any] = field(default_factory=dict)\n\n\nclass FortressValidator:\n    """\n    The Fortress Validator: Final governance enforcement layer.\n\n    This class intercepts ALL outputs from unified_reasoning_service.py\n    and performs mandatory forensic validation before allowing responses\n    to proceed.\n\n    Responsibilities:\n    - Load and enforce RedLines.yaml configuration\n    - Validate proof_tree existence and integrity\n    - Verify agreement_score >= threshold\n    - Check evidence linkage and audit trails\n    - Generate forensic audit records\n    - Raise SecurityBreachException on violations\n\n    Usage:\n        validator = FortressValidator()\n        validated_response = await validator.validate(\n            response=reasoning_response,\n            correlation_id="req-12345"\n        )\n    """\n\n    def __init__(\n        self,\n        config_path: Path | None = None,\n        execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,\n        strict_mode: bool = True,\n    ):\n        """\n        Initialize Fortress Validator.\n\n        Args:\n            config_path: Path to RedLines.yaml (defaults to constitution/RedLines.yaml)\n            execution_mode: Current execution mode (DESKTOP_MINIMAL or ENTERPRISE_FULL)\n            strict_mode: If True, raise exceptions on violations; if False, log only\n        """\n        self.execution_mode = execution_mode\n        self.strict_mode = strict_mode\n        self.config_path = config_path or Path(__file__).parent.parent.parent / "constitution" / "RedLines.yaml"\n\n        # Load configuration\n        self.config = self._load_config()\n\n        # Validation statistics\n        self.stats = {\n            "total_validations": 0,\n            "passed": 0,\n            "failed": 0,\n            "violations_by_type": {},\n            "average_validation_time_ms": 0.0,\n        }\n\n        # Forensic audit trail\n        self.audit_trail: list[ForensicContext] = []\n\n        log.info(\n            f"FortressValidator initialized: mode={execution_mode.value}, "\n            f"strict={strict_mode}, config={self.config_path}"\n        )\n\n    def _load_config(self) -> RedLinesConfig:\n        """Load and validate RedLines.yaml configuration"""\n        try:\n            if not self.config_path.exists():\n                log.error(f"RedLines.yaml not found at {self.config_path}")\n                raise FileNotFoundError(f"RedLines configuration missing: {self.config_path}")\n\n            with open(self.config_path) as f:\n                raw_config = yaml.safe_load(f)\n\n            config = RedLinesConfig(**raw_config)\n            log.info(f"RedLines.yaml loaded successfully: min_agreement={config.thresholds.min_agreement_score}")\n            return config\n\n        except Exception as e:\n            log.critical(f"Failed to load RedLines.yaml: {e}")\n            raise\n\n    async def validate(\n        self, response: Any, correlation_id: str | None = None\n    ) -> ValidationResult:\n        """\n        Perform comprehensive fortress validation on reasoning response.\n\n        This is the main entry point for validation. It performs all\n        mandatory checks defined in RedLines.yaml and raises\n        SecurityBreachException if critical violations are detected.\n\n        Args:\n            response: Reasoning service response to validate\n            correlation_id: Optional correlation ID for tracing\n\n        Returns:\n            ValidationResult with pass/fail status and forensic context\n\n        Raises:\n            SecurityBreachException: On critical RedLine violations\n        """\n        start_time = time.perf_counter()\n        correlation_id = correlation_id or self._generate_correlation_id()\n\n        violations: list[dict[str, Any]] = []\n        warnings: list[str] = []\n\n        # Convert dict to expected type if needed\n        if isinstance(response, dict):\n            # Use duck-typing and dynamic validation instead of direct import\n            try:\n                required_fields = ["success", "result", "confidence", "reasoning_mode", "execution_time_ms"]\n                for f in required_fields:\n                    if f not in response:\n                        raise ValueError(f"Missing required field: {f}")\n                        \n                # Convert to object-like structure for processing\n                class DynamicResponse:\n                    def __init__(self, **kwargs):\n                        for k, v in kwargs.items():\n                            setattr(self, k, v)\n                \n                response = DynamicResponse(\n                    success=response.get("success"),\n                    result=response.get("result"),\n                    confidence=response.get("confidence"),\n                    reasoning_mode=response.get("reasoning_mode"),\n                    execution_time_ms=response.get("execution_time_ms"),\n                    proof_tree=response.get("proof_tree"),\n                    explanation=response.get("explanation"),\n                    derived_facts=response.get("derived_facts", []),\n                    error=response.get("error"),\n                    metadata=response.get("metadata", {}),\n                    fortress_validated=response.get("fortress_validated", False),\n                    audit_hash=response.get("audit_hash"),\n                    validation_timestamp=response.get("validation_timestamp"),\n                    correlation_id=response.get("correlation_id"),\n                )\n            except Exception as e:\n                violations.append(\n                    {\n                        "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                        "severity": ViolationSeverity.CRITICAL.value,\n                        "message": f"Invalid response structure: {e}",\n                        "details": {"exception": str(e)},\n                    }\n                )\n\n        # Initialize forensic context\n        forensic_ctx = ForensicContext(\n            correlation_id=correlation_id,\n            timestamp=datetime.now(UTC).isoformat(),\n            execution_mode=self.execution_mode,\n            response_hash=self._compute_response_hash(response),\n        )\n\n        # Execute validation checks\n        try:\n            # CHECK 1: Proof tree validation\n            proof_violation = await self._validate_proof_tree(response, forensic_ctx)\n            if proof_violation:\n                violations.append(proof_violation)\n\n            # CHECK 2: Agreement score validation\n            agreement_violation = await self._validate_agreement_score(response, forensic_ctx)\n            if agreement_violation:\n                violations.append(agreement_violation)\n\n            # CHECK 3: Evidence linkage validation\n            evidence_violation = await self._validate_evidence_linkage(response, forensic_ctx)\n            if evidence_violation:\n                violations.append(evidence_violation)\n\n            # CHECK 4: Audit trail validation\n            audit_violation = await self._validate_audit_trail(response, forensic_ctx)\n            if audit_violation:\n                violations.append(audit_violation)\n\n            # CHECK 5: Determinism validation\n            determinism_violation = await self._validate_determinism(response, forensic_ctx)\n            if determinism_violation:\n                violations.append(determinism_violation)\n\n            # CHECK 6: Contradiction detection\n            contradiction_violation = await self._validate_contradictions(response, forensic_ctx)\n            if contradiction_violation:\n                violations.append(contradiction_violation)\n\n        except Exception as e:\n            log.error(f"[{correlation_id}] Validation check failed: {e}")\n            violations.append(\n                {\n                    "type": ViolationType.SILENT_FAILURE.value,\n                    "severity": ViolationSeverity.CRITICAL.value,\n                    "message": f"Validation exception: {e}",\n                    "details": {"exception": str(e)},\n                }\n            )\n\n        # Compute execution time\n        execution_time_ms = (time.perf_counter() - start_time) * 1000\n\n        # Determine overall pass/fail\n        blocking_violations = [v for v in violations if v["severity"] in [ViolationSeverity.CRITICAL.value, ViolationSeverity.HIGH.value]]\n        passed = len(blocking_violations) == 0\n\n        # Update statistics\n        self._update_stats(passed, violations, execution_time_ms)\n\n        # Store forensic context\n        forensic_ctx.violations_detected = violations\n        self.audit_trail.append(forensic_ctx)\n\n        # ========================================================================\n        # PROOF-CARRYING CONTRACT INJECTION\n        # ========================================================================\n        # If validation passed, inject proof-carrying metadata into response\n        if passed and hasattr(response, \'fortress_validated\'):\n            response.fortress_validated = True\n            response.audit_hash = forensic_ctx.response_hash\n            response.validation_timestamp = forensic_ctx.timestamp\n            response.correlation_id = correlation_id\n\n            log.debug(\n                f"[{correlation_id}] Proof-carrying metadata injected: "\n                f"hash={response.audit_hash}, timestamp={response.validation_timestamp}"\n            )\n\n            # Enforce the proof-carrying contract AFTER metadata is injected\n            if hasattr(response, "verify_proof_carrying_contract"):\n                response.verify_proof_carrying_contract()\n\n        # Create validation result\n        result = ValidationResult(\n            passed=passed,\n            correlation_id=correlation_id,\n            timestamp=forensic_ctx.timestamp,\n            execution_time_ms=execution_time_ms,\n            violations=violations,\n            warnings=warnings,\n            forensic_hash=forensic_ctx.response_hash,\n            metadata={\n                "execution_mode": self.execution_mode.value,\n                "strict_mode": self.strict_mode,\n                "checks_performed": len(forensic_ctx.validation_checks),\n                "proof_carrying_injected": passed,  # Track if metadata was injected\n            },\n        )\n\n        # Raise exception if critical violations detected and strict mode enabled\n        if not passed and self.strict_mode:\n            self._raise_security_breach(violations, forensic_ctx)\n\n        # Log result\n        if passed:\n            log.info(f"[{correlation_id}] ✓ Fortress validation PASSED ({execution_time_ms:.2f}ms)")\n        else:\n            log.error(f"[{correlation_id}] ✗ Fortress validation FAILED: {len(violations)} violations")\n\n        return result\n\n    async def _validate_proof_tree(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate proof_tree existence and integrity"""\n        forensic_ctx.validation_checks.append("proof_tree")\n\n        if not self.config.proof_requirements.proof_tree_required:\n            return None\n\n        if getattr(response, \'proof_tree\', None) is None:\n            return {\n                "type": ViolationType.MISSING_PROOF_TREE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": "Response missing required proof_tree",\n                "details": {"requirement": "proof_tree_required=true", "actual": "proof_tree=None"},\n            }\n\n        # Validate proof depth if proof_tree exists\n        proof_tree = getattr(response, \'proof_tree\', None)\n        if proof_tree and hasattr(proof_tree, "get_proof_depth"):\n            try:\n                depth = proof_tree.get_proof_depth()\n                min_depth = self.config.proof_requirements.min_proof_depth\n\n                if depth < min_depth:\n                    return {\n                        "type": ViolationType.MISSING_PROOF_TREE.value,\n                        "severity": ViolationSeverity.HIGH.value,\n                        "message": f"Proof tree depth {depth} below minimum {min_depth}",\n                        "details": {"depth": depth, "min_depth": min_depth},\n                    }\n            except Exception as e:\n                log.warning(f"Could not validate proof depth: {e}")\n\n        return None\n\n    async def _validate_agreement_score(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate agreement_score meets threshold"""\n        forensic_ctx.validation_checks.append("agreement_score")\n\n        # Extract agreement_score from metadata\n        agreement_score = getattr(response, \'metadata\', {}).get("agreement_score")\n\n        if agreement_score is None:\n            # If no agreement_score, check if this is a single-mode response\n            if getattr(response, \'reasoning_mode\', None) in ["SYMBOLIC", "NEURAL"]:\n                # Single-mode responses don\'t have agreement scores\n                return None\n\n            return {\n                "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": "Missing agreement_score in hybrid reasoning response",\n                "details": {"reasoning_mode": response.reasoning_mode},\n            }\n\n        min_score = self.config.thresholds.min_agreement_score\n\n        if agreement_score < min_score:\n            return {\n                "type": ViolationType.LOW_AGREEMENT_SCORE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": f"Agreement score {agreement_score} ({agreement_score:.2%}) below threshold {min_score:.2%}",\n                "details": {\n                    "agreement_score": agreement_score,\n                    "threshold": min_score,\n                    "gap": min_score - agreement_score,\n                },\n            }\n\n        return None\n\n    async def _validate_evidence_linkage(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate evidence linkage requirements"""\n        forensic_ctx.validation_checks.append("evidence_linkage")\n\n        if not self.config.hallucination_prevention.require_graph_evidence:\n            return None\n\n        # Check if derived_facts exist (evidence of graph reasoning)\n        derived_facts = getattr(response, \'derived_facts\', [])\n        if not derived_facts or len(derived_facts) == 0:\n            return {\n                "type": ViolationType.MISSING_EVIDENCE.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": "No derived facts found (missing graph evidence)",\n                "details": {"derived_facts_count": 0},\n            }\n\n        # HARDENING: Formal validation of derived facts\n        converter = FOLConverter()\n        invalid_facts = []\n        for fact_str in derived_facts:\n            try:\n                converter.parse(fact_str)\n            except ParseError as e:\n                invalid_facts.append({"fact": fact_str, "error": str(e)})\n\n        if invalid_facts:\n            return {\n                "type": ViolationType.DETERMINISM_FAILURE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": f"Formal Evidence Validation Failed: {len(invalid_facts)} invalid facts",\n                "details": {"invalid_facts": invalid_facts[:5]},\n            }\n\n        return None\n\n    async def _validate_audit_trail(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate audit trail completeness"""\n        forensic_ctx.validation_checks.append("audit_trail")\n\n        if not self.config.proof_requirements.audit_trail_required:\n            return None\n\n        # Check for required metadata fields\n        required_fields = ["reasoning_mode", "execution_time_ms"]\n        missing_fields = []\n        \n        for f in required_fields:\n            if not hasattr(response, f) or getattr(response, f) is None:\n                missing_fields.append(f)\n\n        if missing_fields:\n            return {\n                "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                "severity": ViolationSeverity.MEDIUM.value,\n                "message": f"Audit trail missing required fields: {missing_fields}",\n                "details": {"missing_fields": missing_fields},\n            }\n\n        return None\n\n    async def _validate_determinism(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate determinism requirements"""\n        forensic_ctx.validation_checks.append("determinism")\n\n        if not self.config.hallucination_prevention.require_determinism:\n            return None\n\n        # Check if response contains non-deterministic indicators\n        reasoning_mode = getattr(response, \'reasoning_mode\', \'\')\n        proof_tree = getattr(response, \'proof_tree\', None)\n        \n        if reasoning_mode == "NEURAL" and not proof_tree:\n            return {\n                "type": ViolationType.DETERMINISM_FAILURE.value,\n                "severity": ViolationSeverity.MEDIUM.value,\n                "message": "Neural-only response without proof tree (non-deterministic)",\n                "details": {"reasoning_mode": reasoning_mode},\n            }\n\n        return None\n\n    async def _validate_contradictions(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate contradiction detection"""\n        forensic_ctx.validation_checks.append("contradictions")\n\n        if not self.config.hallucination_prevention.reject_contradictions:\n            return None\n\n        # Check metadata for contradiction markers\n        metadata = getattr(response, \'metadata\', {})\n        contradictions = metadata.get("contradictions", [])\n\n        if contradictions and len(contradictions) > 0:\n            return {\n                "type": ViolationType.CONTRADICTION_DETECTED.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": f"Contradictions detected: {len(contradictions)}",\n                "details": {"contradictions": contradictions[:5]},  # Limit to first 5\n            }\n\n        return None\n\n    def _compute_response_hash(self, response: Any) -> str:\n        """Compute forensic hash of response for audit trail using deterministic serialization"""\n        import json\n\n        # Build deterministic dict from response\n        if isinstance(response, dict):\n            resp_dict = {\n                "result": str(response.get("result", "")),\n                "confidence": float(response.get("confidence", 0.0) or 0.0),\n                "reasoning_mode": str(response.get("reasoning_mode", "")),\n                "proof_tree": str(response.get("proof_tree", "")),\n                "derived_facts": [str(f) for f in response.get("derived_facts", []) or []],\n            }\n        else:\n            resp_dict = {\n                "result": str(getattr(response, "result", "")),\n                "confidence": float(getattr(response, "confidence", 0.0) or 0.0),\n                "reasoning_mode": str(getattr(response, "reasoning_mode", "")),\n                "proof_tree": str(getattr(response, "proof_tree", "")),\n                "derived_facts": [str(f) for f in getattr(response, "derived_facts", []) or []],\n            }\n\n        hash_input = json.dumps(resp_dict, sort_keys=True)\n        return hashlib.sha256(hash_input.encode()).hexdigest()[:16]\n\n    def _generate_correlation_id(self) -> str:\n        """Generate unique correlation ID"""\n        return f"fortress-{uuid.uuid4().hex[:12]}"\n\n    def _update_stats(self, passed: bool, violations: list[dict[str, Any]], execution_time_ms: float) -> None:\n        """Update validation statistics"""\n        self.stats["total_validations"] += 1\n\n        if passed:\n            self.stats["passed"] += 1\n        else:\n            self.stats["failed"] += 1\n\n        # Update violation counts by type\n        for violation in violations:\n            vtype = violation["type"]\n            self.stats["violations_by_type"][vtype] = self.stats["violations_by_type"].get(vtype, 0) + 1\n\n        if METRICS_AVAILABLE:\n            collector = get_metrics_collector()\n            collector.register_counter("mahoun_fortress_validation_total").inc()\n            if not passed:\n                collector.register_counter("mahoun_fortress_validation_failed_total").inc()\n            for violation in violations:\n                collector.register_counter("mahoun_security_breaches_total", labels={"type": violation["type"]}).inc()\n\n        # Update average validation time\n        total = self.stats["total_validations"]\n        current_avg = self.stats["average_validation_time_ms"]\n        self.stats["average_validation_time_ms"] = ((current_avg * (total - 1)) + execution_time_ms) / total\n\n    def _raise_security_breach(self, violations: list[dict[str, Any]], forensic_ctx: ForensicContext) -> None:\n        """Raise SecurityBreachException for critical violations"""\n        critical_violations = [v for v in violations if v["severity"] == ViolationSeverity.CRITICAL.value]\n\n        if not critical_violations:\n            return\n\n        primary_violation = critical_violations[0]\n\n        raise SecurityBreachException(\n            message=primary_violation["message"],\n            violation_type=ViolationType(primary_violation["type"]),\n            severity=ViolationSeverity.CRITICAL,\n            forensic_context={\n                "correlation_id": forensic_ctx.correlation_id,\n                "timestamp": forensic_ctx.timestamp,\n                "response_hash": forensic_ctx.response_hash,\n                "total_violations": len(violations),\n                "critical_violations": len(critical_violations),\n                "violations": violations,\n            },\n            correlation_id=forensic_ctx.correlation_id,\n        )\n\n    def get_stats(self) -> dict[str, Any]:\n        """Get validation statistics"""\n        return self.stats.copy()\n\n    def get_audit_trail(self, limit: int = 100) -> list[dict[str, Any]]:\n        """Get recent audit trail entries"""\n        recent = self.audit_trail[-limit:]\n        return [\n            {\n                "correlation_id": ctx.correlation_id,\n                "timestamp": ctx.timestamp,\n                "execution_mode": ctx.execution_mode.value,\n                "response_hash": ctx.response_hash,\n                "checks_performed": len(ctx.validation_checks),\n                "violations_count": len(ctx.violations_detected),\n            }\n            for ctx in recent\n        ]\n\n\n# ============================================================================\n# CONVENIENCE FUNCTIONS\n# ============================================================================\n\n\nasync def validate_reasoning_response(\n    response: Any, correlation_id: str | None = None, strict_mode: bool = True\n) -> ValidationResult:\n    """\n    Convenience function for one-off validation.\n\n    Args:\n        response: Reasoning response to validate\n        correlation_id: Optional correlation ID\n        strict_mode: If True, raise exceptions on violations\n\n    Returns:\n        ValidationResult\n\n    Raises:\n        SecurityBreachException: On critical violations (if strict_mode=True)\n    """\n    validator = FortressValidator(strict_mode=strict_mode)\n    return await validator.validate(response, correlation_id)\n\n\n# ============================================================================\n# MODULE INITIALIZATION\n# ============================================================================\n\nlog.info("FortressValidator module loaded: GOVERNANCE ENFORCEMENT ACTIVE")\n'
+E     
+E     'from mahoun.reasoning' is contained here:
+E       """
+E       MAHOUN Fortress Validator
+E       ==========================
+E       
+E       Classification: MISSION-CRITICAL / SECURITY-ENFORCEMENT / NON-BYPASSABLE
+E       Purpose: Final forensic validation layer for all reasoning outputs
+E       
+E       This module implements the Fortress Validator, a standalone wrapper that intercepts
+E       ALL outputs from unified_reasoning_service.py and performs mandatory forensic checks
+E       before allowing responses to proceed.
+E       
+E       Core Responsibilities:
+E       - Enforce RedLines.yaml governance thresholds
+E       - Validate proof_tree existence and integrity
+E       - Verify agreement_score >= 0.85
+E       - Block responses that violate zero-hallucination guarantees
+E       - Generate forensic audit trails
+E       - Raise SecurityBreachException on violations
+E       
+E       Author: MahouN AEO Governance Council
+E       Version: 1.0.0
+E       Last Updated: 2026-05-13
+E       """
+E       
+E       from __future__ import annotations
+E       
+E       import hashlib
+E       import time
+E       import uuid
+E       from dataclasses import dataclass, field
+E       from datetime import UTC, datetime
+E       from enum import Enum
+E       from pathlib import Path
+E       from typing import Any, TypeVar
+E       
+E       import yaml
+E       from pydantic import BaseModel, ConfigDict, Field
+E       
+E       # TYPE_CHECKING for type hints only - no runtime import
+E       from typing import TYPE_CHECKING, Any, Dict, Union
+E       
+E       if TYPE_CHECKING:
+E           # Type hints only - not imported at runtime
+E           from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
+E     ?     +++++++++++++++++++++
+E       else:
+E           # Runtime placeholder
+E           ReasoningResponse = Any
+E       
+E       # These remain with fallback due to optional dependency
+E       try:
+E           from reasoning_logic.parser import FOLConverter, ParseError
+E       except ImportError:
+E           FOLConverter = Any  # type: ignore
+E           ParseError = Exception  # type: ignore
+E       
+E       try:
+E           from mahoun.core.logging_config import get_logger
+E       except ImportError:
+E           import logging
+E       
+E           def get_logger(name: str) -> logging.Logger:
+E               return logging.getLogger(name)
+E       
+E       try:
+E           from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector
+E           METRICS_AVAILABLE = True
+E       except ImportError:
+E           METRICS_AVAILABLE = False
+E       
+E       
+E       log = get_logger(__name__)
+E       
+E       # ============================================================================
+E       # TYPE DEFINITIONS
+E       # ============================================================================
+E       
+E       T = TypeVar("T")
+E       
+E       
+E       class ViolationSeverity(str, Enum):
+E           """Severity classification for RedLine violations"""
+E       
+E           CRITICAL = "CRITICAL"  # Immediate block, security breach
+E           HIGH = "HIGH"  # Block response, log incident
+E           MEDIUM = "MEDIUM"  # Warn, allow with audit
+E           LOW = "LOW"  # Log only
+E       
+E       
+E       class ViolationType(str, Enum):
+E           """Types of RedLine violations"""
+E       
+E           MISSING_PROOF_TREE = "MISSING_PROOF_TREE"
+E           LOW_AGREEMENT_SCORE = "LOW_AGREEMENT_SCORE"
+E           MISSING_EVIDENCE = "MISSING_EVIDENCE"
+E           SEMANTIC_DRIFT = "SEMANTIC_DRIFT"
+E           DETERMINISM_FAILURE = "DETERMINISM_FAILURE"
+E           AUDIT_TRAIL_INCOMPLETE = "AUDIT_TRAIL_INCOMPLETE"
+E           CONTRADICTION_DETECTED = "CONTRADICTION_DETECTED"
+E           RESOURCE_VIOLATION = "RESOURCE_VIOLATION"
+E           SILENT_FAILURE = "SILENT_FAILURE"
+E       
+E       
+E       class ExecutionMode(str, Enum):
+E           """System execution modes"""
+E       
+E           DESKTOP_MINIMAL = "DESKTOP_MINIMAL"
+E           ENTERPRISE_FULL = "ENTERPRISE_FULL"
+E       
+E       
+E       # ============================================================================
+E       # EXCEPTIONS
+E       # ============================================================================
+E       
+E       
+E       from mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
+E       
+E       
+E       class SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]
+E           """Legacy alias that now inherits the canonical deterministic error contract (403)."""
+E           pass
+E           """
+E           Raised when a RedLine violation is detected.
+E       
+E           This exception is NON-BYPASSABLE and indicates a critical
+E           governance failure that must be addressed immediately.
+E           """
+E       
+E           def __init__(
+E               self,
+E               message: str,
+E               violation_type: ViolationType,
+E               severity: ViolationSeverity,
+E               forensic_context: dict[str, Any],
+E               correlation_id: str | None = None,
+E           ):
+E               self.message = message
+E               self.violation_type = violation_type
+E               self.severity = severity
+E               self.forensic_context = forensic_context
+E               self.correlation_id = correlation_id
+E               self.timestamp = datetime.now(UTC).isoformat()
+E       
+E               super().__init__(self._format_message())
+E       
+E           def _format_message(self) -> str:
+E               """Format exception message with forensic context"""
+E               return (
+E                   f"[SECURITY BREACH] {self.severity.value}\n"
+E                   f"Violation: {self.violation_type.value}\n"
+E                   f"Message: {self.message}\n"
+E                   f"Correlation ID: {self.correlation_id}\n"
+E                   f"Timestamp: {self.timestamp}\n"
+E                   f"Forensic Context: {self.forensic_context}"
+E               )
+E       
+E       
+E       # ============================================================================
+E       # PYDANTIC MODELS
+E       # ============================================================================
+E       
+E       
+E       class RedLinesConfig(BaseModel):
+E           """Pydantic model for RedLines.yaml configuration"""
+E       
+E           class ThresholdsConfig(BaseModel):
+E               min_agreement_score: float = Field(ge=0.0, le=1.0)
+E               min_confidence_score: float = Field(ge=0.0, le=1.0)
+E               max_reasoning_time_ms: int = Field(gt=0)
+E               max_recursion_depth: int = Field(gt=0)
+E       
+E           class ProofRequirementsConfig(BaseModel):
+E               proof_tree_required: bool
+E               min_proof_depth: int = Field(ge=0)
+E               evidence_linkage_required: bool
+E               audit_trail_required: bool
+E       
+E           class HallucinationPreventionConfig(BaseModel):
+E               require_graph_evidence: bool
+E               require_source_attribution: bool
+E               reject_contradictions: bool
+E               require_determinism: bool
+E       
+E           class DualModeConfig(BaseModel):
+E               enforce_semantic_equivalence: bool
+E               allow_resource_scaling_only: bool
+E               fail_on_semantic_drift: bool
+E       
+E           class ExceptionsConfig(BaseModel):
+E               violation_exception: str
+E               allow_silent_failures: bool
+E               require_exception_logging: bool
+E               require_forensic_context: bool
+E       
+E           thresholds: ThresholdsConfig
+E           proof_requirements: ProofRequirementsConfig
+E           hallucination_prevention: HallucinationPreventionConfig
+E           dual_mode: DualModeConfig
+E           exceptions: ExceptionsConfig
+E       
+E       
+E       class ValidationResult(BaseModel):
+E           """Result of fortress validation"""
+E       
+E           passed: bool
+E           correlation_id: str
+E           timestamp: str
+E           execution_time_ms: float
+E           violations: list[dict[str, Any]] = Field(default_factory=list)
+E           warnings: list[str] = Field(default_factory=list)
+E           forensic_hash: str
+E           metadata: dict[str, Any] = Field(default_factory=dict)
+E       
+E           model_config = ConfigDict(frozen=False)
+E       
+E       
+E       # Removed redundant ReasoningResponse BaseModel definition to avoid shadowing the dataclass
+E       
+E       
+E       # ============================================================================
+E       # FORTRESS VALIDATOR CORE
+E       # ============================================================================
+E       
+E       
+E       @dataclass
+E       class ForensicContext:
+E           """Forensic context for audit trail"""
+E       
+E           correlation_id: str
+E           timestamp: str
+E           execution_mode: ExecutionMode
+E           response_hash: str
+E           validation_checks: list[str] = field(default_factory=list)
+E           violations_detected: list[dict[str, Any]] = field(default_factory=list)
+E           metadata: dict[str, Any] = field(default_factory=dict)
+E       
+E       
+E       class FortressValidator:
+E           """
+E           The Fortress Validator: Final governance enforcement layer.
+E       
+E           This class intercepts ALL outputs from unified_reasoning_service.py
+E           and performs mandatory forensic validation before allowing responses
+E           to proceed.
+E       
+E           Responsibilities:
+E           - Load and enforce RedLines.yaml configuration
+E           - Validate proof_tree existence and integrity
+E           - Verify agreement_score >= threshold
+E           - Check evidence linkage and audit trails
+E           - Generate forensic audit records
+E           - Raise SecurityBreachException on violations
+E       
+E           Usage:
+E               validator = FortressValidator()
+E               validated_response = await validator.validate(
+E                   response=reasoning_response,
+E                   correlation_id="req-12345"
+E               )
+E           """
+E       
+E           def __init__(
+E               self,
+E               config_path: Path | None = None,
+E               execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,
+E               strict_mode: bool = True,
+E           ):
+E               """
+E               Initialize Fortress Validator.
+E       
+E               Args:
+E                   config_path: Path to RedLines.yaml (defaults to constitution/RedLines.yaml)
+E                   execution_mode: Current execution mode (DESKTOP_MINIMAL or ENTERPRISE_FULL)
+E                   strict_mode: If True, raise exceptions on violations; if False, log only
+E               """
+E               self.execution_mode = execution_mode
+E               self.strict_mode = strict_mode
+E               self.config_path = config_path or Path(__file__).parent.parent.parent / "constitution" / "RedLines.yaml"
+E       
+E               # Load configuration
+E               self.config = self._load_config()
+E       
+E               # Validation statistics
+E               self.stats = {
+E                   "total_validations": 0,
+E                   "passed": 0,
+E                   "failed": 0,
+E                   "violations_by_type": {},
+E                   "average_validation_time_ms": 0.0,
+E               }
+E       
+E               # Forensic audit trail
+E               self.audit_trail: list[ForensicContext] = []
+E       
+E               log.info(
+E                   f"FortressValidator initialized: mode={execution_mode.value}, "
+E                   f"strict={strict_mode}, config={self.config_path}"
+E               )
+E       
+E           def _load_config(self) -> RedLinesConfig:
+E               """Load and validate RedLines.yaml configuration"""
+E               try:
+E                   if not self.config_path.exists():
+E                       log.error(f"RedLines.yaml not found at {self.config_path}")
+E                       raise FileNotFoundError(f"RedLines configuration missing: {self.config_path}")
+E       
+E                   with open(self.config_path) as f:
+E                       raw_config = yaml.safe_load(f)
+E       
+E                   config = RedLinesConfig(**raw_config)
+E                   log.info(f"RedLines.yaml loaded successfully: min_agreement={config.thresholds.min_agreement_score}")
+E                   return config
+E       
+E               except Exception as e:
+E                   log.critical(f"Failed to load RedLines.yaml: {e}")
+E                   raise
+E       
+E           async def validate(
+E               self, response: Any, correlation_id: str | None = None
+E           ) -> ValidationResult:
+E               """
+E               Perform comprehensive fortress validation on reasoning response.
+E       
+E               This is the main entry point for validation. It performs all
+E               mandatory checks defined in RedLines.yaml and raises
+E               SecurityBreachException if critical violations are detected.
+E       
+E               Args:
+E                   response: Reasoning service response to validate
+E                   correlation_id: Optional correlation ID for tracing
+E       
+E               Returns:
+E                   ValidationResult with pass/fail status and forensic context
+E       
+E               Raises:
+E                   SecurityBreachException: On critical RedLine violations
+E               """
+E               start_time = time.perf_counter()
+E               correlation_id = correlation_id or self._generate_correlation_id()
+E       
+E               violations: list[dict[str, Any]] = []
+E               warnings: list[str] = []
+E       
+E               # Convert dict to expected type if needed
+E               if isinstance(response, dict):
+E                   # Use duck-typing and dynamic validation instead of direct import
+E                   try:
+E                       required_fields = ["success", "result", "confidence", "reasoning_mode", "execution_time_ms"]
+E                       for f in required_fields:
+E                           if f not in response:
+E                               raise ValueError(f"Missing required field: {f}")
+E                               
+E                       # Convert to object-like structure for processing
+E                       class DynamicResponse:
+E                           def __init__(self, **kwargs):
+E                               for k, v in kwargs.items():
+E                                   setattr(self, k, v)
+E                       
+E                       response = DynamicResponse(
+E                           success=response.get("success"),
+E                           result=response.get("result"),
+E                           confidence=response.get("confidence"),
+E                           reasoning_mode=response.get("reasoning_mode"),
+E                           execution_time_ms=response.get("execution_time_ms"),
+E                           proof_tree=response.get("proof_tree"),
+E                           explanation=response.get("explanation"),
+E                           derived_facts=response.get("derived_facts", []),
+E                           error=response.get("error"),
+E                           metadata=response.get("metadata", {}),
+E                           fortress_validated=response.get("fortress_validated", False),
+E                           audit_hash=response.get("audit_hash"),
+E                           validation_timestamp=response.get("validation_timestamp"),
+E                           correlation_id=response.get("correlation_id"),
+E                       )
+E                   except Exception as e:
+E                       violations.append(
+E                           {
+E                               "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+E                               "severity": ViolationSeverity.CRITICAL.value,
+E                               "message": f"Invalid response structure: {e}",
+E                               "details": {"exception": str(e)},
+E                           }
+E                       )
+E       
+E               # Initialize forensic context
+E               forensic_ctx = ForensicContext(
+E                   correlation_id=correlation_id,
+E                   timestamp=datetime.now(UTC).isoformat(),
+E                   execution_mode=self.execution_mode,
+E                   response_hash=self._compute_response_hash(response),
+E               )
+E       
+E               # Execute validation checks
+E               try:
+E                   # CHECK 1: Proof tree validation
+E                   proof_violation = await self._validate_proof_tree(response, forensic_ctx)
+E                   if proof_violation:
+E                       violations.append(proof_violation)
+E       
+E                   # CHECK 2: Agreement score validation
+E                   agreement_violation = await self._validate_agreement_score(response, forensic_ctx)
+E                   if agreement_violation:
+E                       violations.append(agreement_violation)
+E       
+E                   # CHECK 3: Evidence linkage validation
+E                   evidence_violation = await self._validate_evidence_linkage(response, forensic_ctx)
+E                   if evidence_violation:
+E                       violations.append(evidence_violation)
+E       
+E                   # CHECK 4: Audit trail validation
+E                   audit_violation = await self._validate_audit_trail(response, forensic_ctx)
+E                   if audit_violation:
+E                       violations.append(audit_violation)
+E       
+E                   # CHECK 5: Determinism validation
+E                   determinism_violation = await self._validate_determinism(response, forensic_ctx)
+E                   if determinism_violation:
+E                       violations.append(determinism_violation)
+E       
+E                   # CHECK 6: Contradiction detection
+E                   contradiction_violation = await self._validate_contradictions(response, forensic_ctx)
+E                   if contradiction_violation:
+E                       violations.append(contradiction_violation)
+E       
+E               except Exception as e:
+E                   log.error(f"[{correlation_id}] Validation check failed: {e}")
+E                   violations.append(
+E                       {
+E                           "type": ViolationType.SILENT_FAILURE.value,
+E                           "severity": ViolationSeverity.CRITICAL.value,
+E                           "message": f"Validation exception: {e}",
+E                           "details": {"exception": str(e)},
+E                       }
+E                   )
+E       
+E               # Compute execution time
+E               execution_time_ms = (time.perf_counter() - start_time) * 1000
+E       
+E               # Determine overall pass/fail
+E               blocking_violations = [v for v in violations if v["severity"] in [ViolationSeverity.CRITICAL.value, ViolationSeverity.HIGH.value]]
+E               passed = len(blocking_violations) == 0
+E       
+E               # Update statistics
+E               self._update_stats(passed, violations, execution_time_ms)
+E       
+E               # Store forensic context
+E               forensic_ctx.violations_detected = violations
+E               self.audit_trail.append(forensic_ctx)
+E       
+E               # ========================================================================
+E               # PROOF-CARRYING CONTRACT INJECTION
+E               # ========================================================================
+E               # If validation passed, inject proof-carrying metadata into response
+E               if passed and hasattr(response, 'fortress_validated'):
+E                   response.fortress_validated = True
+E                   response.audit_hash = forensic_ctx.response_hash
+E                   response.validation_timestamp = forensic_ctx.timestamp
+E                   response.correlation_id = correlation_id
+E       
+E                   log.debug(
+E                       f"[{correlation_id}] Proof-carrying metadata injected: "
+E                       f"hash={response.audit_hash}, timestamp={response.validation_timestamp}"
+E                   )
+E       
+E                   # Enforce the proof-carrying contract AFTER metadata is injected
+E                   if hasattr(response, "verify_proof_carrying_contract"):
+E                       response.verify_proof_carrying_contract()
+E       
+E               # Create validation result
+E               result = ValidationResult(
+E                   passed=passed,
+E                   correlation_id=correlation_id,
+E                   timestamp=forensic_ctx.timestamp,
+E                   execution_time_ms=execution_time_ms,
+E                   violations=violations,
+E                   warnings=warnings,
+E                   forensic_hash=forensic_ctx.response_hash,
+E                   metadata={
+E                       "execution_mode": self.execution_mode.value,
+E                       "strict_mode": self.strict_mode,
+E                       "checks_performed": len(forensic_ctx.validation_checks),
+E                       "proof_carrying_injected": passed,  # Track if metadata was injected
+E                   },
+E               )
+E       
+E               # Raise exception if critical violations detected and strict mode enabled
+E               if not passed and self.strict_mode:
+E                   self._raise_security_breach(violations, forensic_ctx)
+E       
+E               # Log result
+E               if passed:
+E                   log.info(f"[{correlation_id}] ✓ Fortress validation PASSED ({execution_time_ms:.2f}ms)")
+E               else:
+E                   log.error(f"[{correlation_id}] ✗ Fortress validation FAILED: {len(violations)} violations")
+E       
+E               return result
+E       
+E           async def _validate_proof_tree(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate proof_tree existence and integrity"""
+E               forensic_ctx.validation_checks.append("proof_tree")
+E       
+E               if not self.config.proof_requirements.proof_tree_required:
+E                   return None
+E       
+E               if getattr(response, 'proof_tree', None) is None:
+E                   return {
+E                       "type": ViolationType.MISSING_PROOF_TREE.value,
+E                       "severity": ViolationSeverity.CRITICAL.value,
+E                       "message": "Response missing required proof_tree",
+E                       "details": {"requirement": "proof_tree_required=true", "actual": "proof_tree=None"},
+E                   }
+E       
+E               # Validate proof depth if proof_tree exists
+E               proof_tree = getattr(response, 'proof_tree', None)
+E               if proof_tree and hasattr(proof_tree, "get_proof_depth"):
+E                   try:
+E                       depth = proof_tree.get_proof_depth()
+E                       min_depth = self.config.proof_requirements.min_proof_depth
+E       
+E                       if depth < min_depth:
+E                           return {
+E                               "type": ViolationType.MISSING_PROOF_TREE.value,
+E                               "severity": ViolationSeverity.HIGH.value,
+E                               "message": f"Proof tree depth {depth} below minimum {min_depth}",
+E                               "details": {"depth": depth, "min_depth": min_depth},
+E                           }
+E                   except Exception as e:
+E                       log.warning(f"Could not validate proof depth: {e}")
+E       
+E               return None
+E       
+E           async def _validate_agreement_score(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate agreement_score meets threshold"""
+E               forensic_ctx.validation_checks.append("agreement_score")
+E       
+E               # Extract agreement_score from metadata
+E               agreement_score = getattr(response, 'metadata', {}).get("agreement_score")
+E       
+E               if agreement_score is None:
+E                   # If no agreement_score, check if this is a single-mode response
+E                   if getattr(response, 'reasoning_mode', None) in ["SYMBOLIC", "NEURAL"]:
+E                       # Single-mode responses don't have agreement scores
+E                       return None
+E       
+E                   return {
+E                       "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+E                       "severity": ViolationSeverity.HIGH.value,
+E                       "message": "Missing agreement_score in hybrid reasoning response",
+E                       "details": {"reasoning_mode": response.reasoning_mode},
+E                   }
+E       
+E               min_score = self.config.thresholds.min_agreement_score
+E       
+E               if agreement_score < min_score:
+E                   return {
+E                       "type": ViolationType.LOW_AGREEMENT_SCORE.value,
+E                       "severity": ViolationSeverity.CRITICAL.value,
+E                       "message": f"Agreement score {agreement_score} ({agreement_score:.2%}) below threshold {min_score:.2%}",
+E                       "details": {
+E                           "agreement_score": agreement_score,
+E                           "threshold": min_score,
+E                           "gap": min_score - agreement_score,
+E                       },
+E                   }
+E       
+E               return None
+E       
+E           async def _validate_evidence_linkage(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate evidence linkage requirements"""
+E               forensic_ctx.validation_checks.append("evidence_linkage")
+E       
+E               if not self.config.hallucination_prevention.require_graph_evidence:
+E                   return None
+E       
+E               # Check if derived_facts exist (evidence of graph reasoning)
+E               derived_facts = getattr(response, 'derived_facts', [])
+E               if not derived_facts or len(derived_facts) == 0:
+E                   return {
+E                       "type": ViolationType.MISSING_EVIDENCE.value,
+E                       "severity": ViolationSeverity.HIGH.value,
+E                       "message": "No derived facts found (missing graph evidence)",
+E                       "details": {"derived_facts_count": 0},
+E                   }
+E       
+E               # HARDENING: Formal validation of derived facts
+E               converter = FOLConverter()
+E               invalid_facts = []
+E               for fact_str in derived_facts:
+E                   try:
+E                       converter.parse(fact_str)
+E                   except ParseError as e:
+E                       invalid_facts.append({"fact": fact_str, "error": str(e)})
+E       
+E               if invalid_facts:
+E                   return {
+E                       "type": ViolationType.DETERMINISM_FAILURE.value,
+E                       "severity": ViolationSeverity.CRITICAL.value,
+E                       "message": f"Formal Evidence Validation Failed: {len(invalid_facts)} invalid facts",
+E                       "details": {"invalid_facts": invalid_facts[:5]},
+E                   }
+E       
+E               return None
+E       
+E           async def _validate_audit_trail(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate audit trail completeness"""
+E               forensic_ctx.validation_checks.append("audit_trail")
+E       
+E               if not self.config.proof_requirements.audit_trail_required:
+E                   return None
+E       
+E               # Check for required metadata fields
+E               required_fields = ["reasoning_mode", "execution_time_ms"]
+E               missing_fields = []
+E               
+E               for f in required_fields:
+E                   if not hasattr(response, f) or getattr(response, f) is None:
+E                       missing_fields.append(f)
+E       
+E               if missing_fields:
+E                   return {
+E                       "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+E                       "severity": ViolationSeverity.MEDIUM.value,
+E                       "message": f"Audit trail missing required fields: {missing_fields}",
+E                       "details": {"missing_fields": missing_fields},
+E                   }
+E       
+E               return None
+E       
+E           async def _validate_determinism(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate determinism requirements"""
+E               forensic_ctx.validation_checks.append("determinism")
+E       
+E               if not self.config.hallucination_prevention.require_determinism:
+E                   return None
+E       
+E               # Check if response contains non-deterministic indicators
+E               reasoning_mode = getattr(response, 'reasoning_mode', '')
+E               proof_tree = getattr(response, 'proof_tree', None)
+E               
+E               if reasoning_mode == "NEURAL" and not proof_tree:
+E                   return {
+E                       "type": ViolationType.DETERMINISM_FAILURE.value,
+E                       "severity": ViolationSeverity.MEDIUM.value,
+E                       "message": "Neural-only response without proof tree (non-deterministic)",
+E                       "details": {"reasoning_mode": reasoning_mode},
+E                   }
+E       
+E               return None
+E       
+E           async def _validate_contradictions(
+E               self, response: Any, forensic_ctx: ForensicContext
+E           ) -> dict[str, Any] | None:
+E               """Validate contradiction detection"""
+E               forensic_ctx.validation_checks.append("contradictions")
+E       
+E               if not self.config.hallucination_prevention.reject_contradictions:
+E                   return None
+E       
+E               # Check metadata for contradiction markers
+E               metadata = getattr(response, 'metadata', {})
+E               contradictions = metadata.get("contradictions", [])
+E       
+E               if contradictions and len(contradictions) > 0:
+E                   return {
+E                       "type": ViolationType.CONTRADICTION_DETECTED.value,
+E                       "severity": ViolationSeverity.HIGH.value,
+E                       "message": f"Contradictions detected: {len(contradictions)}",
+E                       "details": {"contradictions": contradictions[:5]},  # Limit to first 5
+E                   }
+E       
+E               return None
+E       
+E           def _compute_response_hash(self, response: Any) -> str:
+E               """Compute forensic hash of response for audit trail using deterministic serialization"""
+E               import json
+E       
+E               # Build deterministic dict from response
+E               if isinstance(response, dict):
+E                   resp_dict = {
+E                       "result": str(response.get("result", "")),
+E                       "confidence": float(response.get("confidence", 0.0) or 0.0),
+E                       "reasoning_mode": str(response.get("reasoning_mode", "")),
+E                       "proof_tree": str(response.get("proof_tree", "")),
+E                       "derived_facts": [str(f) for f in response.get("derived_facts", []) or []],
+E                   }
+E               else:
+E                   resp_dict = {
+E                       "result": str(getattr(response, "result", "")),
+E                       "confidence": float(getattr(response, "confidence", 0.0) or 0.0),
+E                       "reasoning_mode": str(getattr(response, "reasoning_mode", "")),
+E                       "proof_tree": str(getattr(response, "proof_tree", "")),
+E                       "derived_facts": [str(f) for f in getattr(response, "derived_facts", []) or []],
+E                   }
+E       
+E               hash_input = json.dumps(resp_dict, sort_keys=True)
+E               return hashlib.sha256(hash_input.encode()).hexdigest()[:16]
+E       
+E           def _generate_correlation_id(self) -> str:
+E               """Generate unique correlation ID"""
+E               return f"fortress-{uuid.uuid4().hex[:12]}"
+E       
+E           def _update_stats(self, passed: bool, violations: list[dict[str, Any]], execution_time_ms: float) -> None:
+E               """Update validation statistics"""
+E               self.stats["total_validations"] += 1
+E       
+E               if passed:
+E                   self.stats["passed"] += 1
+E               else:
+E                   self.stats["failed"] += 1
+E       
+E               # Update violation counts by type
+E               for violation in violations:
+E                   vtype = violation["type"]
+E                   self.stats["violations_by_type"][vtype] = self.stats["violations_by_type"].get(vtype, 0) + 1
+E       
+E               if METRICS_AVAILABLE:
+E                   collector = get_metrics_collector()
+E                   collector.register_counter("mahoun_fortress_validation_total").inc()
+E                   if not passed:
+E                       collector.register_counter("mahoun_fortress_validation_failed_total").inc()
+E                   for violation in violations:
+E                       collector.register_counter("mahoun_security_breaches_total", labels={"type": violation["type"]}).inc()
+E       
+E               # Update average validation time
+E               total = self.stats["total_validations"]
+E               current_avg = self.stats["average_validation_time_ms"]
+E               self.stats["average_validation_time_ms"] = ((current_avg * (total - 1)) + execution_time_ms) / total
+E       
+E           def _raise_security_breach(self, violations: list[dict[str, Any]], forensic_ctx: ForensicContext) -> None:
+E               """Raise SecurityBreachException for critical violations"""
+E               critical_violations = [v for v in violations if v["severity"] == ViolationSeverity.CRITICAL.value]
+E       
+E               if not critical_violations:
+E                   return
+E       
+E               primary_violation = critical_violations[0]
+E       
+E               raise SecurityBreachException(
+E                   message=primary_violation["message"],
+E                   violation_type=ViolationType(primary_violation["type"]),
+E                   severity=ViolationSeverity.CRITICAL,
+E                   forensic_context={
+E                       "correlation_id": forensic_ctx.correlation_id,
+E                       "timestamp": forensic_ctx.timestamp,
+E                       "response_hash": forensic_ctx.response_hash,
+E                       "total_violations": len(violations),
+E                       "critical_violations": len(critical_violations),
+E                       "violations": violations,
+E                   },
+E                   correlation_id=forensic_ctx.correlation_id,
+E               )
+E       
+E           def get_stats(self) -> dict[str, Any]:
+E               """Get validation statistics"""
+E               return self.stats.copy()
+E       
+E           def get_audit_trail(self, limit: int = 100) -> list[dict[str, Any]]:
+E               """Get recent audit trail entries"""
+E               recent = self.audit_trail[-limit:]
+E               return [
+E                   {
+E                       "correlation_id": ctx.correlation_id,
+E                       "timestamp": ctx.timestamp,
+E                       "execution_mode": ctx.execution_mode.value,
+E                       "response_hash": ctx.response_hash,
+E                       "checks_performed": len(ctx.validation_checks),
+E                       "violations_count": len(ctx.violations_detected),
+E                   }
+E                   for ctx in recent
+E               ]
+E       
+E       
+E       # ============================================================================
+E       # CONVENIENCE FUNCTIONS
+E       # ============================================================================
+E       
+E       
+E       async def validate_reasoning_response(
+E           response: Any, correlation_id: str | None = None, strict_mode: bool = True
+E       ) -> ValidationResult:
+E           """
+E           Convenience function for one-off validation.
+E       
+E           Args:
+E               response: Reasoning response to validate
+E               correlation_id: Optional correlation ID
+E               strict_mode: If True, raise exceptions on violations
+E       
+E           Returns:
+E               ValidationResult
+E       
+E           Raises:
+E               SecurityBreachException: On critical violations (if strict_mode=True)
+E           """
+E           validator = FortressValidator(strict_mode=strict_mode)
+E           return await validator.validate(response, correlation_id)
+E       
+E       
+E       # ============================================================================
+E       # MODULE INITIALIZATION
+E       # ============================================================================
+E       
+E       log.info("FortressValidator module loaded: GOVERNANCE ENFORCEMENT ACTIVE")
+_________ TestEnvironmentVariableParsing.test_boolean_env_var_parsing __________
+tests/stress/test_runtime_configuration.py:305: in test_boolean_env_var_parsing
+    assert settings.graph_enabled == expected_bool, (
+E   AssertionError: MAHOUN_GRAPH_ENABLED=false should parse to False
+E   assert True == False
+E    +  where True = MahounRuntimeSettings(mode='server_full', graph_enabled=True, graph_backend='local_full', lora_training_enabled=True, lora_inference_backend='local_gpu', llm_backend='local_gpu', embedding_backend='bge-default', embedding_model_path='models/paraphrase-multilingual-mpnet-base-277M-v2-Q8_0.gguf', llm_model_path='', graph_neo4j_uri='bolt://localhost:7687', graph_neo4j_user='neo4j', graph_neo4j_password='', graph_gat_checkpoint='models/graph/gat_v1.pt', graph_mode='read_write', retrieval_mode='hybrid_graph', ollama_uri='http://localhost:11434', ollama_model='alkindivv/qwen2.5-id-legal-q4km:latest', enable_ollama=True, enable_postgres=True, enable_redis=True, enable_gaussian_process=True).graph_enabled
+_______ TestEnvironmentVariableParsing.test_string_env_var_preservation ________
+tests/stress/test_runtime_configuration.py:329: in test_string_env_var_preservation
+    assert settings.llm_backend == expected_value, (
+E   AssertionError: Backend openai not preserved correctly
+E   assert 'local_gpu' == 'openai'
+E     
+E     - openai
+E     + local_gpu
+=========================== short test summary info ============================
+FAILED tests/stress/test_dependency_direction.py::TestLayerBoundaries::test_layer_1_core_only_kernel_imports - AssertionError: fortress_validator.py violates layer boundary by importing from mahoun.reasoning
+assert 'from mahoun.reasoning' not in '"""\nMAHOUN Fortress Validator\n==========================\n\nClassification: MISSION-CRITICAL / SECURITY-ENFORCEMENT / NON-BYPASSABLE\nPurpose: Final forensic validation layer for all reasoning outputs\n\nThis module implements the Fortress Validator, a standalone wrapper that intercepts\nALL outputs from unified_reasoning_service.py and performs mandatory forensic checks\nbefore allowing responses to proceed.\n\nCore Responsibilities:\n- Enforce RedLines.yaml governance thresholds\n- Validate proof_tree existence and integrity\n- Verify agreement_score >= 0.85\n- Block responses that violate zero-hallucination guarantees\n- Generate forensic audit trails\n- Raise SecurityBreachException on violations\n\nAuthor: MahouN AEO Governance Council\nVersion: 1.0.0\nLast Updated: 2026-05-13\n"""\n\nfrom __future__ import annotations\n\nimport hashlib\nimport time\nimport uuid\nfrom dataclasses import dataclass, field\nfrom datetime import UTC, datetime\nfrom enum import Enum\nfrom pathlib import Path\nfrom typing import Any, TypeVar\n\nimport yaml\nfrom pydantic import BaseModel, ConfigDict, Field\n\n# TYPE_CHECKING for type hints only - no runtime import\nfrom typing import TYPE_CHECKING, Any, Dict, Union\n\nif TYPE_CHECKING:\n    # Type hints only - not imported at runtime\n    from mahoun.reasoning.unified_reasoning_service import ReasoningResponse\nelse:\n    # Runtime placeholder\n    ReasoningResponse = Any\n\n# These remain with fallback due to optional dependency\ntry:\n    from reasoning_logic.parser import FOLConverter, ParseError\nexcept ImportError:\n    FOLConverter = Any  # type: ignore\n    ParseError = Exception  # type: ignore\n\ntry:\n    from mahoun.core.logging_config import get_logger\nexcept ImportError:\n    import logging\n\n    def get_logger(name: str) -> logging.Logger:\n        return logging.getLogger(name)\n\ntry:\n    from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector\n    METRICS_AVAILABLE = True\nexcept ImportError:\n    METRICS_AVAILABLE = False\n\n\nlog = get_logger(__name__)\n\n# ============================================================================\n# TYPE DEFINITIONS\n# ============================================================================\n\nT = TypeVar("T")\n\n\nclass ViolationSeverity(str, Enum):\n    """Severity classification for RedLine violations"""\n\n    CRITICAL = "CRITICAL"  # Immediate block, security breach\n    HIGH = "HIGH"  # Block response, log incident\n    MEDIUM = "MEDIUM"  # Warn, allow with audit\n    LOW = "LOW"  # Log only\n\n\nclass ViolationType(str, Enum):\n    """Types of RedLine violations"""\n\n    MISSING_PROOF_TREE = "MISSING_PROOF_TREE"\n    LOW_AGREEMENT_SCORE = "LOW_AGREEMENT_SCORE"\n    MISSING_EVIDENCE = "MISSING_EVIDENCE"\n    SEMANTIC_DRIFT = "SEMANTIC_DRIFT"\n    DETERMINISM_FAILURE = "DETERMINISM_FAILURE"\n    AUDIT_TRAIL_INCOMPLETE = "AUDIT_TRAIL_INCOMPLETE"\n    CONTRADICTION_DETECTED = "CONTRADICTION_DETECTED"\n    RESOURCE_VIOLATION = "RESOURCE_VIOLATION"\n    SILENT_FAILURE = "SILENT_FAILURE"\n\n\nclass ExecutionMode(str, Enum):\n    """System execution modes"""\n\n    DESKTOP_MINIMAL = "DESKTOP_MINIMAL"\n    ENTERPRISE_FULL = "ENTERPRISE_FULL"\n\n\n# ============================================================================\n# EXCEPTIONS\n# ============================================================================\n\n\nfrom mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach\n\n\nclass SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]\n    """Legacy alias that now inherits the canonical deterministic error contract (403)."""\n    pass\n    """\n    Raised when a RedLine violation is detected.\n\n    This exception is NON-BYPASSABLE and indicates a critical\n    governance failure that must be addressed immediately.\n    """\n\n    def __init__(\n        self,\n        message: str,\n        violation_type: ViolationType,\n        severity: ViolationSeverity,\n        forensic_context: dict[str, Any],\n        correlation_id: str | None = None,\n    ):\n        self.message = message\n        self.violation_type = violation_type\n        self.severity = severity\n        self.forensic_context = forensic_context\n        self.correlation_id = correlation_id\n        self.timestamp = datetime.now(UTC).isoformat()\n\n        super().__init__(self._format_message())\n\n    def _format_message(self) -> str:\n        """Format exception message with forensic context"""\n        return (\n            f"[SECURITY BREACH] {self.severity.value}\\n"\n            f"Violation: {self.violation_type.value}\\n"\n            f"Message: {self.message}\\n"\n            f"Correlation ID: {self.correlation_id}\\n"\n            f"Timestamp: {self.timestamp}\\n"\n            f"Forensic Context: {self.forensic_context}"\n        )\n\n\n# ============================================================================\n# PYDANTIC MODELS\n# ============================================================================\n\n\nclass RedLinesConfig(BaseModel):\n    """Pydantic model for RedLines.yaml configuration"""\n\n    class ThresholdsConfig(BaseModel):\n        min_agreement_score: float = Field(ge=0.0, le=1.0)\n        min_confidence_score: float = Field(ge=0.0, le=1.0)\n        max_reasoning_time_ms: int = Field(gt=0)\n        max_recursion_depth: int = Field(gt=0)\n\n    class ProofRequirementsConfig(BaseModel):\n        proof_tree_required: bool\n        min_proof_depth: int = Field(ge=0)\n        evidence_linkage_required: bool\n        audit_trail_required: bool\n\n    class HallucinationPreventionConfig(BaseModel):\n        require_graph_evidence: bool\n        require_source_attribution: bool\n        reject_contradictions: bool\n        require_determinism: bool\n\n    class DualModeConfig(BaseModel):\n        enforce_semantic_equivalence: bool\n        allow_resource_scaling_only: bool\n        fail_on_semantic_drift: bool\n\n    class ExceptionsConfig(BaseModel):\n        violation_exception: str\n        allow_silent_failures: bool\n        require_exception_logging: bool\n        require_forensic_context: bool\n\n    thresholds: ThresholdsConfig\n    proof_requirements: ProofRequirementsConfig\n    hallucination_prevention: HallucinationPreventionConfig\n    dual_mode: DualModeConfig\n    exceptions: ExceptionsConfig\n\n\nclass ValidationResult(BaseModel):\n    """Result of fortress validation"""\n\n    passed: bool\n    correlation_id: str\n    timestamp: str\n    execution_time_ms: float\n    violations: list[dict[str, Any]] = Field(default_factory=list)\n    warnings: list[str] = Field(default_factory=list)\n    forensic_hash: str\n    metadata: dict[str, Any] = Field(default_factory=dict)\n\n    model_config = ConfigDict(frozen=False)\n\n\n# Removed redundant ReasoningResponse BaseModel definition to avoid shadowing the dataclass\n\n\n# ============================================================================\n# FORTRESS VALIDATOR CORE\n# ============================================================================\n\n\n@dataclass\nclass ForensicContext:\n    """Forensic context for audit trail"""\n\n    correlation_id: str\n    timestamp: str\n    execution_mode: ExecutionMode\n    response_hash: str\n    validation_checks: list[str] = field(default_factory=list)\n    violations_detected: list[dict[str, Any]] = field(default_factory=list)\n    metadata: dict[str, Any] = field(default_factory=dict)\n\n\nclass FortressValidator:\n    """\n    The Fortress Validator: Final governance enforcement layer.\n\n    This class intercepts ALL outputs from unified_reasoning_service.py\n    and performs mandatory forensic validation before allowing responses\n    to proceed.\n\n    Responsibilities:\n    - Load and enforce RedLines.yaml configuration\n    - Validate proof_tree existence and integrity\n    - Verify agreement_score >= threshold\n    - Check evidence linkage and audit trails\n    - Generate forensic audit records\n    - Raise SecurityBreachException on violations\n\n    Usage:\n        validator = FortressValidator()\n        validated_response = await validator.validate(\n            response=reasoning_response,\n            correlation_id="req-12345"\n        )\n    """\n\n    def __init__(\n        self,\n        config_path: Path | None = None,\n        execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,\n        strict_mode: bool = True,\n    ):\n        """\n        Initialize Fortress Validator.\n\n        Args:\n            config_path: Path to RedLines.yaml (defaults to constitution/RedLines.yaml)\n            execution_mode: Current execution mode (DESKTOP_MINIMAL or ENTERPRISE_FULL)\n            strict_mode: If True, raise exceptions on violations; if False, log only\n        """\n        self.execution_mode = execution_mode\n        self.strict_mode = strict_mode\n        self.config_path = config_path or Path(__file__).parent.parent.parent / "constitution" / "RedLines.yaml"\n\n        # Load configuration\n        self.config = self._load_config()\n\n        # Validation statistics\n        self.stats = {\n            "total_validations": 0,\n            "passed": 0,\n            "failed": 0,\n            "violations_by_type": {},\n            "average_validation_time_ms": 0.0,\n        }\n\n        # Forensic audit trail\n        self.audit_trail: list[ForensicContext] = []\n\n        log.info(\n            f"FortressValidator initialized: mode={execution_mode.value}, "\n            f"strict={strict_mode}, config={self.config_path}"\n        )\n\n    def _load_config(self) -> RedLinesConfig:\n        """Load and validate RedLines.yaml configuration"""\n        try:\n            if not self.config_path.exists():\n                log.error(f"RedLines.yaml not found at {self.config_path}")\n                raise FileNotFoundError(f"RedLines configuration missing: {self.config_path}")\n\n            with open(self.config_path) as f:\n                raw_config = yaml.safe_load(f)\n\n            config = RedLinesConfig(**raw_config)\n            log.info(f"RedLines.yaml loaded successfully: min_agreement={config.thresholds.min_agreement_score}")\n            return config\n\n        except Exception as e:\n            log.critical(f"Failed to load RedLines.yaml: {e}")\n            raise\n\n    async def validate(\n        self, response: Any, correlation_id: str | None = None\n    ) -> ValidationResult:\n        """\n        Perform comprehensive fortress validation on reasoning response.\n\n        This is the main entry point for validation. It performs all\n        mandatory checks defined in RedLines.yaml and raises\n        SecurityBreachException if critical violations are detected.\n\n        Args:\n            response: Reasoning service response to validate\n            correlation_id: Optional correlation ID for tracing\n\n        Returns:\n            ValidationResult with pass/fail status and forensic context\n\n        Raises:\n            SecurityBreachException: On critical RedLine violations\n        """\n        start_time = time.perf_counter()\n        correlation_id = correlation_id or self._generate_correlation_id()\n\n        violations: list[dict[str, Any]] = []\n        warnings: list[str] = []\n\n        # Convert dict to expected type if needed\n        if isinstance(response, dict):\n            # Use duck-typing and dynamic validation instead of direct import\n            try:\n                required_fields = ["success", "result", "confidence", "reasoning_mode", "execution_time_ms"]\n                for f in required_fields:\n                    if f not in response:\n                        raise ValueError(f"Missing required field: {f}")\n                        \n                # Convert to object-like structure for processing\n                class DynamicResponse:\n                    def __init__(self, **kwargs):\n                        for k, v in kwargs.items():\n                            setattr(self, k, v)\n                \n                response = DynamicResponse(\n                    success=response.get("success"),\n                    result=response.get("result"),\n                    confidence=response.get("confidence"),\n                    reasoning_mode=response.get("reasoning_mode"),\n                    execution_time_ms=response.get("execution_time_ms"),\n                    proof_tree=response.get("proof_tree"),\n                    explanation=response.get("explanation"),\n                    derived_facts=response.get("derived_facts", []),\n                    error=response.get("error"),\n                    metadata=response.get("metadata", {}),\n                    fortress_validated=response.get("fortress_validated", False),\n                    audit_hash=response.get("audit_hash"),\n                    validation_timestamp=response.get("validation_timestamp"),\n                    correlation_id=response.get("correlation_id"),\n                )\n            except Exception as e:\n                violations.append(\n                    {\n                        "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                        "severity": ViolationSeverity.CRITICAL.value,\n                        "message": f"Invalid response structure: {e}",\n                        "details": {"exception": str(e)},\n                    }\n                )\n\n        # Initialize forensic context\n        forensic_ctx = ForensicContext(\n            correlation_id=correlation_id,\n            timestamp=datetime.now(UTC).isoformat(),\n            execution_mode=self.execution_mode,\n            response_hash=self._compute_response_hash(response),\n        )\n\n        # Execute validation checks\n        try:\n            # CHECK 1: Proof tree validation\n            proof_violation = await self._validate_proof_tree(response, forensic_ctx)\n            if proof_violation:\n                violations.append(proof_violation)\n\n            # CHECK 2: Agreement score validation\n            agreement_violation = await self._validate_agreement_score(response, forensic_ctx)\n            if agreement_violation:\n                violations.append(agreement_violation)\n\n            # CHECK 3: Evidence linkage validation\n            evidence_violation = await self._validate_evidence_linkage(response, forensic_ctx)\n            if evidence_violation:\n                violations.append(evidence_violation)\n\n            # CHECK 4: Audit trail validation\n            audit_violation = await self._validate_audit_trail(response, forensic_ctx)\n            if audit_violation:\n                violations.append(audit_violation)\n\n            # CHECK 5: Determinism validation\n            determinism_violation = await self._validate_determinism(response, forensic_ctx)\n            if determinism_violation:\n                violations.append(determinism_violation)\n\n            # CHECK 6: Contradiction detection\n            contradiction_violation = await self._validate_contradictions(response, forensic_ctx)\n            if contradiction_violation:\n                violations.append(contradiction_violation)\n\n        except Exception as e:\n            log.error(f"[{correlation_id}] Validation check failed: {e}")\n            violations.append(\n                {\n                    "type": ViolationType.SILENT_FAILURE.value,\n                    "severity": ViolationSeverity.CRITICAL.value,\n                    "message": f"Validation exception: {e}",\n                    "details": {"exception": str(e)},\n                }\n            )\n\n        # Compute execution time\n        execution_time_ms = (time.perf_counter() - start_time) * 1000\n\n        # Determine overall pass/fail\n        blocking_violations = [v for v in violations if v["severity"] in [ViolationSeverity.CRITICAL.value, ViolationSeverity.HIGH.value]]\n        passed = len(blocking_violations) == 0\n\n        # Update statistics\n        self._update_stats(passed, violations, execution_time_ms)\n\n        # Store forensic context\n        forensic_ctx.violations_detected = violations\n        self.audit_trail.append(forensic_ctx)\n\n        # ========================================================================\n        # PROOF-CARRYING CONTRACT INJECTION\n        # ========================================================================\n        # If validation passed, inject proof-carrying metadata into response\n        if passed and hasattr(response, \'fortress_validated\'):\n            response.fortress_validated = True\n            response.audit_hash = forensic_ctx.response_hash\n            response.validation_timestamp = forensic_ctx.timestamp\n            response.correlation_id = correlation_id\n\n            log.debug(\n                f"[{correlation_id}] Proof-carrying metadata injected: "\n                f"hash={response.audit_hash}, timestamp={response.validation_timestamp}"\n            )\n\n            # Enforce the proof-carrying contract AFTER metadata is injected\n            if hasattr(response, "verify_proof_carrying_contract"):\n                response.verify_proof_carrying_contract()\n\n        # Create validation result\n        result = ValidationResult(\n            passed=passed,\n            correlation_id=correlation_id,\n            timestamp=forensic_ctx.timestamp,\n            execution_time_ms=execution_time_ms,\n            violations=violations,\n            warnings=warnings,\n            forensic_hash=forensic_ctx.response_hash,\n            metadata={\n                "execution_mode": self.execution_mode.value,\n                "strict_mode": self.strict_mode,\n                "checks_performed": len(forensic_ctx.validation_checks),\n                "proof_carrying_injected": passed,  # Track if metadata was injected\n            },\n        )\n\n        # Raise exception if critical violations detected and strict mode enabled\n        if not passed and self.strict_mode:\n            self._raise_security_breach(violations, forensic_ctx)\n\n        # Log result\n        if passed:\n            log.info(f"[{correlation_id}] ✓ Fortress validation PASSED ({execution_time_ms:.2f}ms)")\n        else:\n            log.error(f"[{correlation_id}] ✗ Fortress validation FAILED: {len(violations)} violations")\n\n        return result\n\n    async def _validate_proof_tree(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate proof_tree existence and integrity"""\n        forensic_ctx.validation_checks.append("proof_tree")\n\n        if not self.config.proof_requirements.proof_tree_required:\n            return None\n\n        if getattr(response, \'proof_tree\', None) is None:\n            return {\n                "type": ViolationType.MISSING_PROOF_TREE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": "Response missing required proof_tree",\n                "details": {"requirement": "proof_tree_required=true", "actual": "proof_tree=None"},\n            }\n\n        # Validate proof depth if proof_tree exists\n        proof_tree = getattr(response, \'proof_tree\', None)\n        if proof_tree and hasattr(proof_tree, "get_proof_depth"):\n            try:\n                depth = proof_tree.get_proof_depth()\n                min_depth = self.config.proof_requirements.min_proof_depth\n\n                if depth < min_depth:\n                    return {\n                        "type": ViolationType.MISSING_PROOF_TREE.value,\n                        "severity": ViolationSeverity.HIGH.value,\n                        "message": f"Proof tree depth {depth} below minimum {min_depth}",\n                        "details": {"depth": depth, "min_depth": min_depth},\n                    }\n            except Exception as e:\n                log.warning(f"Could not validate proof depth: {e}")\n\n        return None\n\n    async def _validate_agreement_score(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate agreement_score meets threshold"""\n        forensic_ctx.validation_checks.append("agreement_score")\n\n        # Extract agreement_score from metadata\n        agreement_score = getattr(response, \'metadata\', {}).get("agreement_score")\n\n        if agreement_score is None:\n            # If no agreement_score, check if this is a single-mode response\n            if getattr(response, \'reasoning_mode\', None) in ["SYMBOLIC", "NEURAL"]:\n                # Single-mode responses don\'t have agreement scores\n                return None\n\n            return {\n                "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": "Missing agreement_score in hybrid reasoning response",\n                "details": {"reasoning_mode": response.reasoning_mode},\n            }\n\n        min_score = self.config.thresholds.min_agreement_score\n\n        if agreement_score < min_score:\n            return {\n                "type": ViolationType.LOW_AGREEMENT_SCORE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": f"Agreement score {agreement_score} ({agreement_score:.2%}) below threshold {min_score:.2%}",\n                "details": {\n                    "agreement_score": agreement_score,\n                    "threshold": min_score,\n                    "gap": min_score - agreement_score,\n                },\n            }\n\n        return None\n\n    async def _validate_evidence_linkage(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate evidence linkage requirements"""\n        forensic_ctx.validation_checks.append("evidence_linkage")\n\n        if not self.config.hallucination_prevention.require_graph_evidence:\n            return None\n\n        # Check if derived_facts exist (evidence of graph reasoning)\n        derived_facts = getattr(response, \'derived_facts\', [])\n        if not derived_facts or len(derived_facts) == 0:\n            return {\n                "type": ViolationType.MISSING_EVIDENCE.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": "No derived facts found (missing graph evidence)",\n                "details": {"derived_facts_count": 0},\n            }\n\n        # HARDENING: Formal validation of derived facts\n        converter = FOLConverter()\n        invalid_facts = []\n        for fact_str in derived_facts:\n            try:\n                converter.parse(fact_str)\n            except ParseError as e:\n                invalid_facts.append({"fact": fact_str, "error": str(e)})\n\n        if invalid_facts:\n            return {\n                "type": ViolationType.DETERMINISM_FAILURE.value,\n                "severity": ViolationSeverity.CRITICAL.value,\n                "message": f"Formal Evidence Validation Failed: {len(invalid_facts)} invalid facts",\n                "details": {"invalid_facts": invalid_facts[:5]},\n            }\n\n        return None\n\n    async def _validate_audit_trail(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate audit trail completeness"""\n        forensic_ctx.validation_checks.append("audit_trail")\n\n        if not self.config.proof_requirements.audit_trail_required:\n            return None\n\n        # Check for required metadata fields\n        required_fields = ["reasoning_mode", "execution_time_ms"]\n        missing_fields = []\n        \n        for f in required_fields:\n            if not hasattr(response, f) or getattr(response, f) is None:\n                missing_fields.append(f)\n\n        if missing_fields:\n            return {\n                "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,\n                "severity": ViolationSeverity.MEDIUM.value,\n                "message": f"Audit trail missing required fields: {missing_fields}",\n                "details": {"missing_fields": missing_fields},\n            }\n\n        return None\n\n    async def _validate_determinism(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate determinism requirements"""\n        forensic_ctx.validation_checks.append("determinism")\n\n        if not self.config.hallucination_prevention.require_determinism:\n            return None\n\n        # Check if response contains non-deterministic indicators\n        reasoning_mode = getattr(response, \'reasoning_mode\', \'\')\n        proof_tree = getattr(response, \'proof_tree\', None)\n        \n        if reasoning_mode == "NEURAL" and not proof_tree:\n            return {\n                "type": ViolationType.DETERMINISM_FAILURE.value,\n                "severity": ViolationSeverity.MEDIUM.value,\n                "message": "Neural-only response without proof tree (non-deterministic)",\n                "details": {"reasoning_mode": reasoning_mode},\n            }\n\n        return None\n\n    async def _validate_contradictions(\n        self, response: Any, forensic_ctx: ForensicContext\n    ) -> dict[str, Any] | None:\n        """Validate contradiction detection"""\n        forensic_ctx.validation_checks.append("contradictions")\n\n        if not self.config.hallucination_prevention.reject_contradictions:\n            return None\n\n        # Check metadata for contradiction markers\n        metadata = getattr(response, \'metadata\', {})\n        contradictions = metadata.get("contradictions", [])\n\n        if contradictions and len(contradictions) > 0:\n            return {\n                "type": ViolationType.CONTRADICTION_DETECTED.value,\n                "severity": ViolationSeverity.HIGH.value,\n                "message": f"Contradictions detected: {len(contradictions)}",\n                "details": {"contradictions": contradictions[:5]},  # Limit to first 5\n            }\n\n        return None\n\n    def _compute_response_hash(self, response: Any) -> str:\n        """Compute forensic hash of response for audit trail using deterministic serialization"""\n        import json\n\n        # Build deterministic dict from response\n        if isinstance(response, dict):\n            resp_dict = {\n                "result": str(response.get("result", "")),\n                "confidence": float(response.get("confidence", 0.0) or 0.0),\n                "reasoning_mode": str(response.get("reasoning_mode", "")),\n                "proof_tree": str(response.get("proof_tree", "")),\n                "derived_facts": [str(f) for f in response.get("derived_facts", []) or []],\n            }\n        else:\n            resp_dict = {\n                "result": str(getattr(response, "result", "")),\n                "confidence": float(getattr(response, "confidence", 0.0) or 0.0),\n                "reasoning_mode": str(getattr(response, "reasoning_mode", "")),\n                "proof_tree": str(getattr(response, "proof_tree", "")),\n                "derived_facts": [str(f) for f in getattr(response, "derived_facts", []) or []],\n            }\n\n        hash_input = json.dumps(resp_dict, sort_keys=True)\n        return hashlib.sha256(hash_input.encode()).hexdigest()[:16]\n\n    def _generate_correlation_id(self) -> str:\n        """Generate unique correlation ID"""\n        return f"fortress-{uuid.uuid4().hex[:12]}"\n\n    def _update_stats(self, passed: bool, violations: list[dict[str, Any]], execution_time_ms: float) -> None:\n        """Update validation statistics"""\n        self.stats["total_validations"] += 1\n\n        if passed:\n            self.stats["passed"] += 1\n        else:\n            self.stats["failed"] += 1\n\n        # Update violation counts by type\n        for violation in violations:\n            vtype = violation["type"]\n            self.stats["violations_by_type"][vtype] = self.stats["violations_by_type"].get(vtype, 0) + 1\n\n        if METRICS_AVAILABLE:\n            collector = get_metrics_collector()\n            collector.register_counter("mahoun_fortress_validation_total").inc()\n            if not passed:\n                collector.register_counter("mahoun_fortress_validation_failed_total").inc()\n            for violation in violations:\n                collector.register_counter("mahoun_security_breaches_total", labels={"type": violation["type"]}).inc()\n\n        # Update average validation time\n        total = self.stats["total_validations"]\n        current_avg = self.stats["average_validation_time_ms"]\n        self.stats["average_validation_time_ms"] = ((current_avg * (total - 1)) + execution_time_ms) / total\n\n    def _raise_security_breach(self, violations: list[dict[str, Any]], forensic_ctx: ForensicContext) -> None:\n        """Raise SecurityBreachException for critical violations"""\n        critical_violations = [v for v in violations if v["severity"] == ViolationSeverity.CRITICAL.value]\n\n        if not critical_violations:\n            return\n\n        primary_violation = critical_violations[0]\n\n        raise SecurityBreachException(\n            message=primary_violation["message"],\n            violation_type=ViolationType(primary_violation["type"]),\n            severity=ViolationSeverity.CRITICAL,\n            forensic_context={\n                "correlation_id": forensic_ctx.correlation_id,\n                "timestamp": forensic_ctx.timestamp,\n                "response_hash": forensic_ctx.response_hash,\n                "total_violations": len(violations),\n                "critical_violations": len(critical_violations),\n                "violations": violations,\n            },\n            correlation_id=forensic_ctx.correlation_id,\n        )\n\n    def get_stats(self) -> dict[str, Any]:\n        """Get validation statistics"""\n        return self.stats.copy()\n\n    def get_audit_trail(self, limit: int = 100) -> list[dict[str, Any]]:\n        """Get recent audit trail entries"""\n        recent = self.audit_trail[-limit:]\n        return [\n            {\n                "correlation_id": ctx.correlation_id,\n                "timestamp": ctx.timestamp,\n                "execution_mode": ctx.execution_mode.value,\n                "response_hash": ctx.response_hash,\n                "checks_performed": len(ctx.validation_checks),\n                "violations_count": len(ctx.violations_detected),\n            }\n            for ctx in recent\n        ]\n\n\n# ============================================================================\n# CONVENIENCE FUNCTIONS\n# ============================================================================\n\n\nasync def validate_reasoning_response(\n    response: Any, correlation_id: str | None = None, strict_mode: bool = True\n) -> ValidationResult:\n    """\n    Convenience function for one-off validation.\n\n    Args:\n        response: Reasoning response to validate\n        correlation_id: Optional correlation ID\n        strict_mode: If True, raise exceptions on violations\n\n    Returns:\n        ValidationResult\n\n    Raises:\n        SecurityBreachException: On critical violations (if strict_mode=True)\n    """\n    validator = FortressValidator(strict_mode=strict_mode)\n    return await validator.validate(response, correlation_id)\n\n\n# ============================================================================\n# MODULE INITIALIZATION\n# ============================================================================\n\nlog.info("FortressValidator module loaded: GOVERNANCE ENFORCEMENT ACTIVE")\n'
+  
+  'from mahoun.reasoning' is contained here:
+    """
+    MAHOUN Fortress Validator
+    ==========================
+    
+    Classification: MISSION-CRITICAL / SECURITY-ENFORCEMENT / NON-BYPASSABLE
+    Purpose: Final forensic validation layer for all reasoning outputs
+    
+    This module implements the Fortress Validator, a standalone wrapper that intercepts
+    ALL outputs from unified_reasoning_service.py and performs mandatory forensic checks
+    before allowing responses to proceed.
+    
+    Core Responsibilities:
+    - Enforce RedLines.yaml governance thresholds
+    - Validate proof_tree existence and integrity
+    - Verify agreement_score >= 0.85
+    - Block responses that violate zero-hallucination guarantees
+    - Generate forensic audit trails
+    - Raise SecurityBreachException on violations
+    
+    Author: MahouN AEO Governance Council
+    Version: 1.0.0
+    Last Updated: 2026-05-13
+    """
+    
+    from __future__ import annotations
+    
+    import hashlib
+    import time
+    import uuid
+    from dataclasses import dataclass, field
+    from datetime import UTC, datetime
+    from enum import Enum
+    from pathlib import Path
+    from typing import Any, TypeVar
+    
+    import yaml
+    from pydantic import BaseModel, ConfigDict, Field
+    
+    # TYPE_CHECKING for type hints only - no runtime import
+    from typing import TYPE_CHECKING, Any, Dict, Union
+    
+    if TYPE_CHECKING:
+        # Type hints only - not imported at runtime
+        from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
+  ?     +++++++++++++++++++++
+    else:
+        # Runtime placeholder
+        ReasoningResponse = Any
+    
+    # These remain with fallback due to optional dependency
+    try:
+        from reasoning_logic.parser import FOLConverter, ParseError
+    except ImportError:
+        FOLConverter = Any  # type: ignore
+        ParseError = Exception  # type: ignore
+    
+    try:
+        from mahoun.core.logging_config import get_logger
+    except ImportError:
+        import logging
+    
+        def get_logger(name: str) -> logging.Logger:
+            return logging.getLogger(name)
+    
+    try:
+        from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector
+        METRICS_AVAILABLE = True
+    except ImportError:
+        METRICS_AVAILABLE = False
+    
+    
+    log = get_logger(__name__)
+    
+    # ============================================================================
+    # TYPE DEFINITIONS
+    # ============================================================================
+    
+    T = TypeVar("T")
+    
+    
+    class ViolationSeverity(str, Enum):
+        """Severity classification for RedLine violations"""
+    
+        CRITICAL = "CRITICAL"  # Immediate block, security breach
+        HIGH = "HIGH"  # Block response, log incident
+        MEDIUM = "MEDIUM"  # Warn, allow with audit
+        LOW = "LOW"  # Log only
+    
+    
+    class ViolationType(str, Enum):
+        """Types of RedLine violations"""
+    
+        MISSING_PROOF_TREE = "MISSING_PROOF_TREE"
+        LOW_AGREEMENT_SCORE = "LOW_AGREEMENT_SCORE"
+        MISSING_EVIDENCE = "MISSING_EVIDENCE"
+        SEMANTIC_DRIFT = "SEMANTIC_DRIFT"
+        DETERMINISM_FAILURE = "DETERMINISM_FAILURE"
+        AUDIT_TRAIL_INCOMPLETE = "AUDIT_TRAIL_INCOMPLETE"
+        CONTRADICTION_DETECTED = "CONTRADICTION_DETECTED"
+        RESOURCE_VIOLATION = "RESOURCE_VIOLATION"
+        SILENT_FAILURE = "SILENT_FAILURE"
+    
+    
+    class ExecutionMode(str, Enum):
+        """System execution modes"""
+    
+        DESKTOP_MINIMAL = "DESKTOP_MINIMAL"
+        ENTERPRISE_FULL = "ENTERPRISE_FULL"
+    
+    
+    # ============================================================================
+    # EXCEPTIONS
+    # ============================================================================
+    
+    
+    from mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
+    
+    
+    class SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]
+        """Legacy alias that now inherits the canonical deterministic error contract (403)."""
+        pass
+        """
+        Raised when a RedLine violation is detected.
+    
+        This exception is NON-BYPASSABLE and indicates a critical
+        governance failure that must be addressed immediately.
+        """
+    
+        def __init__(
+            self,
+            message: str,
+            violation_type: ViolationType,
+            severity: ViolationSeverity,
+            forensic_context: dict[str, Any],
+            correlation_id: str | None = None,
+        ):
+            self.message = message
+            self.violation_type = violation_type
+            self.severity = severity
+            self.forensic_context = forensic_context
+            self.correlation_id = correlation_id
+            self.timestamp = datetime.now(UTC).isoformat()
+    
+            super().__init__(self._format_message())
+    
+        def _format_message(self) -> str:
+            """Format exception message with forensic context"""
+            return (
+                f"[SECURITY BREACH] {self.severity.value}\n"
+                f"Violation: {self.violation_type.value}\n"
+                f"Message: {self.message}\n"
+                f"Correlation ID: {self.correlation_id}\n"
+                f"Timestamp: {self.timestamp}\n"
+                f"Forensic Context: {self.forensic_context}"
+            )
+    
+    
+    # ============================================================================
+    # PYDANTIC MODELS
+    # ============================================================================
+    
+    
+    class RedLinesConfig(BaseModel):
+        """Pydantic model for RedLines.yaml configuration"""
+    
+        class ThresholdsConfig(BaseModel):
+            min_agreement_score: float = Field(ge=0.0, le=1.0)
+            min_confidence_score: float = Field(ge=0.0, le=1.0)
+            max_reasoning_time_ms: int = Field(gt=0)
+            max_recursion_depth: int = Field(gt=0)
+    
+        class ProofRequirementsConfig(BaseModel):
+            proof_tree_required: bool
+            min_proof_depth: int = Field(ge=0)
+            evidence_linkage_required: bool
+            audit_trail_required: bool
+    
+        class HallucinationPreventionConfig(BaseModel):
+            require_graph_evidence: bool
+            require_source_attribution: bool
+            reject_contradictions: bool
+            require_determinism: bool
+    
+        class DualModeConfig(BaseModel):
+            enforce_semantic_equivalence: bool
+            allow_resource_scaling_only: bool
+            fail_on_semantic_drift: bool
+    
+        class ExceptionsConfig(BaseModel):
+            violation_exception: str
+            allow_silent_failures: bool
+            require_exception_logging: bool
+            require_forensic_context: bool
+    
+        thresholds: ThresholdsConfig
+        proof_requirements: ProofRequirementsConfig
+        hallucination_prevention: HallucinationPreventionConfig
+        dual_mode: DualModeConfig
+        exceptions: ExceptionsConfig
+    
+    
+    class ValidationResult(BaseModel):
+        """Result of fortress validation"""
+    
+        passed: bool
+        correlation_id: str
+        timestamp: str
+        execution_time_ms: float
+        violations: list[dict[str, Any]] = Field(default_factory=list)
+        warnings: list[str] = Field(default_factory=list)
+        forensic_hash: str
+        metadata: dict[str, Any] = Field(default_factory=dict)
+    
+        model_config = ConfigDict(frozen=False)
+    
+    
+    # Removed redundant ReasoningResponse BaseModel definition to avoid shadowing the dataclass
+    
+    
+    # ============================================================================
+    # FORTRESS VALIDATOR CORE
+    # ============================================================================
+    
+    
+    @dataclass
+    class ForensicContext:
+        """Forensic context for audit trail"""
+    
+        correlation_id: str
+        timestamp: str
+        execution_mode: ExecutionMode
+        response_hash: str
+        validation_checks: list[str] = field(default_factory=list)
+        violations_detected: list[dict[str, Any]] = field(default_factory=list)
+        metadata: dict[str, Any] = field(default_factory=dict)
+    
+    
+    class FortressValidator:
+        """
+        The Fortress Validator: Final governance enforcement layer.
+    
+        This class intercepts ALL outputs from unified_reasoning_service.py
+        and performs mandatory forensic validation before allowing responses
+        to proceed.
+    
+        Responsibilities:
+        - Load and enforce RedLines.yaml configuration
+        - Validate proof_tree existence and integrity
+        - Verify agreement_score >= threshold
+        - Check evidence linkage and audit trails
+        - Generate forensic audit records
+        - Raise SecurityBreachException on violations
+    
+        Usage:
+            validator = FortressValidator()
+            validated_response = await validator.validate(
+                response=reasoning_response,
+                correlation_id="req-12345"
+            )
+        """
+    
+        def __init__(
+            self,
+            config_path: Path | None = None,
+            execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,
+            strict_mode: bool = True,
+        ):
+            """
+            Initialize Fortress Validator.
+    
+            Args:
+                config_path: Path to RedLines.yaml (defaults to constitution/RedLines.yaml)
+                execution_mode: Current execution mode (DESKTOP_MINIMAL or ENTERPRISE_FULL)
+                strict_mode: If True, raise exceptions on violations; if False, log only
+            """
+            self.execution_mode = execution_mode
+            self.strict_mode = strict_mode
+            self.config_path = config_path or Path(__file__).parent.parent.parent / "constitution" / "RedLines.yaml"
+    
+            # Load configuration
+            self.config = self._load_config()
+    
+            # Validation statistics
+            self.stats = {
+                "total_validations": 0,
+                "passed": 0,
+                "failed": 0,
+                "violations_by_type": {},
+                "average_validation_time_ms": 0.0,
+            }
+    
+            # Forensic audit trail
+            self.audit_trail: list[ForensicContext] = []
+    
+            log.info(
+                f"FortressValidator initialized: mode={execution_mode.value}, "
+                f"strict={strict_mode}, config={self.config_path}"
+            )
+    
+        def _load_config(self) -> RedLinesConfig:
+            """Load and validate RedLines.yaml configuration"""
+            try:
+                if not self.config_path.exists():
+                    log.error(f"RedLines.yaml not found at {self.config_path}")
+                    raise FileNotFoundError(f"RedLines configuration missing: {self.config_path}")
+    
+                with open(self.config_path) as f:
+                    raw_config = yaml.safe_load(f)
+    
+                config = RedLinesConfig(**raw_config)
+                log.info(f"RedLines.yaml loaded successfully: min_agreement={config.thresholds.min_agreement_score}")
+                return config
+    
+            except Exception as e:
+                log.critical(f"Failed to load RedLines.yaml: {e}")
+                raise
+    
+        async def validate(
+            self, response: Any, correlation_id: str | None = None
+        ) -> ValidationResult:
+            """
+            Perform comprehensive fortress validation on reasoning response.
+    
+            This is the main entry point for validation. It performs all
+            mandatory checks defined in RedLines.yaml and raises
+            SecurityBreachException if critical violations are detected.
+    
+            Args:
+                response: Reasoning service response to validate
+                correlation_id: Optional correlation ID for tracing
+    
+            Returns:
+                ValidationResult with pass/fail status and forensic context
+    
+            Raises:
+                SecurityBreachException: On critical RedLine violations
+            """
+            start_time = time.perf_counter()
+            correlation_id = correlation_id or self._generate_correlation_id()
+    
+            violations: list[dict[str, Any]] = []
+            warnings: list[str] = []
+    
+            # Convert dict to expected type if needed
+            if isinstance(response, dict):
+                # Use duck-typing and dynamic validation instead of direct import
+                try:
+                    required_fields = ["success", "result", "confidence", "reasoning_mode", "execution_time_ms"]
+                    for f in required_fields:
+                        if f not in response:
+                            raise ValueError(f"Missing required field: {f}")
+                            
+                    # Convert to object-like structure for processing
+                    class DynamicResponse:
+                        def __init__(self, **kwargs):
+                            for k, v in kwargs.items():
+                                setattr(self, k, v)
+                    
+                    response = DynamicResponse(
+                        success=response.get("success"),
+                        result=response.get("result"),
+                        confidence=response.get("confidence"),
+                        reasoning_mode=response.get("reasoning_mode"),
+                        execution_time_ms=response.get("execution_time_ms"),
+                        proof_tree=response.get("proof_tree"),
+                        explanation=response.get("explanation"),
+                        derived_facts=response.get("derived_facts", []),
+                        error=response.get("error"),
+                        metadata=response.get("metadata", {}),
+                        fortress_validated=response.get("fortress_validated", False),
+                        audit_hash=response.get("audit_hash"),
+                        validation_timestamp=response.get("validation_timestamp"),
+                        correlation_id=response.get("correlation_id"),
+                    )
+                except Exception as e:
+                    violations.append(
+                        {
+                            "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+                            "severity": ViolationSeverity.CRITICAL.value,
+                            "message": f"Invalid response structure: {e}",
+                            "details": {"exception": str(e)},
+                        }
+                    )
+    
+            # Initialize forensic context
+            forensic_ctx = ForensicContext(
+                correlation_id=correlation_id,
+                timestamp=datetime.now(UTC).isoformat(),
+                execution_mode=self.execution_mode,
+                response_hash=self._compute_response_hash(response),
+            )
+    
+            # Execute validation checks
+            try:
+                # CHECK 1: Proof tree validation
+                proof_violation = await self._validate_proof_tree(response, forensic_ctx)
+                if proof_violation:
+                    violations.append(proof_violation)
+    
+                # CHECK 2: Agreement score validation
+                agreement_violation = await self._validate_agreement_score(response, forensic_ctx)
+                if agreement_violation:
+                    violations.append(agreement_violation)
+    
+                # CHECK 3: Evidence linkage validation
+                evidence_violation = await self._validate_evidence_linkage(response, forensic_ctx)
+                if evidence_violation:
+                    violations.append(evidence_violation)
+    
+                # CHECK 4: Audit trail validation
+                audit_violation = await self._validate_audit_trail(response, forensic_ctx)
+                if audit_violation:
+                    violations.append(audit_violation)
+    
+                # CHECK 5: Determinism validation
+                determinism_violation = await self._validate_determinism(response, forensic_ctx)
+                if determinism_violation:
+                    violations.append(determinism_violation)
+    
+                # CHECK 6: Contradiction detection
+                contradiction_violation = await self._validate_contradictions(response, forensic_ctx)
+                if contradiction_violation:
+                    violations.append(contradiction_violation)
+    
+            except Exception as e:
+                log.error(f"[{correlation_id}] Validation check failed: {e}")
+                violations.append(
+                    {
+                        "type": ViolationType.SILENT_FAILURE.value,
+                        "severity": ViolationSeverity.CRITICAL.value,
+                        "message": f"Validation exception: {e}",
+                        "details": {"exception": str(e)},
+                    }
+                )
+    
+            # Compute execution time
+            execution_time_ms = (time.perf_counter() - start_time) * 1000
+    
+            # Determine overall pass/fail
+            blocking_violations = [v for v in violations if v["severity"] in [ViolationSeverity.CRITICAL.value, ViolationSeverity.HIGH.value]]
+            passed = len(blocking_violations) == 0
+    
+            # Update statistics
+            self._update_stats(passed, violations, execution_time_ms)
+    
+            # Store forensic context
+            forensic_ctx.violations_detected = violations
+            self.audit_trail.append(forensic_ctx)
+    
+            # ========================================================================
+            # PROOF-CARRYING CONTRACT INJECTION
+            # ========================================================================
+            # If validation passed, inject proof-carrying metadata into response
+            if passed and hasattr(response, 'fortress_validated'):
+                response.fortress_validated = True
+                response.audit_hash = forensic_ctx.response_hash
+                response.validation_timestamp = forensic_ctx.timestamp
+                response.correlation_id = correlation_id
+    
+                log.debug(
+                    f"[{correlation_id}] Proof-carrying metadata injected: "
+                    f"hash={response.audit_hash}, timestamp={response.validation_timestamp}"
+                )
+    
+                # Enforce the proof-carrying contract AFTER metadata is injected
+                if hasattr(response, "verify_proof_carrying_contract"):
+                    response.verify_proof_carrying_contract()
+    
+            # Create validation result
+            result = ValidationResult(
+                passed=passed,
+                correlation_id=correlation_id,
+                timestamp=forensic_ctx.timestamp,
+                execution_time_ms=execution_time_ms,
+                violations=violations,
+                warnings=warnings,
+                forensic_hash=forensic_ctx.response_hash,
+                metadata={
+                    "execution_mode": self.execution_mode.value,
+                    "strict_mode": self.strict_mode,
+                    "checks_performed": len(forensic_ctx.validation_checks),
+                    "proof_carrying_injected": passed,  # Track if metadata was injected
+                },
+            )
+    
+            # Raise exception if critical violations detected and strict mode enabled
+            if not passed and self.strict_mode:
+                self._raise_security_breach(violations, forensic_ctx)
+    
+            # Log result
+            if passed:
+                log.info(f"[{correlation_id}] ✓ Fortress validation PASSED ({execution_time_ms:.2f}ms)")
+            else:
+                log.error(f"[{correlation_id}] ✗ Fortress validation FAILED: {len(violations)} violations")
+    
+            return result
+    
+        async def _validate_proof_tree(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate proof_tree existence and integrity"""
+            forensic_ctx.validation_checks.append("proof_tree")
+    
+            if not self.config.proof_requirements.proof_tree_required:
+                return None
+    
+            if getattr(response, 'proof_tree', None) is None:
+                return {
+                    "type": ViolationType.MISSING_PROOF_TREE.value,
+                    "severity": ViolationSeverity.CRITICAL.value,
+                    "message": "Response missing required proof_tree",
+                    "details": {"requirement": "proof_tree_required=true", "actual": "proof_tree=None"},
+                }
+    
+            # Validate proof depth if proof_tree exists
+            proof_tree = getattr(response, 'proof_tree', None)
+            if proof_tree and hasattr(proof_tree, "get_proof_depth"):
+                try:
+                    depth = proof_tree.get_proof_depth()
+                    min_depth = self.config.proof_requirements.min_proof_depth
+    
+                    if depth < min_depth:
+                        return {
+                            "type": ViolationType.MISSING_PROOF_TREE.value,
+                            "severity": ViolationSeverity.HIGH.value,
+                            "message": f"Proof tree depth {depth} below minimum {min_depth}",
+                            "details": {"depth": depth, "min_depth": min_depth},
+                        }
+                except Exception as e:
+                    log.warning(f"Could not validate proof depth: {e}")
+    
+            return None
+    
+        async def _validate_agreement_score(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate agreement_score meets threshold"""
+            forensic_ctx.validation_checks.append("agreement_score")
+    
+            # Extract agreement_score from metadata
+            agreement_score = getattr(response, 'metadata', {}).get("agreement_score")
+    
+            if agreement_score is None:
+                # If no agreement_score, check if this is a single-mode response
+                if getattr(response, 'reasoning_mode', None) in ["SYMBOLIC", "NEURAL"]:
+                    # Single-mode responses don't have agreement scores
+                    return None
+    
+                return {
+                    "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+                    "severity": ViolationSeverity.HIGH.value,
+                    "message": "Missing agreement_score in hybrid reasoning response",
+                    "details": {"reasoning_mode": response.reasoning_mode},
+                }
+    
+            min_score = self.config.thresholds.min_agreement_score
+    
+            if agreement_score < min_score:
+                return {
+                    "type": ViolationType.LOW_AGREEMENT_SCORE.value,
+                    "severity": ViolationSeverity.CRITICAL.value,
+                    "message": f"Agreement score {agreement_score} ({agreement_score:.2%}) below threshold {min_score:.2%}",
+                    "details": {
+                        "agreement_score": agreement_score,
+                        "threshold": min_score,
+                        "gap": min_score - agreement_score,
+                    },
+                }
+    
+            return None
+    
+        async def _validate_evidence_linkage(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate evidence linkage requirements"""
+            forensic_ctx.validation_checks.append("evidence_linkage")
+    
+            if not self.config.hallucination_prevention.require_graph_evidence:
+                return None
+    
+            # Check if derived_facts exist (evidence of graph reasoning)
+            derived_facts = getattr(response, 'derived_facts', [])
+            if not derived_facts or len(derived_facts) == 0:
+                return {
+                    "type": ViolationType.MISSING_EVIDENCE.value,
+                    "severity": ViolationSeverity.HIGH.value,
+                    "message": "No derived facts found (missing graph evidence)",
+                    "details": {"derived_facts_count": 0},
+                }
+    
+            # HARDENING: Formal validation of derived facts
+            converter = FOLConverter()
+            invalid_facts = []
+            for fact_str in derived_facts:
+                try:
+                    converter.parse(fact_str)
+                except ParseError as e:
+                    invalid_facts.append({"fact": fact_str, "error": str(e)})
+    
+            if invalid_facts:
+                return {
+                    "type": ViolationType.DETERMINISM_FAILURE.value,
+                    "severity": ViolationSeverity.CRITICAL.value,
+                    "message": f"Formal Evidence Validation Failed: {len(invalid_facts)} invalid facts",
+                    "details": {"invalid_facts": invalid_facts[:5]},
+                }
+    
+            return None
+    
+        async def _validate_audit_trail(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate audit trail completeness"""
+            forensic_ctx.validation_checks.append("audit_trail")
+    
+            if not self.config.proof_requirements.audit_trail_required:
+                return None
+    
+            # Check for required metadata fields
+            required_fields = ["reasoning_mode", "execution_time_ms"]
+            missing_fields = []
+            
+            for f in required_fields:
+                if not hasattr(response, f) or getattr(response, f) is None:
+                    missing_fields.append(f)
+    
+            if missing_fields:
+                return {
+                    "type": ViolationType.AUDIT_TRAIL_INCOMPLETE.value,
+                    "severity": ViolationSeverity.MEDIUM.value,
+                    "message": f"Audit trail missing required fields: {missing_fields}",
+                    "details": {"missing_fields": missing_fields},
+                }
+    
+            return None
+    
+        async def _validate_determinism(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate determinism requirements"""
+            forensic_ctx.validation_checks.append("determinism")
+    
+            if not self.config.hallucination_prevention.require_determinism:
+                return None
+    
+            # Check if response contains non-deterministic indicators
+            reasoning_mode = getattr(response, 'reasoning_mode', '')
+            proof_tree = getattr(response, 'proof_tree', None)
+            
+            if reasoning_mode == "NEURAL" and not proof_tree:
+                return {
+                    "type": ViolationType.DETERMINISM_FAILURE.value,
+                    "severity": ViolationSeverity.MEDIUM.value,
+                    "message": "Neural-only response without proof tree (non-deterministic)",
+                    "details": {"reasoning_mode": reasoning_mode},
+                }
+    
+            return None
+    
+        async def _validate_contradictions(
+            self, response: Any, forensic_ctx: ForensicContext
+        ) -> dict[str, Any] | None:
+            """Validate contradiction detection"""
+            forensic_ctx.validation_checks.append("contradictions")
+    
+            if not self.config.hallucination_prevention.reject_contradictions:
+                return None
+    
+            # Check metadata for contradiction markers
+            metadata = getattr(response, 'metadata', {})
+            contradictions = metadata.get("contradictions", [])
+    
+            if contradictions and len(contradictions) > 0:
+                return {
+                    "type": ViolationType.CONTRADICTION_DETECTED.value,
+                    "severity": ViolationSeverity.HIGH.value,
+                    "message": f"Contradictions detected: {len(contradictions)}",
+                    "details": {"contradictions": contradictions[:5]},  # Limit to first 5
+                }
+    
+            return None
+    
+        def _compute_response_hash(self, response: Any) -> str:
+            """Compute forensic hash of response for audit trail using deterministic serialization"""
+            import json
+    
+            # Build deterministic dict from response
+            if isinstance(response, dict):
+                resp_dict = {
+                    "result": str(response.get("result", "")),
+                    "confidence": float(response.get("confidence", 0.0) or 0.0),
+                    "reasoning_mode": str(response.get("reasoning_mode", "")),
+                    "proof_tree": str(response.get("proof_tree", "")),
+                    "derived_facts": [str(f) for f in response.get("derived_facts", []) or []],
+                }
+            else:
+                resp_dict = {
+                    "result": str(getattr(response, "result", "")),
+                    "confidence": float(getattr(response, "confidence", 0.0) or 0.0),
+                    "reasoning_mode": str(getattr(response, "reasoning_mode", "")),
+                    "proof_tree": str(getattr(response, "proof_tree", "")),
+                    "derived_facts": [str(f) for f in getattr(response, "derived_facts", []) or []],
+                }
+    
+            hash_input = json.dumps(resp_dict, sort_keys=True)
+            return hashlib.sha256(hash_input.encode()).hexdigest()[:16]
+    
+        def _generate_correlation_id(self) -> str:
+            """Generate unique correlation ID"""
+            return f"fortress-{uuid.uuid4().hex[:12]}"
+    
+        def _update_stats(self, passed: bool, violations: list[dict[str, Any]], execution_time_ms: float) -> None:
+            """Update validation statistics"""
+            self.stats["total_validations"] += 1
+    
+            if passed:
+                self.stats["passed"] += 1
+            else:
+                self.stats["failed"] += 1
+    
+            # Update violation counts by type
+            for violation in violations:
+                vtype = violation["type"]
+                self.stats["violations_by_type"][vtype] = self.stats["violations_by_type"].get(vtype, 0) + 1
+    
+            if METRICS_AVAILABLE:
+                collector = get_metrics_collector()
+                collector.register_counter("mahoun_fortress_validation_total").inc()
+                if not passed:
+                    collector.register_counter("mahoun_fortress_validation_failed_total").inc()
+                for violation in violations:
+                    collector.register_counter("mahoun_security_breaches_total", labels={"type": violation["type"]}).inc()
+    
+            # Update average validation time
+            total = self.stats["total_validations"]
+            current_avg = self.stats["average_validation_time_ms"]
+            self.stats["average_validation_time_ms"] = ((current_avg * (total - 1)) + execution_time_ms) / total
+    
+        def _raise_security_breach(self, violations: list[dict[str, Any]], forensic_ctx: ForensicContext) -> None:
+            """Raise SecurityBreachException for critical violations"""
+            critical_violations = [v for v in violations if v["severity"] == ViolationSeverity.CRITICAL.value]
+    
+            if not critical_violations:
+                return
+    
+            primary_violation = critical_violations[0]
+    
+            raise SecurityBreachException(
+                message=primary_violation["message"],
+                violation_type=ViolationType(primary_violation["type"]),
+                severity=ViolationSeverity.CRITICAL,
+                forensic_context={
+                    "correlation_id": forensic_ctx.correlation_id,
+                    "timestamp": forensic_ctx.timestamp,
+                    "response_hash": forensic_ctx.response_hash,
+                    "total_violations": len(violations),
+                    "critical_violations": len(critical_violations),
+                    "violations": violations,
+                },
+                correlation_id=forensic_ctx.correlation_id,
+            )
+    
+        def get_stats(self) -> dict[str, Any]:
+            """Get validation statistics"""
+            return self.stats.copy()
+    
+        def get_audit_trail(self, limit: int = 100) -> list[dict[str, Any]]:
+            """Get recent audit trail entries"""
+            recent = self.audit_trail[-limit:]
+            return [
+                {
+                    "correlation_id": ctx.correlation_id,
+                    "timestamp": ctx.timestamp,
+                    "execution_mode": ctx.execution_mode.value,
+                    "response_hash": ctx.response_hash,
+                    "checks_performed": len(ctx.validation_checks),
+                    "violations_count": len(ctx.violations_detected),
+                }
+                for ctx in recent
+            ]
+    
+    
+    # ============================================================================
+    # CONVENIENCE FUNCTIONS
+    # ============================================================================
+    
+    
+    async def validate_reasoning_response(
+        response: Any, correlation_id: str | None = None, strict_mode: bool = True
+    ) -> ValidationResult:
+        """
+        Convenience function for one-off validation.
+    
+        Args:
+            response: Reasoning response to validate
+            correlation_id: Optional correlation ID
+            strict_mode: If True, raise exceptions on violations
+    
+        Returns:
+            ValidationResult
+    
+        Raises:
+            SecurityBreachException: On critical violations (if strict_mode=True)
+        """
+        validator = FortressValidator(strict_mode=strict_mode)
+        return await validator.validate(response, correlation_id)
+    
+    
+    # ============================================================================
+    # MODULE INITIALIZATION
+    # ============================================================================
+    
+    log.info("FortressValidator module loaded: GOVERNANCE ENFORCEMENT ACTIVE")
+FAILED tests/stress/test_runtime_configuration.py::TestEnvironmentVariableParsing::test_boolean_env_var_parsing - AssertionError: MAHOUN_GRAPH_ENABLED=false should parse to False
+assert True == False
+ +  where True = MahounRuntimeSettings(mode='server_full', graph_enabled=True, graph_backend='local_full', lora_training_enabled=True, lora_inference_backend='local_gpu', llm_backend='local_gpu', embedding_backend='bge-default', embedding_model_path='models/paraphrase-multilingual-mpnet-base-277M-v2-Q8_0.gguf', llm_model_path='', graph_neo4j_uri='bolt://localhost:7687', graph_neo4j_user='neo4j', graph_neo4j_password='', graph_gat_checkpoint='models/graph/gat_v1.pt', graph_mode='read_write', retrieval_mode='hybrid_graph', ollama_uri='http://localhost:11434', ollama_model='alkindivv/qwen2.5-id-legal-q4km:latest', enable_ollama=True, enable_postgres=True, enable_redis=True, enable_gaussian_process=True).graph_enabled
+FAILED tests/stress/test_runtime_configuration.py::TestEnvironmentVariableParsing::test_string_env_var_preservation - AssertionError: Backend openai not preserved correctly
+assert 'local_gpu' == 'openai'
+  
+  - openai
+  + local_gpu
+=================== 3 failed, 37 passed, 1 skipped in 0.72s ====================

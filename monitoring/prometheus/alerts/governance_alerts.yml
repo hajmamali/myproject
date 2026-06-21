@@ -1,0 +1,54 @@
+groups:
+  - name: governance_monitoring_alerts
+    interval: 15s
+    rules:
+      # Critical Security Alerts
+      - alert: GovernanceBypassAttemptDetected
+        expr: rate(mahoun_governance_bypass_attempts_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: governance_kernel
+        annotations:
+          summary: "CRITICAL: Governance bypass attempt detected!"
+          description: "An attempt to bypass the Fortress Validator or Governance Lock has been detected at a rate of {{ $value }} per minute. Immediate security review required."
+
+      - alert: FortressValidationFailureHigh
+        expr: rate(mahoun_fortress_validation_failed_total[5m]) / rate(mahoun_fortress_validation_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: fortress_validator
+        annotations:
+          summary: "High failure rate in Fortress validations"
+          description: "Over 5% of reasoning responses are failing Fortress validation (Current: {{ $value | humanizePercentage }}). This indicates a potential hallucination spike or RedLines violation."
+
+      - alert: MissingGovernanceContext
+        expr: rate(mahoun_governance_missing_context_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: high
+          component: reasoning_service
+        annotations:
+          summary: "Reasoning execution outside Governance Context"
+          description: "Detected reasoning execution attempts without an active GovernanceContextManager at a rate of {{ $value }} per minute."
+
+      - alert: ProofTreeViolationSpike
+        expr: rate(mahoun_security_breaches_total{type="MISSING_PROOF_TREE"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+          component: governance_kernel
+        annotations:
+          summary: "Spike in missing proof trees"
+          description: "More than 5 responses per minute are missing proof trees. Enforcement mechanisms may be blocking outputs."
+
+      - alert: AgreementScoreThresholdBreach
+        expr: rate(mahoun_security_breaches_total{type="LOW_AGREEMENT_SCORE"}[5m]) > 2
+        for: 5m
+        labels:
+          severity: high
+          component: governance_kernel
+        annotations:
+          summary: "Frequent agreement score failures"
+          description: "Multiple reasoning outputs are failing the 0.85 agreement score threshold between symbolic and neural modes."

@@ -1,0 +1,88 @@
+{
+  "$schema": "./runtime.schema.json",
+  "_comment": "Runtime configuration for Mahoun Platform. All paths use environment variables with relative defaults.",
+  
+  "environment": {
+    "mode": "${MAHOUN_ENV:-dev}",
+    "debug": "${MAHOUN_DEBUG:-false}",
+    "guard_mode": "${MAHOUN_GUARD_MODE:-STRICT}"
+  },
+  
+  "features": {
+    "graph_enabled": "${MAHOUN_ENABLE_GRAPH:-true}",
+    "rag_enabled": "${MAHOUN_ENABLE_RAG:-true}",
+    "self_improvement_enabled": "${MAHOUN_ENABLE_SELF_IMPROVEMENT:-false}",
+    "lora_enabled": false
+  },
+  
+  "llm": {
+    "provider": "${MAHOUN_LLM_PROVIDER:-local}",
+    "model_dir": "${MAHOUN_MODEL_DIR:-./models}",
+    "default_model": "${MAHOUN_LLM_DEFAULT_MODEL:-}",
+    "timeout": "${MAHOUN_LLM_TIMEOUT:-30}",
+    "max_retries": "${MAHOUN_LLM_MAX_RETRIES:-3}",
+    "max_tokens": 2048,
+    "temperature": 0.4,
+    "use_gpu": "${MAHOUN_USE_GPU:-false}",
+    "gpu_memory_fraction": 0.8
+  },
+  
+  "retrieval": {
+    "use_bm25": true,
+    "use_dense": true,
+    "use_graph": "${MAHOUN_ENABLE_GRAPH:-true}",
+    "top_k": 10,
+    "fusion_method": "rrf"
+  },
+  
+  "reasoning": {
+    "enable_quality_assessment": true,
+    "enable_analytics": true,
+    "enable_real_time_updates": true,
+    "batch_size": 1000
+  },
+  
+  "storage": {
+    "data_dir": "${MAHOUN_DATA_DIR:-./data}",
+    "output_dir": "${MAHOUN_OUTPUT_DIR:-./output}",
+    "cache_dir": "${MAHOUN_CACHE_DIR:-./.cache}"
+  },
+  
+  "ledger": {
+    "backend": "${MAHOUN_LEDGER_BACKEND:-jsonl}",
+    "dir": "${MAHOUN_LEDGER_DIR:-./data/ledger}"
+  },
+  
+  "knowledge_graph": {
+    "storage_dir": "${MAHOUN_KNOWLEDGE_GRAPH_DIR:-./data/knowledge_graph}"
+  },
+  
+  "database": {
+    "neo4j": {
+      "uri": "${MAHOUN_NEO4J_URI:-}",
+      "user": "${MAHOUN_NEO4J_USER:-neo4j}"
+    },
+    "redis": {
+      "url": "${MAHOUN_REDIS_URL:-}"
+    },
+    "postgres": {
+      "url": "${MAHOUN_POSTGRES_URL:-}"
+    }
+  },
+  
+  "api": {
+    "host": "${MAHOUN_API_HOST:-0.0.0.0}",
+    "port": "${MAHOUN_API_PORT:-8000}",
+    "workers": "${MAHOUN_API_WORKERS:-1}",
+    "cors_origins": "${MAHOUN_CORS_ORIGINS:-*}",
+    "rate_limit_per_minute": "${MAHOUN_RATE_LIMIT:-100}"
+  },
+  
+  "observability": {
+    "log_level": "${MAHOUN_LOG_LEVEL:-INFO}",
+    "log_format": "${MAHOUN_LOG_FORMAT:-json}",
+    "enable_tracing": "${MAHOUN_ENABLE_TRACING:-false}",
+    "enable_metrics": "${MAHOUN_ENABLE_METRICS:-false}",
+    "trace_sample_rate": "${MAHOUN_TRACE_SAMPLE_RATE:-0.1}"
+  }
+}

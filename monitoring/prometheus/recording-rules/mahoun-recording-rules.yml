@@ -1,0 +1,302 @@
+# ============================================================================
+# MAHOUN Recording Rules - Pre-aggregated Metrics
+# ============================================================================
+# Purpose: Optimize query performance through pre-computed aggregations
+# Benefits: Faster dashboard queries, reduced CPU usage
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # API PERFORMANCE METRICS
+  # ==========================================================================
+  - name: api_performance_recording
+    interval: 30s
+    rules:
+      # Request rate by endpoint
+      - record: mahoun:api:request_rate:5m
+        expr: |
+          sum by (endpoint, method, status) (
+            rate(http_requests_total{job="api-server"}[5m])
+          )
+
+      # P95 latency by endpoint
+      - record: mahoun:api:latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (endpoint, le) (
+              rate(http_request_duration_seconds_bucket{job="api-server"}[5m])
+            )
+          )
+
+      # P99 latency by endpoint
+      - record: mahoun:api:latency_p99:5m
+        expr: |
+          histogram_quantile(0.99,
+            sum by (endpoint, le) (
+              rate(http_request_duration_seconds_bucket{job="api-server"}[5m])
+            )
+          )
+
+      # Error rate
+      - record: mahoun:api:error_rate:5m
+        expr: |
+          sum by (endpoint) (
+            rate(http_requests_total{job="api-server",status=~"5.."}[5m])
+          ) /
+          sum by (endpoint) (
+            rate(http_requests_total{job="api-server"}[5m])
+          )
+
+      # Availability (non-5xx responses)
+      - record: mahoun:api:availability:5m
+        expr: |
+          1 - (
+            sum(rate(http_requests_total{job="api-server",status=~"5.."}[5m])) /
+            sum(rate(http_requests_total{job="api-server"}[5m]))
+          )
+
+  # ==========================================================================
+  # GOVERNANCE KERNEL METRICS
+  # ==========================================================================
+  - name: governance_recording
+    interval: 30s
+    rules:
+      # Validation success rate
+      - record: mahoun:governance:validation_success_rate:5m
+        expr: |
+          (
+            sum(rate(mahoun_governance_validation_success_total[5m])) /
+            sum(rate(mahoun_governance_validation_total[5m]))
+          )
+
+      # Validation latency P95
+      - record: mahoun:governance:validation_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            rate(mahoun_governance_validation_duration_seconds_bucket[5m])
+          )
+
+      # Policy enforcement rate
+      - record: mahoun:governance:policy_enforcement_rate:5m
+        expr: |
+          sum(rate(mahoun_governance_policy_enforced_total[5m]))
+
+      # Fortress validator checks
+      - record: mahoun:governance:fortress_check_rate:5m
+        expr: |
+          sum by (check_type) (
+            rate(mahoun_fortress_validator_checks_total[5m])
+          )
+
+  # ==========================================================================
+  # NEO4J DATABASE METRICS
+  # ==========================================================================
+  - name: neo4j_recording
+    interval: 60s
+    rules:
+      # Query throughput
+      - record: mahoun:neo4j:query_rate:5m
+        expr: |
+          sum(rate(neo4j_cypher_query_total[5m]))
+
+      # Transaction rate
+      - record: mahoun:neo4j:transaction_rate:5m
+        expr: |
+          sum(rate(neo4j_transaction_started_total[5m]))
+
+      # Memory utilization
+      - record: mahoun:neo4j:memory_utilization
+        expr: |
+          (neo4j_database_heap_used_bytes / neo4j_database_heap_max_bytes)
+
+      # Active connections
+      - record: mahoun:neo4j:connections_active
+        expr: neo4j_bolt_connections_running
+
+      # P95 query latency
+      - record: mahoun:neo4j:query_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            rate(neo4j_cypher_query_execution_latency_milliseconds_bucket[5m])
+          )
+
+  # ==========================================================================
+  # POSTGRESQL METRICS
+  # ==========================================================================
+  - name: postgresql_recording
+    interval: 60s
+    rules:
+      # Query throughput
+      - record: mahoun:postgres:query_rate:5m
+        expr: |
+          sum(rate(pg_stat_database_xact_commit[5m])) +
+          sum(rate(pg_stat_database_xact_rollback[5m]))
+
+      # Connection utilization
+      - record: mahoun:postgres:connection_utilization
+        expr: |
+          sum(pg_stat_database_numbackends) /
+          max(pg_settings_max_connections)
+
+      # Cache hit ratio
+      - record: mahoun:postgres:cache_hit_ratio:5m
+        expr: |
+          sum(rate(pg_stat_database_blks_hit[5m])) /
+          (
+            sum(rate(pg_stat_database_blks_hit[5m])) +
+            sum(rate(pg_stat_database_blks_read[5m]))
+          )
+
+      # Deadlocks rate
+      - record: mahoun:postgres:deadlocks_rate:5m
+        expr: |
+          sum(rate(pg_stat_database_deadlocks[5m]))
+
+  # ==========================================================================
+  # REDIS CACHE METRICS
+  # ==========================================================================
+  - name: redis_recording
+    interval: 30s
+    rules:
+      # Command throughput
+      - record: mahoun:redis:ops_rate:5m
+        expr: |
+          sum(rate(redis_commands_processed_total[5m]))
+
+      # Memory utilization
+      - record: mahoun:redis:memory_utilization
+        expr: |
+          (redis_memory_used_bytes / redis_memory_max_bytes)
+
+      # Cache hit ratio
+      - record: mahoun:redis:hit_ratio:5m
+        expr: |
+          sum(rate(redis_keyspace_hits_total[5m])) /
+          (
+            sum(rate(redis_keyspace_hits_total[5m])) +
+            sum(rate(redis_keyspace_misses_total[5m]))
+          )
+
+      # Eviction rate
+      - record: mahoun:redis:eviction_rate:5m
+        expr: |
+          sum(rate(redis_evicted_keys_total[5m]))
+
+  # ==========================================================================
+  # CHROMADB VECTOR DATABASE METRICS
+  # ==========================================================================
+  - name: chromadb_recording
+    interval: 60s
+    rules:
+      # Query rate
+      - record: mahoun:chromadb:query_rate:5m
+        expr: |
+          sum(rate(chromadb_queries_total[5m]))
+
+      # Collection growth rate
+      - record: mahoun:chromadb:growth_rate:1h
+        expr: |
+          sum(rate(chromadb_collection_items_total[1h]))
+
+      # Query latency P95
+      - record: mahoun:chromadb:query_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            rate(chromadb_query_latency_seconds_bucket[5m])
+          )
+
+  # ==========================================================================
+  # INFRASTRUCTURE METRICS
+  # ==========================================================================
+  - name: infrastructure_recording
+    interval: 60s
+    rules:
+      # Overall CPU usage
+      - record: mahoun:infrastructure:cpu_usage
+        expr: |
+          100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      # Overall memory usage
+      - record: mahoun:infrastructure:memory_usage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+      # Overall disk usage
+      - record: mahoun:infrastructure:disk_usage
+        expr: |
+          100 - (
+            (node_filesystem_avail_bytes{mountpoint="/"} /
+             node_filesystem_size_bytes{mountpoint="/"}) * 100
+          )
+
+      # Container count
+      - record: mahoun:infrastructure:container_count
+        expr: |
+          count(container_last_seen{name!=""})
+
+      # Network throughput (bytes/sec)
+      - record: mahoun:infrastructure:network_throughput:5m
+        expr: |
+          sum(rate(node_network_receive_bytes_total[5m])) +
+          sum(rate(node_network_transmit_bytes_total[5m]))
+
+  # ==========================================================================
+  # SLO / SLI METRICS
+  # ==========================================================================
+  - name: slo_recording
+    interval: 30s
+    rules:
+      # API availability SLI (target: 99.9%)
+      - record: mahoun:sli:api_availability:30d
+        expr: |
+          1 - (
+            sum(rate(http_requests_total{job="api-server",status=~"5.."}[30d])) /
+            sum(rate(http_requests_total{job="api-server"}[30d]))
+          )
+
+      # API latency SLI (target: P95 < 2s)
+      - record: mahoun:sli:api_latency_p95:30d
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="api-server"}[30d]))
+          )
+
+      # Governance validation success SLI (target: 99.5%)
+      - record: mahoun:sli:governance_success:30d
+        expr: |
+          sum(rate(mahoun_governance_validation_success_total[30d])) /
+          sum(rate(mahoun_governance_validation_total[30d]))
+
+      # Database availability SLI (target: 99.99%)
+      - record: mahoun:sli:database_availability:30d
+        expr: |
+          (
+            sum(up{job=~"neo4j|postgresql|redis|chromadb"}[30d]) /
+            count(up{job=~"neo4j|postgresql|redis|chromadb"}[30d])
+          )
+
+  # ==========================================================================
+  # BUSINESS METRICS
+  # ==========================================================================
+  - name: business_recording
+    interval: 300s  # 5 minutes
+    rules:
+      # Total reasoning requests
+      - record: mahoun:business:reasoning_requests:1h
+        expr: |
+          sum(increase(mahoun_reasoning_requests_total[1h]))
+
+      # Average daily active users (based on unique API keys)
+      - record: mahoun:business:daily_active_users
+        expr: |
+          count(count_over_time(http_requests_total{job="api-server"}[24h]) by (api_key))
+
+      # Total graph nodes
+      - record: mahoun:business:graph_nodes_total
+        expr: |
+          sum(neo4j_database_store_nodes)
+
+      # Total vector embeddings
+      - record: mahoun:business:embeddings_total
+        expr: |
+          sum(chromadb_collection_items_total)
