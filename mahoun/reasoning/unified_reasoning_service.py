@@ -987,7 +987,22 @@ class UnifiedReasoningService:
                 )
 
             except Exception as validation_error:
+                # ============================================================================
+                # P1-1: FAIL-CLOSED GUARDRAIL HANDLING
+                # ============================================================================
                 # Validation system failure - FAIL-SAFE: reject neural output
+                # 
+                # CRITICAL GOVERNANCE RULE:
+                # If any guardrail component (ContradictionDetector, NLI verifier, etc.)
+                # fails during validation, the system MUST fail-closed:
+                # - Neural output is REJECTED (never falls back to unvalidated output)
+                # - Error is logged with full forensic context
+                # - Response returns success=False with explicit error message
+                # - No silent degradation or bypass allowed
+                #
+                # This ensures zero-hallucination guarantee is maintained even under
+                # partial system failures.
+                # ============================================================================
                 logger.error(
                     "NEURAL VALIDATION: Validation system failure - rejecting neural output (fail-safe)",
                     extra={
@@ -995,6 +1010,7 @@ class UnifiedReasoningService:
                         "neural_output_preview": neural_output[:200],
                         "fail_safe_behavior": "reject_neural_output",
                         "security_violation": True,
+                        "p1_1_enforcement": "fail_closed_guaranteed",
                     },
                     exc_info=True,
                 )

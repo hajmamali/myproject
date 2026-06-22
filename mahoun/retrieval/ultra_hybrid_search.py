@@ -19,10 +19,13 @@ Features:
 - Cache integration
 """
 
+import logging
 import numpy as np
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter
+
+logger = logging.getLogger(__name__)
 from enum import Enum
 import time
 from mahoun.retrieval.graph_hop import GraphHopRetriever, HopResult

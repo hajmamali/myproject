@@ -469,6 +469,10 @@ def reset_environment() -> None:
         _ENVIRONMENT_LOCKED = False
 
 
+# Alias for test clarity
+_clear_environment_cache = reset_environment
+
+
 @contextmanager
 def temporary_environment(env: str):
     """

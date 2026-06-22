@@ -610,16 +610,24 @@ class UltraGraphBuilder:
         
         print(f"📁 Graph exported to {filepath}")
     
-    def export_to_neo4j(self, neo4j_adapter) -> bool:
+    def export_to_neo4j(self, connection: 'Neo4jConnection') -> bool:
         """
         Export graph to Neo4j database
         
         Args:
-            neo4j_adapter: Initialized Neo4jAdapter instance
+            connection: Initialized Neo4jConnection instance
             
         Returns:
             True if export successful, False otherwise
         """
+        from mahoun.graph.neo4j.connection import Neo4jConnection
+        import uuid
+        
+        if not isinstance(connection, Neo4jConnection):
+            raise TypeError(
+                f"connection must be Neo4jConnection instance, got {type(connection).__name__}"
+            )
+
         try:
             print("📤 Exporting graph to Neo4j...")
             
@@ -631,10 +639,10 @@ class UltraGraphBuilder:
                         n.type = $node_type,
                         n.confidence = $confidence,
                         n.quality_score = $quality_score
+                    WITH n
+                    CALL apoc.create.setProperties(n, $props_map) YIELD node
+                    RETURN node
                 """
-                # Add properties dynamically
-                for key, value in node.properties.items():
-                    create_node_query += f", n.{key} = ${key}"
                 
                 # Prepare parameters
                 params = {
@@ -643,10 +651,16 @@ class UltraGraphBuilder:
                     "node_type": node.node_type,
                     "confidence": node.confidence,
                     "quality_score": node.quality_score,
-                    **node.properties
+                    "props_map": node.properties
                 }
                 
-                neo4j_adapter._execute_query(create_node_query, params)
+                correlation_id = str(uuid.uuid4())
+                with connection.governed_session(
+                    correlation_id=correlation_id,
+                    actor_id="ultra-graph-builder",
+                    operation_type="export_node"
+                ) as session:
+                    session.run(create_node_query, params)
             
             # Create relationships
             for edge in self.edges:
@@ -656,10 +670,10 @@ class UltraGraphBuilder:
                     SET r.weight = $weight,
                         r.confidence = $confidence,
                         r.quality_score = $quality_score
+                    WITH r
+                    CALL apoc.create.setRelProperties(r, $props_map) YIELD rel
+                    RETURN rel
                 """
-                # Add properties dynamically
-                for key, value in edge.properties.items():
-                    create_edge_query += f", r.{key} = ${key}"
                 
                 # Prepare parameters
                 params = {
@@ -669,10 +683,16 @@ class UltraGraphBuilder:
                     "weight": edge.weight,
                     "confidence": edge.confidence,
                     "quality_score": edge.quality_score,
-                    **edge.properties
+                    "props_map": edge.properties
                 }
                 
-                neo4j_adapter._execute_query(create_edge_query, params)
+                correlation_id = str(uuid.uuid4())
+                with connection.governed_session(
+                    correlation_id=correlation_id,
+                    actor_id="ultra-graph-builder",
+                    operation_type="export_edge"
+                ) as session:
+                    session.run(create_edge_query, params)
             
             print(f"   ✅ Exported {len(self.nodes)} nodes and {len(self.edges)} relationships to Neo4j")
             return True

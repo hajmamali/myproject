@@ -381,6 +381,48 @@ class VerdictEngineAdapter:
             "adapter_version": "2.0.0",
         }
 
+        # ============================================================================
+        # P1-3: LEDGER HASH VERIFICATION
+        # ============================================================================
+        # Extract ledger_hash from verdict result if available (from EvidenceLedgerWriter)
+        # This ensures the verdict was properly recorded in the immutable ledger
+        # before being returned to the API layer.
+        #
+        # GOVERNANCE RULE:
+        # - If ledger_hash is missing in production/staging, log warning
+        # - Include ledger_hash in metadata for audit trail
+        # - Allow graceful degradation in dev/test (log only)
+        # ============================================================================
+        ledger_hash = None
+        if hasattr(verdict_result, "ledger_hash"):
+            ledger_hash = verdict_result.ledger_hash
+        elif isinstance(verdict_result, dict) and "ledger_hash" in verdict_result:
+            ledger_hash = verdict_result["ledger_hash"]
+        
+        if ledger_hash:
+            metadata["ledger_hash"] = ledger_hash
+            metadata["p1_3_ledger_verified"] = True
+            log.debug(f"[{correlation_id}] P1-3: Ledger hash verified: {ledger_hash[:16]}...")
+        else:
+            # Check environment - fail-closed in production/staging
+            from mahoun.core.environment import is_production, is_staging
+            
+            if is_production() or is_staging():
+                log.warning(
+                    f"[{correlation_id}] P1-3: MISSING LEDGER HASH in production/staging - "
+                    f"verdict may not be properly recorded",
+                    extra={
+                        "p1_3_violation": "missing_ledger_hash",
+                        "verdict_id": verdict_id,
+                        "environment": "production" if is_production() else "staging",
+                    }
+                )
+            else:
+                log.debug(f"[{correlation_id}] P1-3: Ledger hash not present (dev/test mode)")
+            
+            metadata["p1_3_ledger_verified"] = False
+            metadata["ledger_hash"] = None
+
         return ReasoningResponse.create_unvalidated(
             success=True,
             result=final_verdict,

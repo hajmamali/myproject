@@ -64,7 +64,7 @@ class MockReasoningService:
         self.call_count += 1
 
         if self.valid_response:
-            return ReasoningResponse(
+            return ReasoningResponse.create_unvalidated(
                 success=True,
                 result="Tax exemption applies",
                 confidence=0.92,
@@ -75,7 +75,7 @@ class MockReasoningService:
                 metadata={"agreement_score": 0.89},
             )
         else:
-            return ReasoningResponse(
+            return ReasoningResponse.create_unvalidated(
                 success=True,
                 result="Invalid result",
                 confidence=0.50,

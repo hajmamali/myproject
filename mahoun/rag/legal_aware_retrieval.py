@@ -134,9 +134,19 @@ class LegalAwareRetrievalService:
         
         # Apply default legal filter if none provided
         if legal_filter is None:
-            legal_filter = LegalQueryFilter(
-                exclude_repealed=True,
-                min_authority_score=0.0
+            from mahoun.core.governance.violations import (
+                MissingExecutionPolicyError,
+                GovernanceViolation,
+                ViolationCategory,
+                ViolationSeverity,
+            )
+            raise MissingExecutionPolicyError(
+                GovernanceViolation(
+                    category=ViolationCategory.BYPASS_ATTEMPT,
+                    severity=ViolationSeverity.CRITICAL,
+                    message="Retrieval must never resolve policy internally. Policy must be injected.",
+                    source="LegalAwareRetrievalService"
+                )
             )
         
         # Retrieve base results with higher top_k for filtering

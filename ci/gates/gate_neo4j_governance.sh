@@ -79,11 +79,45 @@ if [ -n "$SYNC_VIOLATIONS" ]; then
 fi
 
 # Check for raw session() usage outside governed paths
-echo "🚫 Checking raw session() usage..."
-RAW_SESSION_VIOLATIONS=$(grep -rn "\.session()" --include="*.py" . | grep -v "governed_session" | grep -v "test" || true)
+echo "🚫 Checking raw session() usage outside governed paths..."
+RAW_SESSION_VIOLATIONS=$(grep -rn "\.session()" --include="*.py" . \
+    | grep -v "governed_session" \
+    | grep -v "test_" \
+    | grep -v "/tests/" \
+    | grep -v "\.pyc" \
+    || true)
 if [ -n "$RAW_SESSION_VIOLATIONS" ]; then
-    echo -e "${YELLOW}⚠️  Raw session() usage detected (review required):${NC}"
-    echo "$RAW_SESSION_VIOLATIONS" | head -10  # Show first 10 only
+    echo -e "${RED}❌ CRITICAL: Raw .session() usage outside governed paths:${NC}"
+    echo "$RAW_SESSION_VIOLATIONS"
+    ((VIOLATIONS++))
+fi
+
+# Check for neo4j.Session direct usage
+echo "🚫 Checking neo4j.Session direct instantiation..."
+NEO4J_SESSION_VIOLATIONS=$(grep -rn "neo4j\.Session\b\|from neo4j import.*Session" --include="*.py" . \
+    | grep -v "governed_session" \
+    | grep -v "test_" \
+    | grep -v "/tests/" \
+    | grep -v "GovernedNeo4jSession" \
+    | grep -v "\.pyc" \
+    || true)
+if [ -n "$NEO4J_SESSION_VIOLATIONS" ]; then
+    echo -e "${RED}❌ CRITICAL: Direct neo4j.Session usage found:${NC}"
+    echo "$NEO4J_SESSION_VIOLATIONS"
+    ((VIOLATIONS++))
+fi
+
+# Check for tx.run( outside governed paths
+echo "🚫 Checking tx.run() usage..."
+TX_RUN_VIOLATIONS=$(grep -rn "tx\.run(" --include="*.py" . \
+    | grep -v "test_" \
+    | grep -v "/tests/" \
+    | grep -v "\.pyc" \
+    || true)
+if [ -n "$TX_RUN_VIOLATIONS" ]; then
+    echo -e "${RED}❌ CRITICAL: Direct tx.run() usage found:${NC}"
+    echo "$TX_RUN_VIOLATIONS"
+    ((VIOLATIONS++))
 fi
 
 # Check for mutation Cypher outside governed context

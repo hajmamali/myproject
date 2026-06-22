@@ -126,8 +126,7 @@ class EntityLinker:
     def __init__(
         self,
         enable_normalization: bool = True,
-        enable_deduplication: bool = True,
-        neo4j_adapter=None
+        enable_deduplication: bool = True
     ):
         """
         Initialize Entity Linker.
@@ -135,12 +134,10 @@ class EntityLinker:
         Args:
             enable_normalization: Normalize entity values before linking
             enable_deduplication: Remove duplicate nodes
-            neo4j_adapter: Optional Neo4j adapter for direct graph updates
         """
         self.settings = get_runtime_settings()
         self.enable_normalization = enable_normalization
         self.enable_deduplication = enable_deduplication
-        self.neo4j_adapter = neo4j_adapter
         
         # Statistics
         self.stats = {
@@ -705,7 +702,8 @@ class EntityLinker:
     def submit_to_neo4j(
         self,
         nodes: List[GraphNodeSpec],
-        edges: List[GraphEdgeSpec]
+        edges: List[GraphEdgeSpec],
+        connection: 'Neo4jConnection'
     ) -> bool:
         """
         Submit nodes and edges directly to Neo4j.
@@ -713,14 +711,18 @@ class EntityLinker:
         Args:
             nodes: List of node specifications
             edges: List of edge specifications
+            connection: Initialized Neo4jConnection instance
         
         Returns:
             True if successful
         """
-        if not self.neo4j_adapter:
-            logger.warning("No Neo4j adapter configured for direct submission")
-            return False
+        from mahoun.graph.neo4j.connection import Neo4jConnection
         
+        if not isinstance(connection, Neo4jConnection):
+            raise TypeError(
+                f"connection must be Neo4jConnection instance, got {type(connection).__name__}"
+            )
+            
         if should_skip_graph():
             logger.debug("EntityLinker: Skipping Neo4j submission in desktop-minimal mode")
             return True
@@ -728,11 +730,11 @@ class EntityLinker:
         try:
             # Create nodes using MERGE
             for node in nodes:
-                self._merge_node(node)
+                self._merge_node(node, connection)
             
             # Create edges
             for edge in edges:
-                self._create_edge(edge)
+                self._create_edge(edge, connection)
             
             logger.info(f"Submitted {len(nodes)} nodes and {len(edges)} edges to Neo4j")
             return True
@@ -741,34 +743,68 @@ class EntityLinker:
             logger.error(f"Neo4j submission failed: {e}")
             return False
     
-    def _merge_node(self, node: GraphNodeSpec):
+    def _merge_node(self, node: GraphNodeSpec, connection: 'Neo4jConnection'):
         """Merge a single node into Neo4j"""
-        if not self.neo4j_adapter:
+        if not connection:
             return
+            
+        # Validate label to prevent Cypher injection
+        ALLOWED_LABELS = {"Case", "Person", "Organization", "Court", "LawArticle", "Topic"}
+        if node.label not in ALLOWED_LABELS:
+            raise ValueError(f"Invalid node label: {node.label}")
         
-        # Build MERGE query
-        props_str = ", ".join([f"n.{k} = ${k}" for k in node.properties.keys()])
+        # Build MERGE query using APOC for properties
         query = f"""
             MERGE (n:{node.label} {{node_id: $node_id}})
-            SET {props_str}
+            WITH n
+            CALL apoc.create.setProperties(n, $props_map) YIELD node
+            RETURN node
         """
         
-        params = {"node_id": node.node_id, **node.properties}
-        self.neo4j_adapter._execute_query(query, params)
+        params = {"node_id": node.node_id, "props_map": node.properties}
+        
+        import uuid
+        correlation_id = str(uuid.uuid4())
+        with connection.governed_session(
+            correlation_id=correlation_id,
+            actor_id="entity-linker",
+            operation_type="entity_merge_node"
+        ) as session:
+            session.run(query, params)
     
-    def _create_edge(self, edge: GraphEdgeSpec):
+    def _create_edge(self, edge: GraphEdgeSpec, connection: 'Neo4jConnection'):
         """Create an edge in Neo4j"""
-        if not self.neo4j_adapter:
+        if not connection:
             return
+            
+        # Validate labels and relationship type to prevent Cypher injection
+        ALLOWED_LABELS = {"Case", "Person", "Organization", "Court", "LawArticle", "Topic"}
+        ALLOWED_REL_TYPES = {"PARTY_IN", "REFERS_TO", "HANDLED_BY", "ABOUT"}
+        
+        if edge.from_label not in ALLOWED_LABELS or edge.to_label not in ALLOWED_LABELS:
+            raise ValueError(f"Invalid node label: {edge.from_label} or {edge.to_label}")
+        if edge.relationship_type not in ALLOWED_REL_TYPES:
+            raise ValueError(f"Invalid relationship type: {edge.relationship_type}")
         
         query = f"""
             MATCH (a:{edge.from_label} {{node_id: $from_id}})
             MATCH (b:{edge.to_label} {{node_id: $to_id}})
             MERGE (a)-[r:{edge.relationship_type}]->(b)
+            WITH r
+            CALL apoc.create.setRelProperties(r, $props_map) YIELD rel
+            RETURN rel
         """
         
-        params = {"from_id": edge.from_id, "to_id": edge.to_id}
-        self.neo4j_adapter._execute_query(query, params)
+        params = {"from_id": edge.from_id, "to_id": edge.to_id, "props_map": edge.properties}
+        
+        import uuid
+        correlation_id = str(uuid.uuid4())
+        with self.connection.governed_session(
+            correlation_id=correlation_id,
+            actor_id="entity-linker",
+            operation_type="entity_create_edge"
+        ) as session:
+            session.run(query, params)
 
 
 # ============================================================================
@@ -855,17 +891,17 @@ def link_and_submit(
         entities: NER output
         case_id: Case identifier
         case_metadata: Optional case metadata
-        neo4j_adapter: Optional Neo4j adapter for direct submission
+        neo4j_adapter: Optional Neo4j adapter for direct submission (must be Neo4jConnection)
     
     Returns:
         LinkingResult with statistics
     """
-    linker = EntityLinker(neo4j_adapter=neo4j_adapter)
+    linker = EntityLinker()
     result = linker.link_with_result(entities, case_id, case_metadata)
     
     if neo4j_adapter and result.success:
         nodes, edges = linker.link(entities, case_id, case_metadata)
-        linker.submit_to_neo4j(nodes, edges)
+        linker.submit_to_neo4j(nodes, edges, connection=neo4j_adapter)
     
     return result
 

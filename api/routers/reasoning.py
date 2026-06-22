@@ -221,7 +221,35 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
         graph_builder = UltraGraphBuilder()
         knowledge_graph = LegalKnowledgeGraph()
         immutable_ledger = get_immutable_ledger()
-        ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
+        
+        # P0-4: Create LedgerWriteGate for governance enforcement
+        from mahoun.ledger.write_gate import LedgerWriteGate
+        from mahoun.core.environment import is_production, is_staging
+        
+        # Base ledger writer
+        base_ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
+        
+        # Wrap with write gate for strict enforcement in production/staging
+        if is_production() or is_staging():
+            write_gate = LedgerWriteGate(
+                ledger_writer=base_ledger_writer,
+                enable_strict_mode=True,
+            )
+            ledger_writer = EvidenceLedgerWriter(
+                blockchain=immutable_ledger,
+                write_gate=write_gate,
+            )
+            log.info(
+                "P0-4: LedgerWriteGate enforcement ENABLED for verdict engine",
+                extra={"environment": "production" if is_production() else "staging"}
+            )
+        else:
+            # Development/test: use base writer without gate (but log warning)
+            ledger_writer = base_ledger_writer
+            log.warning(
+                "P0-4: LedgerWriteGate NOT enabled in development/test mode. "
+                "Governance enforcement will be skipped."
+            )
 
         _verdict_engine = EvidenceLinkedVerdictEngine(
             graph_builder=graph_builder,

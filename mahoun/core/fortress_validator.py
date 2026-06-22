@@ -43,11 +43,16 @@ except ImportError:
 
 # TYPE_CHECKING for type hints only - no runtime import
 if TYPE_CHECKING:
-    # Type hints only - not imported at runtime
-    ReasoningResponse = Any
-else:
-    # Runtime placeholder
-    ReasoningResponse = Any
+    from typing import Any as ReasoningResponse
+
+def __getattr__(name: str) -> Any:
+    if name == "ReasoningResponse":
+        try:
+            from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
+            return ReasoningResponse
+        except ImportError:
+            return Any
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # These remain with fallback due to optional dependency
 try:

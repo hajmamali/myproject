@@ -285,41 +285,53 @@ _redis_client: Optional[any] = None
 
 
 async def get_redis_client():
-    """Get or create Redis client"""
+    """Get or create Redis client, wired from central settings."""
     global _redis_client
-    
+
     if _redis_client is None:
         try:
             import redis.asyncio as redis
             from mahoun.core.runtime_config import get_runtime_settings
-            
-            settings = get_runtime_settings()
-            
-            # Check if Redis is enabled
-            if not settings.enable_redis:
+            from mahoun.core.settings import get_settings
+
+            runtime = get_runtime_settings()
+
+            # Check if Redis is enabled via runtime config
+            if not getattr(runtime, "enable_redis", False):
                 logger.warning("Redis is disabled, distributed locks unavailable")
                 return None
-            
-            # Create Redis client
-            _redis_client = redis.Redis(
-                host=os.getenv("REDIS_HOST", "localhost"),
-                port=int(os.getenv("REDIS_PORT", "6379")),
-                db=int(os.getenv("REDIS_DB", "0")),
-                password=os.getenv("REDIS_PASSWORD"),
-                decode_responses=False,  # We handle encoding
-            )
-            
+
+            settings = get_settings()
+            redis_url = getattr(settings, "REDIS_URL", None)
+            redis_password = getattr(settings, "REDIS_PASSWORD", None) or None
+
+            if redis_url:
+                _redis_client = redis.from_url(
+                    redis_url,
+                    password=redis_password,
+                    decode_responses=False,
+                )
+            else:
+                # Fallback: construct from individual settings fields
+                _redis_client = redis.Redis(
+                    host=getattr(settings, "REDIS_HOST", "localhost"),
+                    port=int(getattr(settings, "REDIS_PORT", 6379)),
+                    db=int(getattr(settings, "REDIS_DB", 0)),
+                    password=redis_password,
+                    decode_responses=False,
+                )
+
             # Test connection
             await _redis_client.ping()
             logger.info("Redis client initialized")
-            
+
         except ImportError:
             logger.error("redis package not installed")
             return None
         except Exception as e:
             logger.error(f"Failed to initialize Redis client: {e}")
             return None
-    
+
     return _redis_client
 
 

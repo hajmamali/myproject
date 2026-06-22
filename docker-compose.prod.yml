@@ -1,8 +1,34 @@
 # ============================================================================
-# MAHOUN Platform - Production Docker Compose
-# ⚠️  DEPRECATED: This complex setup will be simplified
-# ⚠️  Use docker-compose.kernel.yml as the new model
+# ⛔  DEPRECATED — DO NOT USE IN ANY ENVIRONMENT
 # ============================================================================
+#
+#  This file is PERMANENTLY RETIRED and kept only for historical reference.
+#
+#  Problems with this file (ALL are production-breaking):
+#    - Containers run as root (no `user:` directive)
+#    - No read-only root filesystem (no `read_only: true`)
+#    - No capability restrictions (no `cap_drop: ALL`)
+#    - No security context (no `security_opt: no-new-privileges:true`)
+#    - Network isolation is incomplete
+#
+#  ✅ PRODUCTION STACK: docker-compose.unified.yml
+#     - Non-root execution on all services
+#     - Read-only root filesystem
+#     - cap_drop: ALL with minimal cap_add
+#     - 3-tier network isolation (DMZ / internal / DB)
+#     - tmpfs with noexec,nosuid,nodev
+#
+#  Any CI/CD pipeline referencing this file must be updated.
+#  Running this file in production is a P0 security violation.
+#
+# ============================================================================
+#
+# ORIGINAL CONTENT PRESERVED BELOW FOR AUDIT TRAIL ONLY — DO NOT DEPLOY
+#
+# ============================================================================
+
+# ============================================================================
+# MAHOUN Platform - Production Docker Compose [RETIRED]
 # Usage:
 #   docker-compose -f docker-compose.prod.yml up -d
 #   docker-compose -f docker-compose.prod.yml --profile full up -d

@@ -41,7 +41,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from mahoun.core.governance.protocols import RawQueryExecutor
 
 from mahoun.core.governance.validator_pipeline import ValidatorPipeline, PipelineResult
 from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
@@ -348,7 +351,7 @@ class GovernedNeo4jSession:
 
     def __init__(
         self,
-        raw_executor: Any,  # callable(query, params) -> list
+        raw_executor: "RawQueryExecutor",  # Must be Neo4jConnection._raw_execute
         pipeline: Optional[ValidatorPipeline] = None,
         correlation_id: str = "",
         actor_id: str = "",
@@ -357,8 +360,42 @@ class GovernedNeo4jSession:
         ctx = GovernanceContextManager.require_context()
         self._raw_executor = raw_executor
         self._pipeline = pipeline or ValidatorPipeline()
-        self._correlation_id = correlation_id or ctx.correlation_id
-        self._actor_id = actor_id or getattr(ctx, "actor_id", "system")
+
+        # I3: correlation_id must be explicit — no silent "system" fallback
+        resolved_correlation = correlation_id or ctx.correlation_id
+        if not resolved_correlation or not resolved_correlation.strip():
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=(
+                        "GovernedNeo4jSession requires an explicit correlation_id. "
+                        "Silent fallback to 'system' is forbidden. "
+                        "Every mutation must belong to an explicit execution chain."
+                    ),
+                    details={"correlation_id_provided": repr(correlation_id)},
+                    source="GovernedNeo4jSession.__init__",
+                )
+            )
+        self._correlation_id = resolved_correlation
+
+        # I7: actor_id must be non-empty and non-whitespace
+        resolved_actor = actor_id or getattr(ctx, "actor_id", "")
+        if not resolved_actor or not resolved_actor.strip():
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=(
+                        "GovernedNeo4jSession requires a non-empty actor_id. "
+                        "Empty or whitespace actor_id corrupts the audit trail. "
+                        "Every mutation must carry a verified actor identity."
+                    ),
+                    details={"actor_id_provided": repr(actor_id)},
+                    source="GovernedNeo4jSession.__init__",
+                )
+            )
+        self._actor_id = resolved_actor.strip()
         self._governance_scope_id = ctx.context_id
         self._ledger: List[MutationReceipt] = []
 
@@ -389,6 +426,11 @@ class GovernedNeo4jSession:
         Raises:
             GovernanceViolationError: fail-closed on any violation.
         """
+        # STEP 0: Node label allowlist enforcement (I4)
+        # Import here to avoid circular import at module level.
+        from mahoun.core.governance.validator_pipeline import validate_node_label
+        validate_node_label(label, self._correlation_id)
+
         # STEP 1: Governance validation (already enforced at __init__ via require_context)
         ctx = GovernanceContextManager.require_context()
 

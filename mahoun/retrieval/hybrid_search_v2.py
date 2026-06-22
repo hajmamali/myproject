@@ -866,53 +866,72 @@ class HybridSearchV2:
         query: str,
         top_k: int,
         filter_metadata: Optional[Dict[str, Any]],
-        result: HybridSearchResult
+        result: HybridSearchResult,
+        policy: Optional[Any] = None,
     ) -> None:
-        """Perform dense-only retrieval"""
+        """Perform dense-only retrieval.
+
+        Args:
+            policy: ExecutionPolicy injected by upstream caller.
+                    Must be provided — DenseRetriever.search_by_text raises
+                    ValueError if policy is None (fail-closed contract).
+        """
         dense_start = time.time()
-        
+
         try:
-            # Dense retrieval
+            if policy is None:
+                raise ValueError(
+                    "ExecutionPolicy must be provided by the caller of "
+                    "_search_dense_only; governance injection required."
+                )
+
+            # Dense retrieval — policy forwarded to enforce semantic_enabled gate
             dense_results = await self.dense_retriever.search_by_text(
                 query_text=query,
                 top_k=top_k,
-                filter_metadata=filter_metadata
+                filter_metadata=filter_metadata,
+                policy=policy,
             )
-            
+
+            # Record timing on the happy path (was missing before)
             result.dense_time_ms = (time.time() - dense_start) * 1000
             result.dense_results_count = len(dense_results)
-            
+
             # Convert to SearchResult objects
             for i, (doc_id, text, score) in enumerate(dense_results):
                 search_result = SearchResult(
                     id=doc_id,
                     text=text,
                     score=score,
-                    metadata={},  # Metadata would come from vector store
+                    metadata={},  # Metadata comes from vector store layer
                     dense_score=score,
                     dense_rank=i + 1,
                     final_rank=i + 1,
-                    source="dense"
+                    source="dense",
                 )
                 result.results.append(search_result)
-            
+
             with self._lock:
                 self._stats["dense_only_queries"] += 1
-            
+
         except Exception as e:
             logger.error(f"Dense-only search failed: {e}")
-            # Graceful degradation - return empty results
+            # Record timing even on failure so callers can observe latency
             result.dense_time_ms = (time.time() - dense_start) * 1000
     
     async def _search_sparse_only(
         self,
         query: str,
         top_k: int,
-        result: HybridSearchResult
+        result: HybridSearchResult,
     ) -> None:
-        """Perform sparse-only retrieval"""
+        """Perform sparse-only retrieval (BM25).
+
+        BM25 is CPU-bound and synchronous, so it is offloaded to the
+        thread executor to avoid blocking the event loop.
+        """
         sparse_start = time.time()
-        
+
         try:
             if not self.sparse_retriever:
                 logger.warning("Sparse retriever not available, returning empty results")
@@ -920,40 +939,36 @@ class HybridSearchV2:
                 with self._lock:
                     self._stats["fallback_activations"] += 1
                 return
-            
-            # Sparse retrieval
+
+            # Offload synchronous BM25 work to thread pool
             sparse_results = await asyncio.get_event_loop().run_in_executor(
                 self.executor,
                 self.sparse_retriever.search,
                 query,
-                top_k
+                top_k,
             )
-            
-                policy: Optional[Any],
-            result.sparse_results_count = len(sparse_results)
-            
-            # Convert to SearchResult objects
-                    # Dense retrieval - ExecutionPolicy MUST be provided by upstream
-                    if policy is None:
-                        raise ValueError("ExecutionPolicy must be provided by upstream; governance injection required")
 
-                    dense_results = await self.dense_retriever.search_by_text(
-                        query_text=query,
-                        top_k=top_k,
-                        filter_metadata=filter_metadata,
-                        policy=policy
-                    )
+            # Record timing on the happy path (was missing before)
+            result.sparse_time_ms = (time.time() - sparse_start) * 1000
+            result.sparse_results_count = len(sparse_results)
+
+            # Convert (doc_id, text, score) tuples to SearchResult objects
+            for i, (doc_id, text, score) in enumerate(sparse_results):
+                search_result = SearchResult(
+                    id=doc_id,
+                    text=text,
+                    score=score,
                     metadata={},
                     sparse_score=score,
                     sparse_rank=i + 1,
                     final_rank=i + 1,
-                    source="sparse"
+                    source="sparse",
                 )
                 result.results.append(search_result)
-            
+
             with self._lock:
                 self._stats["sparse_only_queries"] += 1
-            
+
         except Exception as e:
             logger.error(f"Sparse-only search failed: {e}")
             result.sparse_time_ms = (time.time() - sparse_start) * 1000

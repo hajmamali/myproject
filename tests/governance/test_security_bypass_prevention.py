@@ -419,7 +419,7 @@ class TestAPIBypassPrevention:
             async def reason(self, request, correlation_id=None):
                 from mahoun.core.fortress_validator import ReasoningResponse
 
-                return ReasoningResponse(
+                return ReasoningResponse.create_unvalidated(
                     success=True,
                     result="Result",
                     confidence=0.92,
@@ -453,7 +453,7 @@ class TestAPIBypassPrevention:
             async def reason(self, request, correlation_id=None):
                 from mahoun.core.fortress_validator import ReasoningResponse
 
-                return ReasoningResponse(
+                return ReasoningResponse.create_unvalidated(
                     success=True,
                     result="Result",
                     confidence=0.50,

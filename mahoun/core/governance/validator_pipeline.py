@@ -31,6 +31,68 @@ from mahoun.core.governance.provenance_tracker import ProvenanceMetadata, Proven
 from mahoun.core.governance.ontology_enforcer import OntologyEnforcer
 
 
+# ============================================================================
+# AUTHORITATIVE NODE LABEL ALLOWLIST (I4)
+# ============================================================================
+# Every node label that may exist in the MAHOUN graph must appear here.
+# write_node() rejects any label not in this set — fail-closed.
+# To add a new label: add it here AND add the corresponding OntologyRule.
+# Quarantined* prefixes are handled by the quarantine routing in write_node;
+# only the BASE label needs to be in this allowlist.
+ALLOWED_NODE_LABELS: frozenset = frozenset({
+    # Legal domain
+    "Law", "Case", "Document", "Entity", "Topic",
+    "LawArticle", "Verdict", "Evidence", "Person",
+    "Organization", "Court", "Tag",
+    # Graph infrastructure
+    "GraphNode",
+    # Pipeline / ingestion
+    "Chunk",
+})
+
+
+def validate_node_label(label: str, correlation_id: Optional[str] = None) -> None:
+    """Reject any node label not in ALLOWED_NODE_LABELS.
+
+    Quarantined* prefixes are stripped before lookup so that
+    GovernedNeo4jSession's quarantine routing still works.
+
+    Raises:
+        GovernanceViolationError: category=ONTOLOGY_VIOLATION, severity=CRITICAL
+    """
+    if not label or not label.strip():
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message="Node label must be a non-empty string.",
+                details={"label": repr(label)},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+    # Strip Quarantined prefix for allowlist lookup
+    base_label = label[len("Quarantined"):] if label.startswith("Quarantined") else label
+    if base_label not in ALLOWED_NODE_LABELS:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    f"Node label '{base_label}' is not in the MAHOUN ontology allowlist. "
+                    f"Allowed labels: {sorted(ALLOWED_NODE_LABELS)}"
+                ),
+                details={
+                    "label": label,
+                    "base_label": base_label,
+                    "allowed": sorted(ALLOWED_NODE_LABELS),
+                },
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+
 @dataclass(frozen=True)
 class ValidationGateResult:
     """Immutable result of a single validation gate."""
@@ -117,6 +179,14 @@ class ValidatorPipeline:
         results: List[ValidationGateResult] = []
         ts = datetime.now(timezone.utc).isoformat()
         cid = correlation_id or ""
+
+        # Gate 0: Node label allowlist (I4 — ontology enforcement)
+        label = node_data.get("_label") or node_data.get("label", "")
+        # label may also be passed separately; if absent we skip here and
+        # rely on write_node() to pass it explicitly via validate_node_label().
+        if label:
+            validate_node_label(label, correlation_id)
+        results.append(ValidationGateResult(gate_name="label_allowlist", passed=True))
 
         # Gate 1: Provenance
         try:

@@ -94,6 +94,11 @@ class KernelMutationBoundary:
             if "." in token:
                 prefix = token.split(".")[0].lower()
                 if prefix in KernelMutationBoundary.FORBIDDEN_PROCEDURES:
+                    # Exception: Allow apoc.create.setProperties to avoid Cypher injection
+                    # via f-string property name interpolation in graph builders.
+                    if token.lower() in ("apoc.create.setproperties", "apoc.create.setrelproperties"):
+                        is_mutation = True  # Setting properties is a mutation
+                        continue
                     return QueryType.FORBIDDEN
         
         return QueryType.WRITE if is_mutation else QueryType.READ

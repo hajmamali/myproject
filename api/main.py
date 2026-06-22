@@ -44,15 +44,14 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
 
-# Import search router for legal verdict search
-from api.routers import search as search_router
+# Removed search router as LegalSearchService is not implemented
 
 # Import system router for runtime configuration and health
 from api.routers import system as system_router
 from mahoun.core.settings import load_security_settings
 from mahoun.pipelines._logging import get_logger
 
-HAS_SEARCH_ROUTER = True
+HAS_SEARCH_ROUTER = False
 
 # Import ingest router for document upload
 try:
@@ -313,14 +312,32 @@ if HAS_INGEST_ROUTER:
     app.include_router(ingest_router.router, prefix="/api/ingest")
     logger.info("✓ Document ingest router registered at /api/ingest")
 
-# Register MAHOUN router
-try:
-    from api.routers import mahoun as mahoun_router
+# ============================================================================
+# ALPHA LAUNCH: MAHOUN router DISABLED
+# ============================================================================
+# MAHOUN router contains agent-driven endpoints that use LLM without
+# sufficient governance:
+# - /upload-documents → UltraDocParserAgent (LLM-driven)
+# - /ask-contract → UltraContractAgent (LLM-driven)
+# - /generate-claim → ClaimDraftGenerator (LLM-driven)
+# - /analyze-delay → DelayAnalysisEngine (potential graph writes)
+#
+# All agent endpoints must be audited for:
+# - Governance context enforcement
+# - Graph write safety
+# - LLM hallucination protection
+# - Fail-closed error handling
+#
+# For alpha, use /api/ingest/* for safe document upload without agents.
+# ============================================================================
+# try:
+#     from api.routers import mahoun as mahoun_router
+#     app.include_router(mahoun_router.router)
+#     logger.info("✓ MAHOUN router registered at /api/v1/mahoun")
+# except ImportError as e:
+#     logger.warning(f"MAHOUN router not available: {e}")
 
-    app.include_router(mahoun_router.router)
-    logger.info("✓ MAHOUN router registered at /api/v1/mahoun")
-except ImportError as e:
-    logger.warning(f"MAHOUN router not available: {e}")
+logger.warning("⚠️  MAHOUN ROUTER DISABLED FOR ALPHA LAUNCH (agent endpoints require governance audit)")
 
 # Register Fine-Tuning router
 try:
@@ -331,14 +348,25 @@ try:
 except ImportError as e:
     logger.warning(f"Fine-tuning router not available: {e}")
 
-# Register Reasoning router (CRITICAL - Core reasoning API)
-try:
-    from api.routers import reasoning as reasoning_router
+# ============================================================================
+# ALPHA LAUNCH: Reasoning router DISABLED
+# ============================================================================
+# Reasoning endpoints require complete P0/P1 governance hardening:
+# - P0-4: LedgerWriteGate enforcement in all paths
+# - P1-1: Fail-closed guardrail handling
+# - P1-3: Ledger hash verification in verdict_engine_adapter
+#
+# These endpoints expose EvidenceLinkedVerdictEngine directly and must NOT
+# be accessible until governance hardening is complete.
+# ============================================================================
+# try:
+#     from api.routers import reasoning as reasoning_router
+#     app.include_router(reasoning_router.router)
+#     logger.info("✓ Reasoning router registered at /api/v1/reasoning")
+# except ImportError as e:
+#     logger.warning(f"Reasoning router not available: {e}")
 
-    app.include_router(reasoning_router.router)
-    logger.info("✓ Reasoning router registered at /api/v1/reasoning")
-except ImportError as e:
-    logger.warning(f"Reasoning router not available: {e}")
+logger.warning("⚠️  REASONING ROUTER DISABLED FOR ALPHA LAUNCH (requires P0/P1 governance completion)")
 
 # Register Training Datasets router (Document → Training)
 try:

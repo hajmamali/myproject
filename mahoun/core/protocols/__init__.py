@@ -9,9 +9,47 @@ and should not be modified without architecture review.
 """
 
 from .ai_runtime import AIRuntimeProtocol, HealthStatus, ModelMetadata
+from .legacy_protocols import (
+    QueryType,
+    QueryClassificationResult,
+    RoutedQueryResult,
+    QueryClassifierProtocol,
+    QueryRouterProtocol,
+    RAGServiceProtocol,
+    LLMServiceProtocol,
+    ModelDriverProtocol,
+    ModelOrchestratorProtocol,
+    ReasoningEngineProtocol,
+    DependencyContainerProtocol,
+    validate_protocol_implementation,
+    is_query_router,
+    is_rag_service,
+    is_model_driver,
+    is_reasoning_engine,
+    is_contradiction_detector,
+    ContradictionDetectorProtocol
+)
 
 __all__ = [
     "AIRuntimeProtocol", 
     "HealthStatus", 
-    "ModelMetadata"
+    "ModelMetadata",
+    "QueryType",
+    "QueryClassificationResult",
+    "RoutedQueryResult",
+    "QueryClassifierProtocol",
+    "QueryRouterProtocol",
+    "RAGServiceProtocol",
+    "LLMServiceProtocol",
+    "ModelDriverProtocol",
+    "ModelOrchestratorProtocol",
+    "ReasoningEngineProtocol",
+    "DependencyContainerProtocol",
+    "validate_protocol_implementation",
+    "is_query_router",
+    "is_rag_service",
+    "is_model_driver",
+    "is_reasoning_engine",
+    "is_contradiction_detector",
+    "ContradictionDetectorProtocol"
 ]

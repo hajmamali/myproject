@@ -153,14 +153,20 @@ class ReasoningRecorder:
         """
         P0-1/P1-2: Resolve provenance through GovernanceContext when available.
         Synthetic provenance is permitted only in development mode with explicit audit.
+        
+        CRITICAL FIX: Check for active context FIRST in all environments.
+        Only use synthetic provenance in development when NO context exists.
         """
         from mahoun.core.environment import get_current_environment
         from mahoun.core.governance.governance_context import GovernanceContextManager
 
         env = get_current_environment()
+        
+        # CRITICAL: Always try to get active context first (in ALL environments)
+        ctx = GovernanceContextManager.get_current_context()
 
         if env.is_production() or env.is_staging():
-            ctx = GovernanceContextManager.get_current_context()
+            # Production/Staging: Context is MANDATORY
             if ctx is None:
                 raise RuntimeError(
                     "P0-1 GOVERNANCE VIOLATION: Cannot record reasoning step "
@@ -175,8 +181,20 @@ class ReasoningRecorder:
                 runtime_attestation_id=ctx.runtime_attestation.get("context_id", ctx.context_id),
                 lineage_parent=None,
             )
+        
+        # Development mode: Use context if available, synthetic if not
+        if ctx is not None:
+            # REAL provenance from active context (even in development)
+            return ProvenanceMetadata.create(
+                source=f"governed_{operation}",
+                correlation_id=ctx.correlation_id,
+                author="mahoun_reasoning_recorder",
+                governance_scope_id=ctx.context_id,
+                runtime_attestation_id=ctx.runtime_attestation.get("context_id", ctx.context_id),
+                lineage_parent=None,
+            )
 
-        # P1-2: Development mode with explicit audit logging
+        # P1-2: Development mode with NO context - use synthetic with explicit audit
         log.info(
             "P1-2 DEVELOPMENT AUDIT: Reasoning step recorded with synthetic provenance",
             extra={

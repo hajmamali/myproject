@@ -526,20 +526,35 @@ class HealthChecker:
         else:
             try:
                 import redis.asyncio as redis
-                
-                # Try to get Redis connection
-                redis_url = os.getenv("REDIS_HOST", "localhost")
-                redis_port = int(os.getenv("REDIS_PORT", "6379"))
-                
-                r = redis.Redis(host=redis_url, port=redis_port, decode_responses=True)
+                from mahoun.core.settings import get_settings as _get_settings
+                _s = _get_settings()
+                _redis_url = getattr(_s, "REDIS_URL", None)
+                _redis_password = getattr(_s, "REDIS_PASSWORD", None) or None
+
+                if _redis_url:
+                    r = redis.from_url(
+                        _redis_url,
+                        password=_redis_password,
+                        decode_responses=True,
+                        socket_connect_timeout=5.0,
+                    )
+                else:
+                    _redis_host = getattr(_s, "REDIS_HOST", "localhost")
+                    _redis_port = int(getattr(_s, "REDIS_PORT", 6379))
+                    r = redis.Redis(
+                        host=_redis_host,
+                        port=_redis_port,
+                        password=_redis_password,
+                        decode_responses=True,
+                    )
                 await r.ping()
-                await r.close()
+                await r.aclose()
                 
                 results["redis"] = ComponentHealth(
                     component="redis",
                     status=HealthStatus.HEALTHY,
                     message="Redis is connected",
-                    details={"connected": True, "host": redis_url, "port": redis_port, "enabled": True},
+                    details={"connected": True, "enabled": True},
                     checked_at=datetime.now().isoformat()
                 )
             except Exception as e:

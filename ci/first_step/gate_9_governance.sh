@@ -94,6 +94,16 @@ else
 fi
 echo ""
 
+# Step 6: Verify static scan for mutation bypasses
+echo "Step 6: Running static scan for graph mutation governance bypasses..."
+if python ci/scripts/scan_governance_bypasses.py; then
+    echo -e "${GREEN}✓ Static mutation scan passed${NC}"
+else
+    echo -e "${RED}✗ FAILED: Static mutation scan detected ungoverned mutations${NC}"
+    exit 1
+fi
+echo ""
+
 # Final Verdict
 echo -e "${GREEN}=================================================="
 echo "🛡️  Gate 9: PASSED ✓"

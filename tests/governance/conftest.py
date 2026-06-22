@@ -128,7 +128,7 @@ class MockProofTree:
 @pytest.fixture
 def valid_response() -> ReasoningResponse:
     """Create a valid reasoning response that passes all checks"""
-    return ReasoningResponse(
+    return ReasoningResponse.create_unvalidated(
         success=True,
         result="Tax exemption applies under Article 143",
         confidence=0.92,
@@ -147,7 +147,7 @@ def valid_response() -> ReasoningResponse:
 @pytest.fixture
 def valid_response_symbolic() -> ReasoningResponse:
     """Create a valid symbolic-only response"""
-    return ReasoningResponse(
+    return ReasoningResponse.create_unvalidated(
         success=True,
         result="Tax exemption applies",
         confidence=0.95,
@@ -162,7 +162,7 @@ def valid_response_symbolic() -> ReasoningResponse:
 @pytest.fixture
 def invalid_response_no_proof() -> ReasoningResponse:
     """Response missing proof_tree (should fail)"""
-    return ReasoningResponse(
+    return ReasoningResponse.create_unvalidated(
         success=True,
         result="Tax exemption applies",
         confidence=0.85,
@@ -177,7 +177,7 @@ def invalid_response_no_proof() -> ReasoningResponse:
 @pytest.fixture
 def invalid_response_low_agreement() -> ReasoningResponse:
     """Response with agreement_score below 0.85 threshold"""
-    return ReasoningResponse(
+    return ReasoningResponse.create_unvalidated(
         success=True,
         result="Tax exemption applies",
         confidence=0.80,
