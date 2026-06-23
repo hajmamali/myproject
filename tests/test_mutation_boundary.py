@@ -36,7 +36,7 @@ def active_mock_governance_context():
     from mahoun.core.governance.governance_context import GovernanceContextManager, _CONTEXT_SECRET
     import hmac
     import hashlib
-    ctx = GovernanceContextManager.create_context(correlation_id="test-correlation")
+    ctx = GovernanceContextManager.create_context(correlation_id="test-correlation", actor_id="test-actor")
     signature_input = f"{ctx.context_id}|{ctx.correlation_id}|{ctx.execution_mode}"
     ctx.signature = hmac.new(
         _CONTEXT_SECRET.encode(),

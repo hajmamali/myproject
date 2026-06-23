@@ -19,10 +19,10 @@ Operational Rules:
 
 Usage:
     from mahoun.graph.builders.entity_linker import EntityLinker, link_entities_to_graph
-    
+
     # Quick linking
     result = link_entities_to_graph(entities, case_id="case_001")
-    
+
     # Advanced usage
     linker = EntityLinker()
     nodes, edges = linker.link(entities, case_id="case_001")
@@ -35,7 +35,7 @@ Graph Schema Contract:
         (:Court { name, level, city })
         (:LawArticle { code, article, clause, description })
         (:Topic { label })
-    
+
     EDGES:
         (:Person)-[:PARTY_IN]->(:Case)
         (:Organization)-[:PARTY_IN]->(:Case)
@@ -44,28 +44,73 @@ Graph Schema Contract:
         (:Case)-[:ABOUT]->(:Topic)
 """
 
-import re
-import logging
 import hashlib
-from typing import Any, Dict, List, Optional, Set, Tuple
+import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 from mahoun.core.runtime_config import get_runtime_settings, should_skip_graph
 
+if TYPE_CHECKING:
+    from mahoun.graph.neo4j.connection import Neo4jConnection
+
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Constitutional Allowlists — Patch Group C/D
+# These are the ONLY labels, properties, and relationship types this builder
+# may write.  Any value outside these sets is rejected fail-closed.
+# ============================================================================
+
+_LINKER_ALLOWED_LABELS: frozenset = frozenset({"Case", "Person", "Organization", "Court", "LawArticle", "Topic"})
+
+_LINKER_ALLOWED_NODE_PROPERTIES: MappingProxyType = MappingProxyType(
+    {
+        "Case": frozenset({"case_id", "created_at", "case_type", "court_level", "is_final", "decision_date"}),
+        "Person": frozenset({"name", "normalized_name", "title", "father_name", "national_id", "role"}),
+        "Organization": frozenset({"name", "normalized_name", "org_type", "registration_id"}),
+        "Court": frozenset({"name", "level", "branch", "city", "province"}),
+        "LawArticle": frozenset({"article", "law_name", "code", "description", "clause"}),
+        "Topic": frozenset({"label", "category"}),
+    }
+)
+
+_LINKER_ALLOWED_REL_TYPES: frozenset = frozenset({"PARTY_IN", "REFERS_TO", "HANDLED_BY", "ABOUT"})
+
+_LINKER_ALLOWED_REL_ENDPOINTS: MappingProxyType = MappingProxyType(
+    {
+        "PARTY_IN": frozenset({("Person", "Case"), ("Organization", "Case")}),
+        "REFERS_TO": frozenset({("Case", "LawArticle")}),
+        "HANDLED_BY": frozenset({("Case", "Court")}),
+        "ABOUT": frozenset({("Case", "Topic")}),
+    }
+)
+
+_LINKER_ALLOWED_REL_PROPERTIES: MappingProxyType = MappingProxyType(
+    {
+        "PARTY_IN": frozenset({"role"}),
+        "REFERS_TO": frozenset(),
+        "HANDLED_BY": frozenset(),
+        "ABOUT": frozenset(),
+    }
+)
 
 # ============================================================================
 # Node/Edge Data Classes
 # ============================================================================
 
+
 @dataclass
 class GraphNodeSpec:
     """Specification for a graph node to be created/merged"""
+
     label: str  # Node label (Person, Organization, Court, etc.)
     node_id: str  # Unique identifier for MERGE operations
     properties: Dict[str, Any] = field(default_factory=dict)
-    
+
     # Metadata
     source_case_id: Optional[str] = None
     confidence: float = 1.0
@@ -75,13 +120,14 @@ class GraphNodeSpec:
 @dataclass
 class GraphEdgeSpec:
     """Specification for a graph edge to be created"""
+
     from_label: str
     from_id: str
     to_label: str
     to_id: str
     relationship_type: str
     properties: Dict[str, Any] = field(default_factory=dict)
-    
+
     # Metadata
     confidence: float = 1.0
 
@@ -89,6 +135,7 @@ class GraphEdgeSpec:
 @dataclass
 class LinkingResult:
     """Result of entity linking operation"""
+
     success: bool
     case_id: str
     nodes_created: int = 0
@@ -102,35 +149,32 @@ class LinkingResult:
 # Entity Linker
 # ============================================================================
 
+
 class EntityLinker:
     """
     Enterprise-grade entity linker for graph construction.
-    
+
     Converts NER output into normalized graph nodes and edges,
     supporting idempotent MERGE operations for Neo4j.
-    
+
     Features:
     - Idempotent node creation (MERGE semantics)
     - Automatic edge construction
     - Entity normalization and deduplication
     - Cross-document entity resolution (future Phase 2)
-    
+
     Usage:
         linker = EntityLinker()
         nodes, edges = linker.link(entities, case_id="case_001")
-        
+
         # Or get full result
         result = linker.link_with_result(entities, case_id="case_001")
     """
-    
-    def __init__(
-        self,
-        enable_normalization: bool = True,
-        enable_deduplication: bool = True
-    ):
+
+    def __init__(self, enable_normalization: bool = True, enable_deduplication: bool = True):
         """
         Initialize Entity Linker.
-        
+
         Args:
             enable_normalization: Normalize entity values before linking
             enable_deduplication: Remove duplicate nodes
@@ -138,147 +182,121 @@ class EntityLinker:
         self.settings = get_runtime_settings()
         self.enable_normalization = enable_normalization
         self.enable_deduplication = enable_deduplication
-        
+
         # Statistics
-        self.stats = {
-            "total_linked": 0,
-            "total_nodes": 0,
-            "total_edges": 0,
-            "errors": 0
-        }
-        
+        self.stats = {"total_linked": 0, "total_nodes": 0, "total_edges": 0, "errors": 0}
+
         logger.info("EntityLinker initialized")
-    
+
     def link(
-        self,
-        entities: Dict[str, List[Dict[str, Any]]],
-        case_id: str,
-        case_metadata: Optional[Dict[str, Any]] = None
+        self, entities: Dict[str, List[Dict[str, Any]]], case_id: str, case_metadata: Optional[Dict[str, Any]] = None
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """
         Link entities to graph structures.
-        
+
         Args:
             entities: NER output dictionary with entity lists
             case_id: Unique case/document identifier
             case_metadata: Optional metadata for the case node
-        
+
         Returns:
             Tuple of (nodes, edges) specifications
         """
         import time
+
         start_time = time.time()
-        
+
         # Skip in desktop-minimal mode
         if should_skip_graph():
             logger.debug("EntityLinker: Skipping in desktop-minimal mode")
             return [], []
-        
+
         nodes: List[GraphNodeSpec] = []
         edges: List[GraphEdgeSpec] = []
         seen_node_ids: Set[str] = set()
-        
+
         try:
             # Create Case node first
             case_node = self._create_case_node(case_id, case_metadata)
             nodes.append(case_node)
             seen_node_ids.add(case_node.node_id)
-            
+
             # Process each entity type
-            person_nodes, person_edges = self._link_persons(
-                entities.get("persons", []), case_id, seen_node_ids
-            )
+            person_nodes, person_edges = self._link_persons(entities.get("persons", []), case_id, seen_node_ids)
             nodes.extend(person_nodes)
             edges.extend(person_edges)
-            
-            org_nodes, org_edges = self._link_organizations(
-                entities.get("organizations", []), case_id, seen_node_ids
-            )
+
+            org_nodes, org_edges = self._link_organizations(entities.get("organizations", []), case_id, seen_node_ids)
             nodes.extend(org_nodes)
             edges.extend(org_edges)
-            
-            court_nodes, court_edges = self._link_courts(
-                entities.get("courts", []), case_id, seen_node_ids
-            )
+
+            court_nodes, court_edges = self._link_courts(entities.get("courts", []), case_id, seen_node_ids)
             nodes.extend(court_nodes)
             edges.extend(court_edges)
-            
-            law_nodes, law_edges = self._link_laws(
-                entities.get("laws", []), case_id, seen_node_ids
-            )
+
+            law_nodes, law_edges = self._link_laws(entities.get("laws", []), case_id, seen_node_ids)
             nodes.extend(law_nodes)
             edges.extend(law_edges)
-            
-            topic_nodes, topic_edges = self._link_topics(
-                entities.get("topics", []), case_id, seen_node_ids
-            )
+
+            topic_nodes, topic_edges = self._link_topics(entities.get("topics", []), case_id, seen_node_ids)
             nodes.extend(topic_nodes)
             edges.extend(topic_edges)
-            
+
             # Update statistics
             processing_time_ms = (time.time() - start_time) * 1000
             self._update_stats(len(nodes), len(edges), processing_time_ms)
-            
+
             logger.info(
                 f"NER_PIPELINE: Linked entities for case {case_id} - "
                 f"nodes={len(nodes)}, edges={len(edges)} "
                 f"({processing_time_ms:.1f}ms)"
             )
-            
+
         except Exception as e:
             logger.error(f"EntityLinker error for case {case_id}: {e}")
             self.stats["errors"] += 1
             # Silent fail - return what we have
-        
+
         return nodes, edges
-    
+
     def link_with_result(
-        self,
-        entities: Dict[str, List[Dict[str, Any]]],
-        case_id: str,
-        case_metadata: Optional[Dict[str, Any]] = None
+        self, entities: Dict[str, List[Dict[str, Any]]], case_id: str, case_metadata: Optional[Dict[str, Any]] = None
     ) -> LinkingResult:
         """
         Link entities and return detailed result.
-        
+
         Args:
             entities: NER output dictionary
             case_id: Case identifier
             case_metadata: Optional case metadata
-        
+
         Returns:
             LinkingResult with statistics
         """
         import time
+
         start_time = time.time()
-        
+
         nodes, edges = self.link(entities, case_id, case_metadata)
-        
+
         processing_time_ms = (time.time() - start_time) * 1000
-        
+
         return LinkingResult(
             success=True,
             case_id=case_id,
             nodes_created=len(nodes),
             edges_created=len(edges),
-            processing_time_ms=processing_time_ms
+            processing_time_ms=processing_time_ms,
         )
-    
+
     # ========================================================================
     # Entity Type Processors
     # ========================================================================
-    
-    def _create_case_node(
-        self,
-        case_id: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> GraphNodeSpec:
+
+    def _create_case_node(self, case_id: str, metadata: Optional[Dict[str, Any]] = None) -> GraphNodeSpec:
         """Create Case node specification"""
-        properties = {
-            "case_id": case_id,
-            "created_at": datetime.now().isoformat()
-        }
-        
+        properties = {"case_id": case_id, "created_at": datetime.now().isoformat()}
+
         if metadata:
             # Add relevant metadata
             if metadata.get("case_type"):
@@ -289,19 +307,11 @@ class EntityLinker:
                 properties["is_final"] = metadata["is_final"]
             if metadata.get("decision_date"):
                 properties["decision_date"] = metadata["decision_date"]
-        
-        return GraphNodeSpec(
-            label="Case",
-            node_id=f"case_{case_id}",
-            properties=properties,
-            source_case_id=case_id
-        )
-    
+
+        return GraphNodeSpec(label="Case", node_id=f"case_{case_id}", properties=properties, source_case_id=case_id)
+
     def _link_persons(
-        self,
-        persons: List[Dict[str, Any]],
-        case_id: str,
-        seen_ids: Set[str]
+        self, persons: List[Dict[str, Any]], case_id: str, seen_ids: Set[str]
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """Link person entities to graph"""
         nodes: List[Any] = []
@@ -312,17 +322,17 @@ class EntityLinker:
                 name = person.get("name", "")
                 normalized_name = person.get("normalized_name") or self._normalize_string(name)
                 node_id = self._generate_person_id(normalized_name, person.get("national_id"))
-                
+
                 if node_id in seen_ids:
                     continue
                 seen_ids.add(node_id)
-                
+
                 # Create node
                 properties = {
                     "name": name,
                     "normalized_name": normalized_name,
                 }
-                
+
                 if person.get("title"):
                     properties["title"] = person["title"]
                 if person.get("father_name"):
@@ -331,41 +341,42 @@ class EntityLinker:
                     properties["national_id"] = person["national_id"]
                 if person.get("role"):
                     properties["role"] = person["role"]
-                
-                nodes.append(GraphNodeSpec(
-                    label="Person",
-                    node_id=node_id,
-                    properties=properties,
-                    source_case_id=case_id,
-                    confidence=person.get("confidence", 0.9)
-                ))
-                
+
+                nodes.append(
+                    GraphNodeSpec(
+                        label="Person",
+                        node_id=node_id,
+                        properties=properties,
+                        source_case_id=case_id,
+                        confidence=person.get("confidence", 0.9),
+                    )
+                )
+
                 # Create edge to case
                 edge_props: Dict[str, Any] = {}
                 if person.get("role"):
                     edge_props["role"] = person["role"]
-                
-                edges.append(GraphEdgeSpec(
-                    from_label="Person",
-                    from_id=node_id,
-                    to_label="Case",
-                    to_id=f"case_{case_id}",
-                    relationship_type="PARTY_IN",
-                    properties=edge_props,
-                    confidence=person.get("confidence", 0.9)
-                ))
-                
+
+                edges.append(
+                    GraphEdgeSpec(
+                        from_label="Person",
+                        from_id=node_id,
+                        to_label="Case",
+                        to_id=f"case_{case_id}",
+                        relationship_type="PARTY_IN",
+                        properties=edge_props,
+                        confidence=person.get("confidence", 0.9),
+                    )
+                )
+
             except Exception as e:
                 logger.warning(f"Failed to link person: {e}")
                 continue
-        
+
         return nodes, edges
-    
+
     def _link_organizations(
-        self,
-        organizations: List[Dict[str, Any]],
-        case_id: str,
-        seen_ids: Set[str]
+        self, organizations: List[Dict[str, Any]], case_id: str, seen_ids: Set[str]
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """Link organization entities to graph"""
         nodes: List[Any] = []
@@ -375,50 +386,51 @@ class EntityLinker:
                 name = org.get("name", "")
                 normalized_name = org.get("normalized_name") or self._normalize_string(name)
                 node_id = self._generate_org_id(normalized_name, org.get("registration_id"))
-                
+
                 if node_id in seen_ids:
                     continue
                 seen_ids.add(node_id)
-                
+
                 properties = {
                     "name": name,
                     "normalized_name": normalized_name,
                 }
-                
+
                 if org.get("org_type"):
                     properties["org_type"] = org["org_type"]
                 if org.get("registration_id"):
                     properties["registration_id"] = org["registration_id"]
-                
-                nodes.append(GraphNodeSpec(
-                    label="Organization",
-                    node_id=node_id,
-                    properties=properties,
-                    source_case_id=case_id,
-                    confidence=org.get("confidence", 0.85)
-                ))
-                
-                edges.append(GraphEdgeSpec(
-                    from_label="Organization",
-                    from_id=node_id,
-                    to_label="Case",
-                    to_id=f"case_{case_id}",
-                    relationship_type="PARTY_IN",
-                    properties={},
-                    confidence=org.get("confidence", 0.85)
-                ))
-                
+
+                nodes.append(
+                    GraphNodeSpec(
+                        label="Organization",
+                        node_id=node_id,
+                        properties=properties,
+                        source_case_id=case_id,
+                        confidence=org.get("confidence", 0.85),
+                    )
+                )
+
+                edges.append(
+                    GraphEdgeSpec(
+                        from_label="Organization",
+                        from_id=node_id,
+                        to_label="Case",
+                        to_id=f"case_{case_id}",
+                        relationship_type="PARTY_IN",
+                        properties={},
+                        confidence=org.get("confidence", 0.85),
+                    )
+                )
+
             except Exception as e:
                 logger.warning(f"Failed to link organization: {e}")
                 continue
-        
+
         return nodes, edges
-    
+
     def _link_courts(
-        self,
-        courts: List[Dict[str, Any]],
-        case_id: str,
-        seen_ids: Set[str]
+        self, courts: List[Dict[str, Any]], case_id: str, seen_ids: Set[str]
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """Link court entities to graph"""
         nodes: List[Any] = []
@@ -427,20 +439,16 @@ class EntityLinker:
             try:
                 # Use normalized name or generate from components
                 name = court.get("normalized_name") or court.get("text", "")
-                node_id = self._generate_court_id(
-                    court.get("level"),
-                    court.get("branch"),
-                    court.get("city")
-                )
-                
+                node_id = self._generate_court_id(court.get("level"), court.get("branch"), court.get("city"))
+
                 if node_id in seen_ids:
                     continue
                 seen_ids.add(node_id)
-                
+
                 properties = {
                     "name": name,
                 }
-                
+
                 if court.get("level"):
                     properties["level"] = court["level"]
                 if court.get("branch"):
@@ -449,36 +457,37 @@ class EntityLinker:
                     properties["city"] = court["city"]
                 if court.get("province"):
                     properties["province"] = court["province"]
-                
-                nodes.append(GraphNodeSpec(
-                    label="Court",
-                    node_id=node_id,
-                    properties=properties,
-                    source_case_id=case_id,
-                    confidence=court.get("confidence", 0.9)
-                ))
-                
-                edges.append(GraphEdgeSpec(
-                    from_label="Case",
-                    from_id=f"case_{case_id}",
-                    to_label="Court",
-                    to_id=node_id,
-                    relationship_type="HANDLED_BY",
-                    properties={},
-                    confidence=court.get("confidence", 0.9)
-                ))
-                
+
+                nodes.append(
+                    GraphNodeSpec(
+                        label="Court",
+                        node_id=node_id,
+                        properties=properties,
+                        source_case_id=case_id,
+                        confidence=court.get("confidence", 0.9),
+                    )
+                )
+
+                edges.append(
+                    GraphEdgeSpec(
+                        from_label="Case",
+                        from_id=f"case_{case_id}",
+                        to_label="Court",
+                        to_id=node_id,
+                        relationship_type="HANDLED_BY",
+                        properties={},
+                        confidence=court.get("confidence", 0.9),
+                    )
+                )
+
             except Exception as e:
                 logger.warning(f"Failed to link court: {e}")
                 continue
-        
+
         return nodes, edges
-    
+
     def _link_laws(
-        self,
-        laws: List[Dict[str, Any]],
-        case_id: str,
-        seen_ids: Set[str]
+        self, laws: List[Dict[str, Any]], case_id: str, seen_ids: Set[str]
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """Link law/article entities to graph"""
         nodes: List[Any] = []
@@ -487,66 +496,69 @@ class EntityLinker:
             try:
                 article_num = law.get("article_number", "")
                 law_name = law.get("law_name", "")
-                
+
                 # Generate node ID from article reference
                 node_id = self._generate_law_id(article_num, law_name)
-                
+
                 if node_id in seen_ids:
                     # Still create edge to existing node
-                    edges.append(GraphEdgeSpec(
+                    edges.append(
+                        GraphEdgeSpec(
+                            from_label="Case",
+                            from_id=f"case_{case_id}",
+                            to_label="LawArticle",
+                            to_id=node_id,
+                            relationship_type="REFERS_TO",
+                            properties={},
+                            confidence=law.get("confidence", 0.85),
+                        )
+                    )
+                    continue
+                seen_ids.add(node_id)
+
+                # Parse law code from name
+                code = self._extract_law_code(law_name)
+
+                properties = {
+                    "article": article_num,
+                    "law_name": law_name,
+                    "code": code,
+                    "description": law.get("normalized_ref", f"ماده {article_num} {law_name}"),
+                }
+
+                if law.get("clause"):
+                    properties["clause"] = law["clause"]
+
+                nodes.append(
+                    GraphNodeSpec(
+                        label="LawArticle",
+                        node_id=node_id,
+                        properties=properties,
+                        source_case_id=case_id,
+                        confidence=law.get("confidence", 0.85),
+                    )
+                )
+
+                edges.append(
+                    GraphEdgeSpec(
                         from_label="Case",
                         from_id=f"case_{case_id}",
                         to_label="LawArticle",
                         to_id=node_id,
                         relationship_type="REFERS_TO",
                         properties={},
-                        confidence=law.get("confidence", 0.85)
-                    ))
-                    continue
-                seen_ids.add(node_id)
-                
-                # Parse law code from name
-                code = self._extract_law_code(law_name)
-                
-                properties = {
-                    "article": article_num,
-                    "law_name": law_name,
-                    "code": code,
-                    "description": law.get("normalized_ref", f"ماده {article_num} {law_name}")
-                }
-                
-                if law.get("clause"):
-                    properties["clause"] = law["clause"]
-                
-                nodes.append(GraphNodeSpec(
-                    label="LawArticle",
-                    node_id=node_id,
-                    properties=properties,
-                    source_case_id=case_id,
-                    confidence=law.get("confidence", 0.85)
-                ))
-                
-                edges.append(GraphEdgeSpec(
-                    from_label="Case",
-                    from_id=f"case_{case_id}",
-                    to_label="LawArticle",
-                    to_id=node_id,
-                    relationship_type="REFERS_TO",
-                    properties={},
-                    confidence=law.get("confidence", 0.85)
-                ))
-                
+                        confidence=law.get("confidence", 0.85),
+                    )
+                )
+
             except Exception as e:
                 logger.warning(f"Failed to link law: {e}")
                 continue
-        
+
         return nodes, edges
-    
+
     def _link_topics(
-        self,
-        topics: List[Dict[str, Any]],
-        case_id: str,
-        seen_ids: Set[str]
+        self, topics: List[Dict[str, Any]], case_id: str, seen_ids: Set[str]
     ) -> Tuple[List[GraphNodeSpec], List[GraphEdgeSpec]]:
         """Link topic entities to graph"""
         nodes: List[Any] = []
@@ -555,77 +567,78 @@ class EntityLinker:
             try:
                 label = topic.get("topic") or topic.get("text", "")
                 node_id = self._generate_topic_id(label)
-                
+
                 if node_id in seen_ids:
                     # Still create edge
-                    edges.append(GraphEdgeSpec(
+                    edges.append(
+                        GraphEdgeSpec(
+                            from_label="Case",
+                            from_id=f"case_{case_id}",
+                            to_label="Topic",
+                            to_id=node_id,
+                            relationship_type="ABOUT",
+                            properties={},
+                            confidence=topic.get("confidence", 0.8),
+                        )
+                    )
+                    continue
+                seen_ids.add(node_id)
+
+                properties = {
+                    "label": label,
+                }
+
+                if topic.get("category"):
+                    properties["category"] = topic["category"]
+
+                nodes.append(
+                    GraphNodeSpec(
+                        label="Topic",
+                        node_id=node_id,
+                        properties=properties,
+                        source_case_id=case_id,
+                        confidence=topic.get("confidence", 0.8),
+                    )
+                )
+
+                edges.append(
+                    GraphEdgeSpec(
                         from_label="Case",
                         from_id=f"case_{case_id}",
                         to_label="Topic",
                         to_id=node_id,
                         relationship_type="ABOUT",
                         properties={},
-                        confidence=topic.get("confidence", 0.8)
-                    ))
-                    continue
-                seen_ids.add(node_id)
-                
-                properties = {
-                    "label": label,
-                }
-                
-                if topic.get("category"):
-                    properties["category"] = topic["category"]
-                
-                nodes.append(GraphNodeSpec(
-                    label="Topic",
-                    node_id=node_id,
-                    properties=properties,
-                    source_case_id=case_id,
-                    confidence=topic.get("confidence", 0.8)
-                ))
-                
-                edges.append(GraphEdgeSpec(
-                    from_label="Case",
-                    from_id=f"case_{case_id}",
-                    to_label="Topic",
-                    to_id=node_id,
-                    relationship_type="ABOUT",
-                    properties={},
-                    confidence=topic.get("confidence", 0.8)
-                ))
-                
+                        confidence=topic.get("confidence", 0.8),
+                    )
+                )
+
             except Exception as e:
                 logger.warning(f"Failed to link topic: {e}")
                 continue
-        
+
         return nodes, edges
-    
+
     # ========================================================================
     # ID Generation (Ensures Uniqueness for MERGE)
     # ========================================================================
-    
+
     def _generate_person_id(self, normalized_name: str, national_id: Optional[str] = None) -> str:
         """Generate unique person ID"""
         if national_id:
             return f"person_nid_{national_id}"
         # Use hash of normalized name
-        name_hash = hashlib.md5(normalized_name.encode('utf-8')).hexdigest()[:12]
+        name_hash = hashlib.md5(normalized_name.encode("utf-8")).hexdigest()[:12]
         return f"person_{name_hash}"
-    
+
     def _generate_org_id(self, normalized_name: str, registration_id: Optional[str] = None) -> str:
         """Generate unique organization ID"""
         if registration_id:
             return f"org_reg_{registration_id}"
-        name_hash = hashlib.md5(normalized_name.encode('utf-8')).hexdigest()[:12]
+        name_hash = hashlib.md5(normalized_name.encode("utf-8")).hexdigest()[:12]
         return f"org_{name_hash}"
-    
-    def _generate_court_id(
-        self,
-        level: Optional[str],
-        branch: Optional[str],
-        city: Optional[str]
-    ) -> str:
+
+    def _generate_court_id(self, level: Optional[str], branch: Optional[str], city: Optional[str]) -> str:
         """Generate unique court ID"""
         parts: List[Any] = []
         if level:
@@ -634,38 +647,38 @@ class EntityLinker:
             parts.append(f"شعبه{branch}")
         if city:
             parts.append(city)
-        
+
         combined = "_".join(parts) if parts else "unknown"
-        court_hash = hashlib.md5(combined.encode('utf-8')).hexdigest()[:12]
+        court_hash = hashlib.md5(combined.encode("utf-8")).hexdigest()[:12]
         return f"court_{court_hash}"
-    
+
     def _generate_law_id(self, article_num: str, law_name: str) -> str:
         """Generate unique law article ID"""
         code = self._extract_law_code(law_name)
         return f"law_{code}_{article_num}".replace(" ", "_")
-    
+
     def _generate_topic_id(self, label: str) -> str:
         """Generate unique topic ID"""
         normalized = self._normalize_string(label)
         return f"topic_{normalized}".replace(" ", "_")
-    
+
     # ========================================================================
     # Utility Methods
     # ========================================================================
-    
+
     def _normalize_string(self, s: str) -> str:
         """Normalize string for ID generation and comparison"""
         if not s:
             return ""
         # Remove extra whitespace
-        s = re.sub(r'\s+', ' ', s.strip())
+        s = re.sub(r"\s+", " ", s.strip())
         return s.lower()
-    
+
     def _extract_law_code(self, law_name: str) -> str:
         """Extract short code from law name"""
         if not law_name:
             return "unknown"
-        
+
         # Common law name mappings
         law_codes = {
             "مدنی": "civil",
@@ -677,134 +690,162 @@ class EntityLinker:
             "ثبت": "registration",
             "مالیات": "tax",
         }
-        
+
         for key, code in law_codes.items():
             if key in law_name:
                 return code
-        
+
         # Generate hash for unknown laws
-        return hashlib.md5(law_name.encode('utf-8')).hexdigest()[:8]
-    
+        return hashlib.md5(law_name.encode("utf-8")).hexdigest()[:8]
+
     def _update_stats(self, nodes: int, edges: int, time_ms: float):
         """Update linker statistics"""
         self.stats["total_linked"] += 1
         self.stats["total_nodes"] += nodes
         self.stats["total_edges"] += edges
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get linker statistics"""
         return self.stats.copy()
-    
+
     # ========================================================================
     # Neo4j Direct Integration (Optional)
     # ========================================================================
-    
-    def submit_to_neo4j(
-        self,
-        nodes: List[GraphNodeSpec],
-        edges: List[GraphEdgeSpec],
-        connection: 'Neo4jConnection'
-    ) -> bool:
-        """
-        Submit nodes and edges directly to Neo4j.
-        
-        Args:
-            nodes: List of node specifications
-            edges: List of edge specifications
-            connection: Initialized Neo4jConnection instance
-        
-        Returns:
-            True if successful
-        """
+
+    # ------------------------------------------------------------------
+    # Allowlist helpers (Patch Group C/D)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _require_connection(connection: "Neo4jConnection") -> "Neo4jConnection":
+        """Enforce Neo4jConnection type at every write entry-point."""
         from mahoun.graph.neo4j.connection import Neo4jConnection
-        
+
         if not isinstance(connection, Neo4jConnection):
             raise TypeError(
-                f"connection must be Neo4jConnection instance, got {type(connection).__name__}"
+                f"connection must be Neo4jConnection instance, got "
+                f"{type(connection).__name__}. Passing a raw adapter or Any is forbidden."
             )
-            
+        return connection
+
+    @staticmethod
+    def _validate_node_properties(label: str, properties: Dict[str, Any]) -> Dict[str, Any]:
+        """Reject properties not in the builder allowlist for label."""
+        if label not in _LINKER_ALLOWED_LABELS:
+            raise ValueError(f"Invalid node label: {label!r}")
+        allowed = _LINKER_ALLOWED_NODE_PROPERTIES[label]
+        unknown = set(properties) - allowed
+        if unknown:
+            raise ValueError(
+                f"Node '{label}' properties contain unsupported keys: {sorted(unknown)}. Allowed: {sorted(allowed)}"
+            )
+        return {k: v for k, v in properties.items() if k in allowed}
+
+    @staticmethod
+    def _validate_relationship(
+        from_label: str,
+        from_id: str,
+        rel_type: str,
+        to_label: str,
+        to_id: str,
+        properties: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Reject edge endpoints, types, or properties outside the allowlist."""
+        if from_label not in _LINKER_ALLOWED_LABELS:
+            raise ValueError(f"Invalid source label: {from_label!r}")
+        if to_label not in _LINKER_ALLOWED_LABELS:
+            raise ValueError(f"Invalid target label: {to_label!r}")
+        if rel_type not in _LINKER_ALLOWED_REL_TYPES:
+            raise ValueError(f"Invalid relationship type: {rel_type!r}")
+        if (from_label, to_label) not in _LINKER_ALLOWED_REL_ENDPOINTS[rel_type]:
+            raise ValueError(
+                f"Relationship endpoint mismatch: {from_label}-[{rel_type}]->{to_label} is not in the allowlist"
+            )
+        allowed_props = _LINKER_ALLOWED_REL_PROPERTIES[rel_type]
+        unknown = set(properties) - allowed_props
+        if unknown:
+            raise ValueError(
+                f"Relationship '{rel_type}' properties contain unsupported keys: "
+                f"{sorted(unknown)}. Allowed: {sorted(allowed_props)}"
+            )
+        return {k: v for k, v in properties.items() if k in allowed_props}
+
+    # ------------------------------------------------------------------
+    # Neo4j Direct Integration — governed write surface only
+    # ------------------------------------------------------------------
+
+    def submit_to_neo4j(
+        self, nodes: List[GraphNodeSpec], edges: List[GraphEdgeSpec], connection: "Neo4jConnection"
+    ) -> bool:
+        """
+        Submit nodes and edges to Neo4j through the governed write surface.
+
+        All writes route through GovernedNeo4jSession.write_node /
+        write_relationship.  Raw Cypher is FORBIDDEN here.
+        """
+        connection = self._require_connection(connection)
+
         if should_skip_graph():
             logger.debug("EntityLinker: Skipping Neo4j submission in desktop-minimal mode")
             return True
-        
+
         try:
-            # Create nodes using MERGE
             for node in nodes:
                 self._merge_node(node, connection)
-            
-            # Create edges
             for edge in edges:
                 self._create_edge(edge, connection)
-            
             logger.info(f"Submitted {len(nodes)} nodes and {len(edges)} edges to Neo4j")
             return True
-            
         except Exception as e:
             logger.error(f"Neo4j submission failed: {e}")
             return False
-    
-    def _merge_node(self, node: GraphNodeSpec, connection: 'Neo4jConnection'):
-        """Merge a single node into Neo4j"""
-        if not connection:
-            return
-            
-        # Validate label to prevent Cypher injection
-        ALLOWED_LABELS = {"Case", "Person", "Organization", "Court", "LawArticle", "Topic"}
-        if node.label not in ALLOWED_LABELS:
-            raise ValueError(f"Invalid node label: {node.label}")
-        
-        # Build MERGE query using APOC for properties
-        query = f"""
-            MERGE (n:{node.label} {{node_id: $node_id}})
-            WITH n
-            CALL apoc.create.setProperties(n, $props_map) YIELD node
-            RETURN node
-        """
-        
-        params = {"node_id": node.node_id, "props_map": node.properties}
-        
+
+    def _merge_node(self, node: GraphNodeSpec, connection: "Neo4jConnection") -> None:
+        """Write a single node via GovernedNeo4jSession.write_node."""
+        connection = self._require_connection(connection)
+        # Validate and filter properties against the allowlist
+        clean_props = self._validate_node_properties(node.label, node.properties)
+        node_data = {"id": node.node_id, "node_id": node.node_id, **clean_props}
+
         import uuid
+
         correlation_id = str(uuid.uuid4())
         with connection.governed_session(
             correlation_id=correlation_id,
             actor_id="entity-linker",
-            operation_type="entity_merge_node"
         ) as session:
-            session.run(query, params)
-    
-    def _create_edge(self, edge: GraphEdgeSpec, connection: 'Neo4jConnection'):
-        """Create an edge in Neo4j"""
-        if not connection:
-            return
-            
-        # Validate labels and relationship type to prevent Cypher injection
-        ALLOWED_LABELS = {"Case", "Person", "Organization", "Court", "LawArticle", "Topic"}
-        ALLOWED_REL_TYPES = {"PARTY_IN", "REFERS_TO", "HANDLED_BY", "ABOUT"}
-        
-        if edge.from_label not in ALLOWED_LABELS or edge.to_label not in ALLOWED_LABELS:
-            raise ValueError(f"Invalid node label: {edge.from_label} or {edge.to_label}")
-        if edge.relationship_type not in ALLOWED_REL_TYPES:
-            raise ValueError(f"Invalid relationship type: {edge.relationship_type}")
-        
-        query = f"""
-            MATCH (a:{edge.from_label} {{node_id: $from_id}})
-            MATCH (b:{edge.to_label} {{node_id: $to_id}})
-            MERGE (a)-[r:{edge.relationship_type}]->(b)
-            WITH r
-            CALL apoc.create.setRelProperties(r, $props_map) YIELD rel
-            RETURN rel
-        """
-        
-        params = {"from_id": edge.from_id, "to_id": edge.to_id, "props_map": edge.properties}
-        
+            session.write_node(label=node.label, node_data=node_data, merge=True)
+
+    def _create_edge(self, edge: GraphEdgeSpec, connection: "Neo4jConnection") -> None:
+        """Write a single relationship via GovernedNeo4jSession.write_relationship."""
+        connection = self._require_connection(connection)  # fixes self.connection bug
+        # Validate endpoint tuple, type, and property keys
+        clean_props = self._validate_relationship(
+            edge.from_label,
+            edge.from_id,
+            edge.relationship_type,
+            edge.to_label,
+            edge.to_id,
+            edge.properties,
+        )
+        rel_data = clean_props  # provenance injected by governed session
+
         import uuid
+
         correlation_id = str(uuid.uuid4())
-        with self.connection.governed_session(
+        with connection.governed_session(
             correlation_id=correlation_id,
             actor_id="entity-linker",
-            operation_type="entity_create_edge"
         ) as session:
-            session.run(query, params)
+            session.write_relationship(
+                source_type=edge.from_label,
+                source_id=edge.from_id,
+                relationship_type=edge.relationship_type,
+                target_type=edge.to_label,
+                target_id=edge.to_id,
+                rel_data=rel_data,
+                merge=True,
+            )
 
 
 # ============================================================================
@@ -824,44 +865,36 @@ def _get_linker() -> EntityLinker:
 
 
 def link_entities_to_graph(
-    entities: Dict[str, List[Dict[str, Any]]],
-    case_id: str,
-    case_metadata: Optional[Dict[str, Any]] = None
+    entities: Dict[str, List[Dict[str, Any]]], case_id: str, case_metadata: Optional[Dict[str, Any]] = None
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Link NER entities to graph structures.
-    
+
     Main API function for entity linking.
-    
+
     Args:
         entities: NER output from legal_ner.extract_entities()
         case_id: Unique case/document identifier
         case_metadata: Optional case metadata
-    
+
     Returns:
         Tuple of (nodes, edges) as dictionaries
-    
+
     Example:
         >>> from mahoun.pipelines.ingestion.legal_ner import extract_entities
         >>> from mahoun.graph.builders.entity_linker import link_entities_to_graph
-        >>> 
+        >>>
         >>> entities = extract_entities(text)
         >>> nodes, edges = link_entities_to_graph(entities, case_id="case_001")
     """
     linker = _get_linker()
     nodes, edges = linker.link(entities, case_id, case_metadata)
-    
+
     # Convert to dictionaries for serialization
     nodes_dicts = [
-        {
-            "label": n.label,
-            "node_id": n.node_id,
-            "properties": n.properties,
-            "confidence": n.confidence
-        }
-        for n in nodes
+        {"label": n.label, "node_id": n.node_id, "properties": n.properties, "confidence": n.confidence} for n in nodes
     ]
-    
+
     edges_dicts = [
         {
             "from_label": e.from_label,
@@ -870,11 +903,11 @@ def link_entities_to_graph(
             "to_id": e.to_id,
             "relationship_type": e.relationship_type,
             "properties": e.properties,
-            "confidence": e.confidence
+            "confidence": e.confidence,
         }
         for e in edges
     ]
-    
+
     return nodes_dicts, edges_dicts
 
 
@@ -882,27 +915,32 @@ def link_and_submit(
     entities: Dict[str, List[Dict[str, Any]]],
     case_id: str,
     case_metadata: Optional[Dict[str, Any]] = None,
-    neo4j_adapter=None
+    connection: Optional["Neo4jConnection"] = None,  # PATCH A: typed, not free-form Any
 ) -> LinkingResult:
     """
     Link entities and optionally submit to Neo4j.
-    
+
     Args:
         entities: NER output
         case_id: Case identifier
         case_metadata: Optional case metadata
-        neo4j_adapter: Optional Neo4j adapter for direct submission (must be Neo4jConnection)
-    
+        connection: Optional Neo4jConnection for governed submission.
+                    MUST be a Neo4jConnection instance — no raw adapters.
+
     Returns:
         LinkingResult with statistics
     """
     linker = EntityLinker()
     result = linker.link_with_result(entities, case_id, case_metadata)
-    
-    if neo4j_adapter and result.success:
+
+    if connection is not None:
+        # Enforce type at the public API boundary before any write attempt
+        EntityLinker._require_connection(connection)
+
+    if connection and result.success:
         nodes, edges = linker.link(entities, case_id, case_metadata)
-        linker.submit_to_neo4j(nodes, edges, connection=neo4j_adapter)
-    
+        linker.submit_to_neo4j(nodes, edges, connection=connection)
+
     return result
 
 
@@ -913,7 +951,7 @@ def link_and_submit(
 if __name__ == "__main__":
     print("🔗 Testing Entity Linker")
     print("=" * 60)
-    
+
     # Sample NER output
     entities = {
         "persons": [
@@ -922,7 +960,7 @@ if __name__ == "__main__":
                 "name": "احمد احمدی",
                 "title": "آقای",
                 "father_name": "محمد",
-                "confidence": 0.9
+                "confidence": 0.9,
             }
         ],
         "organizations": [
@@ -931,7 +969,7 @@ if __name__ == "__main__":
                 "name": "توسعه فناوری",
                 "org_type": "شرکت",
                 "registration_id": "12345",
-                "confidence": 0.85
+                "confidence": 0.85,
             }
         ],
         "courts": [
@@ -940,35 +978,22 @@ if __name__ == "__main__":
                 "level": "دادگاه عمومی حقوقی",
                 "branch": "10",
                 "city": "تهران",
-                "confidence": 0.9
+                "confidence": 0.9,
             }
         ],
-        "laws": [
-            {
-                "article_number": "10",
-                "law_name": "قانون مدنی",
-                "confidence": 0.85
-            }
-        ],
-        "topics": [
-            {
-                "topic": "مطالبه وجه",
-                "category": "مالی",
-                "confidence": 0.8
-            }
-        ]
+        "laws": [{"article_number": "10", "law_name": "قانون مدنی", "confidence": 0.85}],
+        "topics": [{"topic": "مطالبه وجه", "category": "مالی", "confidence": 0.8}],
     }
-    
+
     nodes, edges = link_entities_to_graph(entities, case_id="test_001")
-    
+
     print(f"\n📊 Created {len(nodes)} nodes:")
     for node in nodes:
         print(f"   • ({node['label']}) {node['node_id']}")
-    
+
     print(f"\n🔗 Created {len(edges)} edges:")
     for edge in edges:
         print(f"   • ({edge['from_label']})-[:{edge['relationship_type']}]->({edge['to_label']})")
-    
+
     print("\n" + "=" * 60)
     print("✅ Entity Linker Test Complete")
-

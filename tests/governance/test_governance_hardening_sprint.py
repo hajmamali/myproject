@@ -297,7 +297,18 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
             return_value=ctx,
         ), patch(
             "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
-            return_value=MagicMock(to_dict=lambda: {"source": "test", "author": f"worker-{worker_id}", "correlation_id": f"corr-{worker_id}", "timestamp": "2026-01-01T00:00:00+00:00", "provenance_hash": "ph"}, provenance_hash="ph"),
+            return_value=MagicMock(
+                to_dict=lambda: {
+                    "source": "test",
+                    "author": f"worker-{worker_id}",
+                    "correlation_id": f"corr-{worker_id}",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                    "provenance_hash": "ph",
+                    "governance_scope_id": f"scope-{worker_id}",
+                    "runtime_attestation_id": f"attest-{worker_id}",
+                },
+                provenance_hash="ph",
+            ),
         ), patch(
             "mahoun.core.governance.mutation_boundary._append_governance_audit",
         ):
@@ -473,7 +484,18 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
             return_value=_make_governance_context("chaos-corr", "chaos-actor"),
         ), patch(
             "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
-            return_value=MagicMock(to_dict=lambda: {"source": "test"}, provenance_hash="h"),
+            return_value=MagicMock(
+                to_dict=lambda: {
+                    "source": "test",
+                    "author": "chaos-actor",
+                    "correlation_id": "chaos-corr",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                    "provenance_hash": "h",
+                    "governance_scope_id": "scope-chaos",
+                    "runtime_attestation_id": "attest-chaos",
+                },
+                provenance_hash="h",
+            ),
         ), patch(
             "mahoun.core.governance.mutation_boundary._append_governance_audit",
             side_effect=GovernanceViolationError(
@@ -485,6 +507,9 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
                     source="chaos-test",
                 )
             ),
+        ), patch(
+            "mahoun.core.governance.mutation_boundary.ProvenanceValidator.validate",
+            return_value=True,
         ):
             with self.assertRaises(GovernanceViolationError):
                 session.write_node("Verdict", {"id": "chaos-001"})
@@ -502,11 +527,25 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
             return_value=_make_governance_context("chaos-corr", "chaos-actor"),
         ), patch(
             "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
-            return_value=MagicMock(to_dict=lambda: {"source": "t"}, provenance_hash="h"),
+            return_value=MagicMock(
+                to_dict=lambda: {
+                    "source": "t",
+                    "author": "chaos-actor",
+                    "correlation_id": "chaos-corr",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                    "provenance_hash": "h",
+                    "governance_scope_id": "scope-chaos",
+                    "runtime_attestation_id": "attest-chaos",
+                },
+                provenance_hash="h",
+            ),
         ), patch(
             "mahoun.core.governance.mutation_boundary._append_governance_audit",
+        ), patch(
+            "mahoun.core.governance.mutation_boundary.ProvenanceValidator.validate",
+            return_value=True,
         ):
-            with self.assertRaises(RuntimeError):
+             with self.assertRaises(RuntimeError):
                 session.write_node("Verdict", {"id": "chaos-002"})
 
         self.assertEqual(session.mutation_count, 0,
@@ -523,8 +562,22 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
             return_value=_make_governance_context("chaos-corr", "chaos-actor"),
         ), patch(
             "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
-            return_value=MagicMock(to_dict=lambda: {"source": "t"}, provenance_hash="h"),
-        ), patch("mahoun.core.governance.mutation_boundary._append_governance_audit"):
+            return_value=MagicMock(
+                to_dict=lambda: {
+                    "source": "t",
+                    "author": "chaos-actor",
+                    "correlation_id": "chaos-corr",
+                    "timestamp": "2026-01-01T00:00:00+00:00",
+                    "provenance_hash": "h",
+                    "governance_scope_id": "scope-chaos",
+                    "runtime_attestation_id": "attest-chaos",
+                },
+                provenance_hash="h",
+            ),
+        ), patch("mahoun.core.governance.mutation_boundary._append_governance_audit"), patch(
+            "mahoun.core.governance.mutation_boundary.ProvenanceValidator.validate",
+            return_value=True,
+        ):
             try:
                 session.write_node("Verdict", {"id": "chaos-003"})
             except RuntimeError:
@@ -582,7 +635,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         from mahoun.core.governance.mutation_replayer import MutationReplayer, ReplayStatus
         result = MutationReplayer().replay([])
         self.assertEqual(result.status, ReplayStatus.EMPTY)
-        self.assertEqual(result.audit_integrity, "PROVEN")
+        self.assertEqual(result.audit_integrity, "NOT PROVEN")
 
     # --- single mutation replay MATCH ---
     def test_task11_single_merge_replay_match_positive(self):

@@ -367,7 +367,7 @@ async def search_health():
 
         # Check Graph
         try:
-            graph_ops = service._get_graph_ops()
+            graph_ops = await service._get_graph_ops()
             health_status["backends"]["graph"] = (
                 "available" if graph_ops else "unavailable"
             )

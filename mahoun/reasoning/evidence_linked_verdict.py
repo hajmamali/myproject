@@ -452,6 +452,39 @@ class EvidenceLinkedVerdictEngine:
         # HARDENING PATCH P08: Initialize request-scoped edge state
         edge_state = {"counter": 0, "id_map": {}}
 
+        # Step 0: RAG-based evidence retrieval (optional, backward compatible)
+        # If container is available and facts are sparse, augment with retrieved evidence
+        retrieved_evidence = []
+        if self.container is not None:
+            try:
+                rag_service = self.container.rag_service
+                if rag_service is not None:
+                    # Use RAG to retrieve additional evidence
+                    rag_result = await rag_service.retrieve(
+                        query=question,
+                        mode="AUTO",
+                        top_k=10
+                    )
+                    if rag_result and hasattr(rag_result, 'results'):
+                        for r in rag_result.results:
+                            # Convert RAG result to fact format
+                            if hasattr(r, 'content') and r.content:
+                                retrieved_evidence.append({
+                                    "value": r.content[:1000],  # Truncate for safety
+                                    "type": "RAG_RETRIEVED",
+                                    "source": r.metadata.get("source", "rag"),
+                                    "score": getattr(r, 'score', 0.0),
+                                    "metadata": r.metadata if hasattr(r, 'metadata') else {}
+                                })
+                    log.info(f"RAG retrieval returned {len(retrieved_evidence)} additional evidence items")
+            except Exception as e:
+                log.warning(f"RAG retrieval failed (continuing with provided facts only): {e}")
+
+        # Merge retrieved evidence with provided facts
+        if retrieved_evidence:
+            fact_texts.extend([e["value"] for e in retrieved_evidence])
+            log.info(f"Augmented facts with {len(retrieved_evidence)} retrieved items (total: {len(fact_texts)})")
+
         # Step 1: Build graph from facts
         case_graph_nodes, case_graph_edges = self._build_case_graph(fact_texts, edge_state)
 

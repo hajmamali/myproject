@@ -47,13 +47,33 @@ class GovernedSchemaRunner:
 
 
 class RawSessionRunner:
-    """Adapter for raw neo4j.Session (backward compatibility for tests/examples)."""
+    """Adapter for raw neo4j.Session.
 
-    def __init__(self, session: Any) -> None:
+    WARNING: Using RawSessionRunner in production bypasses the
+    MutationAuthorizationBoundary and audit guarantees. This adapter
+    is intended ONLY for local tests and backwards-compatibility
+    examples. In production environments this constructor will raise
+    a RuntimeError to prevent accidental governance bypass.
+    """
+
+    def __init__(self, session: Any, allow_unsafe: bool = False) -> None:
+        """Create a RawSessionRunner.
+
+        Args:
+            session: neo4j.Session-like object
+            allow_unsafe: must be True to permit raw session usage (tests only)
+        """
+        # Fail-closed by default: prevent accidental use in production
+        if not allow_unsafe:
+            raise RuntimeError(
+                "RawSessionRunner is unsafe in production. "
+                "Pass allow_unsafe=True only in isolated test harnesses."
+            )
         self._session = session
 
     def run(
         self, query: str, parameters: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
+        # Delegate directly to driver session for tests only
         result = self._session.run(query, parameters or {})
         return [dict(record) for record in result]

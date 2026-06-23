@@ -18,8 +18,7 @@ Key Features:
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Union
-from datetime import datetime
-import asyncio
+from datetime import datetime, timezone
 
 from mahoun.rag.hybrid_rag_service import HybridRAGService, HybridRAGResult, RetrievalResult
 from mahoun.schemas.legal_aware_schema import (

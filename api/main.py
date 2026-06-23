@@ -44,14 +44,18 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
 
-# Removed search router as LegalSearchService is not implemented
+# Import search router - LegalSearchService now implemented
+try:
+    from api.routers import search as search_router
+
+    HAS_SEARCH_ROUTER = True
+except ImportError:
+    HAS_SEARCH_ROUTER = False
 
 # Import system router for runtime configuration and health
 from api.routers import system as system_router
 from mahoun.core.settings import load_security_settings
 from mahoun.pipelines._logging import get_logger
-
-HAS_SEARCH_ROUTER = False
 
 # Import ingest router for document upload
 try:

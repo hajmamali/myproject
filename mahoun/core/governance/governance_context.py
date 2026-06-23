@@ -79,12 +79,14 @@ class GovernanceContext:
     correlation_id: str
     timestamp: str
     execution_mode: str
-
     # Governance components
     provenance_tracker: ProvenanceTracker
     validator_pipeline: ValidatorPipeline
     deterministic_resolver: DeterministicResolver
     ontology_enforcer: OntologyEnforcer
+
+    # Actor identity for audit trail (defaulted)
+    actor_id: str = ""
 
     # Runtime state
     proof_tracking_active: bool = True
@@ -116,6 +118,7 @@ class GovernanceContext:
             "proof_tracking_active": self.proof_tracking_active,
             "contradiction_hooks_active": self.contradiction_hooks_active,
             "governance_scope_injected": self.governance_scope_injected,
+            "actor_id": self.actor_id,
         }
 
         # CRITICAL: Only initialize lineage if empty (preserve parent lineage)
@@ -279,6 +282,7 @@ class GovernanceContextManager:
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> GovernanceContext:
         """
         Create a new governance context.
@@ -291,7 +295,22 @@ class GovernanceContextManager:
             GovernanceContext instance
         """
         ctx_id = f"ctx-{uuid.uuid4().hex[:16]}"
-        corr_id = correlation_id or f"req-{uuid.uuid4().hex[:16]}"
+
+        # Enforce explicit correlation_id — no silent defaults allowed
+        if correlation_id is None or not str(correlation_id).strip():
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=(
+                        "GovernanceContext creation requires an explicit non-empty correlation_id."
+                    ),
+                    details={"provided_correlation_id": repr(correlation_id)},
+                    source="GovernanceContextManager.create_context",
+                )
+            )
+
+        corr_id = str(correlation_id)
 
         # Initialize governance components
         provenance_tracker = ProvenanceTracker()
@@ -309,6 +328,19 @@ class GovernanceContextManager:
             hashlib.sha256
         ).hexdigest()
 
+        # Validate actor_id when provided (reject empty/whitespace)
+        resolved_actor = actor_id if actor_id is not None else ""
+        if actor_id is not None and not str(actor_id).strip():
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=("Provided actor_id is empty or whitespace."),
+                    details={"actor_id_provided": repr(actor_id)},
+                    source="GovernanceContextManager.create_context",
+                )
+            )
+
         return GovernanceContext(
             context_id=ctx_id,
             correlation_id=corr_id,
@@ -319,6 +351,7 @@ class GovernanceContextManager:
             deterministic_resolver=deterministic_resolver,
             ontology_enforcer=ontology_enforcer,
             signature=sig,
+            actor_id=resolved_actor,
         )
 
     @classmethod
@@ -347,7 +380,7 @@ class GovernanceContextManager:
         Raises:
             GovernanceViolationError: If context cannot be established
         """
-        ctx = cls.create_context(correlation_id=correlation_id, execution_mode=execution_mode)
+        ctx = cls.create_context(correlation_id=correlation_id, execution_mode=execution_mode, actor_id=actor_id)
 
         try:
             # Validate governance scope
