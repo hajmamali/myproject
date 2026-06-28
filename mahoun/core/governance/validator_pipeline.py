@@ -122,6 +122,7 @@ ALLOWED_NODE_PROPERTY_KEYS: frozenset[str] = frozenset(
         "tag",
         # ---- Legal domain ------------------------------------------------
         "case_type",
+        "court_name",  # Court name (e.g., "Supreme Court", "دیوان عالی کشور")
         "court_level",
         "court_rank",
         "is_final",
@@ -171,6 +172,7 @@ ALLOWED_NODE_PROPERTY_KEYS: frozenset[str] = frozenset(
         "provenance_hash",
         # ---- Optimizer ---------------------------------------------------
         "snapshot_label",
+        "graduation_timestamp",  # Graduation timestamp for quarantine → master
     }
 )
 

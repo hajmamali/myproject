@@ -718,7 +718,13 @@ class FortressValidator:
         # HARDENING: Formal validation of derived facts
         converter = FOLConverter()
         invalid_facts = []
-        for fact_str in derived_facts:
+        for fact_item in derived_facts:
+            # Handle both string and dict formats for derived_facts
+            if isinstance(fact_item, dict):
+                fact_str = fact_item.get("fact", "") or str(fact_item)
+            else:
+                fact_str = str(fact_item)
+            
             try:
                 converter.parse(fact_str)
             except ParseError as e:

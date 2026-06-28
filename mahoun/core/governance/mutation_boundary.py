@@ -289,13 +289,14 @@ def _make_receipt(
 # Mutation Authorization Boundary (constitutional checkpoint)
 # ---------------------------------------------------------------------------
 
-# ContextVar: safe for asyncio, completely isolates coroutines even on the same OS thread.
-_authorized_write_ctx: contextvars.ContextVar[bool] = contextvars.ContextVar("_authorized_write_ctx", default=False)
-
-
-def _is_authorized() -> bool:
-    """True only when executing inside GovernedNeo4jSession."""
-    return _authorized_write_ctx.get()
+# Canonical authorization state — single source of truth.
+# Both this module and kernel.py import from authorization_state to guarantee A is B.
+from mahoun.core.governance.authorization_state import (
+    _authorized_write_ctx,
+    is_authorized as _is_authorized,
+    set_authorized as _set_authorized,
+    reset_authorized as _reset_authorized,
+)
 
 
 class MutationAuthorizationBoundary:
@@ -867,11 +868,11 @@ class GovernedNeo4jSession:
         Sets contextvar flag → executes → resets flag.
         The token is managed contextually — it cannot leak across async boundaries.
         """
-        token = _authorized_write_ctx.set(True)
+        token = _set_authorized(True)
         try:
             return self._raw_executor(query, params)
         finally:
-            _authorized_write_ctx.reset(token)
+            _reset_authorized(token)
 
 
 # ---------------------------------------------------------------------------
