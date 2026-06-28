@@ -71,6 +71,13 @@ def mock_verdict_engine():
         conclusion: str
         evidence: list[str] = field(default_factory=list)
         confidence: float = 0.92
+        # Add attributes expected by VerdictEngineAdapter
+        statement: str = field(default="")
+
+        def __post_init__(self):
+            # Ensure statement mirrors conclusion if not set
+            if not self.statement:
+                object.__setattr__(self, "statement", self.conclusion)
 
     @dataclass
     class MockVerdict:
@@ -79,7 +86,8 @@ def mock_verdict_engine():
         confidence_score: float
         verdict_id: str
         unresolved_conflicts: list[str] = field(default_factory=list)
-        ledger_hash: str = "mock_hash_123"
+        # P1-3: Add ledger_hash to satisfy adapter validation
+        ledger_hash: str = "mock_ledger_hash_abc123def456"
 
     from mahoun.core.governance.violations import (
         GovernanceViolation,
@@ -131,7 +139,11 @@ def mock_verdict_engine():
         ]
 
         return MockVerdict(
-            final_verdict="Tax exemption applies", steps=steps, confidence_score=0.92, verdict_id="verdict_123"
+            final_verdict="Tax exemption applies", 
+            steps=steps, 
+            confidence_score=0.92, 
+            verdict_id="verdict_123",
+            ledger_hash=f"ledger_hash_{correlation_id or 'unknown'}"
         )
 
     mock_engine = MagicMock()
@@ -145,12 +157,22 @@ def mock_verdict_engine():
 
 
 @pytest.fixture
-def client(mock_verdict_engine):
+def client(mock_verdict_engine, monkeypatch):
     """Create test client with mocked verdict engine"""
+    # The issue: API routers import get_verdict_engine at module level
+    # We need to patch it before TestClient instantiation
+    from api.routers import reasoning
+    
+    # Patch the dependency function directly
+    monkeypatch.setattr(reasoning, "_verdict_engine_instance", mock_verdict_engine)
+    
+    # Also override dependency for FastAPI DI
     from api.routers.reasoning import get_verdict_engine
-
     app.dependency_overrides[get_verdict_engine] = lambda: mock_verdict_engine
+    
     yield TestClient(app, raise_server_exceptions=False)
+    
+    # Cleanup
     app.dependency_overrides.clear()
 
 

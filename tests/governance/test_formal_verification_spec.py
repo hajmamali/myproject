@@ -146,6 +146,7 @@ def test_composition_G1_G2_existence_and_resolution():
     with pytest.raises(InvariantViolation) as excinfo:
         G2_EvidenceReferencesResolve(step.evidence[0], empty_registry)
     
+    # Use the new property accessor (backward compatible)
     assert excinfo.value.invariant_name == "G2_EvidenceReferencesResolve"
 
 # ────────────────────────────────────────────────────────────
