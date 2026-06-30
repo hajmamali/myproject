@@ -55,7 +55,8 @@ class TestEvidenceLinkedVerdictEngine:
 class TestEvidenceLinking:
     """Test that evidence is properly linked"""
     
-    def test_verdict_links_to_graph_nodes(self):
+    @pytest.mark.asyncio
+    async def test_verdict_links_to_graph_nodes(self):
         """Test that verdict steps reference graph nodes"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -73,13 +74,19 @@ class TestEvidenceLinking:
             "تعهد ایجاد می‌شود",
             0.9
         )
-        
+        kg.add_legal_rule(
+            "rule_2",
+            "قرارداد امضا شده",
+            "مسئولیت به وجود می‌آید",
+            0.85
+        )
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "اگر قراردادی امضا شود چه می‌شود؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        verdict = await engine.generate_verdict(question, facts)
         
         # Check that steps have evidence
         assert len(verdict.steps) > 0, "باید حداقل یک step باشد"
@@ -92,8 +99,9 @@ class TestEvidenceLinking:
                 assert evidence.node_type, "Evidence باید node_type داشته باشد"
         
         print(f"✓ Verdict has {len(verdict.steps)} steps, all with evidence links")
-    
-    def test_removing_node_invalidates_verdict(self):
+
+    @pytest.mark.asyncio
+    async def test_removing_node_invalidates_verdict(self):
         """Test that removing a referenced node invalidates the verdict"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -111,13 +119,25 @@ class TestEvidenceLinking:
             "تعهد",
             0.95
         )
-        
+        kg.add_legal_rule(
+            "supporting_rule",
+            "قرارداد",
+            "مسئولیت",
+            0.85
+        )
+        kg.add_legal_rule(
+            "supporting_rule_2",
+            "قرارداد",
+            "حقوق طرفین",
+            0.80
+        )
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict1 = engine.generate_verdict(question, facts)
+        verdict1 = await engine.generate_verdict(question, facts)
         
         # Get referenced node IDs
         referenced_nodes = set()
@@ -131,7 +151,7 @@ class TestEvidenceLinking:
         kg.legal_rules.pop("critical_rule", None)
         
         # Generate verdict again
-        verdict2 = engine.generate_verdict(question, facts)
+        verdict2 = await engine.generate_verdict(question, facts)
         
         # Check that verdict changed (node removed)
         # The verdict should either have fewer steps or different evidence
@@ -149,7 +169,9 @@ class TestEvidenceLinking:
         
         print(f"✓ Removing node invalidates verdict ({len(missing_nodes)} nodes missing)")
     
-    def test_contradictory_rules_in_unresolved_conflicts(self):
+    
+    @pytest.mark.asyncio
+    async def test_contradictory_rules_in_unresolved_conflicts(self):
         """Test that contradictory rules appear in unresolved_conflicts"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -179,7 +201,7 @@ class TestEvidenceLinking:
         question = "قرارداد باید اجرا شود؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        verdict = await engine.generate_verdict(question, facts)
         
         # Check that contradiction is either resolved or in unresolved_conflicts
         has_contradiction = len(verdict.unresolved_conflicts) > 0
@@ -198,7 +220,8 @@ class TestEvidenceLinking:
             assert len(verdict.unresolved_conflicts) > 0, "باید contradiction در unresolved_conflicts باشد"
             print(f"✓ Contradiction in unresolved_conflicts: {verdict.unresolved_conflicts}")
     
-    def test_confidence_score_from_evidence(self):
+    @pytest.mark.asyncio
+    async def test_confidence_score_from_evidence(self):
         """Test that confidence_score is computed from evidence confidence"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -216,13 +239,19 @@ class TestEvidenceLinking:
             "تعهد",
             0.95  # High confidence
         )
-        
+        kg.add_legal_rule(
+            "support_rule",
+            "قرارداد",
+            "مسئولیت",
+            0.85
+        )
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        verdict = await engine.generate_verdict(question, facts)
         
         # Confidence should be based on evidence confidence
         assert 0.0 <= verdict.confidence_score <= 1.0, "Confidence باید بین 0 و 1 باشد"
@@ -241,7 +270,8 @@ class TestEvidenceLinking:
 class TestDeterministicOutput:
     """Test that output is deterministic"""
     
-    def test_same_input_same_output(self):
+    @pytest.mark.asyncio
+    async def test_same_input_same_output(self):
         """Test that same input produces same output"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -253,14 +283,15 @@ class TestDeterministicOutput:
         ledger_writer = NoOpLedgerWriter()
         
         kg.add_legal_rule("rule_1", "قرارداد", "تعهد", 0.9)
-        
+        kg.add_legal_rule("rule_2", "قرارداد", "مسئولیت", 0.85)
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
-        
-        verdict1 = engine.generate_verdict(question, facts)
-        verdict2 = engine.generate_verdict(question, facts)
+
+        verdict1 = await engine.generate_verdict(question, facts)
+        verdict2 = await engine.generate_verdict(question, facts)
         
         # Verdicts should be the same (deterministic)
         assert verdict1.final_verdict == verdict2.final_verdict, "Output باید deterministic باشد"
@@ -273,7 +304,8 @@ class TestDeterministicOutput:
 class TestNoLLMCalls:
     """Test that engine works without LLM calls"""
     
-    def test_engine_works_without_llm(self):
+    @pytest.mark.asyncio
+    async def test_engine_works_without_llm(self):
         """Test that engine generates verdict without LLM"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -286,6 +318,7 @@ class TestNoLLMCalls:
         
         # Add rules
         kg.add_legal_rule("rule_1", "قرارداد", "تعهد", 0.9)
+        kg.add_legal_rule("rule_2", "قرارداد", "مسئولیت", 0.85)
         kg.add_precedent("case_1", ["قرارداد"], "اجرا", "دادگاه")
         
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
@@ -294,7 +327,7 @@ class TestNoLLMCalls:
         facts = ["قرارداد امضا شده"]
         
         # This should work without any LLM calls
-        verdict = engine.generate_verdict(question, facts)
+        verdict = await engine.generate_verdict(question, facts)
         
         assert verdict is not None
         assert verdict.final_verdict, "باید verdict تولید شود"
@@ -306,7 +339,8 @@ class TestNoLLMCalls:
 class TestEvidenceRequirements:
     """Test evidence requirements"""
     
-    def test_each_step_has_evidence(self):
+    @pytest.mark.asyncio
+    async def test_each_step_has_evidence(self):
         """Test that each VerdictStep has at least one evidence reference"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -315,17 +349,18 @@ class TestEvidenceRequirements:
         builder = UltraGraphBuilder()
         kg = LegalKnowledgeGraph(enable_semantic=False)
         kg.add_legal_rule("rule_1", "قرارداد", "تعهد", 0.9)
-        
+        kg.add_legal_rule("rule_2", "قرارداد", "مسئولیت", 0.85)
+
         from mahoun.ledger.storage import NoOpLedgerWriter
         ledger_writer = NoOpLedgerWriter()
-        
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
-        
-        verdict = engine.generate_verdict(question, facts)
-        
+
+        verdict = await engine.generate_verdict(question, facts)
+
         for i, step in enumerate(verdict.steps):
             assert len(step.evidence) > 0, \
                 f"Step {i} ('{step.statement}') باید حداقل یک evidence reference داشته باشد"
@@ -338,7 +373,8 @@ class TestEvidenceRequirements:
         
         print(f"✓ All {len(verdict.steps)} steps have evidence references")
     
-    def test_evidence_justification_exists(self):
+    @pytest.mark.asyncio
+    async def test_evidence_justification_exists(self):
         """Test that evidence has justification"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -347,17 +383,18 @@ class TestEvidenceRequirements:
         builder = UltraGraphBuilder()
         kg = LegalKnowledgeGraph(enable_semantic=False)
         kg.add_legal_rule("rule_1", "قرارداد", "تعهد", 0.9)
-        
+        kg.add_legal_rule("rule_2", "قرارداد", "مسئولیت", 0.85)
+
         from mahoun.ledger.storage import NoOpLedgerWriter
         ledger_writer = NoOpLedgerWriter()
-        
+
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
-        
+
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
-        
-        verdict = engine.generate_verdict(question, facts)
-        
+
+        verdict = await engine.generate_verdict(question, facts)
+
         for step in verdict.steps:
             for evidence in step.evidence:
                 assert evidence.justification, \

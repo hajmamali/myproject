@@ -30,6 +30,7 @@ from mahoun.ledger.writer import EvidenceLedgerWriter
 from mahoun.ledger.write_gate import LedgerWriteGate, EvidencePackage
 from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
 from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
+from mahoun.reasoning.rag_evidence import RAGEvidenceNode
 from mahoun.reasoning.reasoning_recorder import ReasoningRecorder
 from mahoun.reasoning.semantic_matcher import SemanticMatcher
 
@@ -480,20 +481,28 @@ class EvidenceLinkedVerdictEngine:
             except Exception as e:
                 log.warning(f"RAG retrieval failed (continuing with provided facts only): {e}")
 
-        # Merge retrieved evidence with provided facts
+        # Merge retrieved evidence with provided facts.
+        # RAG-retrieved chunks must carry the GovernanceContext correlation_id
+        # so the ledger can correlate each evidence item back to the originating
+        # request. If no active context exists (development path), a synthetic
+        # id is used; this matches the existing fallback pattern in this module.
         rag_evidence_map = {}
         if retrieved_evidence:
-            from mahoun.reasoning.rag_evidence import RAGEvidenceNode
-            for e in retrieved_evidence:
+            try:
+                from mahoun.core.governance.governance_context import GovernanceContextManager
+                _rag_correlation_id = (
+                    GovernanceContextManager.get_current_context().correlation_id
+                )
+            except Exception:
+                _rag_correlation_id = "synthetic_rag_correlation"
+            for _rank, e in enumerate(retrieved_evidence):
                 idx = len(fact_texts)
                 fact_texts.append(e["value"])
-                rag_evidence_map[idx] = RAGEvidenceNode(
+                rag_evidence_map[idx] = RAGEvidenceNode.from_evidence_dict(
+                    e,
                     fact_index=idx,
-                    doc_id=e.get("metadata", {}).get("doc_id", e.get("doc_id", "")),
-                    source=e.get("source", "rag"),
-                    score=e.get("score", 0.0),
-                    retrieval_rank=len(rag_evidence_map),
-                    metadata=e.get("metadata", {})
+                    correlation_id=_rag_correlation_id,
+                    retrieval_rank=_rank,
                 )
             log.info(f"Augmented facts with {len(retrieved_evidence)} retrieved items (total: {len(fact_texts)})")
 
@@ -694,13 +703,23 @@ class EvidenceLinkedVerdictEngine:
                 for fact_id in referenced_facts:
                     node = case_graph_nodes.get(fact_id)
                     if node and node.properties.get("doc_id"):
-                        evidence_refs.append(f"{fact_id}::doc:{node.properties['doc_id']}::src:{node.properties.get('retrieval_source')}")
+                        evidence_refs.append(
+                            f"{fact_id}::doc:{node.properties['doc_id']}"
+                            f"::src:{node.properties.get('retrieval_source')}"
+                            f"::corr:{node.properties.get('retrieval_correlation_id', 'unknown')[:8]}"
+                        )
                         retrieval_provenance.append({
                             "fact_id": fact_id,
                             "doc_id": node.properties["doc_id"],
                             "source": node.properties.get("retrieval_source"),
                             "score": node.properties.get("retrieval_score"),
-                            "rank": node.properties.get("retrieval_rank")
+                            "rank": node.properties.get("retrieval_rank"),
+                            "authority": node.properties.get("retrieval_authority"),
+                            "correlation_id": node.properties.get("retrieval_correlation_id"),
+                            "content_hash": node.properties.get("retrieval_content_hash"),
+                            "is_sensitive": node.properties.get("retrieval_is_sensitive", False),
+                            "is_audit_eligible": node.properties.get("retrieval_is_audit_eligible", True),
+                            "metadata": dict(node.properties.get("retrieval_metadata", {}) or {}),
                         })
                     else:
                         evidence_refs.append(str(fact_id))
@@ -939,12 +958,19 @@ class EvidenceLinkedVerdictEngine:
             properties = {"fact_text": fact, "fact_index": i}
             if rag_evidence_map and i in rag_evidence_map:
                 ev = rag_evidence_map[i]
-                properties["retrieval_source"] = ev.source
+                properties["retrieval_source"] = ev.source.value
                 properties["retrieval_score"] = ev.score
                 properties["doc_id"] = ev.doc_id
                 properties["retrieval_rank"] = ev.retrieval_rank
+                properties["retrieval_authority"] = ev.authority.value
+                properties["retrieval_correlation_id"] = ev.correlation_id
+                properties["retrieval_content_hash"] = ev.content_hash
+                properties["retrieval_is_sensitive"] = ev.is_sensitive
+                properties["retrieval_is_audit_eligible"] = ev.is_audit_eligible()
+                properties["retrieval_metadata"] = dict(ev.metadata)
             else:
                 properties["retrieval_source"] = "user_provided"
+                properties["retrieval_is_audit_eligible"] = True
 
             node = GraphNode(
                 id=node_id,
@@ -955,6 +981,14 @@ class EvidenceLinkedVerdictEngine:
                 confidence=1.0,
             )
             nodes[node_id] = node
+
+            # Register with the persistent graph builder so the ledger
+            # validator can find the fact node (same rationale as in
+            # _create_rule_nodes / _create_precedent_nodes). Without this,
+            # validate_entry raises "Referenced LTM node 'fact_N' does not
+            # exist in graph" for every fact that the engine just built.
+            if self.graph_builder is not None:
+                self.graph_builder.nodes[node_id] = node
 
         # Create sequential edges between facts
         for i in range(len(facts) - 1):
@@ -1028,6 +1062,17 @@ class EvidenceLinkedVerdictEngine:
                 confidence=confidence,
             )
             rule_nodes[rule_id] = rule_node
+
+            # Register with the persistent graph builder so the ledger
+            # validator (which queries self.builder.get_nodes()) can find
+            # this node. Without this, validate_entry raises
+            # "Referenced LTM node 'rule_X' does not exist in graph" even
+            # though the node exists in the engine's local case_graph_nodes.
+            # In production with Neo4j, rules reach the graph via the export
+            # path; this in-memory registration closes the gap for tests
+            # and for the in-memory builder used in DESKTOP_MINIMAL mode.
+            if self.graph_builder is not None:
+                self.graph_builder.nodes[rule_id] = rule_node
 
             # Phase 2: Deterministic validation mandatory
             condition_canonical = self.semantic_matcher.normalize_text(condition.lower())
@@ -1118,6 +1163,11 @@ class EvidenceLinkedVerdictEngine:
             )
             precedent_nodes[prec_id] = prec_node
 
+            # Register with the persistent graph builder — see the
+            # corresponding note in _create_rule_nodes for rationale.
+            if self.graph_builder is not None:
+                self.graph_builder.nodes[prec_id] = prec_node
+
             # Phase 2: Deterministic validation mandatory
             for fact_id, fact_node in case_nodes.items():
                 fact_canonical = set(self.semantic_matcher.normalize_text(fact_node.label.lower()).split())
@@ -1145,7 +1195,7 @@ class EvidenceLinkedVerdictEngine:
                         properties={
                             "edge_id": edge_id,
                             "similarity": prec_data["similarity"],
-                            "matched_fact": fact_text,
+                            "matched_fact": fact_node.label,
                         },
                         confidence=prec_data["similarity"],
                     )
@@ -1834,7 +1884,7 @@ class EvidenceLinkedVerdictEngine:
     def _calculate_confidence_score(self, steps: list[VerdictStep]) -> float:
         """
         Calculate confidence score from evidence confidence values using Weakest Link logic.
-        
+
         MUST be computed from evidence confidence
         """
         if not steps:
@@ -1850,11 +1900,11 @@ class EvidenceLinkedVerdictEngine:
 
         # Weakest Link logic
         weakest_link = min(all_confidences)
-        
+
         # Support Threshold logic
         evidence_count_factor = min(len(all_confidences) / 5.0, 1.0)
         support_bonus = 0.2 * evidence_count_factor
-        
+
         confidence_score = weakest_link + support_bonus
 
         return min(confidence_score, 1.0)
