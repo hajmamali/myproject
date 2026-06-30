@@ -61,11 +61,13 @@ logger = logging.getLogger(__name__)
 
 from types import SimpleNamespace
 
-from mahoun.core.governance_kernel import (
-    GovernanceError,
+from mahoun.core.governance_kernel.kernel import (
     QueryType,
-    classify_query,
-    enforce_governance,
+    KernelMutationBoundary,
+    GovernanceViolationError as GovernanceError,
+    GovernanceViolation as KernelGovernanceViolation,
+    ViolationCategory as KernelViolationCategory,
+    ViolationSeverity as KernelViolationSeverity,
 )
 from mahoun.core.unified_governance import create_default_unified_controller
 
@@ -397,6 +399,89 @@ class Neo4jConnectionManager:
                 logger.info("Circuit breaker reset after cooldown period")
         return False
 
+    def _raise_governance_error(
+        self,
+        message: str,
+        *,
+        correlation_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        raise GovernanceError(
+            KernelGovernanceViolation(
+                category=KernelViolationCategory.GOVERNANCE_BYPASS,
+                severity=KernelViolationSeverity.CRITICAL,
+                message=message,
+                details=details or {},
+                source="Neo4jConnectionManager",
+                correlation_id=correlation_id,
+            )
+        )
+
+    @staticmethod
+    def _is_destructive_query(query: str) -> bool:
+        normalized = query.upper()
+        destructive_tokens = (" DELETE ", "DETACH DELETE", " DROP ", " REMOVE ")
+        return any(token in f" {normalized} " for token in destructive_tokens)
+
+    def _apply_governance_prechecks(
+        self,
+        query: str,
+        correlation_id: Optional[str],
+        actor_id: Optional[str],
+        allow_destructive: bool,
+    ) -> tuple[QueryType, str, str]:
+        """Apply the canonical sync/async governance checks before Neo4j execution."""
+        query_type = KernelMutationBoundary.classify_query(query)
+        query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+
+        if getattr(self, "_unified_controller", None) is not None:
+            try:
+                ctx = SimpleNamespace(correlation_id=correlation_id or "", actor_id=actor_id or "")
+                decision = self._unified_controller.prepare_query_execution(query=query, context=ctx)
+
+                if not decision.approved:
+                    logger.error(f"Unified governance denied query {query_hash}: {decision.decision_reason}")
+                    if decision.query_type in ("WRITE", "DESTRUCTIVE", "UNKNOWN", "FORBIDDEN"):
+                        self._raise_governance_error(
+                            decision.decision_reason,
+                            correlation_id=correlation_id,
+                            details={"query_hash": query_hash, "decision_type": decision.query_type},
+                        )
+                    return query_type, query_hash, query
+
+                if decision.query_transformed and decision.transformed_query:
+                    query = decision.transformed_query
+                    query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+
+                logger.info(f"Query {query_hash} classified as {decision.query_type}")
+            except Exception:
+                logger.exception("Unified governance controller failed; falling back to kernel enforcement")
+
+        if query_type in (QueryType.WRITE, QueryType.DDL, QueryType.FORBIDDEN):
+            if not correlation_id or not correlation_id.strip():
+                logger.error(f"Governance rejected query {query_hash}: WRITE/DDL requires correlation_id")
+                self._raise_governance_error(
+                    "Mutation queries require correlation_id",
+                    details={"query_hash": query_hash, "query_type": getattr(query_type, "value", str(query_type))},
+                )
+            if not actor_id or not actor_id.strip():
+                logger.error(f"Governance rejected query {query_hash}: WRITE/DDL requires actor_id")
+                self._raise_governance_error(
+                    "Mutation queries require actor_id",
+                    correlation_id=correlation_id,
+                    details={"query_hash": query_hash, "query_type": getattr(query_type, "value", str(query_type))},
+                )
+
+        if self._is_destructive_query(query) and not allow_destructive:
+            logger.error(f"Governance rejected query {query_hash}: destructive query requires allow_destructive")
+            self._raise_governance_error(
+                "Destructive queries require allow_destructive=True",
+                correlation_id=correlation_id,
+                details={"query_hash": query_hash},
+            )
+
+        return query_type, query_hash, query
+
     def execute_query(
         self,
         query: str,
@@ -417,39 +502,12 @@ class Neo4jConnectionManager:
         params = params or {}
         timeout = timeout or self.config.query_timeout_seconds
 
-        query_type = classify_query(query)
-        query_hash = hashlib.md5(f"{query}:{params}".encode()).hexdigest()[:8]
-
-        # Use unified governance controller if available to get decision and transform query
-        if getattr(self, "_unified_controller", None) is not None:
-            try:
-                # Do not silently fallback to "system" — keep empty and let
-                # unified controller / kernel enforce missing provenance.
-                ctx = SimpleNamespace(correlation_id=correlation_id or "", actor_id=actor_id or "")
-                decision = self._unified_controller.prepare_query_execution(query=query, context=ctx)
-
-                if not decision.approved:
-                    logger.error(f"Unified governance denied query {query_hash}: {decision.decision_reason}")
-                    if decision.query_type in ("WRITE", "DESTRUCTIVE", "UNKNOWN"):
-                        raise GovernanceError(decision.decision_reason)
-                    return []
-
-                if decision.query_transformed and decision.transformed_query:
-                    query = decision.transformed_query
-
-                logger.info(f"Query {query_hash} classified as {decision.query_type}")
-
-            except Exception:
-                logger.exception("Unified governance controller failed; falling back to kernel enforcement")
-                # fallthrough to kernel enforcement
-
-        try:
-            enforce_governance(query_type, correlation_id, actor_id, allow_destructive)
-        except GovernanceError as e:
-            logger.error(f"Governance rejected query {query_hash}: {e}")
-            if query_type in (QueryType.WRITE, QueryType.DESTRUCTIVE, QueryType.UNKNOWN):
-                raise
-            return []
+        query_type, query_hash, query = self._apply_governance_prechecks(
+            query=query,
+            correlation_id=correlation_id,
+            actor_id=actor_id,
+            allow_destructive=allow_destructive,
+        )
 
         if self._check_circuit_breaker():
             return []
@@ -517,36 +575,12 @@ class Neo4jConnectionManager:
         params = params or {}
         timeout = timeout or self.config.query_timeout_seconds
 
-        query_type = classify_query(query)
-        query_hash = hashlib.md5(f"{query}:{params}".encode()).hexdigest()[:8]
-        # Unified governance decision (if controller available)
-        if getattr(self, "_unified_controller", None) is not None:
-            try:
-                ctx = SimpleNamespace(correlation_id=correlation_id or "", actor_id=actor_id or "")
-                decision = self._unified_controller.prepare_query_execution(query=query, context=ctx)
-
-                if not decision.approved:
-                    logger.error(f"Unified governance denied query {query_hash}: {decision.decision_reason}")
-                    if decision.query_type in ("WRITE", "DESTRUCTIVE", "UNKNOWN"):
-                        raise GovernanceError(decision.decision_reason)
-                    return []
-
-                if decision.query_transformed and decision.transformed_query:
-                    query = decision.transformed_query
-
-                logger.info(f"Query {query_hash} classified as {decision.query_type}")
-
-            except Exception:
-                logger.exception("Unified governance controller failed; falling back to kernel enforcement")
-                # fallthrough to kernel enforcement
-
-        try:
-            enforce_governance(query_type, correlation_id, actor_id, allow_destructive)
-        except GovernanceError as e:
-            logger.error(f"Governance rejected query {query_hash}: {e}")
-            if query_type != QueryType.READ:
-                raise
-            return []
+        query_type, query_hash, query = self._apply_governance_prechecks(
+            query=query,
+            correlation_id=correlation_id,
+            actor_id=actor_id,
+            allow_destructive=allow_destructive,
+        )
 
         if self._check_circuit_breaker():
             return []

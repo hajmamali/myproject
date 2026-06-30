@@ -48,6 +48,21 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# Internal Helpers
+# ============================================================================
+
+
+def _resolve_actor_id(context: Any) -> str:
+    """Return a stable non-empty actor identifier for governance decisions."""
+    actor_id = getattr(context, "actor_id", None)
+    if actor_id is None:
+        return "unknown"
+
+    actor_text = str(actor_id).strip()
+    return actor_text or "unknown"
+
+
+# ============================================================================
 # Unified Governance Decision
 # ============================================================================
 
@@ -374,7 +389,7 @@ class UnifiedGovernanceController:
                 target_latency_ms=1000,
                 target_throughput_rps=10,
                 correlation_id=context.correlation_id,
-                actor_id=getattr(context, "actor_id", "unknown"),
+                actor_id=_resolve_actor_id(context),
                 resolved_at=decided_at,
                 justification=f"Policy resolution failed: {str(e)}",
                 metadata={"error": str(e)}
@@ -433,7 +448,7 @@ class UnifiedGovernanceController:
         decision = UnifiedGovernanceDecision(
             decision_id=decision_id,
             correlation_id=context.correlation_id,
-            actor_id=getattr(context, "actor_id", "unknown"),
+            actor_id=_resolve_actor_id(context),
             decided_at=decided_at,
             query_type=query_type.value,
             mutation_authorized=mutation_authorized,

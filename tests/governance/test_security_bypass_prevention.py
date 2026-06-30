@@ -237,8 +237,8 @@ class TestThresholdLoweringPrevention:
 
         validator = FortressValidator(strict_mode=True)
 
-        # Create response with low agreement score
-        response = ReasoningResponse(
+        # Create response with low agreement score (use create_unvalidated)
+        response = ReasoningResponse.create_unvalidated(
             success=True,
             result="Result",
             confidence=0.80,

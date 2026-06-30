@@ -481,12 +481,24 @@ class EvidenceLinkedVerdictEngine:
                 log.warning(f"RAG retrieval failed (continuing with provided facts only): {e}")
 
         # Merge retrieved evidence with provided facts
+        rag_evidence_map = {}
         if retrieved_evidence:
-            fact_texts.extend([e["value"] for e in retrieved_evidence])
+            from mahoun.reasoning.rag_evidence import RAGEvidenceNode
+            for e in retrieved_evidence:
+                idx = len(fact_texts)
+                fact_texts.append(e["value"])
+                rag_evidence_map[idx] = RAGEvidenceNode(
+                    fact_index=idx,
+                    doc_id=e.get("metadata", {}).get("doc_id", e.get("doc_id", "")),
+                    source=e.get("source", "rag"),
+                    score=e.get("score", 0.0),
+                    retrieval_rank=len(rag_evidence_map),
+                    metadata=e.get("metadata", {})
+                )
             log.info(f"Augmented facts with {len(retrieved_evidence)} retrieved items (total: {len(fact_texts)})")
 
         # Step 1: Build graph from facts
-        case_graph_nodes, case_graph_edges = self._build_case_graph(fact_texts, edge_state)
+        case_graph_nodes, case_graph_edges = self._build_case_graph(fact_texts, edge_state, rag_evidence_map)
 
         # Step 2: Find applicable rules (from knowledge graph)
         applicable_rules = self.knowledge_graph.find_applicable_rules(fact_texts)
@@ -676,10 +688,22 @@ class EvidenceLinkedVerdictEngine:
             try:
                 # Build evidence references for the EvidencePackage
                 evidence_refs: list[str] = []
+                retrieval_provenance: list[dict] = []
                 for node_id in referenced_ltm_nodes:
                     evidence_refs.append(str(node_id))
                 for fact_id in referenced_facts:
-                    evidence_refs.append(str(fact_id))
+                    node = case_graph_nodes.get(fact_id)
+                    if node and node.properties.get("doc_id"):
+                        evidence_refs.append(f"{fact_id}::doc:{node.properties['doc_id']}::src:{node.properties.get('retrieval_source')}")
+                        retrieval_provenance.append({
+                            "fact_id": fact_id,
+                            "doc_id": node.properties["doc_id"],
+                            "source": node.properties.get("retrieval_source"),
+                            "score": node.properties.get("retrieval_score"),
+                            "rank": node.properties.get("retrieval_rank")
+                        })
+                    else:
+                        evidence_refs.append(str(fact_id))
                 
                 # Build provenance chain from GovernanceContext or create development fallback
                 provenance_chain: list[dict[str, Any]] = []
@@ -768,6 +792,7 @@ class EvidenceLinkedVerdictEngine:
                     "referenced_ltm_nodes": referenced_ltm_nodes,
                     "referenced_facts": referenced_facts,
                     "confidence": confidence_score,
+                    "retrieval_provenance": retrieval_provenance,
                     "invariant_version": INVARIANT_VERSION,
                     "guard_mode": get_guard_mode().value,
                     "created_at": datetime.now(UTC).isoformat(),
@@ -898,7 +923,7 @@ class EvidenceLinkedVerdictEngine:
         return asyncio.run(self.generate_verdict(question, facts))
 
     def _build_case_graph(
-        self, facts: list[str], edge_state: dict[str, Any]
+        self, facts: list[str], edge_state: dict[str, Any], rag_evidence_map: dict[int, Any] = None
     ) -> tuple[dict[str, GraphNode], list[GraphEdge]]:
         """
         Build graph from case facts
@@ -911,12 +936,22 @@ class EvidenceLinkedVerdictEngine:
         edges: list[Any] = []
         for i, fact in enumerate(facts):
             node_id = f"fact_{i}"
+            properties = {"fact_text": fact, "fact_index": i}
+            if rag_evidence_map and i in rag_evidence_map:
+                ev = rag_evidence_map[i]
+                properties["retrieval_source"] = ev.source
+                properties["retrieval_score"] = ev.score
+                properties["doc_id"] = ev.doc_id
+                properties["retrieval_rank"] = ev.retrieval_rank
+            else:
+                properties["retrieval_source"] = "user_provided"
+
             node = GraphNode(
                 id=node_id,
                 label=fact,
                 node_type="Fact",
                 provenance=_resolve_provenance("case_graph_fact_node"),
-                properties={"fact_text": fact, "fact_index": i},
+                properties=properties,
                 confidence=1.0,
             )
             nodes[node_id] = node

@@ -60,7 +60,8 @@ def test_p0_2_engine_with_ledger_writer_succeeds():
     """P0-2: Engine initializes successfully with ledger_writer."""
     ledger = Mock(spec=EvidenceLedgerWriter)
     
-    engine = DeepLegalReasoningEngine(ledger_writer=ledger)
+    with patch('mahoun.reasoning.reasoning_engine.LegalKnowledgeGraph'):
+        engine = DeepLegalReasoningEngine(ledger_writer=ledger)
     
     assert engine.ledger_writer is ledger
     assert engine.knowledge_graph is not None
@@ -71,18 +72,20 @@ def test_p0_2_engine_with_ledger_writer_succeeds():
 async def test_p0_2_production_requires_governance_context():
     """P0-2: deep_reason() requires GovernanceContext in production."""
     ledger = Mock(spec=EvidenceLedgerWriter)
-    engine = DeepLegalReasoningEngine(ledger_writer=ledger)
+    with patch('mahoun.reasoning.reasoning_engine.LegalKnowledgeGraph'):
+        engine = DeepLegalReasoningEngine(ledger_writer=ledger)
     
-    with patch('mahoun.reasoning.reasoning_engine.get_current_environment') as mock_env:
+    with patch('mahoun.core.environment.get_current_environment') as mock_env:
         mock_env.return_value.is_production.return_value = True
         mock_env.return_value.is_staging.return_value = False
         
-        with patch('mahoun.reasoning.reasoning_engine.GovernanceContextManager') as mock_gcm:
+        with patch('mahoun.core.governance.governance_context.GovernanceContextManager') as mock_gcm:
             # No active context
             mock_gcm.require_context.side_effect = RuntimeError("No governance context")
             
-            with pytest.raises(RuntimeError, match="No governance context"):
-                engine.deep_reason(
+            with patch('mahoun.reasoning.reasoning_engine.LegalKnowledgeGraph'):
+                with pytest.raises(RuntimeError, match="No governance context"):
+                    engine.deep_reason(
                     question="Test question",
                     context="Test context",
                     facts=["fact1", "fact2"]
@@ -219,7 +222,7 @@ def test_p0_4_ledger_writer_with_gate_routes_through_gate():
     from tempfile import TemporaryDirectory
     
     with TemporaryDirectory() as tmpdir:
-        blockchain = ImmutableLedger(tmpdir)
+        blockchain = ImmutableLedger(str(Path(tmpdir) / "ledger.json"))
         mock_gate = Mock(spec=LedgerWriteGate)
         
         # Gate returns success
@@ -262,7 +265,7 @@ def test_p0_4_ledger_writer_without_gate_logs_warning(caplog):
     import logging
     
     with TemporaryDirectory() as tmpdir:
-        blockchain = ImmutableLedger(tmpdir)
+        blockchain = ImmutableLedger(str(Path(tmpdir) / "ledger.json"))
         
         # No gate provided
         writer = EvidenceLedgerWriter(blockchain=blockchain)
@@ -300,7 +303,7 @@ def test_p1_2_dev_mode_logs_synthetic_provenance(caplog):
     
     recorder = ReasoningRecorder()
     
-    with patch('mahoun.reasoning.reasoning_recorder.get_current_environment') as mock_env:
+    with patch('mahoun.core.environment.get_current_environment') as mock_env:
         mock_env.return_value.is_production.return_value = False
         mock_env.return_value.is_staging.return_value = False
         mock_env.return_value.environment.value = "development"
@@ -318,20 +321,20 @@ def test_p1_2_dev_mode_logs_synthetic_provenance(caplog):
         
         audit_log = audit_logs[0]
         assert "synthetic provenance" in audit_log.message
-        assert audit_log.extra["synthetic"] is True
-        assert audit_log.extra["mode"] == "development"
+        assert getattr(audit_log, "synthetic", False) is True
+        assert getattr(audit_log, "mode", None) == "development"
 
 
 def test_p1_2_production_no_synthetic_provenance():
     """P1-2: Production mode does NOT allow synthetic provenance."""
     recorder = ReasoningRecorder()
     
-    with patch('mahoun.reasoning.reasoning_recorder.get_current_environment') as mock_env:
+    with patch('mahoun.core.environment.get_current_environment') as mock_env:
         mock_env.return_value.is_production.return_value = True
         mock_env.return_value.is_staging.return_value = False
         mock_env.return_value.environment.value = "production"
         
-        with patch('mahoun.reasoning.reasoning_recorder.GovernanceContextManager') as mock_gcm:
+        with patch('mahoun.core.governance.governance_context.GovernanceContextManager') as mock_gcm:
             # No context
             mock_gcm.get_current_context.return_value = None
             
@@ -358,7 +361,7 @@ async def test_integration_end_to_end_verdict_with_ledger():
     
     with TemporaryDirectory() as tmpdir:
         # Setup real components
-        blockchain = ImmutableLedger(tmpdir)
+        blockchain = ImmutableLedger(str(Path(tmpdir) / "ledger.json"))
         ledger_writer = EvidenceLedgerWriter(blockchain=blockchain)
         write_gate = LedgerWriteGate(ledger_writer=ledger_writer, enable_strict_mode=True)
         
@@ -368,6 +371,10 @@ async def test_integration_end_to_end_verdict_with_ledger():
         )
         
         mock_graph = Mock(spec=UltraGraphBuilder)
+        class DummyNodes(dict):
+            def __contains__(self, k): return True
+            def __getitem__(self, k): return Mock(node_type="Fact")
+        mock_graph.get_nodes.return_value = DummyNodes()
         mock_kg = Mock(spec=LegalKnowledgeGraph)
         mock_kg.find_applicable_rules.return_value = []
         mock_kg.find_similar_precedents.return_value = []
@@ -398,7 +405,7 @@ async def test_integration_reasoning_recorder_chain_verification():
     """Integration: ReasoningRecorder chain verification works correctly."""
     recorder = ReasoningRecorder()
     
-    with patch('mahoun.reasoning.reasoning_recorder.get_current_environment') as mock_env:
+    with patch('mahoun.core.environment.get_current_environment') as mock_env:
         mock_env.return_value.is_production.return_value = False
         mock_env.return_value.is_staging.return_value = False
         mock_env.return_value.environment.value = "development"
@@ -435,10 +442,14 @@ async def test_edge_case_concurrent_verdict_generation():
     from tempfile import TemporaryDirectory
     
     with TemporaryDirectory() as tmpdir:
-        blockchain = ImmutableLedger(tmpdir)
+        blockchain = ImmutableLedger(str(Path(tmpdir) / "ledger.json"))
         ledger_writer = EvidenceLedgerWriter(blockchain=blockchain)
         
         mock_graph = Mock(spec=UltraGraphBuilder)
+        class DummyNodes(dict):
+            def __contains__(self, k): return True
+            def __getitem__(self, k): return Mock(node_type="Fact")
+        mock_graph.get_nodes.return_value = DummyNodes()
         mock_kg = Mock(spec=LegalKnowledgeGraph)
         mock_kg.find_applicable_rules.return_value = []
         mock_kg.find_similar_precedents.return_value = []
@@ -453,7 +464,7 @@ async def test_edge_case_concurrent_verdict_generation():
         tasks = [
             engine.generate_verdict(
                 question=f"Question {i}",
-                facts=[f"fact_{i}_1", f"fact_{i}_2"]
+                facts=[f"fact_{i}_1", f"fact_{i}_2", f"fact_{i}_3"]
             )
             for i in range(3)
         ]
@@ -472,7 +483,7 @@ def test_security_reasoning_recorder_tampering_detection():
     """Security: ReasoningRecorder detects tampering."""
     recorder = ReasoningRecorder()
     
-    with patch('mahoun.reasoning.reasoning_recorder.get_current_environment') as mock_env:
+    with patch('mahoun.core.environment.get_current_environment') as mock_env:
         mock_env.return_value.is_production.return_value = False
         mock_env.return_value.is_staging.return_value = False
         
@@ -487,6 +498,99 @@ def test_security_reasoning_recorder_tampering_detection():
         
         # Chain should still verify (steps are immutable)
         assert recorder.verify_chain()
+
+
+@pytest.mark.asyncio
+async def test_security_chaos_monkey_concurrent_mixed_violations():
+    """Chaos Monkey: Concurrent execution with mixed governance violations and successes.
+    
+    This test launches multiple concurrent verdict generation tasks, each designed
+    to hit a different layer of the governance hardening:
+    - Task 1: Valid execution (should succeed and commit to ledger)
+    - Task 2: EL-I8 Violation: Tombstoned fact (should block at reasoning start)
+    - Task 3: EL-I3 Violation: Graph node missing (should block at ledger gate)
+    - Task 4: EL-I4 Violation: High confidence but < 3 evidence items (should block at ledger gate)
+    - Task 5: Valid execution (should succeed and commit to ledger)
+    
+    Verifies that state and failures are isolated per-task and do not crash the engine.
+    """
+    from mahoun.ledger.blockchain import ImmutableLedger
+    from tempfile import TemporaryDirectory
+    
+    with TemporaryDirectory() as tmpdir:
+        blockchain = ImmutableLedger(str(Path(tmpdir) / "chaos_ledger.json"))
+        ledger_writer = EvidenceLedgerWriter(blockchain=blockchain)
+        
+        # Mock graph that behaves differently based on context/facts
+        mock_graph = Mock(spec=UltraGraphBuilder)
+        class ChaosNodes(dict):
+            def __contains__(self, k): 
+                # Simulate EL-I3 violation for specific facts
+                if k == "fact_3": return False
+                return True
+            def __getitem__(self, k): return Mock(node_type="Fact")
+        mock_graph.get_nodes.return_value = ChaosNodes()
+        mock_kg = Mock(spec=LegalKnowledgeGraph)
+        mock_kg.find_applicable_rules.return_value = []
+        mock_kg.find_similar_precedents.return_value = []
+        
+        engine = EvidenceLinkedVerdictEngine(
+            graph_builder=mock_graph,
+            knowledge_graph=mock_kg,
+            ledger_writer=ledger_writer,
+        )
+        
+        async def run_task(task_type: str, i: int):
+            try:
+                if task_type == "valid":
+                    # Valid: >3 facts
+                    return await engine.generate_verdict(f"Valid Question {i}", facts=[f"fact_v{i}_1", f"fact_v{i}_2", f"fact_v{i}_3"])
+                elif task_type == "tombstoned_fact":
+                    # EL-I8: tombstoned fact
+                    return await engine.generate_verdict(f"Tombstoned {i}", facts=[{"id": f"fact_t{i}", "_deleted": True}])
+                elif task_type == "eli3_violation":
+                    # EL-I3: missing node in graph. We use 4 facts so it hits 'fact_3' which is mocked to be missing
+                    return await engine.generate_verdict(f"Missing Node {i}", facts=[f"node_{i}_1", f"node_{i}_2", f"node_{i}_3", f"missing_node_4"])
+                elif task_type == "eli4_violation":
+                    # EL-I4: high confidence, but < 2 evidence items
+                    return await engine.generate_verdict(f"Not Enough Evidence {i}", facts=[f"fact_e{i}_1", f"fact_e{i}_2"])
+            except Exception as e:
+                return e
+
+        # Launch chaos
+        tasks = [
+            run_task("valid", 1),
+            run_task("tombstoned_fact", 2),
+            run_task("eli3_violation", 3),
+            run_task("eli4_violation", 4),
+            run_task("valid", 5),
+        ]
+        
+        results = await asyncio.gather(*tasks)
+        
+        # Verify isolation and specific failures
+        for i, r in enumerate(results):
+            print(f"Task {i+1} result: {r!r}")
+            if isinstance(r, Exception):
+                import traceback
+                traceback.print_exception(type(r), r, r.__traceback__)
+        
+        assert getattr(results[0], 'ledger_hash', None) is not None, "Task 1 (Valid) should succeed"
+        assert getattr(results[4], 'ledger_hash', None) is not None, "Task 5 (Valid) should succeed"
+        
+        # Task 2 (Tombstoned fact) fails with RuntimeError inside engine
+        assert isinstance(results[1], RuntimeError) and "EL-I8" in str(results[1])
+        
+        # Task 3 (EL-I3) fails and is blocked from ledger, engine returns RuntimeError
+        assert isinstance(results[2], RuntimeError) and ("EL-I3" in str(results[2]) or "exist in graph" in str(results[2]))
+        
+        # Task 4 (EL-I4) fails and is blocked from ledger, engine returns RuntimeError
+        assert isinstance(results[3], RuntimeError) and ("EL-I4" in str(results[3]) or "too high for" in str(results[3]))
+        
+        # Blockchain should only have 2 entries (plus genesis)
+        # 1 genesis block + 2 valid entries = 3 blocks total
+        assert len(blockchain.chain) == 3
+        assert blockchain.verify_integrity()
 
 
 if __name__ == "__main__":

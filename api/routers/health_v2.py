@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, status, Query
 from typing import Any, Dict, Optional
 import logging
 
+from api.routers.system import collect_system_health
 from mahoun.infrastructure.health_checker import HealthChecker
 from mahoun.core.health_cache import CachedHealthChecker
 
@@ -38,11 +39,7 @@ async def basic_health_check() -> Dict[str, Any]:
     
     Returns simple status to verify API is responsive.
     """
-    return {
-        "status": "healthy",
-        "service": "MAHOUN Enterprise API",
-        "version": "2.0.0"
-    }
+    return await collect_system_health()
 
 
 @router.get(

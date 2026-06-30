@@ -164,18 +164,16 @@ Critical infrastructure operators
 Enterprise legal departments
 Current Focus
 
-Current development priorities include:
+Recent developments have finalized strict layer-2 governance hardening, including:
 
-Evidence integrity
-Formal reasoning improvements
-Graph-to-logic consistency
-Query hardening
-Proof verification
-Citation integrity validation
+- **EL-I3 Enforcement (Deep Validation)**: Blocks non-existent evidence from being verified or written to the Ledger.
+- **EL-I4 Constraints (Confidence Bounds)**: Enforces dynamic confidence limits, demanding multi-fact consensus (>= 3 facts) for high confidence (>0.9) verdicts.
+- **EL-I8 Guards (Tombstone Security)**: Automatic rejection of previously deleted, redacted, or soft-deleted evidence to maintain absolute privacy and integrity.
+- **End-to-End RAG Provenance**: Unbroken metadata tracking directly from initial RAG retrieval (Document ID, Score, Source) through the Graph down to cryptographic ledger proof generation.
+- **Chaos-Tested Concurrency**: The reasoning engine and `LedgerWriteGate` possess proven, isolated asynchronous execution that gracefully handles severe network, data, and logic faults without compromising strict governance boundaries.
+
 Project Status
 
-Mahoun should be viewed as a legal reasoning platform rather than a
-general-purpose legal chatbot.
+Mahoun has successfully matured into a strict, fail-closed legal reasoning platform rather than a general-purpose legal chatbot. 
 
-The project's primary objective is trustworthy reasoning in constrained,
-high-assurance, air-gapped environments.
+The primary objective remains: unwavering, trustworthy reasoning in highly constrained, air-gapped environments backed by non-bypassable architectural safeguards.

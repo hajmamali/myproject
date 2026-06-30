@@ -87,9 +87,11 @@ def unfreeze_dataclass():
 
 @pytest.fixture(autouse=True)
 def reset_governance_lock():
-    """Reset governance lock before each test"""
+    """Reset governance lock and active governance context around each test."""
     GovernanceLock._reset()
+    GovernanceContextManager._reset_for_test()
     yield
+    GovernanceContextManager._reset_for_test()
     GovernanceLock._reset()
 
 

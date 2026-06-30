@@ -479,11 +479,23 @@ class UltraGraphBuilder:
                 if source_id and source_id not in node.source_documents:
                     node.source_documents.append(source_id)
             else:
+                # Create default provenance for builder-constructed nodes
+                from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
+                default_prov = ProvenanceMetadata.create(
+                    source="ultra_graph_builder",
+                    correlation_id="build_graph",
+                    author="system",
+                    governance_scope_id="default_scope",
+                    runtime_attestation_id="default_attestation",
+                    document_id=source_id
+                )
+                
                 # Create new node
                 node = GraphNode(
                     id=node_id,
                     label=entity.get("label", "UNKNOWN"),
                     node_type=entity.get("type", "entity"),
+                    provenance=default_prov,
                     properties=entity.get("properties", {}),
                     confidence=entity.get("confidence", 1.0),
                     source_documents=[source_id] if source_id else [],

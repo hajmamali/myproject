@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from enum import Enum
 import time
 
+from mahoun.core.exceptions import GraphResolutionFailure
 from mahoun.core.runtime_config import get_runtime_settings
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ class HybridRAGService:
         self,
         vector_store=None,
         hybrid_search=None,
-        graph_retriever=None
+        graph_retriever=None,
+        allow_graph_degraded_mode: bool = False,
     ):
         """
         Initialize Hybrid RAG Service.
@@ -98,10 +100,16 @@ class HybridRAGService:
         self.vector_store = vector_store
         self.hybrid_search = hybrid_search
         self.graph_retriever = graph_retriever
+        self.allow_graph_degraded_mode = allow_graph_degraded_mode
         self.graph_retrieval_enabled = os.getenv(
             "MAHOUN_GRAPH_RETRIEVAL_ENABLED",
             "false"
         ).lower() in ("1", "true", "yes", "on")
+        self._last_graph_resolution: Dict[str, Any] = {
+            "required": False,
+            "degraded_mode": False,
+            "graph_results_returned": 0,
+        }
         
         # Runtime settings
         self.settings = get_runtime_settings()
@@ -151,6 +159,11 @@ class HybridRAGService:
             HybridRAGResult with retrieved documents
         """
         start_time = time.time()
+        self._last_graph_resolution = {
+            "required": False,
+            "degraded_mode": False,
+            "graph_results_returned": 0,
+        }
         
         # Resolve AUTO mode
         if mode == RAGMode.AUTO:
@@ -165,7 +178,9 @@ class HybridRAGService:
                 retrieval_time_ms=retrieval_time_ms,
                 metadata={
                     "error": "Graph-only retrieval is disabled",
-                    "status_code": 501
+                    "status_code": 501,
+                    "graph_required": True,
+                    "degraded_mode": False,
                 }
             )
 
@@ -195,17 +210,35 @@ class HybridRAGService:
                 retrieval_time_ms=retrieval_time_ms,
                 metadata={
                     "top_k_requested": top_k,
-                    "results_returned": len(results)
+                    "results_returned": len(results),
+                    **self._last_graph_resolution,
                 }
             )
             
         except Exception as e:
             logger.error(f"Retrieval failed for mode {mode.value}: {e}", exc_info=True)
-            
-            # Fallback to text_only on error
-            if mode != RAGMode.TEXT_ONLY:
-                logger.warning("Falling back to text_only mode due to error")
-                return await self.retrieve(query, RAGMode.TEXT_ONLY, top_k, query_embedding)
+
+            graph_required = mode == RAGMode.GRAPH_ONLY or (
+                mode == RAGMode.HYBRID_GRAPH_FIRST and self._last_graph_resolution.get("required", False)
+            )
+            if graph_required and not self.allow_graph_degraded_mode:
+                if isinstance(e, GraphResolutionFailure):
+                    raise
+                raise GraphResolutionFailure(
+                    f"Graph retrieval was required for mode '{mode.value}' but failed: {e}"
+                ) from e
+
+            if graph_required and self.allow_graph_degraded_mode:
+                logger.warning("Graph retrieval degraded explicitly to text_only mode")
+                degraded_result = await self.retrieve(query, RAGMode.TEXT_ONLY, top_k, query_embedding)
+                degraded_result.metadata.update(
+                    {
+                        "graph_required": True,
+                        "degraded_mode": True,
+                        "degraded_reason": str(e),
+                    }
+                )
+                return degraded_result
             
             # Return empty result if text_only also fails
             return HybridRAGResult(
@@ -223,20 +256,41 @@ class HybridRAGService:
     ) -> List[RetrievalResult]:
         """Pure graph retrieval"""
         if self.graph_retriever is None:
-            logger.warning("Graph retriever not available, returning empty results")
-            return []
+            raise GraphResolutionFailure("Graph-only retrieval requested but no graph retriever is configured")
 
         if not self.graph_retrieval_enabled:
-            logger.info("Graph-only retrieval disabled by feature flag")
-            return []
+            raise GraphResolutionFailure("Graph-only retrieval requested but graph feature flag is disabled")
 
         try:
             if hasattr(self.graph_retriever, "retrieve"):
                 return await self.graph_retriever.retrieve(query=query, top_k=top_k)
+            if hasattr(self.graph_retriever, "execute_query_async"):
+                graph_query = """
+                MATCH (v:Verdict)
+                WHERE v.case_type CONTAINS $query OR v.content CONTAINS $query
+                RETURN v.verdict_id as id, v.content as content, 0.8 as score
+                LIMIT $top_k
+                """
+                raw_result = await self.graph_retriever.execute_query_async(
+                    query=graph_query,
+                    params={"query": query, "top_k": top_k},
+                )
+                records = self._normalize_graph_records(raw_result)
+                return [
+                    RetrievalResult(
+                        doc_id=record.get("id", f"graph_{i}"),
+                        content=record.get("content", ""),
+                        score=record.get("score", 0.5),
+                        rank=i,
+                        source="graph",
+                        metadata={"from_graph": True},
+                    )
+                    for i, record in enumerate(records[:top_k], 1)
+                ]
         except Exception as e:
-            logger.warning(f"Graph retrieval failed: {e}")
+            raise GraphResolutionFailure(f"Graph-only retrieval failed: {e}") from e
 
-        return []
+        raise GraphResolutionFailure("Configured graph retriever does not expose a supported retrieval contract")
     
     async def _retrieve_text_only(
         self,
@@ -326,8 +380,14 @@ class HybridRAGService:
         from mahoun.core.runtime_config import is_enterprise_graph_mode
         
         all_results: List[Any] = []
+        graph_required = is_enterprise_graph_mode()
+        self._last_graph_resolution["required"] = graph_required
         # Step 1: Graph retrieval (if in enterprise_graph mode)
-        if is_enterprise_graph_mode() and self.graph_retriever is not None:
+        if graph_required:
+            if self.graph_retriever is None:
+                raise GraphResolutionFailure(
+                    "Hybrid graph-first retrieval requires a graph retriever in enterprise graph mode"
+                )
             try:
                 # Use GraphQueryService to find relevant nodes
                 # This is a simplified query - in production, would use semantic search
@@ -342,9 +402,10 @@ class HybridRAGService:
                     query=graph_query,
                     params={"query": query, "top_k": top_k}
                 )
+                records = self._normalize_graph_records(graph_result)
                 
                 # Convert graph results to RetrievalResult format
-                for i, record in enumerate(graph_result.results[:top_k], 1):
+                for i, record in enumerate(records[:top_k], 1):
                     all_results.append(RetrievalResult(
                         doc_id=record.get("id", f"graph_{i}"),
                         content=record.get("content", ""),
@@ -354,9 +415,10 @@ class HybridRAGService:
                         metadata={"from_graph": True}
                     ))
                 
+                self._last_graph_resolution["graph_results_returned"] = len(all_results)
                 logger.debug(f"Graph retrieval returned {len(all_results)} results")
             except Exception as e:
-                logger.warning(f"Graph retrieval failed: {e}, falling back to text")
+                raise GraphResolutionFailure(f"Hybrid graph-first retrieval failed: {e}") from e
         
         # Step 2: Text retrieval
         text_results = await self._retrieve_text_only(query, top_k * 2, query_embedding)
@@ -374,6 +436,18 @@ class HybridRAGService:
         
         # Return top_k
         return all_results[:top_k]
+
+    def _normalize_graph_records(self, graph_result: Any) -> List[Dict[str, Any]]:
+        """Normalize supported graph retriever responses into record dictionaries."""
+        if graph_result is None:
+            raise GraphResolutionFailure("Graph retriever returned no result")
+        if isinstance(graph_result, list):
+            return graph_result
+        if hasattr(graph_result, "results"):
+            return list(graph_result.results)
+        raise GraphResolutionFailure(
+            f"Unsupported graph retriever result type: {type(graph_result).__name__}"
+        )
     
     def _update_stats(self, mode: RAGMode, retrieval_time_ms: float):
         """Update service statistics"""

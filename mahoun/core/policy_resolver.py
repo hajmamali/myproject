@@ -41,6 +41,21 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# Internal Helpers
+# ============================================================================
+
+
+def _resolve_actor_id(context: Any) -> str:
+    """Return a stable non-empty actor identifier for policy audit records."""
+    actor_id = getattr(context, "actor_id", None)
+    if actor_id is None:
+        return "unknown"
+
+    actor_text = str(actor_id).strip()
+    return actor_text or "unknown"
+
+
+# ============================================================================
 # View Mode Enum - FORMAL DEFINITION
 # ============================================================================
 
@@ -565,7 +580,7 @@ class PolicyResolver:
             target_latency_ms=performance_targets.target_latency_ms,
             target_throughput_rps=performance_targets.target_throughput_rps,
             correlation_id=context.correlation_id,
-            actor_id=getattr(context, "actor_id", "unknown"),
+            actor_id=_resolve_actor_id(context),
             resolved_at=resolved_at,
             justification=justification,
             metadata=metadata or {}

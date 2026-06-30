@@ -11,8 +11,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, Literal
 
-import uvicorn
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -44,13 +43,8 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
 
-# Import search router - LegalSearchService now implemented
-try:
-    from api.routers import search as search_router
-
-    HAS_SEARCH_ROUTER = True
-except ImportError:
-    HAS_SEARCH_ROUTER = False
+# Critical live surface: search must import successfully or startup must fail.
+from api.routers import search as search_router
 
 # Import system router for runtime configuration and health
 from api.routers import system as system_router
@@ -304,10 +298,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(system_router.router, prefix="/system")  # /system/* endpoints
 app.include_router(system_router.router, prefix="/api/system")  # /api/system/* endpoints for frontend compatibility
 
-# Register search router if available
-if HAS_SEARCH_ROUTER and search_router:
-    app.include_router(search_router.router)
-    logger.info("✓ Legal search router registered at /v1/search")
+# Register constitutionally required live routers.
+app.include_router(search_router.router)
+logger.info("✓ Legal search router registered at /v1/search")
 
 # Register ingest router if available
 if HAS_INGEST_ROUTER:
@@ -343,34 +336,17 @@ if HAS_INGEST_ROUTER:
 
 logger.warning("⚠️  MAHOUN ROUTER DISABLED FOR ALPHA LAUNCH (agent endpoints require governance audit)")
 
-# Register Fine-Tuning router
-try:
-    from api.routers import finetuning as finetuning_router
+# Fine-tuning remains intentionally off the live surface until it is backed by
+# a real executor and persistent job state.
+logger.warning(
+    "⚠️  FINE-TUNING ROUTER REMOVED FROM LIVE SURFACE "
+    "(simulated job lifecycle is not exposed as production capability)"
+)
 
-    app.include_router(finetuning_router.router)
-    logger.info("✓ Fine-tuning router registered at /api/v1/finetuning")
-except ImportError as e:
-    logger.warning(f"Fine-tuning router not available: {e}")
+from api.routers import reasoning as reasoning_router
 
-# ============================================================================
-# ALPHA LAUNCH: Reasoning router DISABLED
-# ============================================================================
-# Reasoning endpoints require complete P0/P1 governance hardening:
-# - P0-4: LedgerWriteGate enforcement in all paths
-# - P1-1: Fail-closed guardrail handling
-# - P1-3: Ledger hash verification in verdict_engine_adapter
-#
-# These endpoints expose EvidenceLinkedVerdictEngine directly and must NOT
-# be accessible until governance hardening is complete.
-# ============================================================================
-# try:
-#     from api.routers import reasoning as reasoning_router
-#     app.include_router(reasoning_router.router)
-#     logger.info("✓ Reasoning router registered at /api/v1/reasoning")
-# except ImportError as e:
-#     logger.warning(f"Reasoning router not available: {e}")
-
-logger.warning("⚠️  REASONING ROUTER DISABLED FOR ALPHA LAUNCH (requires P0/P1 governance completion)")
+app.include_router(reasoning_router.router)
+logger.info("✓ Reasoning router registered at /api/v1/reasoning")
 
 # Register Training Datasets router (Document → Training)
 try:
@@ -580,22 +556,8 @@ class RollbackRequest(BaseModel):
 # Health check
 @app.get("/health")
 async def health_check():
-    """Health check endpoint connected to the internal health system"""
-    from datetime import datetime
-
-    from mahoun.infrastructure.health_checker import HealthChecker
-
-    checker = HealthChecker()
-    results = await checker.check_all()
-
-    # Normalize status to lowercase for consistency with test expectations
-    if "status" in results:
-        results["status"] = results["status"].lower()
-
-    # Add timestamp for test compatibility
-    results["timestamp"] = datetime.now().isoformat()
-
-    return results
+    """Health check endpoint backed by real infrastructure probes."""
+    return await system_router.collect_system_health()
 
 
 # =============================================================================
@@ -713,141 +675,38 @@ async def get_feedback_stats():
 # Policy endpoints
 @app.get("/api/v1/policy/current")
 async def get_current_policy():
-    """Get current production policy"""
-    return {
-        "policy_id": "policy_v1.2.0",
-        "version": "1.2.0",
-        "deployed_at": "2024-01-25T10:30:00Z",
-        "status": "active",
-        "performance": {"accuracy": 0.892, "latency_p95": 245.3, "error_rate": 0.012},
-    }
+    """Get the live execution policy resolved by the governance stack."""
+    from mahoun.core.governance.governance_context import GovernanceContextManager
+    from mahoun.core.policy_resolver import create_default_policy_resolver
+    from mahoun.core.runtime_config import get_runtime_settings
 
-
-@app.post("/api/v1/policy/deploy")
-async def deploy_policy(request: PolicyDeployRequest):
-    """
-    Deploy a new policy
-
-    Supports shadow, canary, and full deployment modes.
-    """
-    logger.info(f"Deploying policy {request.policy_id} in {request.mode} mode")
-
-    return {
-        "status": "deployed",
-        "policy_id": request.policy_id,
-        "version": request.version,
-        "mode": request.mode,
-        "traffic_percentage": request.traffic_percentage,
-        "deployed_at": datetime.now().isoformat(),
-    }
-
+    settings = get_runtime_settings()
+    async with GovernanceContextManager.active_context(
+        correlation_id="api-policy-current",
+        actor_id="api-policy-surface",
+    ) as ctx:
+        resolver = create_default_policy_resolver()
+        policy = resolver.resolve_policy(ctx)
+        return {
+            "policy_id": policy.policy_id,
+            "status": "active",
+            "resolved_at": policy.resolved_at,
+            "runtime_mode": settings.mode,
+            "graph_enabled": settings.graph_enabled,
+            "graph_backend": settings.graph_backend,
+            "retrieval_mode": settings.retrieval_mode,
+            "policy": policy.to_dict(),
+            "audit_stats": resolver.get_policy_statistics(),
+        }
 
 @app.get("/api/v1/policy/list")
 async def list_policies(status: str | None = None, limit: int = 10):
-    """List available policies"""
-    policies = [
-        {
-            "policy_id": "policy_v1.2.0",
-            "version": "1.2.0",
-            "status": "active",
-            "created_at": "2024-01-25T10:00:00Z",
-            "performance": {"accuracy": 0.892},
-        },
-        {
-            "policy_id": "policy_v1.1.0",
-            "version": "1.1.0",
-            "status": "shadow",
-            "created_at": "2024-01-20T15:30:00Z",
-            "performance": {"accuracy": 0.885},
-        },
-    ]
-
+    """List live policies backed by the current governance resolver."""
+    current_policy = await get_current_policy()
+    policies = [current_policy]
     if status:
-        policies = [p for p in policies if p["status"] == status]
-
+        policies = [policy for policy in policies if policy["status"] == status]
     return {"policies": policies[:limit], "total": len(policies)}
-
-
-@app.post("/api/v1/policy/rollback")
-async def rollback_policy(request: RollbackRequest):
-    """Rollback to a previous policy"""
-    logger.warning(f"Rolling back to {request.target_snapshot_id}: {request.reason}")
-
-    return {
-        "status": "rolled_back",
-        "target_snapshot_id": request.target_snapshot_id,
-        "reason": request.reason,
-        "rolled_back_at": datetime.now().isoformat(),
-    }
-
-
-# Experiment endpoints
-@app.post("/api/v1/experiments")
-async def create_experiment(request: ExperimentRequest):
-    """Create A/B test experiment"""
-    logger.info(f"Creating experiment: {request.name}")
-
-    experiment_id = f"exp_{int(datetime.now().timestamp())}"
-
-    return {
-        "experiment_id": experiment_id,
-        "name": request.name,
-        "variants": request.variants,
-        "traffic_split": request.traffic_split,
-        "status": "created",
-        "created_at": datetime.now().isoformat(),
-    }
-
-
-@app.get("/api/v1/experiments")
-async def list_experiments(status: str | None = None, limit: int = 10):
-    """List experiments"""
-    experiments = [
-        {
-            "experiment_id": "exp_001",
-            "name": "Test GNN Reranking",
-            "status": "running",
-            "variants": ["control", "gnn"],
-            "samples": 1250,
-            "created_at": "2024-01-20T10:00:00Z",
-        }
-    ]
-
-    if status:
-        experiments = [e for e in experiments if e["status"] == status]
-
-    return {"experiments": experiments[:limit], "total": len(experiments)}
-
-
-@app.post("/api/v1/experiments/{experiment_id}/stop")
-async def stop_experiment(experiment_id: str):
-    """Stop an experiment"""
-    logger.info(f"Stopping experiment: {experiment_id}")
-
-    return {
-        "experiment_id": experiment_id,
-        "status": "stopped",
-        "stopped_at": datetime.now().isoformat(),
-    }
-
-
-@app.get("/api/v1/experiments/{experiment_id}/results")
-async def get_experiment_results(experiment_id: str):
-    """Get experiment results"""
-    return {
-        "experiment_id": experiment_id,
-        "status": "completed",
-        "results": {
-            "control": {"samples": 1000, "accuracy": 0.876, "latency_p95": 250.5},
-            "treatment": {"samples": 1000, "accuracy": 0.892, "latency_p95": 245.3},
-        },
-        "statistical_significance": {
-            "accuracy": {"p_value": 0.023, "significant": True},
-            "latency": {"p_value": 0.156, "significant": False},
-        },
-        "recommendation": "PROMOTE",
-    }
-
 
 # Metrics endpoints
 @app.get("/api/v1/metrics")
@@ -874,16 +733,18 @@ async def get_metrics(component: str | None = None, metric: str | None = None, w
 @app.get("/api/v1/metrics/dashboard")
 async def get_dashboard_data():
     """Get dashboard data"""
+    from mahoun.metrics import get_metrics_collector
+
+    health = await system_router.collect_system_health()
+    collector = get_metrics_collector()
+    metrics_data = collector.get_all_metrics()
     return {
         "timestamp": datetime.now().isoformat(),
-        "components": {
-            "orchestrator": {"status": "running", "uptime": 172800},
-            "rl_agent": {"status": "training", "loss": 0.234},
-            "bandit": {"status": "active", "total_pulls": 45230},
-            "feedback_loop": {"status": "collecting", "buffer_size": 1250},
-        },
-        "alerts": {"total": 3, "critical": 0, "high": 1, "medium": 2},
-        "performance": {"accuracy": 0.876, "latency_p95": 245.3, "throughput": 1250.5},
+        "status": health["status"],
+        "mode": health["mode"],
+        "components": health["components"],
+        "metrics_keys": sorted(metrics_data.keys()),
+        "metrics_count": len(metrics_data),
     }
 
 
@@ -891,72 +752,55 @@ async def get_dashboard_data():
 @app.get("/api/v1/status")
 async def get_system_status():
     """Get overall system status"""
+    health = await system_router.collect_system_health()
     return {
-        "orchestrator": {
-            "state": "running",
-            "uptime_seconds": 172800,
-            "total_errors": 12,
-            "total_recoveries": 3,
-        },
-        "components": {
-            "rl_agent": {"healthy": True, "state": "training"},
-            "bandit": {"healthy": True, "state": "active"},
-            "active_learning": {"healthy": True, "state": "selecting"},
-            "causal_inference": {"healthy": True, "state": "analyzing"},
-            "feedback_loop": {"healthy": True, "state": "collecting"},
-        },
-        "timestamp": datetime.now().isoformat(),
+        "status": health["status"],
+        "mode": health["mode"],
+        "summary": health["summary"],
+        "timestamp": health["timestamp"],
     }
 
 
 @app.get("/api/v1/status/health")
 async def get_health_status():
     """Get detailed health status from the internal health system"""
-    from mahoun.infrastructure.health_checker import HealthChecker
-
-    checker = HealthChecker()
-    results = await checker.check_all()
-    return results
+    return await system_router.collect_system_health()
 
 
 # Configuration endpoints
 @app.get("/api/v1/config")
 async def get_config():
     """Get system configuration"""
+    from mahoun.core.runtime_config import get_runtime_settings
+
+    settings = get_runtime_settings()
     return {
-        "rl_agent": {"learning_rate": 0.0003, "gamma": 0.99, "batch_size": 64},
-        "bandit": {"n_arms": 6, "exploration_bonus": 0.1},
-        "feedback_loop": {"learning_frequency": 100, "validation_frequency": 500},
+        "mode": settings.mode,
+        "graph_enabled": settings.graph_enabled,
+        "graph_backend": settings.graph_backend,
+        "retrieval_mode": settings.retrieval_mode,
+        "embedding_backend": settings.embedding_backend,
+        "llm_backend": settings.llm_backend,
+        "lora_training_enabled": settings.lora_training_enabled,
     }
-
-
-@app.put("/api/v1/config")
-async def update_config(config: dict[str, Any]):
-    """Update system configuration"""
-    logger.info(f"Updating configuration: {list(config.keys())}")
-
-    return {
-        "status": "updated",
-        "updated_keys": list(config.keys()),
-        "updated_at": datetime.now().isoformat(),
-    }
-
 
 # Statistics endpoints
 @app.get("/api/v1/stats")
 async def get_statistics():
     """Get system statistics"""
+    from mahoun.metrics import get_metrics_collector
+
+    collector = get_metrics_collector()
+    metrics_data = collector.get_all_metrics()
     return {
-        "feedback_loop": {
-            "total_feedback": 12450,
-            "total_updates": 124,
-            "cycle_count": 15,
-        },
-        "rl_agent": {"training_steps": 45230, "episodes": 1250, "avg_reward": 0.876},
-        "bandit": {"total_pulls": 45230, "best_arm": 3, "exploration_rate": 0.15},
-        "experiments": {"total": 25, "running": 3, "completed": 20, "failed": 2},
+        "metrics_count": len(metrics_data),
+        "metric_names": sorted(metrics_data.keys()),
+        "feedback": await get_feedback_stats(),
+        "timestamp": datetime.now().isoformat(),
     }
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

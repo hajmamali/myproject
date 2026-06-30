@@ -1,0 +1,165 @@
+mahoun/bootstrap/runtime.py:11:    │           └── get_connection()                  [on first query]
+mahoun/bootstrap/runtime.py:12:    │                 └── Neo4jConnection.governed_session()
+mahoun/bootstrap/runtime.py:16:                └── get_connection().governed_session()
+mahoun/bootstrap/runtime.py:92:        return get_connection().governed_session()
+mahoun/bootstrap/runtime.py:102:    # Bootstrap wires them with get_connection() singleton — never raw drivers.
+mahoun/bootstrap/runtime.py:107:    neo4j_conn = get_connection()
+mahoun/llm/ultra_engine.py:152:            ctx = GovernanceContextManager.require_context()
+mahoun/infrastructure/health/integrity_probe.py:46:        conn = get_connection()
+mahoun/infrastructure/health/checker.py:159:            conn = get_connection()
+mahoun/core/governance_kernel/kernel.py:109:        q_type = KernelMutationBoundary.classify_query(query)
+mahoun/core/governance_kernel/__init__.py:123:    return KernelMutationBoundary.classify_query(query)
+mahoun/core/governance/protocols.py:37:    of result records. It must call MutationAuthorizationBoundary.inspect()
+mahoun/core/governance/protocols.py:115:def assert_governed_session(obj: Any, context: str = "") -> None:
+mahoun/core/governance/protocols.py:135:            "Pass a GovernedNeo4jSession obtained via connection.governed_session()."
+mahoun/core/governance/mutation_boundary.py:10:    ALL Cypher → MutationAuthorizationBoundary.inspect()
+mahoun/core/governance/mutation_boundary.py:203:    Used by MutationAuthorizationBoundary.inspect().
+mahoun/core/governance/mutation_boundary.py:398:            ctx = GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:486:        ctx = GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:613:        ctx = GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:758:        ctx = GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:906:        GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:957:        GovernanceContextManager.require_context()
+mahoun/core/governance/mutation_boundary.py:1015:        GovernanceContextManager.require_context()
+mahoun/core/governance/governance_context.py:137:            ctx = GovernanceContextManager.require_context()
+mahoun/core/governance/governance_context.py:148:                        "Use GovernanceContextManager.active_context() to establish scope."
+mahoun/core/governance/governance_context.py:453:                        "Use GovernanceContextManager.active_context() to establish scope."
+mahoun/core/governance/governance_context.py:456:                        "hint": "Use GovernanceContextManager.active_context()",
+mahoun/core/governance/governance_context.py:551:                GovernanceContextManager.require_context()
+mahoun/core/governance/governance_context.py:571:        return GovernanceContextManager.require_context()
+mahoun/core/governance/outbox_worker.py:124:            async with GovernanceContextManager.active_context(
+mahoun/core/governance/outbox_worker.py:128:                conn = get_connection()
+mahoun/core/governance/outbox_worker.py:129:                with conn.governed_session(
+mahoun/core/import_firewall.py:177:                "All graph operations must go through mahoun.graph.neo4j.connection.get_connection()"
+mahoun/services/legal_migration_service.py:1333:    # GOVERNANCE: use get_connection() (the canonical governed singleton) instead of
+mahoun/services/legal_migration_service.py:1338:        neo4j_connection = get_connection()
+mahoun/pipelines/sync/graph_vector_sync.py:19:  ``connection.governed_session()`` inside an active ``GovernanceContextManager``.
+mahoun/pipelines/sync/graph_vector_sync.py:21:* ``self.neo4j`` / raw ``driver.session()`` references are constitutionally forbidden.
+mahoun/pipelines/sync/graph_vector_sync.py:83:    ``connection`` MUST be a ``Neo4jConnection`` obtained via ``get_connection()``.
+mahoun/pipelines/sync/graph_vector_sync.py:95:    * All Neo4j mutations go through ``governed_session()`` — zero raw sessions.
+mahoun/pipelines/sync/graph_vector_sync.py:170:        ``governed_session()`` which enforces ``GovernanceContextManager.require_context()``.
+mahoun/pipelines/sync/graph_vector_sync.py:190:            async with GovernanceContextManager.active_context(
+mahoun/pipelines/sync/graph_vector_sync.py:195:                with self._connection.governed_session(
+mahoun/pipelines/sync/graph_vector_sync.py:300:        Each embedding injection goes through ``governed_session()``.
+mahoun/reasoning/evidence_linked_verdict.py:63:                "Use GovernanceContextManager.active_context() to establish scope."
+mahoun/reasoning/kg_adapters.py:88:        ctx = GovernanceContextManager.require_context()
+mahoun/reasoning/fortress_integration.py:150:        ctx = GovernanceContextManager.require_context()
+mahoun/reasoning/reasoning_engine.py:200:            ctx = GovernanceContextManager.require_context()
+mahoun/mcp/server.py:256:        async with GovernanceContextManager.active_context(correlation_id=str(req.id)):
+mahoun/mcp/tools/graph.py:69:            conn = get_connection()
+mahoun/mcp/tools/graph.py:73:                return conn.governed_session(
+mahoun/mcp/tools/graph.py:118:            ctx = GovernanceContextManager.require_context()
+mahoun/mcp/tools/graph.py:198:            ctx = GovernanceContextManager.require_context()
+mahoun/mcp/tools/graph.py:279:            ctx = GovernanceContextManager.require_context()
+mahoun/mcp/tools/graph.py:363:            ctx = GovernanceContextManager.require_context()
+mahoun/retrieval/graph_enhanced.py:20:* No ``driver.session()`` call exists anywhere in this module.
+mahoun/retrieval/graph_enhanced.py:91:    ``get_connection()`` (the authorised singleton factory).  Bootstrap is
+mahoun/retrieval/graph_enhanced.py:152:                "Obtain one via get_connection() and inject it at construction time."
+mahoun/retrieval/graph_enhanced.py:287:            #    MutationAuthorizationBoundary.inspect() is called internally —
+mahoun/graph/gnn/gnn_graph_builder.py:455:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/ultra_graph_query_service.py:292:        - All queries go through connection.execute_query() which calls MutationAuthorizationBoundary.inspect()
+mahoun/graph/optimizer/run_optimizer_job.py:97:        async with GovernanceContextManager.active_context(correlation_id=correlation_id, actor_id=actor_id) as ctx:
+mahoun/graph/optimizer/run_optimizer_job.py:98:            with connection.governed_session(correlation_id=correlation_id, actor_id=actor_id) as session:
+mahoun/graph/optimizer/run_optimizer_job.py:119:        # PATCH GROUP A / F: route through Neo4jConnection.governed_session()
+mahoun/graph/optimizer/run_optimizer_job.py:125:            with connection.governed_session(
+mahoun/graph/optimizer/run_optimizer_job.py:148:        async with GovernanceContextManager.active_context(
+mahoun/graph/optimizer/run_optimizer_job.py:240:        connection = get_connection()
+mahoun/graph/optimizer/feedback.py:106:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:99:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:127:            conn = get_connection()
+mahoun/graph/optimizer/graph_optimizer.py:171:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:251:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:357:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:460:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/optimizer/graph_optimizer.py:556:        ctx = GovernanceContextManager.require_context()
+mahoun/graph/graph_query_service.py:383:    def _get_connection(self):
+mahoun/graph/graph_query_service.py:387:        return get_connection()
+mahoun/graph/graph_query_service.py:419:        query_type = KernelMutationBoundary.classify_query(query)
+mahoun/graph/graph_query_service.py:447:        # Neo4jConnection._raw_execute() via MutationAuthorizationBoundary.inspect()
+mahoun/graph/graph_query_service.py:464:                conn = self._get_connection()
+mahoun/graph/graph_query_service.py:465:                # PATCH GROUP A: replaced governed_session+gsession.run() with
+mahoun/graph/graph_query_service.py:466:                # conn.execute_query().  MutationAuthorizationBoundary.inspect()
+mahoun/graph/graph_query_service.py:561:                conn = self._get_connection()
+mahoun/graph/graph_query_service.py:562:                # PATCH GROUP A: replaced governed_session+gsession.run() with
+mahoun/graph/graph_query_service.py:1232:        # PATCH GROUP A: batch_query is read-only.  governed_session+gsession.run()
+mahoun/graph/builders/entity_linker.py:813:        with connection.governed_session(
+mahoun/graph/builders/entity_linker.py:836:        with connection.governed_session(
+mahoun/graph/neo4j/operations.py:8:All write operations MUST use `connection.governed_session()`.
+mahoun/graph/neo4j/operations.py:46:        self.conn = connection or get_connection()
+mahoun/graph/neo4j/operations.py:63:        with self.conn.governed_session(
+mahoun/graph/neo4j/operations.py:89:        with self.conn.governed_session(
+mahoun/graph/neo4j/operations.py:121:                with self.conn.governed_session(
+mahoun/graph/neo4j/operations.py:157:                with self.conn.governed_session(
+mahoun/graph/neo4j/operations.py:196:                with self.conn.governed_session(
+mahoun/graph/neo4j/operations.py:298:    conn = get_connection()
+mahoun/graph/neo4j/operations.py:301:    with conn.governed_session(pipeline=pipeline, correlation_id=verdict_id) as session:
+mahoun/graph/neo4j/connection.py:83:    Direct instantiation is FORBIDDEN. Use get_connection().
+mahoun/graph/neo4j/connection.py:106:                "You MUST use get_connection() to access the thread-safe singleton. "
+mahoun/graph/neo4j/connection.py:150:        self._driver = GraphDatabase.driver(
+mahoun/graph/neo4j/connection.py:193:                result = session.run(query)
+mahoun/graph/neo4j/connection.py:195:        session = self.driver.session(database=self.database, **kwargs)
+mahoun/graph/neo4j/connection.py:212:        MutationAuthorizationBoundary.inspect() raises GovernanceViolationError
+mahoun/graph/neo4j/connection.py:218:        MutationAuthorizationBoundary.inspect(query)
+mahoun/graph/neo4j/connection.py:239:        Use governed_session() to perform any writes.
+mahoun/graph/neo4j/connection.py:254:    def governed_session(
+mahoun/graph/neo4j/connection.py:271:            async with GovernanceContextManager.active_context(...):
+mahoun/graph/neo4j/connection.py:272:                with connection.governed_session(correlation_id="op-123", actor_id="judge-42") as session:
+mahoun/graph/neo4j/connection.py:288:        GovernanceContextManager.require_context()
+mahoun/graph/neo4j/connection.py:301:        MutationAuthorizationBoundary. Use governed_session() instead.
+mahoun/graph/neo4j/connection.py:316:                    "Use connection.governed_session() for all graph mutations."
+mahoun/graph/neo4j/connection.py:349:        MutationAuthorizationBoundary. Use governed_session() instead.
+mahoun/graph/neo4j/connection.py:365:                    "Use connection.governed_session() for all graph mutations."
+mahoun/graph/neo4j/connection.py:436:        Invariant: This method NEVER creates a GraphDatabase.driver() instance.
+mahoun/graph/neo4j/connection.py:523:        self.driver = GraphDatabase.driver(
+mahoun/graph/neo4j/connection.py:543:                result = session.run(query)
+mahoun/graph/neo4j/connection.py:545:        session = self.driver.session(database=self.database, **kwargs)
+mahoun/graph/neo4j/connection.py:571:def get_connection(
+mahoun/graph/neo4j/algorithms.py:17:        self.conn = connection or get_connection()
+mahoun/graph/neo4j/init_schema.py:39:        # Use singleton get_connection() for DI compliance
+mahoun/graph/neo4j/init_schema.py:40:        connection = get_connection()
+mahoun/graph/neo4j/init_schema.py:59:        async with GovernanceContextManager.active_context(
+mahoun/graph/neo4j/init_schema.py:63:            with connection.governed_session(
+mahoun/graph/neo4j/runner.py:43:        # This ensures MutationAuthorizationBoundary.inspect() passes
+mahoun/graph/neo4j/runner.py:49:class RawSessionRunner:
+mahoun/graph/neo4j/runner.py:52:    WARNING: Using RawSessionRunner in production bypasses the
+mahoun/graph/neo4j/runner.py:59:    def __init__(self, session: Any, allow_unsafe: bool = False) -> None:
+mahoun/graph/neo4j/runner.py:60:        """Create a RawSessionRunner.
+mahoun/graph/neo4j/runner.py:64:            allow_unsafe: must be True to permit raw session usage (tests only)
+mahoun/graph/neo4j/runner.py:67:        if not allow_unsafe:
+mahoun/graph/neo4j/runner.py:69:                "RawSessionRunner is unsafe in production. "
+mahoun/graph/neo4j/runner.py:70:                "Pass allow_unsafe=True only in isolated test harnesses."
+mahoun/graph/neo4j/runner.py:78:        result = self._session.run(query, parameters or {})
+mahoun/graph/neo4j/examples/import_laws.py:178:    connection = get_connection()
+mahoun/graph/neo4j/examples/import_laws.py:225:    connection = get_connection()
+mahoun/graph/neo4j/examples/import_laws.py:243:    connection = get_connection()
+mahoun/graph/neo4j/examples/schema_setup.py:16:    conn = get_connection()
+mahoun/graph/neo4j/examples/schema_setup.py:30:    conn = get_connection()
+mahoun/graph/neo4j/examples/schema_setup.py:78:    conn = get_connection()
+mahoun/graph/neo4j/__init__.py:102:    elif name == "RawSessionRunner":
+mahoun/graph/neo4j/__init__.py:103:        # DEPRECATED: RawSessionRunner bypasses MutationAuthorizationBoundary.
+mahoun/graph/neo4j/__init__.py:106:        # In production, this will raise RuntimeError unless allow_unsafe=True.
+mahoun/graph/neo4j/__init__.py:107:        from mahoun.graph.neo4j.runner import RawSessionRunner
+mahoun/graph/neo4j/__init__.py:108:        return RawSessionRunner
+mahoun/graph/neo4j/__init__.py:109:    elif name == "_RawSessionRunner":
+mahoun/graph/neo4j/__init__.py:111:        from mahoun.graph.neo4j.runner import RawSessionRunner
+mahoun/graph/neo4j/__init__.py:112:        return RawSessionRunner
+mahoun/graph/neo4j/query_builder.py:273:        conn = connection or get_connection()
+mahoun/graph/legal_cypher_queries.py:600:    ``get_connection()`` (the authorised singleton factory). Bootstrap is
+mahoun/graph/legal_cypher_queries.py:610:    * All mutation queries use ``connection.governed_session()`` with full audit trail.
+mahoun/graph/legal_cypher_queries.py:611:    * Zero raw ``driver.session()`` calls exist in this class.
+mahoun/graph/legal_cypher_queries.py:619:            connection: Neo4jConnection instance (from get_connection())
+mahoun/graph/legal_cypher_queries.py:638:        * Mutation queries → ``connection.governed_session()`` (full audit trail)
+mahoun/ultra_systems/graph/ultra_graph_query_service.py:292:        - All queries go through connection.execute_query() which calls MutationAuthorizationBoundary.inspect()
+mahoun/ultra_systems/graph/ultra_graph_builder.py:672:        Raw Cypher, session.run(), and Neo4jAdapter are FORBIDDEN.
+mahoun/ultra_systems/graph/ultra_graph_builder.py:688:            with connection.governed_session(
+mahoun/orchestrator/graph_enhanced_chatbot.py:25:# Graph integration — connection obtained via get_connection() at runtime
+mahoun/orchestrator/graph_enhanced_chatbot.py:95:                # GOVERNANCE: use get_connection() (canonical governed singleton).
+mahoun/orchestrator/graph_enhanced_chatbot.py:99:                self.graph_connection = get_connection()
+api/database.py:80:    - Uses mahoun.graph.neo4j.connection.get_connection() 
+api/database.py:94:        connection = get_connection()
+api/database.py:104:            async with GovernanceContextManager.active_context(
+api/database.py:145:        connection = get_connection()
+api/database.py:148:        async with GovernanceContextManager.active_context(
+api/database.py:152:            with connection.governed_session(
+api/routers/system.py:104:            connection = get_connection()
+api/routers/reasoning.py:365:        async with GovernanceContextManager.active_context(
