@@ -8,13 +8,15 @@ by ValidationOrchestrator.
 """
 
 from .exception_validator import ExceptionHierarchyValidator
+from .test_classification_validator import TestClassificationValidator
+from .coverage_validator import CoverageValidator
+from .security_validator import SecurityHardeningValidator
+from .infrastructure_validator import InfrastructureValidator
 
 __all__ = [
     "ExceptionHierarchyValidator",
+    "TestClassificationValidator",
+    "CoverageValidator",
+    "SecurityHardeningValidator",
+    "InfrastructureValidator",
 ]
-
-# Other validators will be imported as they are completed
-# from .test_classification_validator import TestClassificationValidator
-# from .coverage_validator import CoverageValidator
-# from .security_validator import SecurityHardeningValidator
-# from .infrastructure_validator import InfrastructureValidator
