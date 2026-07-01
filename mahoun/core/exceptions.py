@@ -1,11 +1,20 @@
 """
-Mahoun Exception Hierarchy
-==========================
+Mahoun Exception Hierarchy (DEPRECATED - Use exceptions_v2.py)
+===============================================================
 Standardized exceptions for the entire platform.
 
-All exceptions inherit from MahounError for consistent handling.
+⚠️ DEPRECATION WARNING:
+This module contains duplicate exception hierarchies (MahounError and BaseMahounError).
+All new code MUST import from mahoun.core.exceptions_v2 instead.
+
+Migration path:
+- OLD: from mahoun.core.exceptions import MahounError, SecurityBreachException
+- NEW: from mahoun.core.exceptions_v2 import MahounException, SecurityBreachException
+
+This file is maintained for backward compatibility only.
 """
 
+import warnings
 from typing import Any, Dict, Optional
 
 
@@ -265,6 +274,8 @@ def wrap_exception(
 
 class BaseMahounError(Exception):
     """
+    ⚠️ DEPRECATED: Use MahounException from mahoun.core.exceptions_v2 instead.
+    
     Canonical base for all Mahoun errors that must produce deterministic HTTP responses.
     Every subclass declares an immutable status_code.
     Never return 500 for known governance/logic/security failures.
@@ -273,6 +284,11 @@ class BaseMahounError(Exception):
     error_type: str = "base_mahoun_error"
 
     def __init__(self, message: str, *, correlation_id: str | None = None, details: dict | None = None):
+        warnings.warn(
+            "BaseMahounError is deprecated. Use MahounException from mahoun.core.exceptions_v2",
+            DeprecationWarning,
+            stacklevel=2
+        )
         super().__init__(message)
         self.message = message
         self.correlation_id = correlation_id

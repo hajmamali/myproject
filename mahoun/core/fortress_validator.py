@@ -120,7 +120,7 @@ class ExecutionMode(str, Enum):
 # ============================================================================
 
 
-from mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
+from mahoun.core.exceptions_v2 import MahounException as BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
 
 
 class SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]
