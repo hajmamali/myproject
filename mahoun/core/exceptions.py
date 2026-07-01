@@ -302,6 +302,7 @@ class LogicViolationException(BaseMahounError):
     MUST map to HTTP 422 Unprocessable Entity.
     """
     status_code = 422
+
     error_type = "logic_violation"
 
 
