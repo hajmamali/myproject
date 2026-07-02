@@ -23,7 +23,7 @@ Perform hostile production audit of Epic A (Neo4j DI Refactor) to validate that 
 
 **Recommended actions before production deployment:**
 1. ⚠️ **Optional:** Resolve 4 circular import warnings in `mahoun/retrieval/` (P2 — non-blocking)
-2. ✅ **Required:** Mark Task 14 complete and update DI_REFACTOR_COMPLETION_REPORT.md
+2. ✅ **Required:** Mark Task 14 complete and update reports/DI_REFACTOR_COMPLETION_REPORT.md
 3. ✅ **Required:** Close Epic A and proceed to Epic B (Model Capability Matrix)
 
 ---
@@ -401,7 +401,7 @@ All Neo4j DI components: ✅ PASS
 
 ### Immediate Actions (Before Task 14 Closure)
 1. ✅ **Mark Task 14 complete** in `tasks.md`
-2. ✅ **Update `DI_REFACTOR_COMPLETION_REPORT.md`** with final audit results
+2. ✅ **Update `reports/DI_REFACTOR_COMPLETION_REPORT.md`** with final audit results
 3. ✅ **Document P2 risks** for Epic B planning
 
 ### Epic B Planning (Model Capability Matrix)

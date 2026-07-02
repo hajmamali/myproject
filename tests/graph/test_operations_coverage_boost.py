@@ -454,29 +454,30 @@ class TestUpsertVerdictStruct:
 
 
 class TestMetricsRecording:
-    """Test metrics recording functionality"""
+    """Test metrics recording functionality via Neo4jMetrics"""
     
-    def test_create_node_records_metrics(self, graph_ops):
-        """Test that node creation records metrics"""
-        with patch("mahoun.graph.neo4j.operations.record_graph_operation_metric") as mock_metric:
-            graph_ops.create_node(
-                label="Document",
-                properties={"id": "doc_metrics"}
-            )
-            
-            # Verify metric recorded
-            mock_metric.assert_called_once()
-            call_args = mock_metric.call_args[1]
-            assert call_args["operation_type"] == "create_node"
+    def test_create_node_records_query_metrics(self, graph_ops):
+        """Test that node creation records query time in metrics"""
+        # GraphOperations uses Neo4jMetrics internally
+        initial_count = graph_ops.metrics.total_queries
+        
+        graph_ops.create_node(
+            label="Document",
+            properties={"id": "doc_metrics"}
+        )
+        
+        # Verify metrics were updated
+        assert graph_ops.metrics.total_queries > initial_count
     
-    def test_batch_operations_record_metrics(self, graph_ops):
+    def test_batch_operations_record_query_metrics(self, graph_ops):
         """Test that batch operations record metrics"""
-        with patch("mahoun.graph.neo4j.operations.record_graph_operation_metric") as mock_metric:
-            nodes = [{"id": f"n{i}"} for i in range(5)]
-            graph_ops.batch_create_nodes("Node", nodes)
-            
-            # Should record batch metric
-            assert mock_metric.called
+        initial_count = graph_ops.metrics.total_queries
+        
+        nodes = [{"id": f"n{i}"} for i in range(5)]
+        graph_ops.batch_create_nodes("Node", nodes)
+        
+        # Should record metrics for batch
+        assert graph_ops.metrics.total_queries > initial_count
 
 
 # ============================================================================

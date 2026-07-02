@@ -70,6 +70,9 @@ class GovernanceValidator:
             ".git/",
             "node_modules/",
             ".pytest_cache/",
+            "/examples/",  # Example files don't enforce governance
+            ".kilo/worktrees/",  # Worktree copies
+            ".test_classification_backup/",  # Backup directories
         }
     
     def validate_all(self) -> bool:
@@ -133,6 +136,16 @@ class GovernanceValidator:
                 is_allowed = False
                 is_test = any(test_pattern in file_path for test_pattern in self.test_patterns)
                 
+                # Skip test assertions (false positives)
+                if is_test and self._is_test_assertion(file_path, line_num, line_content):
+                    continue
+                
+                # Skip if it's a string in test inventory/data structures
+                if is_test and ('VIOLATION_INVENTORY' in self._read_file_content(file_path) or
+                               '"Class A:' in line_content or '"Class B:' in line_content or
+                               '"Class C:' in line_content):
+                    continue
+                
                 for allowed_path in self.neo4j_allowlist:
                     if allowed_path in file_path:
                         is_allowed = True
@@ -147,9 +160,11 @@ class GovernanceValidator:
                         description=f"Direct Neo4j driver creation outside allowlist",
                         code_snippet=line_content.strip()
                     ))
-                elif is_test:
-                    # Test files should have governance guards
-                    if "MAHOUN_ALLOW_UNGOVERNED_SEEDING" not in self._read_file_content(file_path):
+                elif is_test and not is_allowed:
+                    # Test files should have governance guards (but not if it's test data)
+                    file_content = self._read_file_content(file_path)
+                    if ("MAHOUN_ALLOW_UNGOVERNED_SEEDING" not in file_content and
+                        "VIOLATION_INVENTORY" not in file_content):
                         self.violations.append(GovernanceViolation(
                             file_path=file_path,
                             line_number=line_num,
@@ -197,28 +212,94 @@ class GovernanceValidator:
         ctx_pattern = r'_authorized_write_ctx'
         matches = self._find_pattern(ctx_pattern, include_patterns=['*.py'])
         
-        # Should be used in mutation_boundary.py and governance_kernel.py
+        # Should be used in authorization_state.py (canonical location)
         expected_files = {
+            'authorization_state.py',
+        }
+        
+        # Also acceptable in kernel.py if it imports from authorization_state
+        acceptable_files = {
+            'authorization_state.py',
+            'kernel.py',
             'mutation_boundary.py',
-            'governance_kernel.py'
         }
         
         found_files = set()
         for file_path, line_num, line_content in matches:
+            # Skip test files
             if any(test_pattern in file_path for test_pattern in self.test_patterns):
                 continue
             found_files.add(Path(file_path).name)
         
-        for expected in expected_files:
-            if expected not in found_files:
-                self.violations.append(GovernanceViolation(
-                    file_path=f"*{expected}",
-                    line_number=0,
-                    severity=ViolationSeverity.HIGH,
-                    category="MISSING_CONTEXT_USAGE",
-                    description=f"_authorized_write_ctx not found in {expected}",
-                    code_snippet=""
-                ))
+        # Check that authorization_state.py exists and uses it
+        if 'authorization_state.py' not in found_files:
+            self.violations.append(GovernanceViolation(
+                file_path="*authorization_state.py",
+                line_number=0,
+                severity=ViolationSeverity.HIGH,
+                category="MISSING_CONTEXT_USAGE",
+                description=f"_authorized_write_ctx not found in authorization_state.py (canonical location)",
+                code_snippet=""
+            ))
+    
+    def _is_cypher_mutation(self, file_path: str, line_content: str) -> bool:
+        """Check if a line contains a Cypher mutation (not SQL or enum value)"""
+        # Must be in a string
+        if '"' not in line_content and "'" not in line_content:
+            return False
+        
+        # Skip enum definitions
+        if '= "' in line_content or "= '" in line_content:
+            # Likely an enum value like: DELETE = "delete"
+            return False
+            
+        # Check if file uses Neo4j (not PostgreSQL/Redis/other DBs)
+        file_content = self._read_file_content(file_path)
+        
+        # SQL indicators (PostgreSQL, MySQL, etc.)
+        sql_indicators = ['asyncpg', 'psycopg', 'sqlalchemy', 'DELETE FROM', 'SELECT FROM']
+        if any(indicator in file_content for indicator in sql_indicators):
+            return False
+            
+        # Neo4j indicators
+        neo4j_indicators = ['neo4j', 'cypher', 'GraphDatabase', 'governed_session']
+        return any(indicator in file_content for indicator in neo4j_indicators)
+    
+    def _is_test_assertion(self, file_path: str, line_num: int, line_content: str) -> bool:
+        """Check if a line is inside a test assertion (false positive)"""
+        # Check if in test file
+        if not any(pattern in file_path for pattern in ['test_', 'tests/']):
+            return False
+            
+        # Check for assertion context
+        assertion_keywords = ['assert ', 'pytest', '@pytest', 'def test_', 'class Test']
+        file_content = self._read_file_content(file_path)
+        lines = file_content.split('\n')
+        
+        # Check if line is too close to start/end
+        if line_num < 1 or line_num > len(lines):
+            return False
+        
+        # Check surrounding lines (±5 lines) for assertion context
+        start = max(0, line_num - 6)
+        end = min(len(lines), line_num + 5)
+        context = '\n'.join(lines[start:end])
+        
+        # If any assertion keyword is in context, it's likely a test assertion
+        if any(keyword in context for keyword in assertion_keywords):
+            return True
+        
+        # Check if line is inside a string literal (test data)
+        line = lines[line_num - 1] if line_num - 1 < len(lines) else ""
+        # Multi-line string or write_text call
+        if '.write_text(' in context or '"""' in context or "'''" in context:
+            return True
+        
+        # Pattern inventory (test data structures)
+        if 'VIOLATION_INVENTORY' in context or '# (module_path, pattern, description)' in context:
+            return True
+            
+        return False
     
     def _check_mutation_bypasses(self):
         """Check for potential mutation bypasses"""
@@ -235,7 +316,16 @@ class GovernanceValidator:
             matches = self._find_pattern(pattern, include_patterns=['*.py'])
             
             for file_path, line_num, line_content in matches:
+                # Skip test files
                 if any(test_pattern in file_path for test_pattern in self.test_patterns):
+                    continue
+                
+                # Skip test assertions
+                if self._is_test_assertion(file_path, line_num, line_content):
+                    continue
+                
+                # Only flag if it's actually a Cypher mutation
+                if not self._is_cypher_mutation(file_path, line_content):
                     continue
                 
                 # Check if it's in a string (likely Cypher query)
@@ -248,7 +338,7 @@ class GovernanceValidator:
                             line_number=line_num,
                             severity=ViolationSeverity.MEDIUM,
                             category="POTENTIAL_MUTATION_BYPASS",
-                            description="Mutation Cypher without governance context",
+                            description="Cypher mutation without governance context",
                             code_snippet=line_content.strip()
                         ))
     

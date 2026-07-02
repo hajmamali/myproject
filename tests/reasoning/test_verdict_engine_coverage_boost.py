@@ -47,6 +47,15 @@ from mahoun.ledger.models import LedgerEntry
 # Test Fixtures
 # ============================================================================
 
+def mock_provenance():
+    """Create a mock ProvenanceMetadata for tests."""
+    from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
+    return ProvenanceMetadata.create_synthetic(
+        source="test_verdict_engine",
+        author="test_system",
+        correlation_id="test_correlation",
+    )
+
 
 @pytest.fixture
 def temp_dir():
@@ -59,11 +68,12 @@ def temp_dir():
 def mock_graph_builder():
     """Mock UltraGraphBuilder"""
     builder = MagicMock(spec=UltraGraphBuilder)
-    builder.create_node.return_value = GraphNode(
-        id="node_1",
-        node_type="Fact",
-        properties={"value": "test fact"}
-    )
+    # UltraGraphBuilder doesn't have create_node - it has nodes dict and edges list
+    builder.nodes = {}
+    builder.edges = []
+    builder.get_nodes.return_value = {}
+    builder.get_edges.return_value = []
+    builder.ensure_indexes.return_value = None
     return builder
 
 
@@ -449,7 +459,7 @@ class TestRuleAndPrecedentCreation:
         ))
         
         fact_nodes = {
-            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact1"})
+            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact1"}, label="Fact", provenance=mock_provenance())
         }
         
         nodes, edges = verdict_engine._create_rule_nodes(["fact1"], fact_nodes)
@@ -490,7 +500,7 @@ class TestRuleAndPrecedentCreation:
         ))
         
         fact_nodes = {
-            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact1"})
+            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact1"}, label="Fact", provenance=mock_provenance())
         }
         
         nodes, edges = verdict_engine._create_precedent_nodes(["fact1"], fact_nodes)
@@ -515,7 +525,7 @@ class TestContradictionDetection:
     def test_detect_contradictions_single_node(self, verdict_engine):
         """Test with single node (no pairs to check)"""
         nodes = {
-            "n1": GraphNode(id="n1", node_type="Rule", properties={"name": "Rule 1"})
+            "n1": GraphNode(id="n1", node_type="Rule", properties={"name": "Rule 1"}, label="Rule", provenance=mock_provenance())
         }
         
         contradictions = verdict_engine._detect_contradictions(nodes)
@@ -528,11 +538,11 @@ class TestContradictionDetection:
             "r1": GraphNode(id="r1", node_type="Rule", properties={
                 "name": "Rule 1",
                 "conclusion": "A is true"
-            }),
+            }, label="Rule", provenance=mock_provenance()),
             "r2": GraphNode(id="r2", node_type="Rule", properties={
                 "name": "Rule 2",
                 "conclusion": "A is false"
-            })
+            }, label="Rule", provenance=mock_provenance())
         }
         
         # Mock contradiction checker to return True
@@ -546,9 +556,9 @@ class TestContradictionDetection:
     def test_detect_contradictions_mixed_types(self, verdict_engine):
         """Test with mixed node types (rules + precedents)"""
         nodes = {
-            "r1": GraphNode(id="r1", node_type="Rule", properties={"name": "Rule 1"}),
-            "p1": GraphNode(id="p1", node_type="Precedent", properties={"case_name": "Case A"}),
-            "r2": GraphNode(id="r2", node_type="Rule", properties={"name": "Rule 2"}),
+            "r1": GraphNode(id="r1", node_type="Rule", properties={"name": "Rule 1"}, label="Rule", provenance=mock_provenance()),
+            "p1": GraphNode(id="p1", node_type="Precedent", properties={"case_name": "Case A"}, label="Precedent", provenance=mock_provenance()),
+            "r2": GraphNode(id="r2", node_type="Rule", properties={"name": "Rule 2"}, label="Rule", provenance=mock_provenance()),
         }
         
         verdict_engine._are_rules_contradictory = Mock(return_value=False)
@@ -570,8 +580,8 @@ class TestContradictionResolution:
     
     def test_resolve_contradiction_by_confidence(self, verdict_engine):
         """Test resolution by confidence score"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.9})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.9}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7}, label="Rule", provenance=mock_provenance())
         
         result = verdict_engine._resolve_contradiction_deterministic(node1, node2)
         
@@ -583,11 +593,11 @@ class TestContradictionResolution:
         node1 = GraphNode(id="n1", node_type="Precedent", properties={
             "confidence": 0.85,
             "credibility_score": 0.6
-        })
+        }, label="Precedent", provenance=mock_provenance())
         node2 = GraphNode(id="n2", node_type="Precedent", properties={
             "confidence": 0.85,
             "credibility_score": 0.9
-        })
+        }, label="Precedent", provenance=mock_provenance())
         
         verdict_engine._resolve_by_confidence = Mock(return_value=None)
         verdict_engine._resolve_by_credibility = Mock(return_value=node2)
@@ -601,11 +611,11 @@ class TestContradictionResolution:
         node1 = GraphNode(id="n1", node_type="Precedent", properties={
             "confidence": 0.85,
             "date": "2020-01-01"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         node2 = GraphNode(id="n2", node_type="Precedent", properties={
             "confidence": 0.85,
             "date": "2023-06-15"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         
         verdict_engine._resolve_by_confidence = Mock(return_value=None)
         verdict_engine._resolve_by_credibility = Mock(return_value=None)
@@ -617,8 +627,8 @@ class TestContradictionResolution:
     
     def test_resolve_contradiction_by_graph_analytics(self, verdict_engine):
         """Test resolution by graph analytics as last resort"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.8})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
         
         verdict_engine._resolve_by_confidence = Mock(return_value=None)
         verdict_engine._resolve_by_credibility = Mock(return_value=None)
@@ -632,8 +642,8 @@ class TestContradictionResolution:
     
     def test_resolve_contradiction_fallback_to_first(self, verdict_engine):
         """Test fallback to first node when all methods fail"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
         
         verdict_engine._resolve_by_confidence = Mock(return_value=None)
         verdict_engine._resolve_by_credibility = Mock(return_value=None)
@@ -656,8 +666,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_confidence_clear_winner(self, verdict_engine):
         """Test confidence resolution with clear winner"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7}, label="Rule", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_confidence(node1, node2)
         
@@ -665,8 +675,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_confidence_tie(self, verdict_engine):
         """Test confidence resolution returns None on tie"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.85})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.85})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.85}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.85}, label="Rule", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_confidence(node1, node2)
         
@@ -674,8 +684,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_credibility_with_scores(self, verdict_engine):
         """Test credibility resolution"""
-        node1 = GraphNode(id="n1", node_type="Precedent", properties={"credibility_score": 0.6})
-        node2 = GraphNode(id="n2", node_type="Precedent", properties={"credibility_score": 0.9})
+        node1 = GraphNode(id="n1", node_type="Precedent", properties={"credibility_score": 0.6}, label="Precedent", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Precedent", properties={"credibility_score": 0.9}, label="Precedent", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_credibility(node1, node2)
         
@@ -683,8 +693,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_credibility_missing_scores(self, verdict_engine):
         """Test credibility resolution with missing scores"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_credibility(node1, node2)
         
@@ -692,8 +702,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_temporal_recent_wins(self, verdict_engine):
         """Test temporal resolution - more recent wins"""
-        node1 = GraphNode(id="n1", node_type="Precedent", properties={"date": "2020-01-01"})
-        node2 = GraphNode(id="n2", node_type="Precedent", properties={"date": "2024-06-01"})
+        node1 = GraphNode(id="n1", node_type="Precedent", properties={"date": "2020-01-01"}, label="Precedent", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Precedent", properties={"date": "2024-06-01"}, label="Precedent", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_temporal_precedence(node1, node2)
         
@@ -701,8 +711,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_temporal_no_dates(self, verdict_engine):
         """Test temporal resolution with missing dates"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
         
         winner = verdict_engine._resolve_by_temporal_precedence(node1, node2)
         
@@ -710,8 +720,8 @@ class TestResolutionStrategies:
     
     def test_resolve_by_graph_analytics_higher_score_wins(self, verdict_engine):
         """Test graph analytics resolution"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.9})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.9}, label="Rule", provenance=mock_provenance())
         
         # Mock calculate_node_score to return different scores
         def mock_score(node):
@@ -731,7 +741,7 @@ class TestResolutionStrategies:
             "confidence": 0.9,
             "credibility_score": 0.8,
             "support_count": 5
-        })
+        }, label="Rule", provenance=mock_provenance())
         
         score = verdict_engine._calculate_node_score(node)
         
@@ -764,8 +774,8 @@ class TestAsyncContradictionResolution:
     async def test_resolve_contradictions_async_with_pairs(self, verdict_engine):
         """Test async resolution with contradiction pairs"""
         nodes = {
-            "n1": GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.9}),
-            "n2": GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7}),
+            "n1": GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.9}, label="Rule", provenance=mock_provenance()),
+            "n2": GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.7}, label="Rule", provenance=mock_provenance()),
         }
         contradictions = [("n1", "n2")]
         
@@ -810,8 +820,8 @@ class TestBuildVerdictSteps:
     def test_build_steps_with_fact_nodes(self, verdict_engine):
         """Test step building with fact nodes"""
         nodes = {
-            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact 1"}),
-            "f2": GraphNode(id="f2", node_type="Fact", properties={"value": "fact 2"}),
+            "f1": GraphNode(id="f1", node_type="Fact", properties={"value": "fact 1"}, label="Fact", provenance=mock_provenance()),
+            "f2": GraphNode(id="f2", node_type="Fact", properties={"value": "fact 2"}, label="Fact", provenance=mock_provenance()),
         }
         
         steps = verdict_engine._build_verdict_steps(
@@ -830,7 +840,7 @@ class TestBuildVerdictSteps:
                 "name": "Rule A",
                 "conclusion": "Conclusion A",
                 "confidence": 0.9
-            }),
+            }, label="Rule", provenance=mock_provenance()),
         }
         
         steps = verdict_engine._build_verdict_steps(
@@ -849,7 +859,7 @@ class TestBuildVerdictSteps:
                 "case_name": "Case X",
                 "ruling": "Ruling X",
                 "similarity_score": 0.88
-            }),
+            }, label="Precedent", provenance=mock_provenance()),
         }
         
         steps = verdict_engine._build_verdict_steps(
@@ -864,7 +874,7 @@ class TestBuildVerdictSteps:
     def test_build_steps_with_resolutions(self, verdict_engine):
         """Test step building includes resolution steps"""
         nodes = {
-            "n1": GraphNode(id="n1", node_type="Rule", properties={"name": "Rule 1"}),
+            "n1": GraphNode(id="n1", node_type="Rule", properties={"name": "Rule 1"}, label="Rule", provenance=mock_provenance()),
         }
         resolutions = [
             ConflictResolutionResult(
@@ -1213,8 +1223,8 @@ class TestContradictionSeverity:
     
     def test_severity_with_confidence_scores(self, verdict_engine):
         """Test severity calculation considers confidence"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.65})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.65}, label="Rule", provenance=mock_provenance())
         
         severity = verdict_engine._calculate_contradiction_severity(node1, node2)
         
@@ -1222,8 +1232,8 @@ class TestContradictionSeverity:
     
     def test_severity_with_missing_confidence(self, verdict_engine):
         """Test severity with missing confidence scores"""
-        node1 = GraphNode(id="n1", node_type="Fact", properties={})
-        node2 = GraphNode(id="n2", node_type="Fact", properties={})
+        node1 = GraphNode(id="n1", node_type="Fact", properties={}, label="Fact", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Fact", properties={}, label="Fact", provenance=mock_provenance())
         
         severity = verdict_engine._calculate_contradiction_severity(node1, node2)
         
@@ -1232,8 +1242,8 @@ class TestContradictionSeverity:
     
     def test_severity_same_type_nodes(self, verdict_engine):
         """Test severity for same node types"""
-        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8})
-        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.75})
+        node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
+        node2 = GraphNode(id="n2", node_type="Rule", properties={"confidence": 0.75}, label="Rule", provenance=mock_provenance())
         
         severity = verdict_engine._calculate_contradiction_severity(node1, node2)
         
@@ -1252,10 +1262,10 @@ class TestContradictoryChecks:
         """Test detecting contradictory rule conclusions"""
         rule1 = GraphNode(id="r1", node_type="Rule", properties={
             "conclusion": "Defendant is liable"
-        })
+        }, label="Rule", provenance=mock_provenance())
         rule2 = GraphNode(id="r2", node_type="Rule", properties={
             "conclusion": "Defendant is not liable"
-        })
+        }, label="Rule", provenance=mock_provenance())
         
         # May need NLI or semantic similarity - mock if needed
         is_contra = verdict_engine._are_rules_contradictory(rule1, rule2)
@@ -1266,10 +1276,10 @@ class TestContradictoryChecks:
         """Test non-contradictory rules"""
         rule1 = GraphNode(id="r1", node_type="Rule", properties={
             "conclusion": "Pay damages"
-        })
+        }, label="Rule", provenance=mock_provenance())
         rule2 = GraphNode(id="r2", node_type="Rule", properties={
             "conclusion": "Pay interest"
-        })
+        }, label="Rule", provenance=mock_provenance())
         
         is_contra = verdict_engine._are_rules_contradictory(rule1, rule2)
         
@@ -1280,10 +1290,10 @@ class TestContradictoryChecks:
         """Test detecting contradictory precedents"""
         prec1 = GraphNode(id="p1", node_type="Precedent", properties={
             "ruling": "Contract is valid"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         prec2 = GraphNode(id="p2", node_type="Precedent", properties={
             "ruling": "Contract is invalid"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         
         is_contra = verdict_engine._are_precedents_contradictory(prec1, prec2)
         
@@ -1293,10 +1303,10 @@ class TestContradictoryChecks:
         """Test non-contradictory precedents"""
         prec1 = GraphNode(id="p1", node_type="Precedent", properties={
             "ruling": "Damages awarded"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         prec2 = GraphNode(id="p2", node_type="Precedent", properties={
             "ruling": "Costs awarded"
-        })
+        }, label="Precedent", provenance=mock_provenance())
         
         is_contra = verdict_engine._are_precedents_contradictory(prec1, prec2)
         
