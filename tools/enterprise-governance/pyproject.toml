@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enterprise-governance"
+version = "0.1.0"
+description = "Enterprise Architecture Governance Platform"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "OpenAI" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+governance = "governance.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.12"
+strict = true

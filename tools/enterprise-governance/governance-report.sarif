@@ -1,0 +1,173 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "name": "enterprise-governance"
+      },
+      "results": [
+        {
+          "ruleId": "raw-db",
+          "level": "warning",
+          "message": {
+            "text": "Raw DB access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-4/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-db",
+          "level": "warning",
+          "message": {
+            "text": "Raw DB access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-4/test_reports_are_written0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-db",
+          "level": "warning",
+          "message": {
+            "text": "Raw DB access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-3/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-db",
+          "level": "warning",
+          "message": {
+            "text": "Raw DB access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-2/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-http",
+          "level": "warning",
+          "message": {
+            "text": "Raw HTTP access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-4/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-http",
+          "level": "warning",
+          "message": {
+            "text": "Raw HTTP access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-3/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "raw-http",
+          "level": "warning",
+          "message": {
+            "text": "Raw HTTP access"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-2/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "bare-except",
+          "level": "warning",
+          "message": {
+            "text": "Bare except"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-4/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "bare-except",
+          "level": "warning",
+          "message": {
+            "text": "Bare except"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-3/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "bare-except",
+          "level": "warning",
+          "message": {
+            "text": "Bare except"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/tmp/pytest-of-haji/pytest-2/test_scan_detects_basic_findin0/sample.py"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

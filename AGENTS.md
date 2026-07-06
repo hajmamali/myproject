@@ -2,7 +2,7 @@
 ### Classification: MANDATORY PRE-READ / CONSTITUTIONAL DOCUMENT
 
 ---
-
+### IMPORTANT: Never produce any type of document, report, text, or file unless requested by the user.
 ## ⚠️ THIS FILE MUST BE READ BEFORE ANY OF THE FOLLOWING ACTIONS
 
 - Writing a new class

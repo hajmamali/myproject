@@ -16,8 +16,6 @@ from typing import List, Dict, Any
 
 from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
 from mahoun.core.models import ReasoningResult
-
-
 @pytest.mark.graph_native
 class TestGraphNativeExtremeHardAudit:
     """Extreme hard graph-native audit test suite"""

@@ -28,8 +28,6 @@ sys.path.insert(0, str(project_root))
 
 from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
 from mahoun.core.models import ReasoningResult
-
-
 # ============================================================================
 # Entity Tokens (EXACT strings for deterministic traversal assertions)
 # ============================================================================
