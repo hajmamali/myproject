@@ -31,8 +31,8 @@ class EmbeddingMode(str, Enum):
     ULTRA = "ultra"
 
 
-class ReasoningMode(str, Enum):
-    """Reasoning service modes"""
+class RuntimeReasoningMode(str, Enum):
+    """Runtime reasoning service modes"""
     DISABLED = "disabled"
     FAST = "fast"
     STRICT = "strict"
@@ -55,7 +55,7 @@ class RuntimeProfile:
     """
     mode: MAHOUNMode = MAHOUNMode.DESKTOP_MINIMAL
     embeddings: EmbeddingMode = EmbeddingMode.DUMMY
-    reasoning: ReasoningMode = ReasoningMode.DISABLED
+    reasoning: RuntimeReasoningMode = RuntimeReasoningMode.DISABLED
     rag_mode: RAGMode = RAGMode.TEXT_ONLY
 
 

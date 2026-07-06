@@ -28,7 +28,7 @@ from mahoun.reasoning.first_order_logic import (
 )
 from mahoun.reasoning.forward_chaining import ForwardChainingEngine
 from mahoun.reasoning.backward_chaining import BackwardChainingEngine
-from mahoun.reasoning.symbolic_reasoner import SymbolicReasoningEngine, ReasoningMode
+from mahoun.reasoning.symbolic_reasoner import SymbolicReasoningEngine, SymbolicReasoningMode
 
 
 def test_1_unification_occur_check():
@@ -159,10 +159,10 @@ def test_5_hybrid_reasoning():
     ))
 
     goal = create_atom("ancestor", create_constant("a"), create_constant("c"))
-    result = engine.query(goal, mode=ReasoningMode.HYBRID)
+    result = engine.query(goal, mode=SymbolicReasoningMode.HYBRID)
 
     assert result.success, "Hybrid reasoning must prove ancestor(a, c)"
-    assert result.mode == ReasoningMode.HYBRID, (
+    assert result.mode == SymbolicReasoningMode.HYBRID, (
         f"Result mode must be HYBRID, got {result.mode}"
     )
     assert result.forward_result is not None, "Hybrid result must include forward_result"

@@ -37,6 +37,9 @@ from mahoun.reasoning.first_order_logic import (
     create_rule,
     create_variable,
 )
+# Import canonical ReasoningMode
+from .unified_reasoning_service import ReasoningMode
+
 from mahoun.reasoning.forward_chaining import (
     ForwardChainingEngine,
     ForwardChainingResult,
@@ -45,8 +48,8 @@ from mahoun.reasoning.forward_chaining import (
 log = logging.getLogger(__name__)
 
 
-class ReasoningMode(Enum):
-    """Reasoning modes"""
+class SymbolicReasoningMode(Enum):
+    """Symbolic reasoning modes"""
     FORWARD = "forward"  # Data-driven (bottom-up)
     BACKWARD = "backward"  # Goal-driven (top-down)
     HYBRID = "hybrid"  # Combine both
@@ -197,7 +200,7 @@ class SymbolicReasoningEngine:
         
         return ReasoningResult(
             success=True,
-            mode=ReasoningMode.FORWARD,
+            mode=SymbolicReasoningMode.FORWARD,
             forward_result=forward_result,
             derived_facts=forward_result.derived_facts,
             proof_trace=forward_result.proof_trace,
@@ -238,7 +241,7 @@ class SymbolicReasoningEngine:
         
         return ReasoningResult(
             success=backward_result.success,
-            mode=ReasoningMode.BACKWARD,
+            mode=SymbolicReasoningMode.BACKWARD,
             backward_result=backward_result,
             derived_facts=derived_facts,
             proof_trace=[backward_result.proof_tree] if backward_result.proof_tree else [],
@@ -293,7 +296,7 @@ class SymbolicReasoningEngine:
         
         return ReasoningResult(
             success=backward_result.success,
-            mode=ReasoningMode.HYBRID,
+            mode=SymbolicReasoningMode.HYBRID,
             forward_result=forward_result,
             backward_result=backward_result,
             derived_facts=derived_facts,
@@ -306,7 +309,7 @@ class SymbolicReasoningEngine:
             },
         )
     
-    def query(self, goal: Atom, mode: ReasoningMode = ReasoningMode.HYBRID) -> ReasoningResult:
+    def query(self, goal: Atom, mode: SymbolicReasoningMode = SymbolicReasoningMode.HYBRID) -> ReasoningResult:
         """
         Query the knowledge base.
         
@@ -317,11 +320,11 @@ class SymbolicReasoningEngine:
         Returns:
             ReasoningResult
         """
-        if mode == ReasoningMode.FORWARD:
+        if mode == SymbolicReasoningMode.FORWARD:
             return self.reason_forward(goal=goal)
-        elif mode == ReasoningMode.BACKWARD:
+        elif mode == SymbolicReasoningMode.BACKWARD:
             return self.reason_backward(goal=goal)
-        elif mode == ReasoningMode.HYBRID:
+        elif mode == SymbolicReasoningMode.HYBRID:
             return self.reason_hybrid(goal=goal)
         else:
             raise ValueError(f"Unknown reasoning mode: {mode}")

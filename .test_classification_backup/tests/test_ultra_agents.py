@@ -213,7 +213,7 @@ class TestUltraContractAgent:
         from mahoun.agents import ReasoningMode
         
         assert ReasoningMode.SIMPLE.value == "simple"
-        assert ReasoningMode.CHAIN_OF_THOUGHT.value == "cot"
+        assert ContractReasoningMode.CHAIN_OF_THOUGHT.value == "cot"
         assert ReasoningMode.MULTI_HOP.value == "multi_hop"
         assert ReasoningMode.AUTO.value == "auto"
 

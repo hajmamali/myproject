@@ -47,8 +47,11 @@ except Exception:
     UncertaintyService = None
 
 
-class ReasoningMode(str, Enum):
-    """Reasoning execution modes"""
+# Import canonical ReasoningMode
+from .unified_reasoning_service import ReasoningMode
+
+class ReasoningChainMode(str, Enum):
+    """Reasoning chain execution modes"""
     STRICT = "strict"  # Production: mandatory verification
     FAST = "fast"      # Desktop: lightweight verification
     DISABLED = "disabled"  # Skip reasoning (not recommended)
@@ -58,7 +61,7 @@ class ReasoningMode(str, Enum):
 class ReasoningConfig:
     """Configuration for reasoning chain"""
     enabled: bool = True
-    mode: ReasoningMode = ReasoningMode.FAST
+    mode: ReasoningChainMode = ReasoningChainMode.FAST
     nli_enabled: bool = True
     citation_audit_enabled: bool = True
     uncertainty_enabled: bool = True
