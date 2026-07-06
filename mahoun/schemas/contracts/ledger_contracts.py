@@ -346,10 +346,20 @@ class VerifyIntegrityError(BaseModel):
 # ============================================================================
 # Invariant Specification Contracts
 # ============================================================================
+# DEPRECATED: Use mahoun.invariants.ledger_invariants.InvariantSpec instead
+# ============================================================================
 
 class InvariantSpecContract(BaseModel):
     """
     Contract for invariant specification.
+    
+    DEPRECATED (2026-07-04): This is a duplicate of the canonical InvariantSpec
+    in mahoun/invariants/ledger_invariants.py:21. Use that instead.
+    
+    This class exists only for backward compatibility and will be removed in v2.0.
+    
+    Migration path:
+        from mahoun.invariants.ledger_invariants import InvariantSpec
     
     Validates: Requirement 2.2 - Invariant metadata structure
     """

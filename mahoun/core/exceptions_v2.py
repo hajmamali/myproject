@@ -346,6 +346,16 @@ class SerializationError(MahounException):
     error_code = "SERIALIZATION_ERROR"
 
 
+# =============================================================================
+# OPERATIONAL ERRORS
+# =============================================================================
+
+class OperationalError(MahounException):
+    """Runtime operational error (deployment, rollback, system operations)."""
+    status_code = 500
+    error_code = "OPERATIONAL_ERROR"
+
+
 class UnsafeSerializationError(SerializationError):
     """Attempted to use unsafe serialization format (e.g., pickle)."""
     status_code = 403

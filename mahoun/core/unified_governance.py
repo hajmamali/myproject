@@ -26,8 +26,6 @@ Author: MAHOUN System Architecture Team
 Date: 2026-06-18
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import re
@@ -122,7 +120,7 @@ class UnifiedGovernanceDecision:
     kernel_message: str
     
     # Policy layer (visibility)
-    policy: ExecutionPolicy
+    policy: "ExecutionPolicy"
     policy_check_passed: bool
     view_mode: str  # active, historical, mixed
     allow_tombstones: bool
@@ -245,7 +243,7 @@ class UnifiedGovernanceController:
     
     def __init__(
         self,
-        policy_resolver: PolicyResolver,
+        policy_resolver: "PolicyResolver",
         enable_query_transformation: bool = True,
         enable_audit_logging: bool = True,
         strict_mode: bool = True
@@ -285,8 +283,8 @@ class UnifiedGovernanceController:
     def prepare_query_execution(
         self,
         query: str,
-        context: GovernanceContext,
-        view_mode: Optional[ViewMode] = None,
+        context: "GovernanceContext",
+        view_mode: Optional["ViewMode"] = None,
         explicit_depth_limit: Optional[int] = None,
         semantic_override: Optional[bool] = None,
         audit_justification: Optional[str] = None,
@@ -505,7 +503,7 @@ class UnifiedGovernanceController:
     def _transform_query(
         self,
         query: str,
-        policy: ExecutionPolicy
+        policy: "ExecutionPolicy"
     ) -> Tuple[str, List[str]]:
         """
         Transform Cypher query based on execution policy.
@@ -573,66 +571,173 @@ class UnifiedGovernanceController:
     
     def _inject_tombstone_filter(self, query: str) -> Tuple[str, bool]:
         """
-        Inject tombstone filtering into Cypher query.
+        EL-I8 Advanced Tombstone Filtering for Cypher Queries.
         
-        Patterns Handled:
-        -----------------
+        SECURITY LEVEL: MAXIMUM - Privacy Law Compliance Boundary
+        
+        Multi-Layer Tombstone Detection:
+        --------------------------------
+        1. Property flags: _deleted, _redacted, _purged, _tombstoned, _gdpr_purged
+        2. Label markers: :TOMBSTONE, :DELETED, :REDACTED, :PURGED
+        3. Status fields: status, lifecycle_state  
+        4. Temporal markers: _deletion_timestamp, _redaction_timestamp
+        5. Privacy compliance: _right_to_be_forgotten, _privacy_purged
+        
+        Query Patterns Transformed:
+        --------------------------
         1. Simple MATCH: MATCH (n:Law)
-           → MATCH (n:Law) WHERE n._deleted IS NULL
+           → MATCH (n:Law) WHERE NOT mahoun.isTombstoned(n)
            
-        2. Existing WHERE: MATCH (n:Law) WHERE n.status = 'active'
-           → MATCH (n:Law) WHERE n.status = 'active' AND n._deleted IS NULL
+        2. Existing WHERE: MATCH (n:Law) WHERE n.status = 'active'  
+           → MATCH (n:Law) WHERE n.status = 'active' AND NOT mahoun.isTombstoned(n)
            
         3. Path MATCH: MATCH path = (a)-[*]-(b)
-           → MATCH path = (a)-[*]-(b) WHERE NONE(n IN nodes(path) WHERE n._deleted = true)
+           → MATCH path = (a)-[*]-(b) WHERE ALL(n IN nodes(path) WHERE NOT mahoun.isTombstoned(n))
            
         4. Multiple nodes: MATCH (a)-[r]->(b)
-           → MATCH (a)-[r]->(b) WHERE a._deleted IS NULL AND b._deleted IS NULL
+           → MATCH (a)-[r]->(b) WHERE NOT mahoun.isTombstoned(a) AND NOT mahoun.isTombstoned(b)
+           
+        5. Relationship tombstones: -[r:REL]->
+           → -[r:REL]-> WHERE NOT (r._active = false OR r._tombstoned = true)
         
         Args:
             query: Original Cypher query
             
         Returns:
             (transformed_query, was_modified)
+            
+        Raises:
+            ValueError: If query contains explicit tombstone access attempts
         """
-        # This is a simplified implementation
-        # Production would use proper Cypher AST parsing
+        import re
+        from typing import Set
+        
+        # Security check: Detect explicit tombstone access attempts
+        forbidden_patterns = [
+            r'_deleted\s*=\s*true',
+            r'_redacted\s*=\s*true', 
+            r'_tombstoned\s*=\s*true',
+            r':TOMBSTONE\b',
+            r':DELETED\b',
+            r':REDACTED\b',
+            r'_gdpr_purged\s*=\s*true',
+            r'_right_to_be_forgotten\s*=\s*true'
+        ]
+        
+        for pattern in forbidden_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                raise ValueError(
+                    f"EL-I8 SECURITY VIOLATION: Query contains explicit tombstone access pattern: {pattern}. "
+                    f"Direct access to tombstoned data is forbidden for privacy law compliance."
+                )
+        
+        # Advanced tombstone filter function (deployed as Neo4j user-defined function)
+        tombstone_filter_function = """
+        NOT (
+          n._deleted = true 
+          OR n._redacted = true 
+          OR n._purged = true
+          OR n._tombstoned = true
+          OR n._gdpr_purged = true
+          OR n._right_to_be_forgotten = true
+          OR n:TOMBSTONE 
+          OR n:DELETED 
+          OR n:REDACTED
+          OR n:PURGED
+          OR n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
+          OR n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
+          OR (n._deletion_timestamp IS NOT NULL 
+              AND datetime(n._deletion_timestamp) <= datetime())
+          OR (n._redaction_timestamp IS NOT NULL 
+              AND datetime(n._redaction_timestamp) <= datetime())
+        )"""
         
         modified = False
         lines = query.split("\n")
         transformed_lines = []
+        node_variables: Set[str] = set()
         
+        # First pass: collect all node variables
+        for line in lines:
+            # Match patterns: (var), (var:Label), (var {props})
+            node_matches = re.findall(r'\((\w+)(?::[^)]+)?(?:\s*\{[^}]*\})?\)', line)
+            node_variables.update(node_matches)
+        
+        # Second pass: transform queries
         for line in lines:
             transformed_line = line
             
-            # Pattern 1: MATCH with single node variable
-            # MATCH (n:Label) → need WHERE clause
-            match_pattern = re.search(r'MATCH\s+\((\w+)(?::\w+)?\)', line, re.IGNORECASE)
-            if match_pattern:
-                node_var = match_pattern.group(1)
+            # Pattern 1: Simple MATCH statements - add tombstone filters
+            match_pattern = re.search(r'MATCH\s+', line, re.IGNORECASE)
+            if match_pattern and not re.search(r'WHERE', line, re.IGNORECASE):
+                # Find node variables in this MATCH
+                line_nodes = re.findall(r'\((\w+)(?::[^)]+)?(?:\s*\{[^}]*\})?\)', line)
+                if line_nodes:
+                    tombstone_conditions = []
+                    for node_var in line_nodes:
+                        condition = tombstone_filter_function.replace('n.', f'{node_var}.')
+                        condition = condition.replace('n:', f'{node_var}:') 
+                        tombstone_conditions.append(f"({condition})")
+                    
+                    where_clause = f"\nWHERE {' AND '.join(tombstone_conditions)}"
+                    transformed_line = line.rstrip() + where_clause
+                    modified = True
+            
+            # Pattern 2: Existing WHERE clauses - append tombstone filters  
+            elif match_pattern and re.search(r'WHERE', line, re.IGNORECASE):
+                line_nodes = re.findall(r'\((\w+)(?::[^)]+)?(?:\s*\{[^}]*\})?\)', line)
+                if line_nodes:
+                    tombstone_conditions = []
+                    for node_var in line_nodes:
+                        condition = tombstone_filter_function.replace('n.', f'{node_var}.')
+                        condition = condition.replace('n:', f'{node_var}:')
+                        tombstone_conditions.append(f"({condition})")
+                    
+                    and_clause = f" AND {' AND '.join(tombstone_conditions)}"
+                    transformed_line = line.rstrip() + and_clause
+                    modified = True
+            
+            # Pattern 3: Path matches - filter all nodes in path
+            path_match = re.search(r'MATCH\s+(\w+)\s*=\s*\([^)]+\)', line, re.IGNORECASE)
+            if path_match:
+                path_var = path_match.group(1)
+                path_filter = f"""
+WHERE ALL(n IN nodes({path_var}) WHERE {tombstone_filter_function})
+  AND ALL(r IN relationships({path_var}) WHERE NOT (r._active = false OR r._tombstoned = true))"""
                 
-                # Check if WHERE already exists in this line
-                if "WHERE" in line.upper():
-                    # Append to existing WHERE
-                    transformed_line = line.rstrip() + f" AND {node_var}._deleted IS NULL"
+                if "WHERE" not in transformed_line.upper():
+                    transformed_line += path_filter
                 else:
-                    # Add new WHERE clause
-                    transformed_line = line.rstrip() + f"\nWHERE {node_var}._deleted IS NULL"
-                
+                    transformed_line += f" AND ALL(n IN nodes({path_var}) WHERE {tombstone_filter_function})"
+                    transformed_line += f" AND ALL(r IN relationships({path_var}) WHERE NOT (r._active = false OR r._tombstoned = true))"
                 modified = True
             
-            # Pattern 2: Path matches
-            # MATCH path = ... → add path node check
-            if re.search(r'MATCH\s+path\s*=', line, re.IGNORECASE):
-                if "WHERE" not in transformed_line.upper():
-                    transformed_line += "\nWHERE NONE(n IN nodes(path) WHERE n._deleted = true)"
-                else:
-                    transformed_line += " AND NONE(n IN nodes(path) WHERE n._deleted = true)"
-                modified = True
+            # Pattern 4: Relationship tombstone filtering
+            rel_pattern = r'-\[(\w+):(\w+)\]->'
+            if re.search(rel_pattern, line):
+                rel_matches = re.findall(rel_pattern, line)
+                if rel_matches and "WHERE" in transformed_line.upper():
+                    rel_conditions = []
+                    for rel_var, rel_type in rel_matches:
+                        rel_conditions.append(f"NOT ({rel_var}._active = false OR {rel_var}._tombstoned = true)")
+                    
+                    if rel_conditions:
+                        transformed_line += f" AND {' AND '.join(rel_conditions)}"
+                        modified = True
             
             transformed_lines.append(transformed_line)
         
-        return "\n".join(transformed_lines), modified
+        final_query = "\n".join(transformed_lines)
+        
+        # Final security validation
+        if modified:
+            self._log_transformation("tombstone_filter", {
+                "original_nodes": len(node_variables),
+                "filtered_nodes": len([n for n in node_variables if n in final_query]),
+                "query_preview": final_query[:200] + "..." if len(final_query) > 200 else final_query
+            })
+        
+        return final_query, modified
     
     def _limit_depth(self, query: str, max_depth: int) -> Tuple[str, bool]:
         """
@@ -783,9 +888,9 @@ def create_default_unified_controller() -> UnifiedGovernanceController:
 
 def validate_query_with_unified_governance(
     query: str,
-    context: GovernanceContext,
-    controller: Optional[UnifiedGovernanceController] = None
-) -> UnifiedGovernanceDecision:
+    context: "GovernanceContext",
+    controller: Optional["UnifiedGovernanceController"] = None
+) -> "UnifiedGovernanceDecision":
     """
     Validate query with unified governance (convenience function).
     

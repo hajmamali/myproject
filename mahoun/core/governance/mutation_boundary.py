@@ -586,6 +586,20 @@ class GovernedNeo4jSession:
             node_data.get("id"),
             receipt.receipt_id,
         )
+        
+        # STEP 5: Behavioral monitoring (non-blocking, graceful degradation)
+        try:
+            from mahoun.security.governance_behavioral_integration import observe_mutation_background
+            observe_mutation_background(
+                actor_id=self._actor_id,
+                operation_type=m_type.value,
+                entity_count=1,
+                correlation_id=self._correlation_id,
+            )
+        except Exception as e:
+            # Graceful degradation: monitoring failure must not block mutation
+            logger.debug(f"[MAB] Behavioral monitoring hook failed (non-blocking): {e}")
+        
         return receipt
 
     def write_relationship(

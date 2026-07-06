@@ -2,7 +2,7 @@
 Healthcare HIPAA Compliance Demo
 =================================
 
-Demonstrates Mahoun's zero-hallucination AI reasoning for healthcare compliance.
+Demonstrates Mahoun's evidence-grounded AI reasoning for healthcare compliance.
 """
 
 from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -147,7 +147,7 @@ def run_healthcare_demo():
     
     summary_panel = Panel(
         "[bold]Key Mahoun Features Demonstrated:[/bold]\n\n"
-        "✅ Zero Hallucination - Every conclusion backed by evidence\n"
+        "✅ Evidence-Grounded Reasoning - Every conclusion backed by knowledge graph evidence\n"
         "✅ Full Audit Trail - Complete reasoning path visible\n"
         "✅ Rule-Based Logic - HIPAA regulations encoded precisely\n"
         "✅ Fast Performance - Sub-second verdicts\n"

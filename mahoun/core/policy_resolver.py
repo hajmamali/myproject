@@ -23,8 +23,6 @@ Author: MAHOUN System Architecture Team
 Date: 2026-06-18
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 from dataclasses import dataclass, field
@@ -389,7 +387,7 @@ class PolicyResolver:
     
     def __init__(
         self,
-        profile_manager: Optional[ProfileManager] = None,
+        profile_manager: Optional["ProfileManager"] = None,
         enable_audit_logging: bool = True
     ):
         """
@@ -416,7 +414,7 @@ class PolicyResolver:
     
     def resolve_policy(
         self,
-        context: GovernanceContext,
+        context: "GovernanceContext",
         view_mode: Optional[ViewMode] = None,
         explicit_depth_limit: Optional[int] = None,
         semantic_override: Optional[bool] = None,

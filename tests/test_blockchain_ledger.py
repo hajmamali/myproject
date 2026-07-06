@@ -3,7 +3,7 @@ Blockchain Ledger Tests
 ========================
 
 CRITICAL: Tests immutable ledger for audit trail integrity.
-Zero-hallucination guarantee depends on tamper-evident evidence recording.
+Evidence-grounded reasoning depends on tamper-evident evidence recording.
 
 Test Coverage:
 - Block creation and chaining

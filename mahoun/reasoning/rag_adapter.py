@@ -29,7 +29,7 @@ PERFORMANCE:
 """
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mahoun.core.protocols import QueryRouterProtocol, RAGServiceProtocol
@@ -101,7 +101,9 @@ def create_query_router(
 # ============================================================================
 
 
-def create_rag_service() -> Optional['RAGServiceProtocol']:
+def create_rag_service(
+    graph_retriever: Optional[Any] = None
+) -> Optional['RAGServiceProtocol']:
     """
     Create HybridRAGService instance with runtime import.
     
@@ -109,6 +111,10 @@ def create_rag_service() -> Optional['RAGServiceProtocol']:
     - Dense retrieval (vector similarity)
     - Sparse retrieval (BM25/keyword)
     - Graph-based retrieval (knowledge graph traversal)
+    
+    Args:
+        graph_retriever: Optional graph retriever instance for graph-based modes.
+                        If None, graph retrieval will be unavailable.
     
     Returns:
         RAGServiceProtocol implementation or None if unavailable
@@ -129,18 +135,29 @@ def create_rag_service() -> Optional['RAGServiceProtocol']:
         Caller must handle None case appropriately
         
     Example:
+        >>> # With graph retriever
+        >>> graph_ret = get_graph_retriever()
+        >>> rag = create_rag_service(graph_retriever=graph_ret)
+        >>> 
+        >>> # Without graph retriever (degraded mode)
         >>> rag = create_rag_service()
         >>> if rag:
         ...     results = await rag.retrieve("query", mode=RAGMode.HYBRID)
-        ... else:
-        ...     # Fallback to non-RAG reasoning
-        ...     results = fallback_retrieval("query")
     """
     try:
         from mahoun.rag.hybrid_rag_service import HybridRAGService
         
-        service = HybridRAGService()
-        logger.info("HybridRAGService created successfully via adapter")
+        # Pass graph_retriever if provided
+        service = HybridRAGService(graph_retriever=graph_retriever)
+        
+        if graph_retriever:
+            logger.info("HybridRAGService created WITH graph retriever via adapter")
+        else:
+            logger.warning(
+                "HybridRAGService created WITHOUT graph retriever - "
+                "graph-based retrieval modes will be unavailable"
+            )
+        
         return service
         
     except ImportError as e:

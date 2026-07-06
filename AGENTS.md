@@ -71,6 +71,44 @@ that may execute Cypher against the database. It contains the
 
 ---
 
+### 1-A2. Bootstrap Runtime — Service Registry Initialization (CRITICAL)
+
+**Canonical:** `mahoun/bootstrap/runtime.py`
+**Entry point:** `bootstrap_runtime()` → returns `Dict[str, Any]` (SERVICE_REGISTRY)
+**Startup location:** `api/main.py` lifespan function (line ~138)
+
+**CRITICAL INVARIANT (P0):**
+`bootstrap_runtime()` MUST be called during app startup. Without this call,
+SERVICE_REGISTRY remains empty and graph-enhanced retrieval silently fails.
+
+**Registry contents:**
+- `"query"` → GraphQueryService
+- `"gnn"` → GNNGraphBuilder
+- `"graph_retriever"` → GraphEnhancedRetriever (**CRITICAL for RAG**)
+- `"graph_vector_sync"` → GraphVectorSync
+- `"legal_query_executor"` → LegalQueryExecutor
+
+**Usage pattern:**
+```python
+from mahoun.bootstrap.runtime import get_service
+
+graph_retriever = get_service("graph_retriever")
+```
+
+**FORBIDDEN:**
+- Do NOT assume SERVICE_REGISTRY is populated without calling `bootstrap_runtime()`
+- Do NOT use `get_service()` to satisfy constructor dependencies — use constructor
+  injection instead. `get_service()` is for lifecycle/observability only.
+
+**CI Enforcement:**
+`ci/gates/gate_bootstrap_enforcement.sh` verifies bootstrap is called in `api/main.py`.
+
+**Fixed bugs:**
+- B1+B8: Bootstrap was NEVER called → SERVICE_REGISTRY empty → graph_retriever=None
+- B2+B7: Silent exception catch in adapters allowed degradation
+
+---
+
 ### 1-B. Governance Enforcement (Mutation Authorization)
 
 **Canonical package:** `mahoun/core/governance/`

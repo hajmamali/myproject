@@ -534,6 +534,34 @@ class AnomalyDetectionSystem:
         
         return alerts
     
+    def check_anomaly(
+        self,
+        metric_name: str,
+        value: float,
+        higher_is_better: bool = True
+    ) -> Optional[AnomalyAlert]:
+        """
+        Check metric for anomalies (behavioral_monitor.py API compatibility).
+        
+        Alias for check_metric that returns single highest-severity alert.
+        
+        Args:
+            metric_name: Name of metric
+            value: Current value
+            higher_is_better: Whether higher values are better
+            
+        Returns:
+            Single AnomalyAlert if detected, None otherwise
+        """
+        alerts = self.check_metric(metric_name, value, higher_is_better)
+        
+        if not alerts:
+            return None
+        
+        # Return highest severity alert
+        severity_order = {'low': 0, 'medium': 1, 'high': 2, 'critical': 3}
+        return max(alerts, key=lambda a: severity_order.get(a.severity, 0))
+    
     def get_all_alerts(
         self,
         severity: Optional[str] = None,

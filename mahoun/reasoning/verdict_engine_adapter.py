@@ -156,11 +156,50 @@ class VerdictProofTree:
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize proof tree to dictionary."""
-        return {
+        base_dict = {
             "depth": self.get_proof_depth(),
             "size": self.get_proof_size(),
             "steps": [dict(step) for step in self.steps],
             "evidence_nodes": self.get_evidence_nodes(),
+        }
+        
+        # ✅ GAP 4: Add rag_provenance section if present in steps metadata
+        # This enables full RAG evidence auditability in proof tree
+        rag_provenance = self._extract_rag_provenance()
+        if rag_provenance:
+            base_dict["rag_provenance"] = rag_provenance
+        
+        return base_dict
+    
+    def _extract_rag_provenance(self) -> dict[str, Any] | None:
+        """
+        Extract RAG provenance metadata from steps if available.
+        
+        Returns:
+            RAG provenance dict with merkle_root and evidence_items, or None if no RAG evidence present
+        """
+        # Check if any step has rag_evidence_metadata
+        rag_evidence_items = []
+        
+        for step in self.steps:
+            rag_metadata = step.get("rag_evidence_metadata")
+            if rag_metadata and isinstance(rag_metadata, list):
+                rag_evidence_items.extend(rag_metadata)
+        
+        if not rag_evidence_items:
+            return None
+        
+        # Extract merkle_root from first item (all items should have same root)
+        merkle_root = None
+        for item in rag_evidence_items:
+            if isinstance(item, dict) and "merkle_root" in item:
+                merkle_root = item["merkle_root"]
+                break
+        
+        return {
+            "evidence_count": len(rag_evidence_items),
+            "merkle_root": merkle_root,
+            "evidence_items": rag_evidence_items,
         }
 
 
@@ -380,6 +419,15 @@ class VerdictEngineAdapter:
             "timestamp": datetime.now(UTC).isoformat(),
             "adapter_version": "2.0.0",
         }
+        
+        # ✅ GAP 4 INTEGRATION: Extract rag_provenance from verdict_result.metadata
+        if hasattr(verdict_result, "metadata") and isinstance(verdict_result.metadata, dict):
+            if "rag_provenance" in verdict_result.metadata:
+                metadata["rag_provenance"] = verdict_result.metadata["rag_provenance"]
+                log.debug(
+                    f"[{correlation_id}] GAP 4: Extracted RAG provenance from verdict: "
+                    f"{metadata['rag_provenance']['evidence_count']} items"
+                )
 
         # ============================================================================
         # P1-3: LEDGER HASH VERIFICATION

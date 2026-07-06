@@ -37,6 +37,10 @@ from mahoun.core.protocols import (
     RAGServiceProtocol,
     ReasoningEngineProtocol,
     validate_protocol_implementation,
+    # Advanced protocols
+    UncertaintyServiceProtocol,
+    OntologyGateProtocol,
+    UltraRAGProtocol,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,6 +75,11 @@ class ReasoningDependencyContainer:
         self._model_orchestrator: ModelOrchestratorProtocol | None = None
         self._reasoning_engine: ReasoningEngineProtocol | None = None
         self._contradiction_detector: ContradictionDetectorProtocol | None = None
+        
+        # Advanced services
+        self._uncertainty_service: UncertaintyServiceProtocol | None = None
+        self._ontology_gate: OntologyGateProtocol | None = None
+        self._ultra_rag: UltraRAGProtocol | None = None
 
         # Thread locks for safe lazy initialization
         self._router_lock = threading.Lock()
@@ -78,6 +87,9 @@ class ReasoningDependencyContainer:
         self._orchestrator_lock = threading.Lock()
         self._engine_lock = threading.Lock()
         self._detector_lock = threading.Lock()
+        self._uncertainty_lock = threading.Lock()
+        self._ontology_lock = threading.Lock()
+        self._ultra_rag_lock = threading.Lock()
 
         # Initialization flags for observability
         self._initialized: dict[str, bool] = {
@@ -86,6 +98,9 @@ class ReasoningDependencyContainer:
             "model_orchestrator": False,
             "reasoning_engine": False,
             "contradiction_detector": False,
+            "uncertainty_service": False,
+            "ontology_gate": False,
+            "ultra_rag": False,
         }
 
         logger.info("ReasoningDependencyContainer initialized")
@@ -209,6 +224,90 @@ class ReasoningDependencyContainer:
 
         return self._contradiction_detector
 
+    @property
+    def uncertainty_service(self) -> Optional["UncertaintyServiceProtocol"]:
+        """
+        Get uncertainty service instance (lazy singleton, optional).
+
+        Returns:
+            UncertaintyServiceProtocol implementation or None if not available
+        """
+        if self._uncertainty_service is None:
+            with self._uncertainty_lock:
+                if self._uncertainty_service is None:
+                    logger.info("Attempting to initialize UncertaintyService (lazy)")
+                    try:
+                        self._uncertainty_service = self._create_uncertainty_service()
+                        if self._uncertainty_service is not None:
+                            validate_protocol_implementation(
+                                self._uncertainty_service, UncertaintyServiceProtocol
+                            )
+                            self._initialized["uncertainty_service"] = True
+                            logger.info("UncertaintyService initialized successfully")
+                        else:
+                            logger.info("UncertaintyService not available (optional)")
+                    except Exception as e:
+                        logger.warning(f"UncertaintyService initialization failed: {e}")
+                        self._uncertainty_service = None
+
+        return self._uncertainty_service
+
+    @property
+    def ontology_gate(self) -> Optional["OntologyGateProtocol"]:
+        """
+        Get ontology gate instance (lazy singleton, optional).
+
+        Returns:
+            OntologyGateProtocol implementation or None if not available
+        """
+        if self._ontology_gate is None:
+            with self._ontology_lock:
+                if self._ontology_gate is None:
+                    logger.info("Attempting to initialize OntologyGate (lazy)")
+                    try:
+                        self._ontology_gate = self._create_ontology_gate()
+                        if self._ontology_gate is not None:
+                            validate_protocol_implementation(
+                                self._ontology_gate, OntologyGateProtocol
+                            )
+                            self._initialized["ontology_gate"] = True
+                            logger.info("OntologyGate initialized successfully")
+                        else:
+                            logger.info("OntologyGate not available (optional)")
+                    except Exception as e:
+                        logger.warning(f"OntologyGate initialization failed: {e}")
+                        self._ontology_gate = None
+
+        return self._ontology_gate
+
+    @property
+    def ultra_rag(self) -> Optional["UltraRAGProtocol"]:
+        """
+        Get Ultra RAG instance (lazy singleton, optional).
+
+        Returns:
+            UltraRAGProtocol implementation or None if not available
+        """
+        if self._ultra_rag is None:
+            with self._ultra_rag_lock:
+                if self._ultra_rag is None:
+                    logger.info("Attempting to initialize UltraRAG (lazy)")
+                    try:
+                        self._ultra_rag = self._create_ultra_rag()
+                        if self._ultra_rag is not None:
+                            validate_protocol_implementation(
+                                self._ultra_rag, UltraRAGProtocol
+                            )
+                            self._initialized["ultra_rag"] = True
+                            logger.info("UltraRAG initialized successfully")
+                        else:
+                            logger.info("UltraRAG not available (optional)")
+                    except Exception as e:
+                        logger.warning(f"UltraRAG initialization failed: {e}")
+                        self._ultra_rag = None
+
+        return self._ultra_rag
+
     # ========================================================================
     # Factory Methods (Override in tests for mocking)
     # ========================================================================
@@ -239,10 +338,58 @@ class ReasoningDependencyContainer:
         Note:
             Uses rag_adapter to avoid direct import from RAG module.
             This maintains architectural boundary between core and non-core.
+            
+            Retrieves graph_retriever from bootstrap registry if available.
+            
+        CRITICAL FIX (B2+B7 — P1 Error Handling):
+            Replaces silent exception catch with explicit error distinction:
+            - KeyError → Service not registered (bootstrap not called or failed)
+            - Service is None → Registered but None (bootstrap wiring error)
+            
+            This prevents silent degradation when bootstrap fails.
         """
         from mahoun.reasoning.rag_adapter import create_rag_service
+        
+        # Try to get graph_retriever from bootstrap registry
+        graph_retriever = None
+        try:
+            from mahoun.bootstrap.runtime import get_service
+            graph_retriever = get_service("graph_retriever")
+            logger.info("✅ Graph retriever obtained from bootstrap registry")
+        except KeyError as e:
+            # CRITICAL: Service not registered → bootstrap not called or failed
+            raise RuntimeError(
+                "CRITICAL: graph_retriever not found in SERVICE_REGISTRY. "
+                "This indicates bootstrap_runtime() was not called during startup. "
+                "Check api/main.py lifespan to ensure bootstrap is executed. "
+                f"Original error: {e}"
+            ) from e
+        except ImportError as e:
+            # Bootstrap module not available
+            raise RuntimeError(
+                "CRITICAL: mahoun.bootstrap.runtime module not available. "
+                "Ensure bootstrap module is properly installed."
+            ) from e
+        except Exception as e:
+            # Other unexpected errors during service retrieval
+            logger.error(
+                f"❌ Unexpected error retrieving graph_retriever from bootstrap: {e}",
+                exc_info=True
+            )
+            raise RuntimeError(
+                f"CRITICAL: Failed to retrieve graph_retriever from bootstrap registry. "
+                f"Error: {type(e).__name__}: {e}"
+            ) from e
+        
+        # CRITICAL: Verify graph_retriever is not None (registered but None = wiring error)
+        if graph_retriever is None:
+            raise RuntimeError(
+                "CRITICAL: graph_retriever is registered in SERVICE_REGISTRY but is None. "
+                "This indicates a bootstrap wiring error in mahoun/bootstrap/runtime.py. "
+                "The service was registered but not properly initialized."
+            )
 
-        service = create_rag_service()
+        service = create_rag_service(graph_retriever=graph_retriever)
         if service is None:
             raise RuntimeError("HybridRAGService not available. Ensure mahoun.rag.hybrid_rag_service is installed.")
         return service
@@ -294,6 +441,79 @@ class ReasoningDependencyContainer:
 
         return create_contradiction_detector()
 
+    def _create_uncertainty_service(self) -> Optional["UncertaintyServiceProtocol"]:
+        """
+        Factory method for UncertaintyService (optional).
+
+        Returns None if not available (graceful degradation).
+        """
+        try:
+            from mahoun.uncertainty.service import UncertaintyService
+            
+            logger.info("UncertaintyService module found, creating instance")
+            return UncertaintyService()
+        except ImportError as e:
+            logger.warning(f"UncertaintyService not available: {e}")
+            return None
+
+    def _create_ontology_gate(self) -> Optional["OntologyGateProtocol"]:
+        """
+        Factory method for OntologyGate (optional).
+
+        Returns None if not available (graceful degradation).
+        
+        Note:
+            Wraps existing OntologyEnforcer with schema-level validation.
+        """
+        try:
+            from mahoun.core.governance.ontology_enforcer import OntologyEnforcer
+            from mahoun.core.governance.ontology_gate_adapter import OntologyGateAdapter
+            
+            logger.info("Creating OntologyGateAdapter wrapping OntologyEnforcer")
+            enforcer = OntologyEnforcer()
+            return OntologyGateAdapter(enforcer)
+        except ImportError as e:
+            logger.warning(f"OntologyGate not available: {e}")
+            return None
+
+    def _create_ultra_rag(self) -> Optional["UltraRAGProtocol"]:
+        """
+        Factory method for UltraRAG (optional).
+
+        Returns None if not available (graceful degradation).
+        """
+        try:
+            from mahoun.rag.ultra_graph_rag import UltraGraphRAG
+            from mahoun.rag.ultra_rag_adapter import UltraRAGAdapter
+            
+            logger.info("UltraGraphRAG module found, creating adapter")
+            
+            # Get graph and retriever from bootstrap if available
+            graph = None
+            base_retriever = None
+            try:
+                from mahoun.bootstrap.runtime import get_service
+                graph = get_service("graph")
+                base_retriever = get_service("base_retriever")
+            except Exception as e:
+                logger.warning(f"Could not get graph/retriever from bootstrap: {e}")
+            
+            # Create UltraGraphRAG instance
+            ultra_rag = UltraGraphRAG(
+                graph=graph,
+                base_retriever=base_retriever,
+                enable_quantum_scoring=False,  # Disabled per codebase comment
+                enable_causal_inference=True,
+                enable_attention_flow=True,
+                enable_feedback_learning=False  # Start conservative
+            )
+            
+            # Wrap with adapter to satisfy protocol
+            return UltraRAGAdapter(ultra_rag)
+        except ImportError as e:
+            logger.warning(f"UltraRAG not available: {e}")
+            return None
+
     # ========================================================================
     # Observability and Management
     # ========================================================================
@@ -320,12 +540,16 @@ class ReasoningDependencyContainer:
         """
         logger.warning("Resetting ReasoningDependencyContainer (test mode)")
 
-        with self._router_lock, self._rag_lock, self._orchestrator_lock, self._engine_lock, self._detector_lock:
+        with self._router_lock, self._rag_lock, self._orchestrator_lock, self._engine_lock, self._detector_lock, \
+             self._uncertainty_lock, self._ontology_lock, self._ultra_rag_lock:
             self._query_router = None
             self._rag_service = None
             self._model_orchestrator = None
             self._reasoning_engine = None
             self._contradiction_detector = None
+            self._uncertainty_service = None
+            self._ontology_gate = None
+            self._ultra_rag = None
 
             self._initialized = {k: False for k in self._initialized}
 

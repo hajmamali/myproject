@@ -123,3 +123,98 @@ def set_governance_authority(state: bool) -> Any:
 
 def reset_governance_authority(token: Any) -> None:
     _reset_authorized_state(token)
+
+
+# ============================================================================
+# GOVERNANCE KERNEL FACADE (for standalone service)
+# ============================================================================
+
+class GovernanceKernel:
+    """
+    Facade for standalone governance kernel service.
+    
+    Wraps KernelMutationBoundary and provides async service interface.
+    Used by governance_kernel_main.py (FastAPI service).
+    """
+    
+    def __init__(self):
+        self.boundary = KernelMutationBoundary()
+        self._start_time = datetime.now(timezone.utc)
+        self._request_count = 0
+        self._denied_count = 0
+    
+    async def validate_request(
+        self,
+        query_type: str,
+        correlation_id: str,
+        actor_id: str,
+        resource_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> 'GovernanceResponse':
+        """
+        Validate governance request (service API).
+        
+        Returns:
+            GovernanceResponse with allowed/denied + reason
+        """
+        from uuid import uuid4
+        
+        self._request_count += 1
+        validation_id = f"val-{uuid4().hex[:12]}"
+        
+        # For READ queries, allow
+        if query_type.upper() == "READ":
+            return GovernanceResponse(
+                allowed=True,
+                reason="Read operation — no governance gate required",
+                correlation_id=correlation_id,
+                validation_id=validation_id,
+                metadata={"actor_id": actor_id},
+            )
+        
+        # For WRITE/DDL, check authorization state
+        if _is_authorized_state():
+            return GovernanceResponse(
+                allowed=True,
+                reason="Authorized governed context active",
+                correlation_id=correlation_id,
+                validation_id=validation_id,
+                metadata={"actor_id": actor_id},
+            )
+        
+        # Deny unauthorized mutation
+        self._denied_count += 1
+        return GovernanceResponse(
+            allowed=False,
+            reason="Mutation outside governed context — governance violation",
+            correlation_id=correlation_id,
+            validation_id=validation_id,
+            metadata={
+                "actor_id": actor_id,
+                "query_type": query_type,
+                "violation_category": ViolationCategory.ARCHITECTURE_BOUNDARY.value,
+            },
+        )
+    
+    def get_uptime(self) -> str:
+        """Get kernel uptime"""
+        delta = datetime.now(timezone.utc) - self._start_time
+        return str(delta)
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get kernel statistics"""
+        return {
+            "total_requests": self._request_count,
+            "denied_requests": self._denied_count,
+            "allowed_requests": self._request_count - self._denied_count,
+        }
+
+
+@dataclass
+class GovernanceResponse:
+    """Response from GovernanceKernel.validate_request"""
+    allowed: bool
+    reason: str
+    correlation_id: str
+    validation_id: str
+    metadata: Dict[str, Any] = field(default_factory=dict)

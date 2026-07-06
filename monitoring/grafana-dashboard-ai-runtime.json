@@ -1,0 +1,675 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "ai-runtime-nexus",
+    "title": "MAHOUN AI Runtime - Nexus Observability",
+    "description": "Comprehensive monitoring dashboard for MAHOUN AI Runtime with model performance, resource utilization, and governance tracking",
+    "tags": ["mahoun", "ai-runtime", "models", "governance", "nexus"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "query": "label_values(mahoun_ai_runtime_up, instance)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "options": [],
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        },
+        {
+          "name": "model",
+          "type": "query",
+          "query": "label_values(mahoun_ai_inference_requests_total{instance=~\"$instance\"}, model_name)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "options": [],
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Model Load Events",
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "increase(mahoun_ai_model_load_failures_total[1m]) > 0",
+          "iconColor": "rgb(255, 96, 96)",
+          "titleFormat": "Model Load Failure"
+        },
+        {
+          "name": "Governance Violations",
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "increase(mahoun_ai_governance_violations_total[1m]) > 0",
+          "iconColor": "rgb(255, 0, 0)",
+          "titleFormat": "Governance Violation Detected"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "🚀 AI Runtime Status Overview",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_up{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Runtime",
+            "refId": "A"
+          },
+          {
+            "expr": "mahoun_ai_readiness_status{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Readiness",
+            "refId": "B"
+          },
+          {
+            "expr": "mahoun_ai_liveness_status{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Liveness",
+            "refId": "C"
+          },
+          {
+            "expr": "mahoun_ai_airgap_compliance_status{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Air-Gap",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "value": "0", "text": "❌ DOWN"},
+              {"type": "value", "value": "1", "text": "✅ UP"}
+            ]
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "🧠 Component Health Status",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "targets": [
+          {
+            "expr": "mahoun_ai_component_health_status{instance=~\"$instance\"}",
+            "legendFormat": "{{component}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "gray", "value": 0},
+                {"color": "green", "value": 1},
+                {"color": "orange", "value": 2},
+                {"color": "red", "value": 3}
+              ]
+            },
+            "min": 0,
+            "max": 3,
+            "mappings": [
+              {"type": "value", "value": "0", "text": "Unknown"},
+              {"type": "value", "value": "1", "text": "Healthy"},
+              {"type": "value", "value": "2", "text": "Degraded"},
+              {"type": "value", "value": "3", "text": "Unhealthy"}
+            ]
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 3,
+        "title": "📊 System Resource Overview",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_memory_percent{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Memory %",
+            "refId": "A"
+          },
+          {
+            "expr": "mahoun_ai_runtime_cpu_usage_percent{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - CPU %",
+            "refId": "B"
+          },
+          {
+            "expr": "mahoun_ai_runtime_disk_percent{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}} - Disk %",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi", "sort": "desc"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "last"]}
+        }
+      },
+      {
+        "id": 4,
+        "title": "🤖 Model Availability & Performance",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 14},
+        "targets": [
+          {
+            "expr": "mahoun_ai_models_available_total{instance=~\"$instance\"}",
+            "legendFormat": "Available Models",
+            "refId": "A"
+          },
+          {
+            "expr": "mahoun_ai_models_loaded_total{instance=~\"$instance\"}",
+            "legendFormat": "Loaded Models",
+            "refId": "B"
+          },
+          {
+            "expr": "mahoun_ai_embedding_models_available{instance=~\"$instance\"}",
+            "legendFormat": "Embedding Models",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 1},
+                {"color": "green", "value": 2}
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto"
+        }
+      },
+      {
+        "id": 5,
+        "title": "⚡ Inference Request Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 14},
+        "targets": [
+          {
+            "expr": "rate(mahoun_ai_inference_requests_total{instance=~\"$instance\", model_name=~\"$model\", status=\"success\"}[1m])",
+            "legendFormat": "{{model_name}} - Success",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(mahoun_ai_inference_requests_total{instance=~\"$instance\", model_name=~\"$model\", status=\"failure\"}[1m])",
+            "legendFormat": "{{model_name}} - Failure",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "reqps",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}
+        }
+      },
+      {
+        "id": 6,
+        "title": "🚀 Tokens Per Second",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 14},
+        "targets": [
+          {
+            "expr": "mahoun_ai_inference_tokens_per_second{instance=~\"$instance\", model_name=~\"$model\"}",
+            "legendFormat": "{{model_name}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "orange", "value": 10},
+                {"color": "yellow", "value": 50},
+                {"color": "green", "value": 100}
+              ]
+            },
+            "unit": "tps",
+            "min": 0
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 7,
+        "title": "⏱️ Inference Latency (p50, p95, p99)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(mahoun_ai_inference_duration_seconds_bucket{instance=~\"$instance\", model_name=~\"$model\"}[1m]))",
+            "legendFormat": "{{model_name}} - p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(mahoun_ai_inference_duration_seconds_bucket{instance=~\"$instance\", model_name=~\"$model\"}[1m]))",
+            "legendFormat": "{{model_name}} - p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(mahoun_ai_inference_duration_seconds_bucket{instance=~\"$instance\", model_name=~\"$model\"}[1m]))",
+            "legendFormat": "{{model_name}} - p99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "s",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}
+        }
+      },
+      {
+        "id": 8,
+        "title": "🔍 Embedding Service Performance",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(mahoun_ai_embedding_requests_total{instance=~\"$instance\", status=\"success\"}[1m])",
+            "legendFormat": "{{model_name}} - Success",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(mahoun_ai_embedding_cache_hits_total{instance=~\"$instance\"}[1m])",
+            "legendFormat": "Cache Hits",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(mahoun_ai_embedding_cache_misses_total{instance=~\"$instance\"}[1m])",
+            "legendFormat": "Cache Misses",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "reqps",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "last"]}
+        }
+      },
+      {
+        "id": 9,
+        "title": "🛡️ Governance & Compliance Status",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "mahoun_ai_governance_fortress_validator_up{instance=~\"$instance\"}",
+            "legendFormat": "FortressValidator",
+            "refId": "A"
+          },
+          {
+            "expr": "mahoun_ai_airgap_compliance_status{instance=~\"$instance\"}",
+            "legendFormat": "Air-Gap Compliant",
+            "refId": "B"
+          },
+          {
+            "expr": "mahoun_ai_airgap_network_isolation_status{instance=~\"$instance\"}",
+            "legendFormat": "Network Isolated",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "value": "0", "text": "❌ NO"},
+              {"type": "value", "value": "1", "text": "✅ YES"}
+            ]
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center"
+        }
+      },
+      {
+        "id": 10,
+        "title": "⚠️ Governance Violations & Validations",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 28},
+        "targets": [
+          {
+            "expr": "rate(mahoun_ai_governance_validations_total{instance=~\"$instance\", result=\"pass\"}[1m])",
+            "legendFormat": "Validations Passed",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(mahoun_ai_governance_validations_total{instance=~\"$instance\", result=\"fail\"}[1m])",
+            "legendFormat": "Validations Failed",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(mahoun_ai_governance_violations_total{instance=~\"$instance\"}[1m])",
+            "legendFormat": "{{violation_type}} - {{severity}}",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "ops",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        },
+        "alert": {
+          "conditions": [
+            {
+              "query": {"queryType": "", "refId": "C"},
+              "reducer": {"type": "last", "params": []},
+              "evaluator": {"params": [0], "type": "gt"}
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "AI Runtime Governance Violation",
+          "noDataState": "no_data",
+          "message": "🚨 Governance violation detected in AI runtime!"
+        }
+      },
+      {
+        "id": 11,
+        "title": "💾 Memory Utilization Details",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 34},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_memory_usage_bytes{instance=~\"$instance\"} / 1024 / 1024 / 1024",
+            "legendFormat": "{{instance}} - Used (GB)",
+            "refId": "A"
+          },
+          {
+            "expr": "mahoun_ai_runtime_memory_available_bytes{instance=~\"$instance\"} / 1024 / 1024 / 1024",
+            "legendFormat": "{{instance}} - Available (GB)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "decgbytes",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "last"]}
+        }
+      },
+      {
+        "id": 12,
+        "title": "💿 Disk Utilization",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 34},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_disk_percent{instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 13,
+        "title": "📦 Cache Size & Model Load Failures",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 34},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_cache_size_bytes{instance=~\"$instance\"} / 1024 / 1024",
+            "legendFormat": "{{instance}} - Cache (MB)",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(mahoun_ai_model_load_failures_total{instance=~\"$instance\"}[1m])",
+            "legendFormat": "{{model_name}} - {{reason}}",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 14,
+        "title": "⏱️ Health Check Latency",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 42},
+        "targets": [
+          {
+            "expr": "rate(mahoun_ai_health_check_duration_seconds_sum{instance=~\"$instance\"}[1m]) / rate(mahoun_ai_health_check_duration_seconds_count{instance=~\"$instance\"}[1m])",
+            "legendFormat": "{{instance}} - {{check_type}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "s",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}
+        }
+      },
+      {
+        "id": 15,
+        "title": "🔴 Health Check Failures",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 42},
+        "targets": [
+          {
+            "expr": "rate(mahoun_ai_health_check_failures_total{instance=~\"$instance\"}[1m])",
+            "legendFormat": "{{instance}} - {{component}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "ops",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {"mode": "multi"},
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        },
+        "alert": {
+          "conditions": [
+            {
+              "query": {"queryType": "", "refId": "A"},
+              "reducer": {"type": "last", "params": []},
+              "evaluator": {"params": [0.1], "type": "gt"}
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "AI Runtime Health Check Failures",
+          "noDataState": "no_data",
+          "message": "⚠️ AI Runtime health checks are failing!"
+        }
+      },
+      {
+        "id": 16,
+        "title": "⏰ Uptime",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 48},
+        "targets": [
+          {
+            "expr": "mahoun_ai_runtime_uptime_seconds{instance=~\"$instance\"} / 60 / 60",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "yellow", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "unit": "h"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "center"
+        }
+      }
+    ]
+  },
+  "overwrite": true,
+  "message": "AI Runtime Nexus Dashboard - Comprehensive Monitoring",
+  "folderUid": "mahoun-ai-runtime",
+  "inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "value": "Prometheus"
+    }
+  ]
+}

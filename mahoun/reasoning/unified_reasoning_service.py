@@ -153,6 +153,18 @@ class ReasoningResponse:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     # ========================================================================
+    # ADVANCED FEATURES (optional, non-governance)
+    # ========================================================================
+    uncertainty: Any | None = None
+    """Uncertainty estimate (UncertaintyEstimate) if available"""
+
+    ontology_validated: bool = False
+    """Whether ontology validation was performed"""
+
+    retrieval_mode: str = "hybrid"
+    """Retrieval mode used: 'hybrid', 'ultra', 'graph', 'text'"""
+
+    # ========================================================================
     # PROOF-CARRYING CONTRACT FIELDS (MANDATORY for successful responses)
     # ========================================================================
     # ========================================================================

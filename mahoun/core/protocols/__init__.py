@@ -29,6 +29,21 @@ from .legacy_protocols import (
     is_contradiction_detector,
     ContradictionDetectorProtocol
 )
+from .advanced_protocols import (
+    # Uncertainty
+    UncertaintyEstimate,
+    UncertaintyServiceProtocol,
+    is_uncertainty_service,
+    # Ontology
+    OntologyValidationResult,
+    OntologyGateProtocol,
+    is_ontology_gate,
+    # Ultra RAG
+    GraphReasoningPath,
+    UltraRAGResult,
+    UltraRAGProtocol,
+    is_ultra_rag,
+)
 
 __all__ = [
     "AIRuntimeProtocol", 
@@ -51,5 +66,16 @@ __all__ = [
     "is_model_driver",
     "is_reasoning_engine",
     "is_contradiction_detector",
-    "ContradictionDetectorProtocol"
+    "ContradictionDetectorProtocol",
+    # Advanced protocols
+    "UncertaintyEstimate",
+    "UncertaintyServiceProtocol",
+    "is_uncertainty_service",
+    "OntologyValidationResult",
+    "OntologyGateProtocol",
+    "is_ontology_gate",
+    "GraphReasoningPath",
+    "UltraRAGResult",
+    "UltraRAGProtocol",
+    "is_ultra_rag",
 ]

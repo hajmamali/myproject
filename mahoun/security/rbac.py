@@ -187,7 +187,8 @@ class RBACManager:
     def check_permission(
         self,
         username: str,
-        permission: Permission
+        permission: Permission,
+        correlation_id: str = None,
     ) -> bool:
         """
         Check if user has permission
@@ -195,6 +196,7 @@ class RBACManager:
         Args:
             username: Username
             permission: Required permission
+            correlation_id: Optional correlation ID for audit trail
         
         Returns:
             True if user has permission
@@ -203,6 +205,10 @@ class RBACManager:
         
         if not user:
             logger.warning(f"Permission check failed: user not found ({username})")
+            
+            # Behavioral monitoring: failed auth (non-blocking)
+            self._observe_auth_failure(username, permission, correlation_id)
+            
             return False
         
         has_permission = permission in user['permissions']
@@ -211,8 +217,33 @@ class RBACManager:
             logger.warning(
                 f"Permission denied: {username} does not have {permission}"
             )
+            
+            # Behavioral monitoring: permission denied (non-blocking)
+            self._observe_auth_failure(username, permission, correlation_id)
         
         return has_permission
+    
+    def _observe_auth_failure(
+        self,
+        actor_id: str,
+        permission: Permission,
+        correlation_id: str = None,
+    ) -> None:
+        """
+        Observe failed authorization attempt (non-blocking behavioral monitoring).
+        
+        Graceful degradation: monitoring failures must not block authorization checks.
+        """
+        try:
+            from mahoun.security.governance_behavioral_integration import observe_auth_failure_background
+            observe_auth_failure_background(
+                actor_id=actor_id,
+                attempted_permission=permission.value,
+                correlation_id=correlation_id or f"rbac-{actor_id}",
+            )
+        except Exception as e:
+            # Graceful degradation: monitoring failure does not affect auth decision
+            logger.debug(f"[RBAC] Behavioral monitoring hook failed (non-blocking): {e}")
     
     def require_permission(
         self,

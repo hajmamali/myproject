@@ -2,23 +2,69 @@
 Policy-enforced Query Executor
 --------------------------------
 
-Small wrapper to provide a single import point for executing Cypher queries
-under unified governance. This delegates to `GraphQueryService` which already
-integrates `UnifiedGovernanceController`.
+Provides a dependency-injection friendly interface for executing Cypher queries
+under unified governance. Uses protocol-based design to avoid layer boundary violations.
 
 Usage:
     from mahoun.core.query_executor import execute_cypher
     results = execute_cypher("MATCH (n) RETURN n LIMIT 10", correlation_id="cid", actor_id="user")
 
+Architecture:
+    - Core layer defines the protocol (GraphQueryExecutorProtocol)
+    - Graph layer provides the implementation (GraphQueryService)
+    - Bootstrap wires them together via set_query_executor()
 """
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from mahoun.graph.graph_query_service import GraphQueryService, GraphQueryConfig
+from mahoun.core.protocols.query_protocols import GraphQueryExecutorProtocol
+
+if TYPE_CHECKING:
+    from mahoun.graph.graph_query_service import GraphQueryService
 
 logger = logging.getLogger(__name__)
+
+# Global executor instance - injected at bootstrap
+_executor_instance: Optional[GraphQueryExecutorProtocol] = None
+
+
+def set_query_executor(executor: GraphQueryExecutorProtocol) -> None:
+    """
+    Set the query executor implementation (Dependency Injection).
+    
+    This should be called during bootstrap to wire the concrete implementation.
+    
+    Args:
+        executor: Implementation of GraphQueryExecutorProtocol
+    """
+    global _executor_instance
+    _executor_instance = executor
+    logger.info("Query executor registered via DI")
+
+
+def get_query_executor() -> GraphQueryExecutorProtocol:
+    """
+    Get the current query executor.
+    
+    Returns:
+        GraphQueryExecutorProtocol implementation
+        
+    Raises:
+        RuntimeError: If no executor has been registered
+    """
+    if _executor_instance is None:
+        # Fallback: lazy import for backward compatibility
+        # In production, this should never execute - bootstrap should wire it
+        logger.warning(
+            "Query executor not registered via DI - falling back to direct import. "
+            "This is a bootstrap configuration issue."
+        )
+        from mahoun.graph.graph_query_service import GraphQueryService
+        return GraphQueryService()
+    
+    return _executor_instance
 
 
 def execute_cypher(
@@ -29,14 +75,25 @@ def execute_cypher(
     timeout: Optional[float] = None,
     use_cache: bool = True,
 ) -> List[Dict[str, Any]]:
-    """Synchronous execute helper that routes through GraphQueryService.
-
-    This function exists to provide a single import point for services that
-    need to execute Cypher queries under unified governance. GraphQueryService
-    already applies UnifiedGovernanceController transformations and audit.
     """
-    service = GraphQueryService()
-    res = service.query(
+    Synchronous execute helper that routes through registered executor.
+
+    This function provides a simple import point for services that need to
+    execute Cypher queries. The actual implementation is injected at bootstrap.
+    
+    Args:
+        query: Cypher query string
+        params: Query parameters
+        correlation_id: Correlation ID for tracing
+        actor_id: Actor ID for audit
+        timeout: Query timeout (not used currently)
+        use_cache: Whether to use query cache
+        
+    Returns:
+        List of result dictionaries
+    """
+    executor = get_query_executor()
+    res = executor.query(
         query=query,
         params=params,
         use_cache=use_cache,
@@ -55,12 +112,27 @@ async def execute_cypher_async(
     timeout: Optional[float] = None,
     use_cache: bool = True,
 ) -> List[Dict[str, Any]]:
-    service = GraphQueryService()
-    res = await service.query_async(
+    """
+    Asynchronous execute helper that routes through registered executor.
+    
+    Args:
+        query: Cypher query string
+        params: Query parameters
+        correlation_id: Correlation ID for tracing
+        actor_id: Actor ID for audit
+        timeout: Query timeout (not used currently)
+        use_cache: Whether to use query cache
+        
+    Returns:
+        List of result dictionaries
+    """
+    executor = get_query_executor()
+    res = await executor.query_async(
         query=query,
         params=params,
         use_cache=use_cache,
         correlation_id=correlation_id,
         actor_id=actor_id,
     )
+
     return res.results

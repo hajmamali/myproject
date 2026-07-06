@@ -1,14 +1,14 @@
 # ============================================================================
 # MAHOUN Backend - Production Makefile
 # ============================================================================
-# Zero-Hallucination AI Reasoning Platform
+# Evidence-Grounded AI Reasoning Platform
 # Focus: Backend-only deployment and operations
 # ============================================================================
 
 .PHONY: help
 help: ## Show this help
 	@echo "═══════════════════════════════════════════════════════════"
-	@echo "MAHOUN Backend - Zero-Hallucination AI Reasoning Platform"
+	@echo "MAHOUN Backend - Evidence-Grounded AI Reasoning Platform"
 	@echo "═══════════════════════════════════════════════════════════"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 

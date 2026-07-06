@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     # ============================================================================
     # Validate runtime configuration before starting the application.
     # This ensures fail-fast behavior on misconfiguration rather than
-    # runtime failures that could compromise zero-hallucination guarantees.
+    # runtime failures that could compromise evidence integrity and governance controls.
     # ============================================================================
     import time as validation_time
 
@@ -129,6 +129,59 @@ async def lifespan(app: FastAPI):
 
     # Startup
     app.state.start_time = time.time()
+
+    # ============================================================================
+    # BOOTSTRAP RUNTIME — SERVICE REGISTRY POPULATION (P0 CRITICAL)
+    # ============================================================================
+    # CRITICAL FIX (B1+B8): Bootstrap runtime MUST be called to populate
+    # SERVICE_REGISTRY with graph_retriever and other Neo4j-dependent services.
+    # Without this call, SERVICE_REGISTRY stays empty → graph_retriever=None
+    # → graph-enhanced RAG is completely disabled (silent fail).
+    #
+    # This is the SINGLE entry point for runtime wiring. All inter-module
+    # dependencies are resolved here and only here.
+    # ============================================================================
+    logger.info("⚡ Initializing MAHOUN runtime bootstrap...")
+    bootstrap_start = time.time()
+    
+    try:
+        from mahoun.bootstrap.runtime import bootstrap_runtime
+        
+        registry = bootstrap_runtime()
+        
+        # Store registry in app.state for health checks and observability
+        app.state.service_registry = registry
+        
+        bootstrap_duration = time.time() - bootstrap_start
+        logger.info(
+            f"✅ MAHOUN runtime bootstrap completed ({bootstrap_duration * 1000:.1f}ms). "
+            f"Services registered: {', '.join(registry.keys())}"
+        )
+        
+        # Verify critical services are present
+        critical_services = ["query", "gnn", "graph_retriever"]
+        missing_services = [s for s in critical_services if s not in registry]
+        
+        if missing_services:
+            raise RuntimeError(
+                f"❌ CRITICAL: Bootstrap failed to register required services: {missing_services}. "
+                "The system cannot start without these services. "
+                "Check mahoun/bootstrap/runtime.py for initialization errors."
+            )
+        
+        logger.info(f"✓ All critical services verified: {critical_services}")
+        
+    except ImportError as e:
+        logger.error(f"❌ CRITICAL: Failed to import bootstrap_runtime: {e}")
+        raise RuntimeError(
+            "Bootstrap module not available. Ensure mahoun/bootstrap/runtime.py exists "
+            "and all dependencies are installed."
+        ) from e
+    except Exception as e:
+        logger.error(f"❌ CRITICAL: Bootstrap runtime initialization failed: {e}")
+        raise RuntimeError(
+            f"MAHOUN bootstrap failed. System cannot start. Error: {e}"
+        ) from e
 
     # Check if databases are enabled
     enable_postgres = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"

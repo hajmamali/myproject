@@ -4,17 +4,17 @@ MAHOUN Reasoning API Router
 
 Core reasoning endpoints for evidence-linked verdict generation.
 
-CRITICAL GUARANTEES:
-- Zero-hallucination: All reasoning grounded in graph evidence
-- Full auditability: Complete evidence trail in blockchain ledger
+CRITICAL CAPABILITIES:
+- Evidence-grounded reasoning: All conclusions linked to knowledge graph evidence
+- Full auditability: Complete evidence trail in immutable ledger
 - Cryptographic proofs: Tamper-evident verification
 - Deterministic contradiction resolution: Predictable conflict handling
 
 Architecture:
-- Evidence-Linked Verdict Engine: Graph-based reasoning
-- Immutable Ledger: Blockchain audit trail
-- Cryptographic Proofs: Non-repudiation guarantees
-- Runtime Guardrails: Zero-hallucination enforcement
+- Evidence-Linked Verdict Engine: Graph-based reasoning with high confidence
+- Immutable Ledger: Hash-chained audit trail for compliance
+- Cryptographic Proofs: Non-repudiation guarantees via Ed25519 signatures
+- Runtime Guardrails: Multi-layer verification to reduce hallucination risk
 """
 
 import hashlib
@@ -322,14 +322,14 @@ def get_keypair() -> tuple[str, str]:
     status_code=status.HTTP_200_OK,
     summary="Generate evidence-linked verdict",
     description="""
-    Generate legal verdict with zero-hallucination guarantee.
+    Generate evidence-grounded legal verdict with high-confidence reasoning.
     
-    **Guarantees:**
-    - Every conclusion linked to graph evidence
-    - Complete audit trail in blockchain ledger
-    - Cryptographic proof for verification
+    **Capabilities:**
+    - Every conclusion linked to knowledge graph evidence
+    - Complete audit trail in immutable hash-chained ledger
+    - Cryptographic proof for tamper-evident verification
     - Deterministic contradiction resolution
-    - Fortress validation on all responses
+    - Multi-layer validation (Fortress) on all responses
     
     **Process:**
     1. Establish governance context (correlation lineage, runtime attestation)
@@ -411,12 +411,12 @@ async def generate_verdict(
         else:
             # FAIL-CLOSED: No proof_tree means no evidence linkage
             log.error(
-                "ReasoningResponse missing proof_tree - zero-hallucination guarantee violated",
+                "ReasoningResponse missing proof_tree - evidence integrity requirement violated",
                 extra={"correlation_id": ctx.correlation_id}
             )
             raise RuntimeError(
                 "Governance contract violation: ReasoningResponse missing proof_tree. "
-                "Zero-hallucination guarantee requires proof_tree for all successful responses."
+                "Evidence-grounded reasoning requires proof_tree for all successful responses."
             )
 
         # Generate cryptographic proof if requested
