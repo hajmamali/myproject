@@ -117,11 +117,11 @@ class AIResponse:
     
     # Quality and Confidence Metrics
     confidence_score: float  # Model confidence (0.0 to 1.0)
-    quality_score: Optional[float]  # Optional quality assessment
-    
-    # Token and Performance Information  
     token_usage: TokenUsage
     generation_metadata: GenerationMetadata
+
+    # Optional Quality Assessment
+    quality_score: Optional[float] = None  # Optional quality assessment
     
     # Governance and Audit Fields
     fortress_validated: bool = False  # FortressValidator approval
