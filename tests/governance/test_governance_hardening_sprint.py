@@ -412,7 +412,9 @@ class TestTask8EvidenceConsistencyProof(unittest.TestCase):
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
 
         # Prove enforcement exists in source code (static proof)
-        src = inspect.getsource(EvidenceLinkedVerdictEngine.generate_verdict)
+        # Unwrap the function first to bypass decorators like @track_legal_query_decorator
+        original_func = inspect.unwrap(EvidenceLinkedVerdictEngine.generate_verdict)
+        src = inspect.getsource(original_func)
         self.assertIn("_deleted", src,
                       "EL-I8 tombstone check not found in generate_verdict source")
         self.assertIn("raise RuntimeError", src,

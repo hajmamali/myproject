@@ -1,20 +1,40 @@
 """
-MAHOUN Core Module
-==================
+🚀 MAHOUN Core Module - Developer Shortcuts
+===========================================
 
 Core infrastructure components for MAHOUN platform.
 
+Quick Imports (most common):
+    from mahoun.core import ReasoningResult, SecurityBreachException
+    from mahoun.core import Entity, FortressValidator
+
+Advanced Imports:
+    from mahoun.core.models import ReasoningStep, Entity  
+    from mahoun.core.protocols import QueryRouterProtocol
+
+DUPLICATE CLASS GUIDE:
+- ReasoningResult → USE THIS (canonical in .models)  
+- Entity → USE THIS (canonical in .models)
+- SecurityBreachException → USE THIS (canonical in .exceptions)
+
 Components:
 - FortressValidator: Governance enforcement layer
-- PolicyResolver: Centralized execution policy engine
-- Settings: Configuration management
-- Health checks: System health monitoring
-- Logging: Structured logging configuration
+- PolicyResolver: Centralized execution policy engine  
+- Models: Core business objects (ReasoningResult, Entity, etc.)
+- Exceptions: Structured error types
+- Protocols: Interface definitions for DI
 
 NOTE: Fortress validator imports are lazy-loaded to avoid torch import chain.
 Use `from mahoun.core.fortress_validator import FortressValidator` directly
 when needed, or access via lazy imports at runtime.
 """
+
+# 🎯 Most Used Classes (Daily Imports) - Developer Shortcuts
+from .models import ReasoningResult, ReasoningStep, Entity
+from .exceptions import SecurityBreachException, LogicViolationException
+
+# 🔧 Protocol Interfaces (Architecture) 
+from .protocols import QueryRouterProtocol, ModelDriverProtocol
 
 # Policy resolver exports (direct imports - no heavy dependencies)
 from mahoun.core.policy_resolver import (
@@ -39,11 +59,15 @@ from mahoun.core.unified_governance import (
 # Users should import directly: from mahoun.core.fortress_validator import ...
 
 __all__ = [
+    # 🎯 Core business objects (Developer Daily Use)
+    "ReasoningResult", "ReasoningStep", "Entity",
+    # 🚨 Exceptions & validation  
+    "SecurityBreachException", "LogicViolationException", "FortressValidator",
+    # 🔧 Protocols (Architecture)
+    "QueryRouterProtocol", "ModelDriverProtocol",
     # Fortress Validator (lazy)
     "ExecutionMode",
-    "FortressValidator",
     "ReasoningResponse",
-    "SecurityBreachException",
     "ValidationResult",
     "ViolationSeverity",
     "ViolationType",

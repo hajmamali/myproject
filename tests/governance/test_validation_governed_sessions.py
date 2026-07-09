@@ -25,12 +25,13 @@ class TestValidationGovernedSessions:
         """
         from mahoun.graph.validation.integrity_checker import IntegrityChecker
         
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        
         # Create governance context
-        ctx = GovernanceContext(
+        ctx = GovernanceContextManager.create_context(
             actor_id="test_actor",
             correlation_id="test_correlation_id",
-            operation_type="integrity_check",
-            provenance_chain=[],
+            execution_mode="integrity_check",
         )
         
         checker = IntegrityChecker(governance_context=ctx)
@@ -63,12 +64,13 @@ class TestValidationGovernedSessions:
         """
         from mahoun.graph.validation.quality_validator import GraphQualityValidator
         
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        
         # Create governance context
-        ctx = GovernanceContext(
+        ctx = GovernanceContextManager.create_context(
             actor_id="test_actor",
             correlation_id="test_correlation_id",
-            operation_type="quality_validation",
-            provenance_chain=[],
+            execution_mode="quality_validation",
         )
         
         validator = GraphQualityValidator(governance_context=ctx)
@@ -167,11 +169,12 @@ class TestValidationAuditTrail:
         from mahoun.graph.validation.integrity_checker import IntegrityChecker
         from mahoun.core.governance.governance_context import GovernanceContext
         
-        ctx = GovernanceContext(
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        
+        ctx = GovernanceContextManager.create_context(
             actor_id="test_integrity_actor",
             correlation_id="test_integrity_correlation",
-            operation_type="integrity_check",
-            provenance_chain=[],
+            execution_mode="integrity_check",
         )
         
         checker = IntegrityChecker(governance_context=ctx)
@@ -192,11 +195,12 @@ class TestValidationAuditTrail:
         from mahoun.graph.validation.quality_validator import GraphQualityValidator
         from mahoun.core.governance.governance_context import GovernanceContext
         
-        ctx = GovernanceContext(
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        
+        ctx = GovernanceContextManager.create_context(
             actor_id="test_quality_actor",
             correlation_id="test_quality_correlation",
-            operation_type="quality_validation",
-            provenance_chain=[],
+            execution_mode="quality_validation",
         )
         
         validator = GraphQualityValidator(governance_context=ctx)

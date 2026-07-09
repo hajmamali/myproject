@@ -3,25 +3,27 @@
 ================================================================================
 
 Symbols to consolidate: 4
-Total importers to update: 65
+Total importers to update: 100
 Total files to deprecate: 0
-Total estimated impact: 65 files
+Total estimated impact: 100 files
 
 ## ReasoningResult
    Canonical: mahoun/core/models.py
    Duplicates: 3
-   Importers: 24
+   Importers: 48
    Deprecations: 0
-   Impact: 24
+   Impact: 48
    ⚠️  Issues:
-      - تعداد زیاد importer (24) - ریسک بالا
+      - تعداد زیاد importer (48) - ریسک بالا
 
 ## ReasoningStep
    Canonical: mahoun/reasoning/reasoning_recorder.py
    Duplicates: 4
-   Importers: 18
+   Importers: 28
    Deprecations: 0
-   Impact: 18
+   Impact: 28
+   ⚠️  Issues:
+      - تعداد زیاد importer (28) - ریسک بالا
 
 ## SecurityBreachException
    Canonical: mahoun/core/fortress_validator.py
@@ -33,6 +35,6 @@ Total estimated impact: 65 files
 ## Entity
    Canonical: mahoun/graph/builders/entity_extractor.py
    Duplicates: 5
-   Importers: 6
+   Importers: 7
    Deprecations: 0
-   Impact: 6
+   Impact: 7

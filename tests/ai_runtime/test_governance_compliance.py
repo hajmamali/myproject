@@ -25,10 +25,10 @@ from mahoun.core.fortress_validator import (
     ViolationSeverity,
     ExecutionMode
 )
-from mahoun.core.models.ai_response import AIResponse
-from mahoun.core.models.audit_event import AuditEvent
+from mahoun.ai.models import AIResponse
+from mahoun.audit.models import AuditEvent
 from mahoun.ai.runtime_manager import RuntimeManager
-from mahoun.core.models.deployment_profile import DeploymentProfile, DESKTOP_MINIMAL, ENTERPRISE_FULL
+from mahoun.infrastructure.models import DeploymentProfile, DESKTOP_MINIMAL, ENTERPRISE_FULL
 
 
 class TestGovernanceCompliance:

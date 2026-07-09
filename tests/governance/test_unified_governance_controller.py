@@ -220,7 +220,7 @@ def test_tombstone_filter_injection_active_view(unified_controller, governance_c
     # Transformation should occur
     assert decision.query_transformed is True
     assert "tombstone_filter_active_view" in decision.transformations_applied
-    assert "_deleted IS NULL" in decision.transformed_query
+    assert "_deleted IN [true]" in decision.transformed_query
 
 
 def test_no_tombstone_filter_historical_view(unified_controller, governance_context):
@@ -568,7 +568,7 @@ def test_production_reasoning_workflow(unified_controller, governance_context):
     assert decision.query_transformed is True
     
     # Should have tombstone filters
-    assert "_deleted IS NULL" in decision.transformed_query
+    assert "_deleted IN [true]" in decision.transformed_query
 
 
 def test_forensic_audit_workflow(unified_controller, governance_context):

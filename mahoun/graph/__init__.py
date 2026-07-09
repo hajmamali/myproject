@@ -1,24 +1,54 @@
 """
-Graph Module - Enterprise Graph Builder
-========================================
+📊 MAHOUN Graph Module - Knowledge Graph Operations
+=================================================
 
-Exports the recommended graph builder for production use.
+Enterprise-grade graph operations for MAHOUN platform.
 
-For backward compatibility, UltraGraphBuilder is still available,
-but ConcurrentGraphBuilder is recommended for production.
+Main Classes:
+    from mahoun.graph import GraphQueryService, UltraGraphBuilder
+    from mahoun.graph import GraphEnhancedRetriever
 
-LAZY LOADING:
-All graph builders are imported on-demand via __getattr__ to minimize import-time overhead.
+CANONICAL LOCATION GUIDE:
+- GraphQueryService → USE graph_query_service.py (canonical)
+- UltraGraphBuilder → USE ultra_graph_builder.py  
+- Entity → Import from mahoun.core instead!
+
+🚨 DEPRECATED/DUPLICATE LOCATIONS (DO NOT USE):
+❌ from mahoun.graph.builders.entity_extractor import Entity
+❌ from mahoun.ultra_systems.graph import UltraGraphBuilder
+
+Version 2.0.0: Production-ready graph operations with Neo4j integration.
+LAZY LOADING: All graph builders are imported on-demand to minimize startup time.
 """
 from typing import Any
 
+# 🎯 Core Graph Services (Developer Daily Use)  
+from .graph_query_service import GraphQueryService
+from .ultra_graph_builder import UltraGraphBuilder, GraphNode, GraphEdge
+
+# 📊 Graph Enhanced Retrieval
+try:
+    from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
+    __graph_enhanced_available = True
+except ImportError:
+    __graph_enhanced_available = False
+
+__version__ = "2.0.0"
+
 __all__ = [
-    "UltraGraphBuilder",
+    # Core graph operations
+    "GraphQueryService",
+    "UltraGraphBuilder", 
+    "GraphNode",
+    "GraphEdge", 
+    # Legacy compatibility
     "ConcurrentGraphBuilder",
     "DefaultGraphBuilder",
-    "GraphNode",
-    "GraphEdge",
 ]
+
+# Add GraphEnhancedRetriever if available
+if __graph_enhanced_available:
+    __all__.append("GraphEnhancedRetriever")
 
 _HAS_CONCURRENT_BUILDER: Any = None  # Lazy-evaluated
 
@@ -29,12 +59,18 @@ def __getattr__(name: str) -> Any:
     if name == "UltraGraphBuilder":
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
         return UltraGraphBuilder
+    elif name == "GraphQueryService":
+        from mahoun.graph.graph_query_service import GraphQueryService  
+        return GraphQueryService
     elif name == "GraphNode":
         from mahoun.graph.ultra_graph_builder import GraphNode
         return GraphNode
     elif name == "GraphEdge":
         from mahoun.graph.ultra_graph_builder import GraphEdge
         return GraphEdge
+    elif name == "GraphEnhancedRetriever" and __graph_enhanced_available:
+        from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
+        return GraphEnhancedRetriever
     elif name == "ConcurrentGraphBuilder":
         try:
             from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
