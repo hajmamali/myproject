@@ -443,7 +443,7 @@ class AIRuntimeManager:
                 raise GovernanceViolationError("Fortress validation failed")
             
             # Create new response with fortress_validated=True
-            from mahoun.ai.models import AIResponse as AIResp
+            from mahoun.core.models.ai_response import AIResponse as AIResp
             
             validated_response = AIResp(
                 request_id=response.request_id,

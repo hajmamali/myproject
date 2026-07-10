@@ -48,7 +48,7 @@ from mahoun.core.exceptions_v2 import (
     ConfigurationError,
     OperationalError,
 )
-from mahoun.audit.models import AuditEvent, AuditEventType
+from mahoun.core.models.audit_event import AuditEvent, AuditEventType
 
 
 logger = logging.getLogger(__name__)

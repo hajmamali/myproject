@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 if TYPE_CHECKING:
     from mahoun.ai.profile_manager import ProfileManager
     from mahoun.core.governance.governance_context import GovernanceContext
-    from mahoun.infrastructure.models import DeploymentProfile
+    from mahoun.core.models.deployment_profile import DeploymentProfile
 
 logger = logging.getLogger(__name__)
 

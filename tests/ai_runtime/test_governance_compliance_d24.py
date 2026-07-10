@@ -280,7 +280,7 @@ class TestAuditTrailCompletenesss:
     
     def test_audit_event_structure(self):
         """Test AI runtime audit events have required structure."""
-        from mahoun.audit.models import AuditEvent, AuditEventType, AuditSeverity, AuditContext
+        from mahoun.core.models.audit_event import AuditEvent, AuditEventType, AuditSeverity, AuditContext
         
         # Create audit context with correlation ID
         context = AuditContext(

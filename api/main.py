@@ -38,12 +38,6 @@ from mahoun.core.exceptions import (
     LogicViolationException,
     GraphIntegrityException,
 )
-from mahoun.core.exceptions_v2 import (
-    MahounException as BaseMahounErrorV2,
-    SecurityBreachException as SecurityBreachExceptionV2,
-)
-from mahoun.core.fortress_validator import SecurityBreachException as FortressSecurityBreachException
-
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Import validation middleware
@@ -294,24 +288,23 @@ if os.getenv("MAHOUN_ENABLE_RATE_LIMIT", "true").lower() == "true":
 # ============================================================================
 
 @app.exception_handler(BaseMahounError)
-@app.exception_handler(BaseMahounErrorV2)
-async def mahoun_deterministic_error_handler(request: Request, exc: BaseMahounError | BaseMahounErrorV2):
+async def mahoun_deterministic_error_handler(request: Request, exc: BaseMahounError):
     """Maps all known Mahoun errors to their declared exact HTTP status code."""
     logger.warning(
         "Deterministic governance error",
         extra={
-            "error_type": getattr(exc, "error_type", getattr(exc, "error_code", "UNKNOWN")),
-            "status_code": getattr(exc, "status_code", 400),
-            "correlation_id": getattr(exc, "correlation_id", None),
+            "error_type": exc.error_type,
+            "status_code": exc.status_code,
+            "correlation_id": exc.correlation_id,
         },
     )
     return JSONResponse(
-        status_code=getattr(exc, "status_code", 400),
+        status_code=exc.status_code,
         content={
-            "error": getattr(exc, "error_type", getattr(exc, "error_code", "UNKNOWN_ERROR")),
-            "message": getattr(exc, "message", str(exc)),
-            "correlation_id": getattr(exc, "correlation_id", None),
-            "details": getattr(exc, "details", {}),
+            "error": exc.error_type,
+            "message": exc.message,
+            "correlation_id": exc.correlation_id,
+            "details": exc.details,
             "timestamp": datetime.now().isoformat(),
         },
     )
@@ -319,9 +312,7 @@ async def mahoun_deterministic_error_handler(request: Request, exc: BaseMahounEr
 
 # Specific aliases for clarity (in case old SecurityBreachException is raised directly)
 @app.exception_handler(SecurityBreachException)
-@app.exception_handler(SecurityBreachExceptionV2)
-@app.exception_handler(FortressSecurityBreachException)
-async def security_breach_handler(request: Request, exc: Exception):
+async def security_breach_handler(request: Request, exc: SecurityBreachException):
     return await mahoun_deterministic_error_handler(request, exc)
 
 
