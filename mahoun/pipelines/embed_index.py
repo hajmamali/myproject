@@ -13,8 +13,6 @@ Used in two modes:
 2) Online embedding via EmbeddingService (used by IngestionPipeline)
 """
 
-from __future__ import annotations
-
 import os
 import argparse
 import json
@@ -127,7 +125,7 @@ class AdvancedEmbedder:
     def __init__(
         self,
         config: EmbeddingConfig,
-        model: Optional[SentenceTransformer] = None,
+        model: Optional["SentenceTransformer"] = None,
         correlation_id: str = "",
     ):
         """
@@ -157,14 +155,59 @@ class AdvancedEmbedder:
                 f"(bootstrap-injected model)"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "AdvancedEmbedder requires a pre-constructed SentenceTransformer "
-                "instance via the `model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy construction
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: AdvancedEmbedder "
+                f"initialized without injected model. Attempting lazy construction. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self.model = self._lazy_construct_model()
+    
+    def _lazy_construct_model(self) -> "SentenceTransformer":
+        """
+        DEPRECATED: Lazy model construction fallback.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
+        import time
+        try:
+            from sentence_transformers import SentenceTransformer
+            
+            start = time.time()
+            model = SentenceTransformer(self.config.model_name, device=self.config.device)
+            model.eval()
+
+            # Enable FP16 if available
+            if self.config.use_fp16 and self.config.device == "cuda":
+                model = model.half()
+                log.info("FP16 enabled")
+            
+            latency_ms = (time.time() - start) * 1000
+            
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                f"(model={self.config.model_name}, latency={latency_ms:.2f}ms). "
+                f"This is a DEPRECATED fallback path."
+            )
+            return model
+            
+        except ImportError:
+            log.error(
+                f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                f"and no model injected."
+            )
+            raise ImportError(
+                "sentence-transformers not installed. "
+                "Install with: pip install sentence-transformers OR "
+                "inject pre-constructed model via bootstrap wiring."
+            )
+        except Exception as e:
+            log.error(
+                f"[{self._correlation_id}] ❌ Lazy model construction failed: {e}"
+            )
+            raise RuntimeError(f"Failed to construct embedding model: {e}")
 
     def embed_batch(
         self,

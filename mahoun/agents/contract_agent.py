@@ -34,14 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# Configuration  
+# Configuration
 # ============================================================================
 
-# Import canonical ReasoningMode
-from ..reasoning.unified_reasoning_service import ReasoningMode
-
-class ContractReasoningMode(str, Enum):
-    """Contract-specific reasoning modes"""
+class ReasoningMode(str, Enum):
+    """Reasoning modes for contract analysis"""
     SIMPLE = "simple"           # Direct answer from top result
     CHAIN_OF_THOUGHT = "cot"    # Step-by-step reasoning
     MULTI_HOP = "multi_hop"     # Multiple retrieval rounds
@@ -136,7 +133,7 @@ class ContractAgentConfig(AgentConfig):
     min_relevance_score: float = 0.3
     
     # Reasoning settings
-    reasoning_mode: ContractReasoningMode = ContractReasoningMode.AUTO
+    reasoning_mode: ReasoningMode = ReasoningMode.AUTO
     enable_chain_of_thought: bool = True
     max_reasoning_steps: int = 5
     
@@ -392,11 +389,11 @@ class UltraContractAgent(UltraBaseAgent):
             }
         
         # Step 2: Select reasoning mode
-        if reasoning_mode == ContractReasoningMode.AUTO:
+        if reasoning_mode == ReasoningMode.AUTO:
             reasoning_mode = self._select_reasoning_mode(query, rag_results)
         
         # Step 3: Generate answer based on mode
-        if reasoning_mode == ContractContractContractReasoningMode.CHAIN_OF_THOUGHT and self._reasoning_service:
+        if reasoning_mode == ReasoningMode.CHAIN_OF_THOUGHT and self._reasoning_service:
             answer, confidence, reasoning_chain = await self._chain_of_thought_reasoning(
                 query=query,
                 context=context,
@@ -556,9 +553,9 @@ class UltraContractAgent(UltraBaseAgent):
         has_multiple_results = len(rag_results) > 3
         
         if is_complex and has_multiple_results and self._reasoning_service:
-            return ContractContractReasoningMode.CHAIN_OF_THOUGHT
+            return ReasoningMode.CHAIN_OF_THOUGHT
         
-        return ContractReasoningMode.SIMPLE
+        return ReasoningMode.SIMPLE
     
     async def _chain_of_thought_reasoning(
         self,

@@ -72,16 +72,15 @@ except ImportError:
     BackwardChainingEngine: Optional[Any] = None
     BackwardChainingResult: Optional[Any] = None
 try:
-    from .symbolic_reasoner import SymbolicReasoningEngine, KnowledgeBase, SymbolicReasoningMode
+    from .symbolic_reasoner import SymbolicReasoningEngine, KnowledgeBase, ReasoningMode as SymbolicReasoningMode
 except ImportError:
     SymbolicReasoningEngine: Optional[Any] = None
     KnowledgeBase: Optional[Any] = None
     SymbolicReasoningMode: Optional[Any] = None
 # Always safe imports
 try:
-    from .reasoning_chain import ReasoningChain, ReasoningConfig, ReasoningResult
-    from .unified_reasoning_service import ReasoningMode  # Canonical ReasoningMode
-    __all__ = ["ReasoningChain", "ReasoningConfig", "ReasoningResult", "ReasoningMode"]
+    from .reasoning_chain import ReasoningChain, ReasoningConfig, ReasoningMode, ReasoningResult
+    __all__ = ["ReasoningChain", "ReasoningConfig", "ReasoningMode", "ReasoningResult"]
 except ImportError:
     __all__: List[Any] = []
 # Add optional exports

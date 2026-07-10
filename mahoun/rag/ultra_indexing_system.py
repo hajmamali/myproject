@@ -247,13 +247,14 @@ class EmbeddingGenerator:
                 f"(bootstrap-injected model)"
             )
         else:
-            # No model provided - will be loaded on-demand if needed
-            self.model = None
+            # DEPRECATED FALLBACK
             log.warning(
-                f"[{self._correlation_id}] ⚠️  EmbeddingGenerator initialized "
-                f"without injected model. Model loading will be deferred. "
-                f"For production use, inject via bootstrap for better control."
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: EmbeddingGenerator "
+                f"initialized without injected model. Attempting lazy construction. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self._load_model()
         
         # Cache DI handling
         if cache is not None:
@@ -296,30 +297,10 @@ class EmbeddingGenerator:
     
     def _load_model(self):
         """
-        Load embedding model dynamically.
+        DEPRECATED: Load embedding model.
         
-        ARCHITECTURAL NOTE:
-        ~~~~~~~~~~~~~~~~~~
-        This method exists for TWO legitimate use cases:
-        
-        1. **Frontend/UI Tools:** Allowing users to experiment with different
-           models (GGUF, quantized variants, custom fine-tuned models) without
-           rebuilding the entire bootstrap layer.
-        
-        2. **Model Registry Pattern:** Dynamic model loading based on runtime
-           configuration or user selection.
-        
-        PRODUCTION GUIDANCE:
-        ~~~~~~~~~~~~~~~~~~~
-        - For production backends: Inject models via bootstrap (performance + control)
-        - For interactive tools/frontends: This method is acceptable
-        - For A/B testing: This method enables quick model swapping
-        
-        GOVERNANCE CONTRACT:
-        ~~~~~~~~~~~~~~~~~~~
-        - Model loading is logged with model name + latency
-        - Model cache directory is configurable
-        - Import errors are surfaced explicitly (no silent failures)
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
         """
         import time
         
@@ -333,99 +314,43 @@ class EmbeddingGenerator:
                 from sentence_transformers import SentenceTransformer
                 
                 start = time.time()
-                log.info(
-                    f"[{self._correlation_id}] 🔄 Loading embedding model dynamically: "
-                    f"{self.config.model.value}"
-                )
-                
                 self.model = SentenceTransformer(self.config.model.value)
                 self.model.to(self.device)
-                
                 latency_ms = (time.time() - start) * 1000
-                log.info(
-                    f"[{self._correlation_id}] ✅ Model loaded successfully "
-                    f"(model={self.config.model.value}, latency={latency_ms:.2f}ms, "
-                    f"device={self.device})"
+                
+                log.warning(
+                    f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                    f"(model={self.config.model.value}, latency={latency_ms:.2f}ms)"
                 )
                 
-            except ImportError as e:
+            except ImportError:
                 log.error(
-                    f"[{self._correlation_id}] ❌ sentence-transformers not installed. "
-                    f"Install with: pip install sentence-transformers"
+                    f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                    f"and no model injected."
                 )
                 raise ImportError(
-                    "sentence-transformers is required for embedding generation. "
-                    "Install with: pip install sentence-transformers"
-                ) from e
-            except Exception as e:
-                log.error(
-                    f"[{self._correlation_id}] ❌ Failed to load model "
-                    f"{self.config.model.value}: {e}"
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers OR "
+                    "inject pre-constructed model via bootstrap wiring."
                 )
-                raise RuntimeError(
-                    f"Failed to load embedding model {self.config.model.value}"
-                ) from e
             
         elif self.config.model in [
             EmbeddingModel.OPENAI_ADA_002,
             EmbeddingModel.OPENAI_3_SMALL,
             EmbeddingModel.OPENAI_3_LARGE
         ]:
-            try:
-                import openai
-                self.model = openai
-                log.info(
-                    f"[{self._correlation_id}] ✅ OpenAI embeddings configured "
-                    f"(model={self.config.model.value})"
-                )
-            except ImportError as e:
-                raise ImportError(
-                    "openai package required. Install with: pip install openai"
-                ) from e
+            import openai
+            self.model = openai
             
         elif self.config.model == EmbeddingModel.COHERE_EMBED_V3:
-            try:
-                import cohere
-                self.model = cohere.Client()
-                log.info(f"[{self._correlation_id}] ✅ Cohere embeddings configured")
-            except ImportError as e:
-                raise ImportError(
-                    "cohere package required. Install with: pip install cohere"
-                ) from e
+            import cohere
+            self.model = cohere.Client()
             
         elif self.config.model == EmbeddingModel.CLIP_VIT_L:
-            try:
-                from transformers import CLIPModel, CLIPProcessor
-                start = time.time()
-                
-                self.model = CLIPModel.from_pretrained(self.config.model.value)
-                self.tokenizer = CLIPProcessor.from_pretrained(self.config.model.value)
-                self.model.to(self.device)
-                
-                latency_ms = (time.time() - start) * 1000
-                log.info(
-                    f"[{self._correlation_id}] ✅ CLIP model loaded "
-                    f"(latency={latency_ms:.2f}ms)"
-                )
-            except ImportError as e:
-                raise ImportError(
-                    "transformers required. Install with: pip install transformers"
-                ) from e
-        else:
-            raise ValueError(
-                f"Unsupported embedding model: {self.config.model}. "
-                f"Supported models: {[m.value for m in EmbeddingModel]}"
-            )
-    
-    def _ensure_model_loaded(self):
-        """
-        Ensure model is loaded before use.
-        
-        This provides lazy loading: model is loaded only when first needed,
-        not at construction time.
-        """
-        if self.model is None:
-            self._load_model()
+            from transformers import CLIPModel, CLIPProcessor
+            self.model = CLIPModel.from_pretrained(self.config.model.value)
+            self.tokenizer = CLIPProcessor.from_pretrained(self.config.model.value)
+            self.model.to(self.device)
     
     def embed(
         self,
@@ -442,9 +367,6 @@ class EmbeddingGenerator:
         Returns:
             Embeddings as numpy array
         """
-        # Ensure model is loaded (lazy loading)
-        self._ensure_model_loaded()
-        
         if isinstance(texts, str):
             texts = [texts]
         

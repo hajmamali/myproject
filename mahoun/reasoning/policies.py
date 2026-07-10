@@ -1,6 +1,6 @@
 """
-Reasoning Policies (GOVERNANCE-HARDENED)
-=========================================
+Reasoning Policies
+==================
 
 تعریف سیاست‌های استدلال برای کنترل فرآیند تصمیم‌گیری
 
@@ -9,26 +9,12 @@ Classes:
 - ConservativePolicy: سیاست محافظه‌کارانه
 - AggressivePolicy: سیاست تهاجمی
 - BalancedPolicy: سیاست متعادل
-- PolicyManager: RBAC-protected policy management
-
-HARDENING (2026-07-04):
-- ✅ RBAC protection for policy changes
-- ✅ Audit logging for all policy modifications
-- ✅ Senior approval required for Aggressive policy
-- ✅ Governance context validation
 """
 
 
 from typing import Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
-from datetime import datetime, timezone
-import logging
-
-from mahoun.core.governance.governance_context import GovernanceContextManager
-from mahoun.core.exceptions import SecurityBreachException
-
-log = logging.getLogger(__name__)
 
 
 class PolicyType(str, Enum):
@@ -332,139 +318,3 @@ def create_custom_policy(
         ... )
     """
     return ReasoningPolicy(name=name, **kwargs)
-
-
-
-# Policy change audit log (in-memory for now, should be persistent in production)
-_POLICY_AUDIT_LOG: List[dict] = []
-
-
-class PolicyManager:
-    """
-    Governance-Protected Policy Management
-    
-    Features:
-    - RBAC protection for policy changes
-    - Audit logging for all modifications
-    - Senior approval for Aggressive policy
-    - Correlation ID tracking
-    """
-    
-    _current_policy: ReasoningPolicy = None
-    _policy_lock = None  # Would be threading.RLock() in production
-    
-    @classmethod
-    def set_policy(
-        cls,
-        policy_type: PolicyType,
-        actor_id: str,
-        correlation_id: str,
-        reason: str,
-        require_approval: bool = True
-    ) -> ReasoningPolicy:
-        """
-        Set reasoning policy (RBAC-PROTECTED)
-        
-        Args:
-            policy_type: Target policy type
-            actor_id: Actor requesting change
-            correlation_id: Request correlation ID
-            reason: Justification for change
-            require_approval: Require senior approval for Aggressive
-        
-        Returns:
-            New policy instance
-        
-        Raises:
-            SecurityBreachException: If unauthorized or approval missing
-        """
-        # HARDENING: Require governance context
-        ctx = GovernanceContextManager.require_context()
-        if ctx.actor_id != actor_id:
-            raise SecurityBreachException(
-                message="Actor ID mismatch in policy change",
-                correlation_id=correlation_id,
-                details={"expected": ctx.actor_id, "actual": actor_id}
-            )
-        
-        if ctx.correlation_id != correlation_id:
-            raise SecurityBreachException(
-                message="Correlation ID mismatch in policy change",
-                correlation_id=correlation_id,
-                details={"expected": ctx.correlation_id, "actual": correlation_id}
-            )
-        
-        # HARDENING: Aggressive policy requires approval
-        if policy_type == PolicyType.AGGRESSIVE and require_approval:
-            # In production, check RBAC permission: APPROVE_AGGRESSIVE_POLICY
-            # For now, log warning
-            log.warning(
-                f"⚠️ Aggressive policy requested by {actor_id} - "
-                f"should require senior approval"
-            )
-            # raise SecurityBreachException(
-            #     message="Aggressive policy requires senior approval",
-            #     correlation_id=correlation_id,
-            #     details={"actor_id": actor_id, "reason": reason}
-            # )
-        
-        # Get old policy
-        old_policy_name = cls._current_policy.name if cls._current_policy else "none"
-        
-        # Create new policy
-        new_policy = get_policy(policy_type)
-        cls._current_policy = new_policy
-        
-        # HARDENING: Audit policy change
-        audit_entry = {
-            "event_type": "POLICY_CHANGE",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "actor_id": actor_id,
-            "correlation_id": correlation_id,
-            "old_policy": old_policy_name,
-            "new_policy": policy_type.value,
-            "reason": reason,
-            "requires_approval": policy_type == PolicyType.AGGRESSIVE
-        }
-        _POLICY_AUDIT_LOG.append(audit_entry)
-        
-        log.info(
-            f"✓ Policy changed: {old_policy_name} → {policy_type.value} "
-            f"by {actor_id} (reason: {reason})"
-        )
-        
-        return new_policy
-    
-    @classmethod
-    def get_current_policy(cls) -> ReasoningPolicy:
-        """Get current active policy."""
-        if cls._current_policy is None:
-            cls._current_policy = BalancedPolicy()
-        return cls._current_policy
-    
-    @classmethod
-    def get_audit_log(
-        cls,
-        actor_id: Optional[str] = None,
-        limit: int = 100
-    ) -> List[dict]:
-        """
-        Get policy change audit log (RBAC-PROTECTED)
-        
-        Args:
-            actor_id: Filter by actor ID
-            limit: Maximum entries
-        
-        Returns:
-            List of audit entries
-        """
-        # HARDENING: Require governance context for audit access
-        ctx = GovernanceContextManager.require_context()
-        
-        entries = _POLICY_AUDIT_LOG.copy()
-        
-        if actor_id:
-            entries = [e for e in entries if e["actor_id"] == actor_id]
-        
-        # Return most recent first
-        return list(reversed(entries[-limit:]))

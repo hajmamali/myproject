@@ -1,7 +1,5 @@
 # ============================================================================
 # MAHOUN Backend - Enterprise-Grade Multi-Stage Dockerfile
-# ⚠️  DEPRECATED: This file will be archived soon
-# ⚠️  Use Dockerfile.kernel + Dockerfile.api instead
 # ============================================================================
 # Architecture: Multi-stage build with security hardening
 # Base Image: Python 3.12.7 (Debian Bookworm)
@@ -177,13 +175,11 @@ COPY --from=builder --chown=mahoun:mahoun /root/.local /home/mahoun/.local
 # Add user binaries to PATH
 ENV PATH=/home/mahoun/.local/bin:$PATH
 
-# ⚠️ SECURITY FIX: Use specific COPY commands instead of COPY . .
-# Copy only required application files (prevents secret leakage)
+# Copy application code (with correct ownership)
 COPY --chown=mahoun:mahoun api/ ./api/
-COPY --chown=mahoun:mahoun mahoun/core/ ./mahoun/core/
-COPY --chown=mahoun:mahoun mahoun/reasoning/ ./mahoun/reasoning/
-COPY --chown=mahoun:mahoun mahoun/infrastructure/ ./mahoun/infrastructure/
-COPY --chown=mahoun:mahoun requirements-api.txt pyproject.toml README.md ./
+COPY --chown=mahoun:mahoun mahoun/ ./mahoun/
+COPY --chown=mahoun:mahoun config/ ./config/
+COPY --chown=mahoun:mahoun pyproject.toml README.md ./
 
 # Create runtime directories with correct permissions
 RUN mkdir -p \

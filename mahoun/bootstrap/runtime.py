@@ -86,10 +86,6 @@ def bootstrap_runtime() -> Dict[str, Any]:
     query_config = GraphQueryConfig()  # reads from env via GraphQueryConfig defaults
     query_service = GraphQueryService(config=query_config)
 
-    # Wire query_executor DI (FIX: P0 #3 - boundary violation fix)
-    from mahoun.core.query_executor import set_query_executor
-    set_query_executor(query_service)
-
     # GNNGraphBuilder: session_factory is the governed Neo4j write surface.
     # Bootstrap owns this factory — GNNGraphBuilder never creates connections itself.
     def governed_session_factory():

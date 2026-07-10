@@ -3,44 +3,12 @@ Neo4j Schema Management
 Handles constraints, indexes, and schema migrations
 """
 
-import logging
-import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol, Set
+from typing import Any, Dict, List, Optional, Set
+import logging
+from neo4j import Session
 
 logger = logging.getLogger(__name__)
-
-# ============================================================================
-# Schema Identifier Allowlists and Validator (Patch Group C)
-# Prevent schema drift via unconstrained f-string DDL interpolation.
-# ============================================================================
-
-_SCHEMA_IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
-_ALLOWED_CONSTRAINT_TYPES = frozenset({"unique", "exists", "node_key"})
-_ALLOWED_INDEX_TYPES = frozenset({"btree", "fulltext", "vector"})
-
-
-def _validate_schema_identifier(value: str, kind: str) -> str:
-    """Reject any schema identifier that is not a clean ASCII word.
-
-    Raises ValueError for empty, non-ASCII, or pattern-violating identifiers.
-    This prevents Cypher injection via f-string DDL interpolation.
-    """
-    if not value or not value.strip():
-        raise ValueError(f"Schema {kind} must be a non-empty string")
-    if not _SCHEMA_IDENTIFIER_RE.match(value):
-        raise ValueError(
-            f"Schema {kind} '{value}' contains forbidden characters. Allowed pattern: ^[A-Za-z][A-Za-z0-9_]*$"
-        )
-    return value
-
-
-class QueryRunner(Protocol):
-    """Minimal query execution interface for schema operations."""
-
-    def run(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """Execute a Cypher query and return results as list of dicts."""
-        ...
 
 
 @dataclass
@@ -66,44 +34,36 @@ class Index:
 class SchemaManager:
     """Manages Neo4j database schema"""
 
-    def __init__(self, runner: QueryRunner):
-        self._runner = runner
+    def __init__(self, session: Session):
+        self.session = session
 
     def create_constraint(self, constraint: Constraint) -> bool:
-        """Create a constraint in the database."""
+        """Create a constraint in the database"""
         try:
-            # PATCH GROUP C: validate all identifiers before DDL interpolation
-            _validate_schema_identifier(constraint.name, "constraint name")
-            _validate_schema_identifier(constraint.label, "node label")
-            for prop in constraint.properties:
-                _validate_schema_identifier(prop, "property name")
-            if constraint.constraint_type not in _ALLOWED_CONSTRAINT_TYPES:
-                raise ValueError(
-                    f"Unknown constraint type: {constraint.constraint_type!r}. "
-                    f"Allowed: {sorted(_ALLOWED_CONSTRAINT_TYPES)}"
-                )
-
             if constraint.constraint_type == "unique":
-                query = (
-                    f"CREATE CONSTRAINT {constraint.name} IF NOT EXISTS "
-                    f"FOR (n:{constraint.label}) "
-                    f"REQUIRE n.{constraint.properties[0]} IS UNIQUE"
-                )
+                query = f"""
+                CREATE CONSTRAINT {constraint.name} IF NOT EXISTS
+                FOR (n:{constraint.label})
+                REQUIRE n.{constraint.properties[0]} IS UNIQUE
+                """
             elif constraint.constraint_type == "exists":
-                query = (
-                    f"CREATE CONSTRAINT {constraint.name} IF NOT EXISTS "
-                    f"FOR (n:{constraint.label}) "
-                    f"REQUIRE n.{constraint.properties[0]} IS NOT NULL"
-                )
-            else:  # node_key
+                query = f"""
+                CREATE CONSTRAINT {constraint.name} IF NOT EXISTS
+                FOR (n:{constraint.label})
+                REQUIRE n.{constraint.properties[0]} IS NOT NULL
+                """
+            elif constraint.constraint_type == "node_key":
                 props = ", ".join([f"n.{p}" for p in constraint.properties])
-                query = (
-                    f"CREATE CONSTRAINT {constraint.name} IF NOT EXISTS "
-                    f"FOR (n:{constraint.label}) "
-                    f"REQUIRE ({props}) IS NODE KEY"
-                )
+                query = f"""
+                CREATE CONSTRAINT {constraint.name} IF NOT EXISTS
+                FOR (n:{constraint.label})
+                REQUIRE ({props}) IS NODE KEY
+                """
+            else:
+                logger.error(f"Unknown constraint type: {constraint.constraint_type}")
+                return False
 
-            self._runner.run(query)
+            self.session.run(query)
             logger.info(f"Created constraint: {constraint.name}")
             return True
 
@@ -112,32 +72,38 @@ class SchemaManager:
             return False
 
     def create_index(self, index: Index) -> bool:
-        """Create an index in the database."""
+        """Create an index in the database"""
         try:
-            # PATCH GROUP C: validate all identifiers before DDL interpolation
-            _validate_schema_identifier(index.name, "index name")
-            _validate_schema_identifier(index.label, "node label")
-            for prop in index.properties:
-                _validate_schema_identifier(prop, "property name")
-            if index.index_type not in _ALLOWED_INDEX_TYPES:
-                raise ValueError(f"Unknown index type: {index.index_type!r}. Allowed: {sorted(_ALLOWED_INDEX_TYPES)}")
-
             if index.index_type == "btree":
                 props = ", ".join([f"n.{p}" for p in index.properties])
-                query = f"CREATE INDEX {index.name} IF NOT EXISTS FOR (n:{index.label}) ON ({props})"
+                query = f"""
+                CREATE INDEX {index.name} IF NOT EXISTS
+                FOR (n:{index.label})
+                ON ({props})
+                """
             elif index.index_type == "fulltext":
                 props = ", ".join([f"n.{p}" for p in index.properties])
-                query = f"CREATE FULLTEXT INDEX {index.name} IF NOT EXISTS FOR (n:{index.label}) ON EACH [{props}]"
-            else:  # vector
-                query = (
-                    f"CREATE VECTOR INDEX {index.name} IF NOT EXISTS "
-                    f"FOR (n:{index.label}) "
-                    f"ON n.{index.properties[0]} "
-                    f"OPTIONS {{indexConfig: {{`vector.dimensions`: 768, "
-                    f"`vector.similarity_function`: 'cosine'}}}}"
-                )
+                query = f"""
+                CREATE FULLTEXT INDEX {index.name} IF NOT EXISTS
+                FOR (n:{index.label})
+                ON EACH [{props}]
+                """
+            elif index.index_type == "vector":
+                # Vector index for embeddings (Neo4j 5.11+)
+                query = f"""
+                CREATE VECTOR INDEX {index.name} IF NOT EXISTS
+                FOR (n:{index.label})
+                ON n.{index.properties[0]}
+                OPTIONS {{indexConfig: {{
+                    `vector.dimensions`: 768,
+                    `vector.similarity_function`: 'cosine'
+                }}}}
+                """
+            else:
+                logger.error(f"Unknown index type: {index.index_type}")
+                return False
 
-            self._runner.run(query)
+            self.session.run(query)
             logger.info(f"Created index: {index.name}")
             return True
 
@@ -146,12 +112,10 @@ class SchemaManager:
             return False
 
     def drop_constraint(self, constraint_name: str) -> bool:
-        """Drop a constraint from the database."""
+        """Drop a constraint from the database"""
         try:
-            # PATCH GROUP C: validate identifier before DDL
-            _validate_schema_identifier(constraint_name, "constraint name")
             query = f"DROP CONSTRAINT {constraint_name} IF EXISTS"
-            self._runner.run(query)
+            self.session.run(query)
             logger.info(f"Dropped constraint: {constraint_name}")
             return True
         except Exception as e:
@@ -159,24 +123,21 @@ class SchemaManager:
             return False
 
     def drop_index(self, index_name: str) -> bool:
-        """Drop an index from the database."""
+        """Drop an index from the database"""
         try:
-            # PATCH GROUP C: validate identifier before DDL
-            _validate_schema_identifier(index_name, "index name")
             query = f"DROP INDEX {index_name} IF EXISTS"
-            self._runner.run(query)
+            self.session.run(query)
             logger.info(f"Dropped index: {index_name}")
             return True
         except Exception as e:
             logger.error(f"Failed to drop index {index_name}: {e}")
             return False
-            return False
 
     def get_constraints(self) -> List[Dict]:
         """Get all constraints in the database"""
         try:
-            result = self._runner.run("SHOW CONSTRAINTS")
-            return result
+            result = self.session.run("SHOW CONSTRAINTS")
+            return [dict(record) for record in result]
         except Exception as e:
             logger.error(f"Failed to get constraints: {e}")
             return []
@@ -184,8 +145,8 @@ class SchemaManager:
     def get_indexes(self) -> List[Dict]:
         """Get all indexes in the database"""
         try:
-            result = self._runner.run("SHOW INDEXES")
-            return result
+            result = self.session.run("SHOW INDEXES")
+            return [dict(record) for record in result]
         except Exception as e:
             logger.error(f"Failed to get indexes: {e}")
             return []
@@ -193,7 +154,7 @@ class SchemaManager:
     def get_node_labels(self) -> Set[str]:
         """Get all node labels in the database"""
         try:
-            result = self._runner.run("CALL db.labels()")
+            result = self.session.run("CALL db.labels()")
             return {record["label"] for record in result}
         except Exception as e:
             logger.error(f"Failed to get node labels: {e}")
@@ -202,13 +163,15 @@ class SchemaManager:
     def get_relationship_types(self) -> Set[str]:
         """Get all relationship types in the database"""
         try:
-            result = self._runner.run("CALL db.relationshipTypes()")
+            result = self.session.run("CALL db.relationshipTypes()")
             return {record["relationshipType"] for record in result}
         except Exception as e:
             logger.error(f"Failed to get relationship types: {e}")
             return set()
 
-    def initialize_schema(self, constraints: List[Constraint], indexes: List[Index]) -> bool:
+    def initialize_schema(
+        self, constraints: List[Constraint], indexes: List[Index]
+    ) -> bool:
         """Initialize database schema with constraints and indexes"""
         success = True
 
@@ -459,7 +422,9 @@ class SchemaManager:
             if not self.create_index(index):
                 success = False
 
-        logger.info(f"Created {len(indexes)} fulltext indexes for legal knowledge graph")
+        logger.info(
+            f"Created {len(indexes)} fulltext indexes for legal knowledge graph"
+        )
         return success
 
     def create_vector_indexes(self) -> bool:
@@ -513,7 +478,9 @@ class SchemaManager:
                 "unique_party_id",
             }
 
-            validation_results["constraints"] = required_constraints.issubset(constraint_names)
+            validation_results["constraints"] = required_constraints.issubset(
+                constraint_names
+            )
 
             # Check indexes
             existing_indexes = self.get_indexes()
@@ -537,7 +504,9 @@ class SchemaManager:
                 "verdict_fulltext_idx",
             }
 
-            validation_results["fulltext_indexes"] = required_fulltext.issubset(index_names)
+            validation_results["fulltext_indexes"] = required_fulltext.issubset(
+                index_names
+            )
 
             logger.info(f"Schema validation results: {validation_results}")
 
@@ -597,7 +566,7 @@ DEFAULT_INDEXES = [
 ]
 
 
-def initialize_default_schema(runner: QueryRunner) -> bool:
+def initialize_default_schema(session: Session) -> bool:
     """Initialize the default RAG system schema"""
-    manager = SchemaManager(runner)
+    manager = SchemaManager(session)
     return manager.initialize_schema(DEFAULT_CONSTRAINTS, DEFAULT_INDEXES)

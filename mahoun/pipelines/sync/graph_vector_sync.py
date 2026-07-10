@@ -181,22 +181,7 @@ class GraphVectorSync:
         if self._connection is None:
             return False
 
-        # PATCH P0-1: Label injection protection
-        # Validate label before format() to prevent Cypher injection
-        from mahoun.core.governance.validator_pipeline import validate_node_label
-        
-        try:
-            validate_node_label(label, correlation_id=correlation_id)
-        except Exception as validation_exc:
-            logger.error(
-                "Label validation failed for embedding injection (%s): %s",
-                label,
-                validation_exc,
-            )
-            return False
-
         # Build label-interpolated Cypher (label is not a parameter in Neo4j)
-        # Label is now validated and safe for interpolation
         cypher = self._INJECT_EMBEDDING_CYPHER.format(label=label)
 
         try:
@@ -327,22 +312,7 @@ class GraphVectorSync:
             logger.error("backfill_graph_vectors: no Neo4jConnection — aborting")
             return BackfillReport(label=label, total_nodes=0, synced=0, failed=0, duration_ms=0.0)
 
-        # PATCH P0-1: Label injection protection
-        # Validate label before format() to prevent Cypher injection
-        from mahoun.core.governance.validator_pipeline import validate_node_label
-        
-        try:
-            validate_node_label(label, correlation_id=f"backfill-{label}")
-        except Exception as validation_exc:
-            logger.error(
-                "Label validation failed for backfill (%s): %s",
-                label,
-                validation_exc,
-            )
-            return BackfillReport(label=label, total_nodes=0, synced=0, failed=0, duration_ms=0.0)
-
         # Read-only fetch — execute_query() enforces MutationAuthorizationBoundary
-        # Label is now validated and safe for interpolation
         cypher = self._FETCH_MISSING_EMBEDDINGS_CYPHER.format(label=label)
         try:
             records = self._connection.execute_query(cypher)

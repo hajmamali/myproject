@@ -1,0 +1,302 @@
+[
+  {
+    "file": "mahoun/core/fortress_validator.py",
+    "line_number": 73,
+    "imported_module": "mahoun.infrastructure.observability.metrics_migration",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/fortress_validator.py",
+    "line_number": 51,
+    "imported_module": "mahoun.reasoning.unified_reasoning_service",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/governance/governance_context.py",
+    "line_number": 441,
+    "imported_module": "mahoun.infrastructure.observability.metrics_migration",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/governance/mutation_boundary.py",
+    "line_number": 592,
+    "imported_module": "mahoun.security.governance_behavioral_integration",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/governance/outbox_worker.py",
+    "line_number": 7,
+    "imported_module": "mahoun.graph.neo4j.connection",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/governance/outbox_worker.py",
+    "line_number": 8,
+    "imported_module": "mahoun.graph.sync.outbox_worker",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/health_checker.py",
+    "line_number": 10,
+    "imported_module": "mahoun.infrastructure.health_checker",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/health_checker.py",
+    "line_number": 10,
+    "imported_module": "mahoun.infrastructure.health_checker",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/health_checker.py",
+    "line_number": 10,
+    "imported_module": "mahoun.infrastructure.health_checker",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 17,
+    "imported_module": "mahoun.ai.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 34,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/models/__init__.py",
+    "line_number": 48,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_deployment.py",
+    "line_number": 51,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_deployment.py",
+    "line_number": 51,
+    "imported_module": "mahoun.audit.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_resolver.py",
+    "line_number": 34,
+    "imported_module": "mahoun.ai.profile_manager",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_resolver.py",
+    "line_number": 36,
+    "imported_module": "mahoun.infrastructure.models",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_resolver.py",
+    "line_number": 703,
+    "imported_module": "mahoun.ai.profile_manager",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/policy_resolver.py",
+    "line_number": 402,
+    "imported_module": "mahoun.ai.profile_manager",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/query_executor.py",
+    "line_number": 25,
+    "imported_module": "mahoun.graph.graph_query_service",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/query_executor.py",
+    "line_number": 64,
+    "imported_module": "mahoun.graph.graph_query_service",
+    "import_type": "from_import"
+  },
+  {
+    "file": "mahoun/core/unified_governance.py",
+    "line_number": 39,
+    "imported_module": "mahoun.ai.profile_manager",
+    "import_type": "from_import"
+  }
+]

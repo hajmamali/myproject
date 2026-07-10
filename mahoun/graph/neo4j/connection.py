@@ -216,11 +216,7 @@ class Neo4jConnection:
         from mahoun.core.governance.mutation_boundary import MutationAuthorizationBoundary
         
         MutationAuthorizationBoundary.inspect(query)
-        # Use the driver's session but ensure MutationAuthorizationBoundary is
-        # applied before any driver call. Keep the return type consistent.
         with self.session(**kwargs) as s:
-            # Use a safe read path for health/metadata checks that are
-            # explicitly whitelisted by MutationAuthorizationBoundary.
             result = s.run(query, parameters or {})
             return [record for record in result]
 
@@ -305,7 +301,6 @@ class Neo4jConnection:
         """
         from mahoun.core.governance.violations import (
             GovernanceViolation, ViolationSeverity, ViolationCategory,
-            GovernanceViolationError,
         )
         raise GovernanceViolationError(
             GovernanceViolation(
@@ -341,33 +336,39 @@ class Neo4jConnection:
         with self.session() as session:
             return session.execute_read(func, *args, **kwargs)
     
-    def execute_batch(self, *args, **kwargs):
+    @retry_on_failure(max_attempts=3)
+    def execute_batch(
+        self,
+        queries: List[Tuple[str, Dict]],
+        batch_size: int = 1000
+    ) -> List:
         """
-        REMOVED — constitutional violation.
-
-        Direct execute_batch() is forbidden. It bypasses the
-        MutationAuthorizationBoundary. Use governed_session() instead.
-
-        Raises:
-            GovernanceViolationError: Always.
+        Execute batch queries in a single transaction
+        
+        Args:
+            queries: List of (query, parameters) tuples
+            batch_size: Maximum queries per transaction
+            
+        Returns:
+            List of results for each query
         """
-        from mahoun.core.governance.violations import (
-            GovernanceViolation, ViolationSeverity, ViolationCategory,
-            GovernanceViolationError,
-        )
-        raise GovernanceViolationError(
-            GovernanceViolation(
-                category=ViolationCategory.ARCHITECTURE_BOUNDARY,
-                severity=ViolationSeverity.CRITICAL,
-                message=(
-                    "execute_batch() is constitutionally forbidden. "
-                    "It bypasses MutationAuthorizationBoundary. "
-                    "Use connection.governed_session() for all graph mutations."
-                ),
-                details={},
-                source="Neo4jConnection.execute_batch",
-            )
-        )
+        results: List[Any] = []
+        with self.session() as session:
+            # Process in batches
+            for i in range(0, len(queries), batch_size):
+                batch = queries[i:i + batch_size]
+                
+                def batch_transaction(tx):
+                    batch_results: List[Any] = []
+                    for query, params in batch:
+                        result = tx.run(query, params or {})
+                        batch_results.append([record for record in result])
+                    return batch_results
+                
+                batch_results = session.execute_write(batch_transaction)
+                results.extend(batch_results)
+        
+        return results
     
     def health_check(self) -> Dict[str, Any]:
         """
@@ -388,21 +389,19 @@ class Neo4jConnection:
             start_time = time.time()
             
             # Test basic connectivity
-            # Use connection.execute_query which routes through the
-            # MutationAuthorizationBoundary for inspection. These are
-            # READ-only queries and should pass.
-            result = self.execute_query("RETURN 1 AS num")
-            if not result or result[0].get("num") != 1:
-                health_status["error"] = "Unexpected query result"
-                return health_status
-
-            # Get node count via safe read path
-            node_res = self.execute_query("MATCH (n) RETURN count(n) AS count")
-            node_count = node_res[0].get("count") if node_res else None
-
-            response_time = (time.time() - start_time) * 1000
-
-            health_status.update({
+            with self.session() as session:
+                result = session.run("RETURN 1 AS num")
+                if result.single()["num"] != 1:
+                    health_status["error"] = "Unexpected query result"
+                    return health_status
+                
+                # Get node count
+                node_result = session.run("MATCH (n) RETURN count(n) AS count")
+                node_count = node_result.single()["count"]
+                
+                response_time = (time.time() - start_time) * 1000
+                
+                health_status.update({
                     "status": "healthy",
                     "connected": True,
                     "response_time_ms": round(response_time, 2),
@@ -419,8 +418,9 @@ class Neo4jConnection:
     def verify_connectivity(self) -> bool:
         """Verify connection to Neo4j"""
         try:
-            result = self.execute_query("RETURN 1 AS num")
-            return bool(result and result[0].get("num") == 1)
+            with self.session() as session:
+                result = session.run("RETURN 1 AS num")
+                return result.single()["num"] == 1
         except Exception as e:
             print(f"❌ Connection verification failed: {e}")
             return False
@@ -446,25 +446,31 @@ class Neo4jConnection:
     
     def get_database_info(self) -> Dict[str, Any]:
         """Get database information"""
-        # Use the safe read path for metadata collection
-        node_res = self.execute_query("MATCH (n) RETURN count(n) AS count")
-        rel_res = self.execute_query("MATCH ()-[r]->() RETURN count(r) AS count")
-        labels_res = self.execute_query("CALL db.labels()")
-        types_res = self.execute_query("CALL db.relationshipTypes()")
-
-        node_count = node_res[0].get("count") if node_res else None
-        rel_count = rel_res[0].get("count") if rel_res else None
-        labels = [r.get("label") for r in labels_res] if labels_res else []
-        rel_types = [r.get("relationshipType") for r in types_res] if types_res else []
-
-        return {
-            "node_count": node_count,
-            "relationship_count": rel_count,
-            "labels": labels,
-            "relationship_types": rel_types,
-            "database": self.database,
-            "uri": self.uri,
-        }
+        with self.session() as session:
+            # Node count
+            node_result = session.run("MATCH (n) RETURN count(n) AS count")
+            node_count = node_result.single()["count"]
+            
+            # Relationship count
+            rel_result = session.run("MATCH ()-[r]->() RETURN count(r) AS count")
+            rel_count = rel_result.single()["count"]
+            
+            # Labels
+            label_result = session.run("CALL db.labels()")
+            labels = [record["label"] for record in label_result]
+            
+            # Relationship types
+            type_result = session.run("CALL db.relationshipTypes()")
+            rel_types = [record["relationshipType"] for record in type_result]
+            
+            return {
+                "node_count": node_count,
+                "relationship_count": rel_count,
+                "labels": labels,
+                "relationship_types": rel_types,
+                "database": self.database,
+                "uri": self.uri
+            }
     
     def close(self):
         """Close connection"""

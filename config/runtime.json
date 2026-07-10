@@ -12,16 +12,7 @@
     "graph_enabled": "${MAHOUN_ENABLE_GRAPH:-true}",
     "rag_enabled": "${MAHOUN_ENABLE_RAG:-true}",
     "self_improvement_enabled": "${MAHOUN_ENABLE_SELF_IMPROVEMENT:-false}",
-    "lora_enabled": false,
-    
-    "_comment_alpha": "Alpha launch feature flags - restrict unsafe capabilities",
-    "alpha_features": {
-      "reasoning_api_enabled": "${MAHOUN_ALPHA_REASONING:-false}",
-      "agent_endpoints_enabled": "${MAHOUN_ALPHA_AGENTS:-false}",
-      "graph_writes_enabled": "${MAHOUN_ALPHA_GRAPH_WRITES:-false}",
-      "llm_generation_enabled": "${MAHOUN_ALPHA_LLM_GEN:-false}",
-      "verdict_generation_enabled": "${MAHOUN_ALPHA_VERDICTS:-false}"
-    }
+    "lora_enabled": false
   },
   
   "llm": {

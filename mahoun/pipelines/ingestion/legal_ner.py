@@ -51,28 +51,17 @@ logger = logging.getLogger(__name__)
 # Entity Data Classes
 # ============================================================================
 
-
-# 🚀 Import Unified Entity from MAHOUN v2.0
-from mahoun.core.models.entity import Entity
-
 @dataclass
+class Entity:
+    """Base entity class with common attributes"""
+    text: str
+    entity_type: str
+    start: int = 0
+    end: int = 0
+    confidence: float = 1.0
+    normalized: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
-# ============================================================================
-# 🚀 ENTITY CLASS MIGRATED TO MAHOUN v2.0
-# ============================================================================
-#
-# The Entity class from this file has been consolidated into the unified
-# MAHOUN Entity v2.0 system at: mahoun/core/models/entity.py
-#
-# 🌟 NEW FEATURES IN UNIFIED ENTITY:
-# base entity class
-#
-# 🔙 BACKWARD COMPATIBILITY: 100% maintained through import aliases
-# 📊 PERFORMANCE: Significantly improved with quantum fingerprinting
-# 🛡️  SECURITY: Enhanced validation and normalization
-#
-# Previous Entity class was here (lines 59-69)
-# Now automatically imported from canonical location above ⬆️
 
 @dataclass
 class PersonEntity(Entity):
@@ -1277,11 +1266,3 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 60)
     print("✅ NER Test Complete")
-
-# ============================================================================
-# 🔙 BACKWARD COMPATIBILITY ALIASES
-# ============================================================================
-
-# Ensure existing code continues to work unchanged
-# Standard entity alias
-# Entity is already imported above - no additional alias needed

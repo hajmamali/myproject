@@ -94,14 +94,10 @@ class NLIModelWrapper(nn.Module):
         # Load model and tokenizer
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
         
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            local_files_only=True  # AirGap: block HuggingFace downloads
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(
             model_name,
-            output_attentions=True,
-            local_files_only=True  # AirGap: block HuggingFace downloads
+            output_attentions=True
         ).to(device)
         
         self.model.eval()

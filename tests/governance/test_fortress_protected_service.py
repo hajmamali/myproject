@@ -49,7 +49,7 @@ class MockReasoningService:
         self.call_count += 1
 
         if self.valid_response:
-            return ReasoningResponse.create_unvalidated(
+            return ReasoningResponse(
                 success=True,
                 result="Tax exemption applies",
                 confidence=0.92,
@@ -60,7 +60,7 @@ class MockReasoningService:
                 metadata={"agreement_score": 0.89},
             )
         else:
-            return ReasoningResponse.create_unvalidated(
+            return ReasoningResponse(
                 success=True,
                 result="Invalid result",
                 confidence=0.50,
@@ -324,7 +324,7 @@ class TestDecoratorFunctionality:
         class MyService:
             @fortress_validated(strict_mode=True)
             async def reason(self, request, correlation_id=None):
-                return ReasoningResponse.create_unvalidated(
+                return ReasoningResponse(
                     success=True,
                     result="Result",
                     confidence=0.92,
@@ -353,7 +353,7 @@ class TestDecoratorFunctionality:
         class MyService:
             @fortress_validated(strict_mode=True)
             async def reason(self, request, correlation_id=None):
-                return ReasoningResponse.create_unvalidated(
+                return ReasoningResponse(
                     success=True,
                     result="Invalid",
                     confidence=0.50,

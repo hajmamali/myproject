@@ -19,13 +19,10 @@ Features:
 - Cache integration
 """
 
-import logging
 import numpy as np
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter
-
-logger = logging.getLogger(__name__)
 from enum import Enum
 import time
 from mahoun.retrieval.graph_hop import GraphHopRetriever, HopResult
@@ -215,23 +212,13 @@ class DenseRetriever:
             # Fallback: random embeddings
             self.doc_embeddings = np.random.randn(len(documents), 768).astype(np.float32)
     
-    def search(self, query: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 100, policy: Optional[Any] = None) -> List[Tuple[str, float]]:
+    def search(self, query: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 100) -> List[Tuple[str, float]]:
         """
         Search using dense embeddings
         
         Returns:
             List of (doc_id, score) tuples
         """
-        # Policy MUST be injected by upstream execution context.
-        # Do NOT resolve policy internally here.
-        if policy is None:
-            logger.error("DenseRetriever.search requires 'policy' injected by upstream context")
-            raise ValueError("ExecutionPolicy must be provided by upstream; retrieval layer must not resolve policy internally")
-
-        if not getattr(policy, "semantic_enabled", False):
-            logger.info("Dense retrieval skipped: semantic search disabled by injected policy")
-            return []
-
         if self.doc_embeddings is None:
             return []
         

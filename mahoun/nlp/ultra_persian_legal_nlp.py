@@ -29,27 +29,24 @@ from collections import defaultdict
 import numpy as np
 
 
+class EntityType(Enum):
+    """Legal entity types"""
+    ARTICLE = "article"  # ماده
+    LAW = "law"  # قانون
+    REGULATION = "regulation"  # آیین‌نامه
+    COURT = "court"  # دادگاه
+    JUDGE = "judge"  # قاضی
+    LAWYER = "lawyer"  # وکیل
+    PLAINTIFF = "plaintiff"  # خواهان
+    DEFENDANT = "defendant"  # خوانده
+    PROSECUTOR = "prosecutor"  # دادستان
+    WITNESS = "witness"  # شاهد
+    DATE = "date"  # تاریخ
+    MONEY = "money"  # مبلغ
+    ORGANIZATION = "organization"  # سازمان
+    LOCATION = "location"  # مکان
+    CASE_NUMBER = "case_number"  # شماره پرونده
 
-# 🚀 Import Unified Entity from MAHOUN v2.0
-from mahoun.core.models.entity import Entity
-
-
-# ============================================================================
-# 🚀 ENTITY CLASS MIGRATED TO MAHOUN v2.0
-# ============================================================================
-#
-# The Entity class from this file has been consolidated into the unified
-# MAHOUN Entity v2.0 system at: mahoun/core/models/entity.py
-#
-# 🌟 NEW FEATURES IN UNIFIED ENTITY:
-# typed entity_type, to_dict serialization, Persian support
-#
-# 🔙 BACKWARD COMPATIBILITY: 100% maintained through import aliases
-# 📊 PERFORMANCE: Significantly improved with quantum fingerprinting
-# 🛡️  SECURITY: Enhanced validation and normalization
-#
-# Previous Entity class was here (lines 36-54)
-# Now automatically imported from canonical location above ⬆️
 
 class LegalTermCategory(Enum):
     """Legal term categories"""
@@ -75,23 +72,25 @@ class Token:
 
 
 @dataclass
+class Entity:
+    """Named entity"""
+    text: str
+    entity_type: EntityType
+    start: int
+    end: int
+    confidence: float
+    metadata: Dict = field(default_factory=dict)
+    
+    def to_dict(self) -> Dict:
+        return {
+            "text": self.text,
+            "type": self.entity_type.value,
+            "start": self.start,
+            "end": self.end,
+            "confidence": self.confidence,
+            "metadata": self.metadata
+        }
 
-# ============================================================================
-# 🚀 ENTITY CLASS MIGRATED TO MAHOUN v2.0
-# ============================================================================
-#
-# The Entity class from this file has been consolidated into the unified
-# MAHOUN Entity v2.0 system at: mahoun/core/models/entity.py
-#
-# 🌟 NEW FEATURES IN UNIFIED ENTITY:
-# typed entity_type, to_dict serialization, Persian support
-#
-# 🔙 BACKWARD COMPATIBILITY: 100% maintained through import aliases
-# 📊 PERFORMANCE: Significantly improved with quantum fingerprinting
-# 🛡️  SECURITY: Enhanced validation and normalization
-#
-# Previous Entity class was here (lines 78-97)
-# Now automatically imported from canonical location above ⬆️
 
 @dataclass
 class LegalTerm:
@@ -744,19 +743,3 @@ if __name__ == "__main__":
         print(f"   {key}: {value}")
     
     print("\n✅ Persian Legal NLP test complete")
-
-# ============================================================================
-# 🔙 BACKWARD COMPATIBILITY ALIASES
-# ============================================================================
-
-# Ensure existing code continues to work unchanged
-# Standard entity alias
-# Entity is already imported above - no additional alias needed
-
-# ============================================================================
-# 🔙 BACKWARD COMPATIBILITY ALIASES
-# ============================================================================
-
-# Ensure existing code continues to work unchanged
-# Standard entity alias
-# Entity is already imported above - no additional alias needed

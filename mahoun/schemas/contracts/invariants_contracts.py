@@ -21,20 +21,10 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 # ============================================================================
 # Invariant Specification Contracts
 # ============================================================================
-# DEPRECATED: Use mahoun.invariants.ledger_invariants.InvariantSpec instead
-# ============================================================================
 
 class InvariantSpecContract(BaseModel):
     """
     Contract for system invariant specification.
-    
-    DEPRECATED (2026-07-04): This file contains a duplicate InvariantSpec implementation.
-    The canonical version is in mahoun/invariants/ledger_invariants.py:21.
-    
-    This entire file will be removed in v2.0. Migrate to the canonical implementation.
-    
-    Migration path:
-        from mahoun.invariants.ledger_invariants import InvariantSpec
     
     Validates: Requirement 2.2 - Invariant metadata structure
     

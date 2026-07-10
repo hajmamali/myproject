@@ -23,7 +23,7 @@ __all__ = [
 _HAS_CONCURRENT_BUILDER: Any = None  # Lazy-evaluated
 
 def __getattr__(name: str) -> Any:
-    """Lazy-load graph builders and submodules on first access."""
+    """Lazy-load graph builders on first access."""
     global _HAS_CONCURRENT_BUILDER
     
     if name == "UltraGraphBuilder":
@@ -56,18 +56,5 @@ def __getattr__(name: str) -> Any:
         else:
             from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
             return UltraGraphBuilder
-    elif name == "gnn":
-        # Lazy-load gnn submodule for tests that need to patch it
-        try:
-            import mahoun.graph.gnn as gnn_module
-            return gnn_module
-        except ImportError:
-            # If gnn submodule doesn't exist or torch_geometric not installed,
-            # return a mock module to allow patching in tests
-            import sys
-            from types import ModuleType
-            mock_gnn = ModuleType("mahoun.graph.gnn")
-            sys.modules["mahoun.graph.gnn"] = mock_gnn
-            return mock_gnn
     
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

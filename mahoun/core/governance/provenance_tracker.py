@@ -331,55 +331,6 @@ class ProvenanceMetadata:
         combined = json.dumps(data, sort_keys=True, default=str) + governance_scope_id
         return hashlib.sha256(combined.encode()).hexdigest()
 
-    @classmethod
-    def create_synthetic(
-        cls,
-        source: str,
-        author: str = "system",
-        correlation_id: Optional[str] = None,
-        document_id: Optional[str] = None,
-        pipeline_version: Optional[str] = None,
-    ) -> ProvenanceMetadata:
-        """Create synthetic provenance for testing and development.
-
-        This is a convenience method for creating provenance with
-        synthetic governance scope and runtime attestation IDs.
-
-        CRITICAL: This method is ONLY for testing and development.
-        Production code MUST use ProvenanceMetadata.create() with
-        real governance scope and runtime attestation IDs.
-
-        Args:
-            source: Origin of the data.
-            author: Actor identifier (default: "system").
-            correlation_id: Optional correlation ID (auto-generated if None).
-            document_id: Optional source document ID.
-            pipeline_version: Optional pipeline version.
-
-        Returns:
-            ProvenanceMetadata with synthetic attestation fields.
-        """
-        import uuid
-        
-        # Generate synthetic correlation_id if not provided
-        if correlation_id is None:
-            correlation_id = f"synthetic_{uuid.uuid4().hex[:8]}"
-        
-        # Create synthetic governance scope and attestation IDs
-        governance_scope_id = f"synthetic_scope_{uuid.uuid4().hex[:8]}"
-        runtime_attestation_id = f"synthetic_attest_{uuid.uuid4().hex[:8]}"
-        
-        return cls.create(
-            source=source,
-            correlation_id=correlation_id,
-            author=author,
-            governance_scope_id=governance_scope_id,
-            runtime_attestation_id=runtime_attestation_id,
-            lineage_parent=None,
-            document_id=document_id,
-            pipeline_version=pipeline_version,
-        )
-
 
 class ProvenanceTracker:
     """Enforcement layer for mandatory provenance on graph writes.

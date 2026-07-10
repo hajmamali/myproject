@@ -7,18 +7,10 @@ Intelligent Caching System for Retrieval
 - Hit rate tracking
 """
 
-from __future__ import annotations
-
-from dataclasses import dataclass
 import hashlib
 import time
+from typing import Dict, List, Optional, Any
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List, Optional, Any
-
-import numpy as np
-
-if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer
 
 from mahoun.pipelines._logging import setup_logger
 
@@ -124,7 +116,7 @@ class SemanticCache:
         max_size: int = 1000,
         ttl: int = 3600,
         similarity_threshold: float = 0.95,
-        embed_model: Optional[SentenceTransformer] = None,
+        embed_model: Optional["SentenceTransformer"] = None,
         correlation_id: str = "",
     ):
         """
@@ -154,22 +146,54 @@ class SemanticCache:
                 f"(bootstrap-injected model)"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "SemanticCache requires a pre-constructed SentenceTransformer "
-                "instance via the `embed_model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy loading
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: SemanticCache "
+                f"initialized without injected model. Will attempt lazy load on first use. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self._embedding_model = None
 
     def _get_embedding_model(self):
-        """Return the injected embedding model. Fail-closed if not available."""
+        """
+        DEPRECATED: Lazy load embedding model.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
         if self._embedding_model is None:
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "This should never happen — constructor enforces injection."
+            import time
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model loading triggered. "
+                f"This is a DEPRECATED fallback path."
             )
+            try:
+                from sentence_transformers import SentenceTransformer
+                
+                start = time.time()
+                self._embedding_model = SentenceTransformer("BAAI/bge-m3")
+                latency_ms = (time.time() - start) * 1000
+                
+                log.warning(
+                    f"[{self._correlation_id}] ⚠️  Lazy model loading completed "
+                    f"(model=BAAI/bge-m3, latency={latency_ms:.2f}ms)"
+                )
+            except ImportError:
+                log.error(
+                    f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                    f"and no model injected."
+                )
+                raise ImportError(
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers OR "
+                    "inject pre-constructed model via bootstrap wiring."
+                )
+            except Exception as e:
+                log.error(
+                    f"[{self._correlation_id}] ❌ Lazy model loading failed: {e}"
+                )
+                raise RuntimeError(f"Failed to load embedding model: {e}")
         return self._embedding_model
 
     def _embed_query(self, query: str) -> np.ndarray:

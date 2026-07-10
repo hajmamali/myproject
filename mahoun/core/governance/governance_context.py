@@ -42,9 +42,6 @@ from mahoun.core.governance.violations import (
     ViolationSeverity,
 )
 
-import secrets
-_CONTEXT_SECRET = secrets.token_hex(32)
-
 log = get_logger(__name__)
 
 
@@ -79,14 +76,12 @@ class GovernanceContext:
     correlation_id: str
     timestamp: str
     execution_mode: str
+
     # Governance components
     provenance_tracker: ProvenanceTracker
     validator_pipeline: ValidatorPipeline
     deterministic_resolver: DeterministicResolver
     ontology_enforcer: OntologyEnforcer
-
-    # Actor identity for audit trail (defaulted)
-    actor_id: str = ""
 
     # Runtime state
     proof_tracking_active: bool = True
@@ -96,11 +91,8 @@ class GovernanceContext:
     # Attestation
     runtime_attestation: dict[str, Any] = field(default_factory=dict)
 
-    # Line lineage tracking
+    # Lineage tracking
     correlation_lineage: list[str] = field(default_factory=list)
-
-    # Signature for forgery prevention
-    signature: str = ""
 
     def __post_init__(self):
         """Initialize runtime attestation and correlation lineage."""
@@ -118,7 +110,6 @@ class GovernanceContext:
             "proof_tracking_active": self.proof_tracking_active,
             "contradiction_hooks_active": self.contradiction_hooks_active,
             "governance_scope_injected": self.governance_scope_injected,
-            "actor_id": self.actor_id,
         }
 
         # CRITICAL: Only initialize lineage if empty (preserve parent lineage)
@@ -168,20 +159,9 @@ class GovernanceContext:
             New GovernanceContext with parent lineage
         """
         child_id = child_correlation_id or f"{self.correlation_id}-{uuid.uuid4().hex[:8]}"
-        child_ctx_id = f"{self.context_id}-child-{uuid.uuid4().hex[:8]}"
-
-        # Compute child signature
-        import hmac
-        import hashlib
-        signature_input = f"{child_ctx_id}|{child_id}|{self.execution_mode}"
-        child_sig = hmac.new(
-            _CONTEXT_SECRET.encode(),
-            signature_input.encode(),
-            hashlib.sha256
-        ).hexdigest()
 
         return GovernanceContext(
-            context_id=child_ctx_id,
+            context_id=f"{self.context_id}-child-{uuid.uuid4().hex[:8]}",
             correlation_id=child_id,
             timestamp=datetime.now(UTC).isoformat(),
             execution_mode=self.execution_mode,
@@ -194,7 +174,6 @@ class GovernanceContext:
             governance_scope_injected=self.governance_scope_injected,
             runtime_attestation=self.runtime_attestation.copy(),
             correlation_lineage=self.correlation_lineage + [child_id],
-            signature=child_sig,
         )
 
     def get_attestation(self) -> dict[str, Any]:
@@ -282,7 +261,6 @@ class GovernanceContextManager:
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
-        actor_id: str | None = None,
     ) -> GovernanceContext:
         """
         Create a new governance context.
@@ -295,51 +273,13 @@ class GovernanceContextManager:
             GovernanceContext instance
         """
         ctx_id = f"ctx-{uuid.uuid4().hex[:16]}"
-
-        # Enforce explicit correlation_id — no silent defaults allowed
-        if correlation_id is None or not str(correlation_id).strip():
-            raise GovernanceViolationError(
-                GovernanceViolation(
-                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
-                    severity=ViolationSeverity.CRITICAL,
-                    message=(
-                        "GovernanceContext creation requires an explicit non-empty correlation_id."
-                    ),
-                    details={"provided_correlation_id": repr(correlation_id)},
-                    source="GovernanceContextManager.create_context",
-                )
-            )
-
-        corr_id = str(correlation_id)
+        corr_id = correlation_id or f"req-{uuid.uuid4().hex[:16]}"
 
         # Initialize governance components
         provenance_tracker = ProvenanceTracker()
         validator_pipeline = ValidatorPipeline()
         deterministic_resolver = DeterministicResolver()
         ontology_enforcer = OntologyEnforcer()
-
-        # Compute signature
-        import hmac
-        import hashlib
-        signature_input = f"{ctx_id}|{corr_id}|{execution_mode}"
-        sig = hmac.new(
-            _CONTEXT_SECRET.encode(),
-            signature_input.encode(),
-            hashlib.sha256
-        ).hexdigest()
-
-        # Validate actor_id when provided (reject empty/whitespace)
-        resolved_actor = actor_id if actor_id is not None else ""
-        if actor_id is not None and not str(actor_id).strip():
-            raise GovernanceViolationError(
-                GovernanceViolation(
-                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
-                    severity=ViolationSeverity.CRITICAL,
-                    message=("Provided actor_id is empty or whitespace."),
-                    details={"actor_id_provided": repr(actor_id)},
-                    source="GovernanceContextManager.create_context",
-                )
-            )
 
         return GovernanceContext(
             context_id=ctx_id,
@@ -350,8 +290,6 @@ class GovernanceContextManager:
             validator_pipeline=validator_pipeline,
             deterministic_resolver=deterministic_resolver,
             ontology_enforcer=ontology_enforcer,
-            signature=sig,
-            actor_id=resolved_actor,
         )
 
     @classmethod
@@ -360,8 +298,6 @@ class GovernanceContextManager:
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
-        actor_id: str | None = None,
-        **kwargs: Any,
     ) -> AsyncIterator[GovernanceContext]:
         """
         Async context manager for active governance context.
@@ -371,8 +307,6 @@ class GovernanceContextManager:
         Args:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode
-            actor_id: Optional actor identifier for audit trail
-            **kwargs: Additional keyword arguments (forwarded, reserved for future use)
 
         Yields:
             GovernanceContext instance
@@ -380,7 +314,7 @@ class GovernanceContextManager:
         Raises:
             GovernanceViolationError: If context cannot be established
         """
-        ctx = cls.create_context(correlation_id=correlation_id, execution_mode=execution_mode, actor_id=actor_id)
+        ctx = cls.create_context(correlation_id=correlation_id, execution_mode=execution_mode)
 
         try:
             # Validate governance scope
@@ -457,31 +391,6 @@ class GovernanceContextManager:
                     },
                     source="GovernanceContextManager",
                     correlation_id="unknown",
-                )
-            )
-
-        # CRITICAL: Verify signature to prevent context forgery
-        import hmac
-        import hashlib
-        signature_input = f"{ctx.context_id}|{ctx.correlation_id}|{ctx.execution_mode}"
-        expected_sig = hmac.new(
-            _CONTEXT_SECRET.encode(),
-            signature_input.encode(),
-            hashlib.sha256
-        ).hexdigest()
-
-        if not hmac.compare_digest(getattr(ctx, 'signature', ''), expected_sig):
-            raise GovernanceViolationError(
-                GovernanceViolation(
-                    category=ViolationCategory.GOVERNANCE_BYPASS,
-                    severity=ViolationSeverity.CRITICAL,
-                    message="GRAPH MUTATION BLOCKED: GovernanceContext signature validation failed. Spoofed context detected.",
-                    details={
-                        "context_id": ctx.context_id,
-                        "correlation_id": ctx.correlation_id,
-                    },
-                    source="GovernanceContextManager",
-                    correlation_id=ctx.correlation_id,
                 )
             )
 

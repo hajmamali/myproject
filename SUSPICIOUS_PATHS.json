@@ -1,0 +1,105 @@
+{
+  "audit_date": "2026-05-25",
+  "mission": "MAHOUN RUNTIME THREAT SURFACE RECONNAISSANCE",
+  "final_answer": "YES - uncontrolled or governance-unaware execution paths remain reachable",
+  "findings": [
+    {
+      "path": "tests/fixtures/seed_data.py",
+      "runtime_reachability": "direct (docker-compose test seeding + python -m)",
+      "execution_capability": "full",
+      "mutation_capability": "CREATE, DETACH DELETE on LegalRule/TestData",
+      "risk_classification": "CRITICAL",
+      "why_it_matters": "Bypasses all governance, provenance, audit. Runs in environments that may share artifacts with production.",
+      "containment_recommendation": "quarantine, governance-refactor, runtime blocking for prod profiles"
+    },
+    {
+      "path": "mahoun/graph/gnn/gnn_graph_builder.py",
+      "runtime_reachability": "via GNN training pipelines and save_to_neo4j calls",
+      "execution_capability": "full",
+      "mutation_capability": "DETACH DELETE entire DB + CREATE nodes/relationships",
+      "risk_classification": "CRITICAL",
+      "why_it_matters": "Training jobs can wipe and rebuild graph without governance, provenance or audit.",
+      "containment_recommendation": "governance-refactor, isolate to use governed_session only"
+    },
+    {
+      "path": "mahoun/graph/graph_query_service.py",
+      "runtime_reachability": "imported via switchboard, used in ultra/rag/hybrid paths",
+      "execution_capability": "full",
+      "mutation_capability": "most Cypher mutations (only crude DELETE ALL blocked)",
+      "risk_classification": "GOVERNANCE_BYPASS",
+      "why_it_matters": "Duplicate driver + raw execution surface with weak validation.",
+      "containment_recommendation": "deprecate raw driver, route writes through canonical governed path, CI exclusion for new usage"
+    },
+    {
+      "path": "api/database.py",
+      "runtime_reachability": "FastAPI startup (init_neo4j)",
+      "execution_capability": "async driver + arbitrary Cypher from schema files",
+      "mutation_capability": "schema DDL (CREATE CONSTRAINT, INDEX, potentially more)",
+      "risk_classification": "EXECUTION_RISK",
+      "why_it_matters": "Startup code runs mutations without governance context or provenance.",
+      "containment_recommendation": "governance-refactor for schema application"
+    },
+    {
+      "path": "/archive/ and mahoun/*/archive/",
+      "runtime_reachability": "none via import (no production imports found); code present in Docker build context due to incomplete .dockerignore",
+      "execution_capability": "dormant",
+      "mutation_capability": "likely (old builders contain graph mutation logic)",
+      "risk_classification": "LEGACY / QUARANTINE_CANDIDATE / EXECUTION_RISK",
+      "why_it_matters": "Archived mutation code ships in images; future accidental activation possible via path manipulation.",
+      "containment_recommendation": "dockerignore, gitignore, quarantine, CI exclusion"
+    },
+    {
+      "path": ".kilo/worktrees/* (multiple full clones)",
+      "runtime_reachability": "none via standard PYTHONPATH; potential if cwd or PYTHONPATH set to worktree",
+      "execution_capability": "full (identical project copies)",
+      "mutation_capability": "full (including old and new governance code versions)",
+      "risk_classification": "EXECUTION_RISK",
+      "why_it_matters": "Version skew and duplicate governance implementations; massive image bloat if not excluded from Docker.",
+      "containment_recommendation": "dockerignore, gitignore, launcher isolation"
+    },
+    {
+      "path": "mahoun/graph/ingestion/document_classifier.py",
+      "runtime_reachability": "imported by ingestion pipelines",
+      "execution_capability": "exec() at import time",
+      "mutation_capability": "indirect (code execution surface)",
+      "risk_classification": "SECURITY_RISK",
+      "why_it_matters": "Use of exec() for imports and dynamic code blocks creates code injection vector.",
+      "containment_recommendation": "remove exec, use safe import patterns"
+    },
+    {
+      "path": "mahoun/reasoning/kg_adapters.py",
+      "runtime_reachability": "reasoning engine",
+      "execution_capability": "own driver, read queries only",
+      "mutation_capability": "none observed",
+      "risk_classification": "LOW_RISK",
+      "why_it_matters": "Duplication of connection logic; future developer may add writes.",
+      "containment_recommendation": "refactor to use canonical connection for reads too"
+    },
+    {
+      "path": "multiple health/integrity probes (mahoun/infrastructure/health/)",
+      "runtime_reachability": "monitoring and startup checks",
+      "execution_capability": "own drivers",
+      "mutation_capability": "none observed (reads + connectivity tests)",
+      "risk_classification": "LOW_RISK",
+      "why_it_matters": "Additional driver surfaces increase attack surface.",
+      "containment_recommendation": "centralize all driver usage"
+    },
+    {
+      "path": "scripts/restore.py, execute_phase.py, backup.py and similar",
+      "runtime_reachability": "admin/CI/restore workflows",
+      "execution_capability": "subprocess + high privilege operations",
+      "mutation_capability": "indirect via data restore (not direct Cypher)",
+      "risk_classification": "LOW_RISK for graph mutation (data only)",
+      "why_it_matters": "Restore can overwrite graph state outside normal mutation path.",
+      "containment_recommendation": "ensure restore uses governed paths where possible; audit all restore operations"
+    }
+  ],
+  "summary_statistics": {
+    "total_suspicious_paths_analyzed": 10,
+    "critical_governance_bypasses": 3,
+    "execution_risks": 4,
+    "legacy_quarantine_candidates": 2,
+    "low_risk_duplication": 3,
+    "uncontrolled_mutation_paths_remaining": true
+  }
+}

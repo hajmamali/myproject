@@ -93,22 +93,5 @@ def __getattr__(name: str) -> Any:
     elif name == "Index":
         from mahoun.graph.neo4j.schema import Index
         return Index
-    elif name == "QueryRunner":
-        from mahoun.graph.neo4j.runner import QueryRunner
-        return QueryRunner
-    elif name == "GovernedSchemaRunner":
-        from mahoun.graph.neo4j.runner import GovernedSchemaRunner
-        return GovernedSchemaRunner
-    elif name == "RawSessionRunner":
-        # DEPRECATED: RawSessionRunner bypasses MutationAuthorizationBoundary.
-        # This export is for backward compatibility only. New code should use
-        # GovernedNeo4jSession for mutations or execute_query() for reads.
-        # In production, this will raise RuntimeError unless allow_unsafe=True.
-        from mahoun.graph.neo4j.runner import RawSessionRunner
-        return RawSessionRunner
-    elif name == "_RawSessionRunner":
-        # Internal alias (preferred for tests that need unsafe session access)
-        from mahoun.graph.neo4j.runner import RawSessionRunner
-        return RawSessionRunner
     
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

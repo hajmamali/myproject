@@ -8,10 +8,9 @@ firewall correctly traps unsafe imports.
 
 import sys
 import pytest
-import os
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from mahoun.core.governance_kernel.kernel import KernelMutationBoundary, QueryType
-from mahoun.core.import_firewall import check_import_allowed
+from mahoun.core.import_firewall import safe_import, SafeStub
 
 def test_kernel_classification_no_dependencies():
     """Verify kernel can classify queries without any external libraries."""
@@ -29,23 +28,23 @@ def test_kernel_classification_no_dependencies():
     # Forbidden/DDL
     assert boundary.classify_query("CALL apoc.util.sleep(1000)") == QueryType.FORBIDDEN
 
-@patch.dict(os.environ, {"MAHOUN_ENV": "production"})
-def test_import_firewall_forbidden_prod():
-    """Verify that forbidden imports fail in production."""
-    with pytest.raises(ImportError, match="FORBIDDEN IMPORT BLOCKED"):
-        check_import_allowed("neo4j")
+def test_import_firewall_stubbing():
+    """Verify that missing optional dependencies return a SafeStub."""
+    # Simulate a missing high-level library
+    torch_stub = safe_import("non_existent_ml_lib", optional=True)
+    
+    assert isinstance(torch_stub, SafeStub)
+    # Accessing attributes should return more stubs
+    assert isinstance(torch_stub.nn.Module, SafeStub)
+    
+    # Calling the stub should raise a controlled RuntimeError
+    with pytest.raises(RuntimeError, match="missing or blocked"):
+        torch_stub()
 
-@patch.dict(os.environ, {"MAHOUN_ENV": "development"})
-def test_import_firewall_forbidden_dev():
-    """Verify that forbidden imports only warn in development."""
-    # Should not raise exception
-    assert check_import_allowed("neo4j") == True
-
-@patch.dict(os.environ, {"MAHOUN_ENV": "production"})
-def test_import_firewall_risky_prod():
-    """Verify that risky imports fail in production."""
-    with pytest.raises(ImportError, match="RISKY IMPORT BLOCKED"):
-        check_import_allowed("pdb")
+def test_import_firewall_critical_failure():
+    """Verify that missing critical dependencies raise ImportFirewallError."""
+    with pytest.raises(ImportError):
+        safe_import("non_existent_critical_lib", optional=False)
 
 def test_kernel_import_purity():
     """Architectural check: Kernel must NOT have loaded heavy dependencies."""

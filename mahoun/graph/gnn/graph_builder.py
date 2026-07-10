@@ -12,8 +12,6 @@ Features:
 - Semantic similarity edges
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Optional
 
 import torch
@@ -56,7 +54,7 @@ class LegalGraphBuilder:
         proximity_threshold: int = 100,
         similarity_threshold: float = 0.7,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
-        model: Optional[SentenceTransformer] = None,
+        model: Optional["SentenceTransformer"] = None,
         correlation_id: str = "",
     ):
         """
@@ -89,14 +87,14 @@ class LegalGraphBuilder:
                 f"(bootstrap-injected model)"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "LegalGraphBuilder requires a pre-constructed SentenceTransformer "
-                "instance via the `model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy construction with loud warning
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: LegalGraphBuilder "
+                f"initialized without injected model. Will attempt lazy construction on first use. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self._embedding_model = None  # Will be loaded lazily
 
         # Legal relationship rules
         self.legal_relationships = {
@@ -112,12 +110,44 @@ class LegalGraphBuilder:
         log.info(f"Graph builder initialized on {device}")
 
     def _get_embedding_model(self):
-        """Return the injected embedding model. Fail-closed if not available."""
+        """
+        DEPRECATED: Lazy-load SentenceTransformer on first use.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
         if self._embedding_model is None:
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "This should never happen — constructor enforces injection."
+            import time
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model construction triggered. "
+                f"This is a DEPRECATED fallback path."
             )
+            try:
+                from sentence_transformers import SentenceTransformer
+                
+                start = time.time()
+                self._embedding_model = SentenceTransformer(self._embedding_model_name, device=self.device)
+                latency_ms = (time.time() - start) * 1000
+                
+                log.warning(
+                    f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                    f"(model={self._embedding_model_name}, latency={latency_ms:.2f}ms)"
+                )
+            except ImportError:
+                log.error(
+                    f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                    f"and no model injected."
+                )
+                raise ImportError(
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers OR "
+                    "inject pre-constructed model via bootstrap wiring."
+                )
+            except Exception as e:
+                log.error(
+                    f"[{self._correlation_id}] ❌ Lazy model construction failed: {e}"
+                )
+                raise RuntimeError(f"Failed to construct embedding model: {e}")
         return self._embedding_model
 
     def build_graph(self, document: LegalDocument) -> Optional[Data]:

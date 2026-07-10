@@ -1,0 +1,7615 @@
+[
+  {
+    "path": "mahoun/core/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "models",
+        "name": "ReasoningResult",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "models",
+        "name": "ReasoningStep",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "models",
+        "name": "Entity",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "exceptions",
+        "name": "SecurityBreachException",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "exceptions",
+        "name": "LogicViolationException",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "protocols",
+        "name": "QueryRouterProtocol",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "protocols",
+        "name": "ModelDriverProtocol",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "PolicyResolver",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ExecutionPolicy",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ViewMode",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "EmbeddingMode",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ReasoningBudget",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "create_default_policy_resolver",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.unified_governance",
+        "name": "UnifiedGovernanceController",
+        "alias": null,
+        "line_number": 50
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.unified_governance",
+        "name": "UnifiedGovernanceDecision",
+        "alias": null,
+        "line_number": 50
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.unified_governance",
+        "name": "create_default_unified_controller",
+        "alias": null,
+        "line_number": 50
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.unified_governance",
+        "name": "validate_query_with_unified_governance",
+        "alias": null,
+        "line_number": 50
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "ExecutionMode",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "FortressValidator",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "ReasoningResponse",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "SecurityBreachException",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "ValidationResult",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "ViolationType",
+        "alias": null,
+        "line_number": 94
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "validate_reasoning_response",
+        "alias": null,
+        "line_number": 94
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/archive/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/archive/graph/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "service",
+        "name": "get_graph",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "service",
+        "name": "get_neighbors",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "service",
+        "name": "get_related_docs",
+        "alias": null,
+        "line_number": 3
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/archive/ingest/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "pipeline",
+        "name": "list_documents",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pipeline",
+        "name": "get_document",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pipeline",
+        "name": "run_ingestion",
+        "alias": null,
+        "line_number": 3
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/archive/rag/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "hybrid_search",
+        "name": "hybrid_search",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "hybrid_search",
+        "name": "dense_lookup",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "hybrid_search",
+        "name": "rerank",
+        "alias": null,
+        "line_number": 3
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/archive/rag/vector_store.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class VectorStore"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 8
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/config.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class Environment",
+      "class GuardMode",
+      "class LLMProvider",
+      "class LedgerBackend",
+      "class LogFormat",
+      "class DatabaseConfig",
+      "class LLMConfig",
+      "class ObservabilityConfig",
+      "class APIConfig",
+      "class MahounSettings",
+      "class SettingsManager",
+      "def get_settings",
+      "def clear_settings_cache",
+      "def reload_settings",
+      "def require_env",
+      "def get_env",
+      "def get_env_bool",
+      "def get_env_int",
+      "def get_env_list"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "import",
+        "module": "threading",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "functools",
+        "name": "lru_cache",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "ClassVar",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "FrozenSet",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Union",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "Field",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "field_validator",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "model_validator",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions",
+        "name": "ConfigurationError",
+        "alias": null,
+        "line_number": 47
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic_settings",
+        "name": "BaseSettings",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic_settings",
+        "name": "SettingsConfigDict",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "BaseSettings",
+        "alias": null,
+        "line_number": 42
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/config_validator.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ValidationError",
+      "class ConfigurationError",
+      "def validate_runtime_config",
+      "def validate_config_file"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.runtime_config",
+        "name": "MahounRuntimeSettings",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.runtime_config",
+        "name": "get_runtime_settings",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 248
+      },
+      {
+        "type": "import",
+        "module": "yaml",
+        "alias": null,
+        "line_number": 250
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 279
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/dependency_validator.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "var CORE_ALLOWED_DEPENDENCIES",
+      "def get_module_dependencies",
+      "def validate_core_dependencies",
+      "def check_core_purity",
+      "var env"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "import",
+        "module": "atexit",
+        "alias": null,
+        "line_number": 138
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/environment.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class MahounEnvironment",
+      "class EnvironmentConfigurationError",
+      "class EnvironmentLockViolation",
+      "class EnvironmentAccessError",
+      "class EnvironmentTransition",
+      "class EnvironmentContext",
+      "def bootstrap_environment",
+      "def get_current_environment",
+      "def reset_environment",
+      "def temporary_environment",
+      "def is_environment_locked",
+      "def get_transition_history",
+      "def is_production",
+      "def is_development",
+      "def is_test",
+      "def is_staging",
+      "def get_environment_name",
+      "def get_security_level",
+      "def requires_audit_trail",
+      "def allows_unsafe_operations",
+      "def get_environment_diagnostics",
+      "def validate_environment_integrity"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "import",
+        "module": "threading",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "import",
+        "module": "traceback",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "from_import",
+        "module": "contextlib",
+        "name": "contextmanager",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 40
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/error_handling.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ErrorContext",
+      "class ErrorHandler",
+      "def handle_error"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "import",
+        "module": "traceback",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Type",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 10
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/exceptions.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class MahounError",
+      "class SerializationError",
+      "class UnsafeSerializationError",
+      "class LedgerError",
+      "class LedgerWriteError",
+      "class LedgerIntegrityError",
+      "class KnowledgeGraphError",
+      "class RuleNotFoundError",
+      "class PrecedentNotFoundError",
+      "class GraphConnectionError",
+      "class GraphResolutionFailure",
+      "class ConfigurationError",
+      "class MissingSecretError",
+      "class InvalidConfigError",
+      "class LLMRouterError",
+      "class ModelNotFoundError",
+      "class ModelUnavailableError",
+      "class NoFallbackAvailableError",
+      "class ValidationError",
+      "class InputTooLargeError",
+      "class InvalidInputTypeError",
+      "class MissingRequiredFieldError",
+      "class SecurityConstraintError",
+      "class ReasoningError",
+      "class InsufficientEvidenceError",
+      "class ContradictionError",
+      "class InvariantViolationError",
+      "class GovernanceError",
+      "class ExternalServiceError",
+      "class TimeoutError",
+      "class ConnectionError",
+      "def wrap_exception",
+      "class BaseMahounError",
+      "class SecurityBreachException",
+      "class LogicViolationException",
+      "class GraphIntegrityException",
+      "class AuditFailureException"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "warnings",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 18
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/exceptions_v2.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class MahounException",
+      "class SecurityBreachException",
+      "class LogicViolationException",
+      "class GraphIntegrityException",
+      "class AuditFailureException",
+      "class GovernanceViolationException",
+      "class UnauthorizedMutationException",
+      "class LedgerError",
+      "class LedgerWriteError",
+      "class LedgerIntegrityError",
+      "class KnowledgeGraphError",
+      "class RuleNotFoundError",
+      "class PrecedentNotFoundError",
+      "class GraphConnectionError",
+      "class GraphResolutionFailure",
+      "class ConfigurationError",
+      "class MissingSecretError",
+      "class InvalidConfigError",
+      "class LLMRouterError",
+      "class ModelNotFoundError",
+      "class ModelUnavailableError",
+      "class NoFallbackAvailableError",
+      "class ValidationError",
+      "class InputTooLargeError",
+      "class InvalidInputTypeError",
+      "class MissingRequiredFieldError",
+      "class SecurityConstraintError",
+      "class ReasoningError",
+      "class InsufficientEvidenceError",
+      "class ContradictionError",
+      "class InvariantViolationError",
+      "class ExternalServiceError",
+      "class TimeoutError",
+      "class ConnectionError",
+      "class SerializationError",
+      "class OperationalError",
+      "class UnsafeSerializationError",
+      "def wrap_exception",
+      "var GovernanceError",
+      "var BaseMahounError"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 14
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/fortress_validator.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var log",
+      "var T",
+      "class ViolationSeverity",
+      "class ViolationType",
+      "class ExecutionMode",
+      "class SecurityBreachException",
+      "class RedLinesConfig",
+      "class ValidationResult",
+      "class ForensicContext",
+      "class FortressValidator",
+      "def validate_reasoning_response"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "import",
+        "module": "time",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "import",
+        "module": "uuid",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TypeVar",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TYPE_CHECKING",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Union",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "MahounException",
+        "alias": "BaseMahounError",
+        "line_number": 123
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "SecurityBreachException",
+        "alias": "CanonicalSecurityBreach",
+        "line_number": 123
+      },
+      {
+        "type": "import",
+        "module": "yaml",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": "ReasoningResponse",
+        "line_number": 46
+      },
+      {
+        "type": "from_import",
+        "module": "reasoning_logic.parser",
+        "name": "FOLConverter",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "reasoning_logic.parser",
+        "name": "ParseError",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.logging_config",
+        "name": "get_logger",
+        "alias": null,
+        "line_number": 65
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.observability.metrics_migration",
+        "name": "get_metrics_collector",
+        "alias": null,
+        "line_number": 73
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 67
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 818
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.reasoning.unified_reasoning_service",
+        "name": "ReasoningResponse",
+        "alias": null,
+        "line_number": 51
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/governance/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.policies",
+        "name": "GovernancePolicy",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.policies",
+        "name": "PolicyRegistry",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.policies",
+        "name": "load_redlines_policies",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "ValidatorPipeline",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceMetadata",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceTracker",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "InferenceProvenance",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.ontology_enforcer",
+        "name": "OntologyEnforcer",
+        "alias": null,
+        "line_number": 43
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.deterministic_resolver",
+        "name": "DeterministicResolver",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "MutationAuthorizationBoundary",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "GovernedNeo4jSession",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "GovernedWriteTransaction",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "MutationReceipt",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "MutationType",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContext",
+        "alias": null,
+        "line_number": 52
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContextManager",
+        "alias": null,
+        "line_number": 52
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceScopeEnforcer",
+        "alias": null,
+        "line_number": 52
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/authorization_state.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "def is_authorized",
+      "def set_authorized",
+      "def reset_authorized"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "contextvars",
+        "name": "ContextVar",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "contextvars",
+        "name": "Token",
+        "alias": null,
+        "line_number": 18
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/deterministic_resolver.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class SourceTier",
+      "class ConflictCandidate",
+      "class ResolutionResult",
+      "class DeterministicResolver"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "IntEnum",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Sequence",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 25
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/governance_context.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var log",
+      "class GovernanceContext",
+      "class GovernanceContextManager",
+      "class GovernanceScopeEnforcer"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "import",
+        "module": "uuid",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "collections.abc",
+        "name": "AsyncIterator",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "contextlib",
+        "name": "asynccontextmanager",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "contextvars",
+        "name": "ContextVar",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.fortress_validator",
+        "name": "get_logger",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.deterministic_resolver",
+        "name": "DeterministicResolver",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.ontology_enforcer",
+        "name": "OntologyEnforcer",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceMetadata",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceTracker",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "ValidatorPipeline",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "import",
+        "module": "secrets",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "import",
+        "module": "hmac",
+        "alias": null,
+        "line_number": 174
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 175
+      },
+      {
+        "type": "import",
+        "module": "hmac",
+        "alias": null,
+        "line_number": 322
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 323
+      },
+      {
+        "type": "import",
+        "module": "hmac",
+        "alias": null,
+        "line_number": 464
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 465
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.observability.metrics_migration",
+        "name": "get_metrics_collector",
+        "alias": null,
+        "line_number": 441
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/ingestion_runtime.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class IngestionAbortedError",
+      "class GovernedIngestionRuntime"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions",
+        "name": "MahounError",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "GovernedNeo4jSession",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceMetadata",
+        "alias": null,
+        "line_number": 23
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/mutation_boundary.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class CypherLexer",
+      "def classify_cypher",
+      "class MutationType",
+      "class MutationReceipt",
+      "class MutationAuthorizationBoundary",
+      "class ProvenanceValidator",
+      "class GovernedNeo4jSession",
+      "class GovernedWriteTransaction"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "import",
+        "module": "contextvars",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "import",
+        "module": "unicodedata",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "contextlib",
+        "name": "contextmanager",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 42
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 42
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 43
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TYPE_CHECKING",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Generator",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContextManager",
+        "alias": null,
+        "line_number": 49
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.protocols",
+        "name": "assert_raw_executor",
+        "alias": null,
+        "line_number": 50
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceMetadata",
+        "alias": null,
+        "line_number": 51
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "PipelineResult",
+        "alias": null,
+        "line_number": 52
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "ValidatorPipeline",
+        "alias": null,
+        "line_number": 52
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 53
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 53
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 53
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 53
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 66
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "_authorized_write_ctx",
+        "alias": null,
+        "line_number": 299
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "is_authorized",
+        "alias": "_is_authorized",
+        "line_number": 299
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "set_authorized",
+        "alias": "_set_authorized",
+        "line_number": 299
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "reset_authorized",
+        "alias": "_reset_authorized",
+        "line_number": 299
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.protocols",
+        "name": "RawQueryExecutor",
+        "alias": null,
+        "line_number": 47
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "validate_node_label",
+        "alias": null,
+        "line_number": 487
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "validate_property_keys",
+        "alias": null,
+        "line_number": 534
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "validate_property_keys",
+        "alias": null,
+        "line_number": 665
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.security.governance_behavioral_integration",
+        "name": "observe_mutation_background",
+        "alias": null,
+        "line_number": 592
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "validate_property_keys",
+        "alias": null,
+        "line_number": 934
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.validator_pipeline",
+        "name": "validate_property_keys",
+        "alias": null,
+        "line_number": 991
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/mutation_replayer.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ReplayStatus",
+      "class ReplayResult",
+      "class InMemoryGraphState",
+      "class MutationReplayer"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Sequence",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "MutationType",
+        "alias": null,
+        "line_number": 332
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/ontology_enforcer.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class OntologyRule",
+      "class OntologyEnforcer"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "FrozenSet",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 21
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/ontology_gate_adapter.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class OntologyGateAdapter"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.ontology_enforcer",
+        "name": "OntologyEnforcer",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "OntologyValidationResult",
+        "alias": null,
+        "line_number": 21
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/outbox_worker.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class OutboxWorker"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "import",
+        "module": "psycopg2",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContextManager",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.graph.neo4j.connection",
+        "name": "get_connection",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.graph.sync.outbox_worker",
+        "name": "OutboxWorker",
+        "alias": "_SyncOutboxWorker",
+        "line_number": 8
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/policies.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class GovernancePolicy",
+      "class PolicyRegistry",
+      "def load_redlines_policies"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "FrozenSet",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "import",
+        "module": "yaml",
+        "alias": null,
+        "line_number": 22
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/protocols.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class RawQueryExecutor",
+      "class GovernedGraphSession",
+      "def assert_governed_session",
+      "def assert_raw_executor"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Protocol",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "runtime_checkable",
+        "alias": null,
+        "line_number": 20
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/provenance_attestation.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class InferenceProvenance",
+      "class ProvenanceAttestation",
+      "class ProvenanceWithAttestation",
+      "class ProvenanceChain"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "import",
+        "module": "uuid",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 29
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/provenance_tracker.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class InferenceProvenance",
+      "class ProvenanceMetadata",
+      "class ProvenanceTracker"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "FrozenSet",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 315
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 316
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 328
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 329
+      },
+      {
+        "type": "import",
+        "module": "uuid",
+        "alias": null,
+        "line_number": 362
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/validator_pipeline.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "def validate_property_keys",
+      "def validate_node_label",
+      "class ValidationGateResult",
+      "class PipelineResult",
+      "var ValidationGate",
+      "class ValidatorPipeline",
+      "var logger",
+      "def register_schema",
+      "def strict_schema_validation_gate"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "import",
+        "module": "unicodedata",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Callable",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Sequence",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.ontology_enforcer",
+        "name": "OntologyEnforcer",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceMetadata",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.provenance_tracker",
+        "name": "ProvenanceTracker",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.violations",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 638
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "BaseModel",
+        "alias": null,
+        "line_number": 640
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "ValidationError",
+        "alias": null,
+        "line_number": 640
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance/violations.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class ViolationCategory",
+      "class ViolationSeverity",
+      "class GovernanceViolation",
+      "class GovernanceViolationError",
+      "class MissingExecutionPolicyError"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 20
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance_kernel/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "GovernanceViolation",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "KernelMutationBoundary",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "is_governance_authorized",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "set_governance_authority",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "reset_governance_authority",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "ViolationCategory",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "kernel",
+        "name": "ViolationSeverity",
+        "alias": null,
+        "line_number": 10
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance_kernel/kernel.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class QueryType",
+      "class ViolationCategory",
+      "class ViolationSeverity",
+      "class GovernanceViolation",
+      "class GovernanceViolationError",
+      "class KernelMutationBoundary",
+      "def is_governance_authorized",
+      "def set_governance_authority",
+      "def reset_governance_authority",
+      "class GovernanceKernel",
+      "class GovernanceResponse"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "contextvars",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "import",
+        "module": "enum",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "import",
+        "module": "unicodedata",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Generator",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "_authorized_write_ctx",
+        "alias": null,
+        "line_number": 71
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "is_authorized",
+        "alias": "_is_authorized_state",
+        "line_number": 71
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "set_authorized",
+        "alias": "_set_authorized_state",
+        "line_number": 71
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.authorization_state",
+        "name": "reset_authorized",
+        "alias": "_reset_authorized_state",
+        "line_number": 71
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "CypherLexer",
+        "alias": null,
+        "line_number": 84
+      },
+      {
+        "type": "from_import",
+        "module": "uuid",
+        "name": "uuid4",
+        "alias": null,
+        "line_number": 160
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance_kernel/server.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class GovernanceHandler",
+      "def run_server"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "http.server",
+        "name": "HTTPServer",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "http.server",
+        "name": "BaseHTTPRequestHandler",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel",
+        "name": "GovernanceViolationError",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContextManager",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_lock",
+        "name": "GovernanceLock",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_lock",
+        "name": "GovernanceMode",
+        "alias": null,
+        "line_number": 32
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/governance_lock.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class GovernanceMode",
+      "class GovernanceLock",
+      "class SecurityError",
+      "def should_enforce_proof_carrying_contract",
+      "def initialize_governance_at_startup",
+      "def check_governance_integrity"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 19
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/health_cache.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class CachedHealthResult",
+      "class HealthCheckCache",
+      "class CachedHealthChecker"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "time",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "import",
+        "module": "threading",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "health_checker",
+        "name": "HealthChecker",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "from_import",
+        "module": "health_checker",
+        "name": "ComponentHealth",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "from_import",
+        "module": "health_checker",
+        "name": "HealthStatus",
+        "alias": null,
+        "line_number": 13
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/health_checker.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.health_checker",
+        "name": "HealthChecker",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.health_checker",
+        "name": "HealthStatus",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.health_checker",
+        "name": "ComponentHealth",
+        "alias": null,
+        "line_number": 10
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/import_firewall.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ImportRiskLevel",
+      "var FORBIDDEN_IMPORTS",
+      "def get_environment",
+      "def is_production_environment",
+      "def check_import_allowed",
+      "class MahounImportHook",
+      "def install_import_firewall",
+      "def check_neo4j_import_violation"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "import",
+        "module": "builtins",
+        "alias": null,
+        "line_number": 114
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/logging.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "def setup_logger"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "import",
+        "module": "sys",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 11
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "AIResponse",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "TokenUsage",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "GenerationMetadata",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "ResponseStatus",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "create_success_response",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "create_error_response",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "PromptTemplate",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "EvidenceSlot",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "ContextRequirement",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "EvidenceSlotType",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "LEGAL_REASONING_TEMPLATE",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "CONTRACT_ANALYSIS_TEMPLATE",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.models",
+        "name": "create_custom_template",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditEvent",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditEventType",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditContext",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditSeverity",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_audit_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_model_load_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_generation_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_fortress_validation_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_governance_violation_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "create_security_breach_event",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "DeploymentProfile",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "ResourceLimits",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "PerformanceTargets",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "ProfileType",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "DESKTOP_MINIMAL",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "ENTERPRISE_FULL",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "load_profile_from_env",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "validate_profile_compatibility",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "create_custom_profile",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "Entity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EntityType",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "FrozenEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "LegalEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EntityFactory",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EntityNormalizer",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EntityFingerprint",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EntityValidationError",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "LegacyEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "NEREntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "GraphEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "RAGEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "EvidenceEntity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "create_entity",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "entity",
+        "name": "normalize_text",
+        "alias": null,
+        "line_number": 59
+      },
+      {
+        "type": "from_import",
+        "module": "reasoning",
+        "name": "ReasoningStep",
+        "alias": null,
+        "line_number": 138
+      },
+      {
+        "type": "from_import",
+        "module": "reasoning",
+        "name": "ReasoningResult",
+        "alias": null,
+        "line_number": 138
+      },
+      {
+        "type": "from_import",
+        "module": "reasoning",
+        "name": "CausalRelation",
+        "alias": null,
+        "line_number": 138
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/entity.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class EntityType",
+      "class EntityValidationError",
+      "class EntityNormalizer",
+      "class EntityFingerprint",
+      "class Entity",
+      "class FrozenEntity",
+      "class LegalEntity",
+      "class EntityFactory",
+      "var LegacyEntity",
+      "var NEREntity",
+      "var GraphEntity",
+      "var RAGEntity",
+      "var EvidenceEntity",
+      "def normalize_text",
+      "def create_entity"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "auto",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Union",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "ClassVar",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "ABC",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "abstractmethod",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 42
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 43
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 46
+      },
+      {
+        "type": "from_import",
+        "module": "functools",
+        "name": "lru_cache",
+        "alias": null,
+        "line_number": 47
+      },
+      {
+        "type": "import",
+        "module": "threading",
+        "alias": null,
+        "line_number": 48
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 49
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/audit_runner.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ArchitectureAuditRunner"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "manager",
+        "name": "ProjectModelManager",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "detectors.registry",
+        "name": "DetectorRegistry",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "detectors.duplicate_detector",
+        "name": "DuplicateSymbolDetector",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "detectors.boundary_detector",
+        "name": "BoundaryViolationDetector",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "detectors.engine",
+        "name": "DetectionEngine",
+        "alias": null,
+        "line_number": 21
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/base.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class SymbolType",
+      "class RelationType",
+      "class FileNode",
+      "class Symbol",
+      "class ClassSymbol",
+      "class FunctionSymbol",
+      "class ModuleNode",
+      "class ProjectModel"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "auto",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 7
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/base.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class Finding",
+      "class BaseDetector"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "ABC",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "abstractmethod",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 8
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/boundary_detector.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class BoundaryViolationDetector"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "BaseDetector",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Finding",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 5
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/duplicate_detector.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class DuplicateSymbolDetector"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "BaseDetector",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Finding",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 5
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/engine.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class DetectionEngine"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "BaseDetector",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Finding",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "registry",
+        "name": "DetectorRegistry",
+        "alias": null,
+        "line_number": 7
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/orphaned_detector.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class OrphanedFunctionDetector"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "BaseDetector",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Finding",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 5
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/detectors/registry.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class DetectorRegistry"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Type",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "BaseDetector",
+        "alias": null,
+        "line_number": 4
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/graph.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class DependencyGraph"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "ast",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "SymbolType",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ClassSymbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "FunctionSymbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "index",
+        "name": "SymbolIndex",
+        "alias": null,
+        "line_number": 15
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/graphs.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class CallGraph",
+      "class SemanticGraph"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "ast",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "SymbolType",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ClassSymbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "FunctionSymbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "index",
+        "name": "SymbolIndex",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "graph",
+        "name": "DependencyGraph",
+        "alias": null,
+        "line_number": 16
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/index.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class SymbolIndex"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "SymbolType",
+        "alias": null,
+        "line_number": 4
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/manager.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ProjectModelManager"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "SymbolType",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "parser",
+        "name": "Parser",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "index",
+        "name": "SymbolIndex",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "graph",
+        "name": "DependencyGraph",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "graphs",
+        "name": "CallGraph",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "graphs",
+        "name": "SemanticGraph",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "RelationType",
+        "alias": null,
+        "line_number": 155
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/project_model/parser.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ParsingError",
+      "class ASTVisitor",
+      "class Parser"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "import",
+        "module": "ast",
+        "alias": null,
+        "line_number": 3
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 4
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 5
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ProjectModel",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "FileNode",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "Symbol",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "SymbolType",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "ClassSymbol",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "base",
+        "name": "FunctionSymbol",
+        "alias": null,
+        "line_number": 10
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models/reasoning.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class LegalDocType",
+      "class LegalDocument",
+      "class LegalEntity",
+      "class ReasoningStep",
+      "class CausalRelation",
+      "class ReasoningResult",
+      "class UncertaintyEstimate"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "BaseModel",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "Field",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "ConfigDict",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "field_validator",
+        "alias": null,
+        "line_number": 16
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/models.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "*",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "LegalDocType",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "LegalDocument",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "LegalEntity",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "ReasoningStep",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "CausalRelation",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "ReasoningResult",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "UncertaintyEstimate",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.models.reasoning",
+        "name": "__all__",
+        "alias": null,
+        "line_number": 17
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/paths.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "def get_repo_root",
+      "def get_model_dir",
+      "def get_data_dir",
+      "def get_output_dir",
+      "def get_cache_dir",
+      "def ensure_dir",
+      "def resolve_path",
+      "def validate_model_path",
+      "def get_safe_model_path"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 17
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/policy_deployment.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class PolicyVersion",
+      "class DeploymentStage",
+      "class DeploymentStatus",
+      "class ValidationResult",
+      "class PolicyArtifact",
+      "class ValidationCheck",
+      "class DeploymentPlan",
+      "class DeploymentRecord",
+      "class PolicyArtifactStore",
+      "class PolicyDeploymentOrchestrator",
+      "def get_deployment_orchestrator"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "import",
+        "module": "asyncio",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "asdict",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timedelta",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "uuid",
+        "name": "uuid4",
+        "alias": null,
+        "line_number": 42
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ExecutionPolicy",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "PolicyResolver",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.policies",
+        "name": "GovernancePolicy",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.policies",
+        "name": "PolicyRegistry",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "ValidationError",
+        "alias": null,
+        "line_number": 46
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "ConfigurationError",
+        "alias": null,
+        "line_number": 46
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "OperationalError",
+        "alias": null,
+        "line_number": 46
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditEvent",
+        "alias": null,
+        "line_number": 51
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.audit.models",
+        "name": "AuditEventType",
+        "alias": null,
+        "line_number": 51
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/policy_resolver.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class ViewMode",
+      "class EmbeddingMode",
+      "class ReasoningBudget",
+      "class ExecutionPolicy",
+      "class PolicyDecisionAuditEntry",
+      "class PolicyResolver",
+      "def create_default_policy_resolver",
+      "def validate_policy_for_operation"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TYPE_CHECKING",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.profile_manager",
+        "name": "ProfileManager",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContext",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.infrastructure.models",
+        "name": "DeploymentProfile",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.profile_manager",
+        "name": "ProfileManager",
+        "alias": null,
+        "line_number": 703
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.profile_manager",
+        "name": "ProfileManager",
+        "alias": null,
+        "line_number": 402
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols/__init__.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "ai_runtime",
+        "name": "AIRuntimeProtocol",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "ai_runtime",
+        "name": "HealthStatus",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "ai_runtime",
+        "name": "ModelMetadata",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "QueryClassificationResult",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "RoutedQueryResult",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "QueryClassifierProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "QueryRouterProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "RAGServiceProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "LLMServiceProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "ModelDriverProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "ModelOrchestratorProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "ReasoningEngineProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "DependencyContainerProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "validate_protocol_implementation",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "is_query_router",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "is_rag_service",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "is_model_driver",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "is_reasoning_engine",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "is_contradiction_detector",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "legacy_protocols",
+        "name": "ContradictionDetectorProtocol",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "UncertaintyEstimate",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "UncertaintyServiceProtocol",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "is_uncertainty_service",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "OntologyValidationResult",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "OntologyGateProtocol",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "is_ontology_gate",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "GraphReasoningPath",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "UltraRAGResult",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "UltraRAGProtocol",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "advanced_protocols",
+        "name": "is_ultra_rag",
+        "alias": null,
+        "line_number": 32
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols/advanced_protocols.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class UncertaintyEstimate",
+      "class UncertaintyServiceProtocol",
+      "class OntologyValidationResult",
+      "class OntologyGateProtocol",
+      "class GraphReasoningPath",
+      "class UltraRAGResult",
+      "class UltraRAGProtocol",
+      "def is_uncertainty_service",
+      "def is_ontology_gate",
+      "def is_ultra_rag"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Protocol",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "runtime_checkable",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "abstractmethod",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 18
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 19
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols/ai_runtime.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class ModelStatus",
+      "class ModelMetadata",
+      "class HealthStatus",
+      "class AIRuntimeProtocol",
+      "class AIRuntimeError",
+      "class ModelNotFoundError",
+      "class ModelIntegrityError",
+      "class ModelNotLoadedError",
+      "class ResourceConstraintError",
+      "class GenerationError",
+      "class GovernanceViolationError",
+      "class ResourceExhaustedError"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "ABC",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "abstractmethod",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 24
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "import",
+        "module": "time",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 263
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols/legacy_protocols.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class QueryType",
+      "class QueryClassificationResult",
+      "class RoutedQueryResult",
+      "class QueryClassifierProtocol",
+      "class QueryRouterProtocol",
+      "class RAGServiceProtocol",
+      "class LLMServiceProtocol",
+      "class ModelDriverProtocol",
+      "class ModelOrchestratorProtocol",
+      "class ReasoningEngineProtocol",
+      "class DependencyContainerProtocol",
+      "def validate_protocol_implementation",
+      "def is_query_router",
+      "def is_rag_service",
+      "def is_model_driver",
+      "def is_reasoning_engine",
+      "def is_contradiction_detector",
+      "class ContradictionDetectorProtocol"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Protocol",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "runtime_checkable",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 6
+      },
+      {
+        "type": "from_import",
+        "module": "abc",
+        "name": "abstractmethod",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 9
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols/query_protocols.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class GraphQueryExecutorProtocol"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Protocol",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "runtime_checkable",
+        "alias": null,
+        "line_number": 8
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/protocols.py",
+    "responsibility": "",
+    "public_interfaces": [],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "warnings",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "QueryClassificationResult",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "RoutedQueryResult",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "QueryClassifierProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "QueryRouterProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "RAGServiceProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "LLMServiceProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "ModelDriverProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "ModelOrchestratorProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "ReasoningEngineProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "DependencyContainerProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "ContradictionDetectorProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "validate_protocol_implementation",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_query_router",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_rag_service",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_model_driver",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_reasoning_engine",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_contradiction_detector",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "AIRuntimeProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "HealthStatus",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "ModelMetadata",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "UncertaintyEstimate",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "UncertaintyServiceProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_uncertainty_service",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "OntologyValidationResult",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "OntologyGateProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_ontology_gate",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "GraphReasoningPath",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "UltraRAGResult",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "UltraRAGProtocol",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols",
+        "name": "is_ultra_rag",
+        "alias": null,
+        "line_number": 28
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/query_executor.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "def set_query_executor",
+      "def get_query_executor",
+      "def execute_cypher",
+      "def execute_cypher_async"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 17
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 19
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TYPE_CHECKING",
+        "alias": null,
+        "line_number": 20
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.protocols.query_protocols",
+        "name": "GraphQueryExecutorProtocol",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.graph.graph_query_service",
+        "name": "GraphQueryService",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.graph.graph_query_service",
+        "name": "GraphQueryService",
+        "alias": null,
+        "line_number": 64
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/rollback_orchestrator.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class RollbackType",
+      "class RollbackReason",
+      "class RollbackStatus",
+      "class SafetyCheckResult",
+      "class StateSnapshot",
+      "class SafetyCheck",
+      "class RollbackImpact",
+      "class RollbackPlan",
+      "class RollbackRecord",
+      "class SnapshotStore",
+      "class RollbackOrchestrator",
+      "def get_rollback_orchestrator"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "import",
+        "module": "asyncio",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 35
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "asdict",
+        "alias": null,
+        "line_number": 37
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timezone",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "timedelta",
+        "alias": null,
+        "line_number": 38
+      },
+      {
+        "type": "from_import",
+        "module": "enum",
+        "name": "Enum",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Callable",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "uuid",
+        "name": "uuid4",
+        "alias": null,
+        "line_number": 42
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_deployment",
+        "name": "PolicyVersion",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_deployment",
+        "name": "PolicyArtifact",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_deployment",
+        "name": "PolicyArtifactStore",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_deployment",
+        "name": "DeploymentStage",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_deployment",
+        "name": "DeploymentStatus",
+        "alias": null,
+        "line_number": 44
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "ValidationError",
+        "alias": null,
+        "line_number": 51
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions_v2",
+        "name": "OperationalError",
+        "alias": null,
+        "line_number": 51
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/runtime_config.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class MahounRuntimeSettings",
+      "def get_runtime_settings",
+      "def is_desktop_minimal",
+      "def should_skip_graph",
+      "def should_skip_lora_training",
+      "def is_enterprise_graph_mode",
+      "def get_graph_config"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 25
+      },
+      {
+        "type": "from_import",
+        "module": "functools",
+        "name": "lru_cache",
+        "alias": null,
+        "line_number": 26
+      },
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 27
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 28
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "import",
+        "module": "yaml",
+        "alias": null,
+        "line_number": 116
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 124
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/secrets.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "var REQUIRED_SECRETS",
+      "var DEV_PLACEHOLDERS",
+      "def get_env",
+      "def is_dev",
+      "def is_production",
+      "def get_secret",
+      "def require_secret",
+      "def validate_all_required_secrets"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 21
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 22
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 23
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.environment",
+        "name": "get_current_environment",
+        "alias": null,
+        "line_number": 57
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.environment",
+        "name": "is_development",
+        "alias": null,
+        "line_number": 70
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.environment",
+        "name": "is_production",
+        "alias": null,
+        "line_number": 76
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.environment",
+        "name": "is_staging",
+        "alias": null,
+        "line_number": 76
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/security/import_firewall.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var FORBIDDEN_IMPORTS",
+      "def validate_import",
+      "def guarded_import",
+      "def enable_firewall",
+      "def disable_firewall"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "__future__",
+        "name": "annotations",
+        "alias": null,
+        "line_number": 6
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/serialization.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class SerializationError",
+      "class SafeSerializer",
+      "class NumpyArraySerializer",
+      "def migrate_pickle_to_json"
+    ],
+    "dependencies": [
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TypeVar",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Type",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Union",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "pathlib",
+        "name": "Path",
+        "alias": null,
+        "line_number": 11
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "date",
+        "alias": null,
+        "line_number": 12
+      },
+      {
+        "type": "import",
+        "module": "json",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "import",
+        "module": "numpy",
+        "alias": "np",
+        "line_number": 16
+      },
+      {
+        "type": "import",
+        "module": "pickle",
+        "alias": null,
+        "line_number": 259
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/settings.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class SecuritySettings",
+      "def load_security_settings"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "os",
+        "alias": null,
+        "line_number": 1
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 2
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.environment",
+        "name": "get_current_environment",
+        "alias": null,
+        "line_number": 21
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/singleton.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "var T",
+      "class ThreadSafeSingleton"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "threading",
+        "alias": null,
+        "line_number": 7
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Callable",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Generic",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TypeVar",
+        "alias": null,
+        "line_number": 8
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 9
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/uid_generator.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class UIDGenerator",
+      "var generate_deterministic",
+      "var generate_entity_id",
+      "var generate_document_id"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "uuid",
+        "alias": null,
+        "line_number": 9
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 10
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Union",
+        "alias": null,
+        "line_number": 10
+      }
+    ],
+    "is_authoritative": false
+  },
+  {
+    "path": "mahoun/core/unified_governance.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "var logger",
+      "class UnifiedGovernanceDecision",
+      "class PolicyResolver",
+      "class UnifiedGovernanceController",
+      "def create_default_unified_controller",
+      "def validate_query_with_unified_governance"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "hashlib",
+        "alias": null,
+        "line_number": 29
+      },
+      {
+        "type": "import",
+        "module": "logging",
+        "alias": null,
+        "line_number": 30
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 31
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "dataclass",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "dataclasses",
+        "name": "field",
+        "alias": null,
+        "line_number": 32
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "UTC",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "datetime",
+        "name": "datetime",
+        "alias": null,
+        "line_number": 33
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "TYPE_CHECKING",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Tuple",
+        "alias": null,
+        "line_number": 34
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "PolicyResolver",
+        "alias": "BasePolicyResolver",
+        "line_number": 36
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.ai.profile_manager",
+        "name": "ProfileManager",
+        "alias": null,
+        "line_number": 39
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.governance_context",
+        "name": "GovernanceContext",
+        "alias": null,
+        "line_number": 40
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel.kernel",
+        "name": "KernelMutationBoundary",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel.kernel",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 41
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ExecutionPolicy",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "PolicyResolver",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ViewMode",
+        "alias": null,
+        "line_number": 45
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "create_default_policy_resolver",
+        "alias": null,
+        "line_number": 987
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 186
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 187
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel.kernel",
+        "name": "KernelMutationBoundary",
+        "alias": null,
+        "line_number": 377
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel.kernel",
+        "name": "QueryType",
+        "alias": null,
+        "line_number": 377
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance_kernel.kernel",
+        "name": "is_governance_authorized",
+        "alias": null,
+        "line_number": 443
+      },
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 723
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Set",
+        "alias": null,
+        "line_number": 724
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "EmbeddingMode",
+        "alias": null,
+        "line_number": 480
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ExecutionPolicy",
+        "alias": null,
+        "line_number": 480
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ReasoningBudget",
+        "alias": null,
+        "line_number": 480
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.policy_resolver",
+        "name": "ViewMode",
+        "alias": "VMEnum",
+        "line_number": 480
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.governance.mutation_boundary",
+        "name": "_append_governance_audit",
+        "alias": null,
+        "line_number": 600
+      }
+    ],
+    "is_authoritative": true
+  },
+  {
+    "path": "mahoun/core/validation.py",
+    "responsibility": "",
+    "public_interfaces": [
+      "class StringSanitizer",
+      "class SafeString",
+      "class SafeQuery",
+      "class SafeFilename",
+      "class SafeDocumentId",
+      "class ValidatedSearchRequest",
+      "class ValidatedDocumentRequest",
+      "class ValidatedFileUpload",
+      "def validate_and_sanitize_dict",
+      "def validate_list_of_strings"
+    ],
+    "dependencies": [
+      {
+        "type": "import",
+        "module": "re",
+        "alias": null,
+        "line_number": 13
+      },
+      {
+        "type": "import",
+        "module": "html",
+        "alias": null,
+        "line_number": 14
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Any",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Optional",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "List",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "typing",
+        "name": "Dict",
+        "alias": null,
+        "line_number": 15
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "BaseModel",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "Field",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "field_validator",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "pydantic",
+        "name": "model_validator",
+        "alias": null,
+        "line_number": 16
+      },
+      {
+        "type": "from_import",
+        "module": "mahoun.core.exceptions",
+        "name": "ValidationError",
+        "alias": null,
+        "line_number": 17
+      }
+    ],
+    "is_authoritative": false
+  }
+]

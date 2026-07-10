@@ -87,18 +87,6 @@ LEDGER_INVARIANTS = [
         enforced_at=["mahoun/ledger/privacy.py::filter_facts_for_ledger", "mahoun/reasoning/evidence_linked_verdict.py::generate_verdict"],
         failure_consequence="Irreversible personal data leak and legal liability."
     ),
-
-    InvariantSpec(
-        id="EL-I8",
-        name="Tombstone Security Guards",
-        description="Automatic rejection of previously deleted, redacted, or soft-deleted evidence to maintain absolute privacy and integrity. No resurrection of purged data.",
-        enforced_at=[
-            "mahoun/core/unified_governance.py::_inject_tombstone_filter",
-            "mahoun/ledger/guards.py::validate_tombstone_references",
-            "mahoun/reasoning/evidence_linked_verdict.py::_filter_tombstoned_evidence"
-        ],
-        failure_consequence="Deleted, redacted, or privacy-purged evidence can reappear in legal verdicts, violating GDPR/data protection laws and compromising audit integrity."
-    ),
 ]
 
 

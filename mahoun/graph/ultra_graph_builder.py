@@ -16,15 +16,15 @@ Features:
 - Performance optimization
 """
 
+import time
 import json
 import logging
-import time
-from collections import Counter, defaultdict, deque
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from collections import defaultdict, deque, Counter
 from types import MappingProxyType
-from typing import Any, Dict, List, Optional, Set, Tuple
 
 try:
     import numpy as np
@@ -34,8 +34,8 @@ except ImportError:
     np = None  # type: ignore
     HAS_NUMPY = False
 
-from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
-from mahoun.core.runtime_config import get_runtime_settings, should_skip_graph
+# Runtime configuration for mode-aware behavior - MOVED TO LAZY LOADING
+# from mahoun.core.runtime_config import get_runtime_settings, should_skip_graph
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +60,14 @@ class GraphMode(str, Enum):
     MINIMAL = "minimal"
 
 
-# PATCH GROUP A: Neo4jAdapter import removed.
-# export_to_neo4j requires GovernedNeo4jSession — raw adapter access is FORBIDDEN.
-# HAS_NEO4J kept for backward-compat feature flags only.
-HAS_NEO4J = True
+# Try to import Neo4j adapter
+try:
+    from mahoun.graph.neo4j_adapter import Neo4jAdapter
+
+    HAS_NEO4J = True
+except ImportError:
+    Neo4jAdapter = object  # Dummy class for type hints
+    HAS_NEO4J = False
 
 # ============================================================================
 # Graph Data Structures
@@ -72,12 +76,11 @@ HAS_NEO4J = True
 
 @dataclass
 class GraphNode:
-    """Enhanced graph node with provenance"""
+    """Enhanced graph node"""
 
     id: str
     label: str
     node_type: str
-    provenance: ProvenanceMetadata
     properties: Dict[str, Any] = field(default_factory=dict)
 
     # Advanced features
@@ -144,7 +147,9 @@ class GraphQualityAssessor:
         self.quality_rules = self._build_quality_rules()
         logger.debug("Graph Quality Assessor initialized")
 
-    def assess_graph_quality(self, nodes: List[GraphNode], edges: List[GraphEdge]) -> GraphMetrics:
+    def assess_graph_quality(
+        self, nodes: List[GraphNode], edges: List[GraphEdge]
+    ) -> GraphMetrics:
         """Assess overall graph quality"""
         metrics = GraphMetrics()
 
@@ -170,17 +175,27 @@ class GraphQualityAssessor:
             node_qualities = [self._assess_node_quality(node) for node in nodes]
             edge_qualities = [self._assess_edge_quality(edge) for edge in edges]
 
-            metrics.avg_node_quality = sum(node_qualities) / len(node_qualities) if node_qualities else 0
-            metrics.avg_edge_quality = sum(edge_qualities) / len(edge_qualities) if edge_qualities else 0
+            metrics.avg_node_quality = (
+                sum(node_qualities) / len(node_qualities) if node_qualities else 0
+            )
+            metrics.avg_edge_quality = (
+                sum(edge_qualities) / len(edge_qualities) if edge_qualities else 0
+            )
 
             # Validation rate
-            validated_nodes = sum(1 for node in nodes if node.validation_status == "validated")
-            validated_edges = sum(1 for edge in edges if edge.validation_status == "validated")
+            validated_nodes = sum(
+                1 for node in nodes if node.validation_status == "validated"
+            )
+            validated_edges = sum(
+                1 for edge in edges if edge.validation_status == "validated"
+            )
 
             total_elements = len(nodes) + len(edges)
             validated_elements = validated_nodes + validated_edges
 
-            metrics.validation_rate = validated_elements / total_elements if total_elements > 0 else 0
+            metrics.validation_rate = (
+                validated_elements / total_elements if total_elements > 0 else 0
+            )
 
         return metrics
 
@@ -246,7 +261,9 @@ class GraphAnalyticsEngine:
     def __init__(self):
         logger.debug("Graph Analytics Engine initialized")
 
-    def compute_centrality(self, nodes: List[GraphNode], edges: List[GraphEdge]) -> Dict[str, float]:
+    def compute_centrality(
+        self, nodes: List[GraphNode], edges: List[GraphEdge]
+    ) -> Dict[str, float]:
         """Compute node centrality scores"""
         # Build adjacency list
         adjacency = defaultdict(list)
@@ -264,7 +281,9 @@ class GraphAnalyticsEngine:
 
         return centrality
 
-    def find_communities(self, nodes: List[GraphNode], edges: List[GraphEdge]) -> Dict[str, int]:
+    def find_communities(
+        self, nodes: List[GraphNode], edges: List[GraphEdge]
+    ) -> Dict[str, int]:
         """Detect communities in graph"""
         # Simplified community detection using connected components
         adjacency = defaultdict(set)
@@ -295,7 +314,9 @@ class GraphAnalyticsEngine:
 
         return communities
 
-    def compute_shortest_paths(self, nodes: List[GraphNode], edges: List[GraphEdge], source_id: str) -> Dict[str, int]:
+    def compute_shortest_paths(
+        self, nodes: List[GraphNode], edges: List[GraphEdge], source_id: str
+    ) -> Dict[str, int]:
         """Compute shortest paths from source node"""
         # Build adjacency list
         adjacency = defaultdict(list)
@@ -358,7 +379,9 @@ class UltraGraphBuilder:
 
         # Mode-specific configuration
         if self.mode == GraphMode.MINIMAL:
-            logger.info("MINIMAL mode: graph builder initialized with minimal operations")
+            logger.info(
+                "MINIMAL mode: graph builder initialized with minimal operations"
+            )
             enable_quality_assessment = False
             enable_analytics = False
             enable_real_time_updates = False
@@ -431,7 +454,9 @@ class UltraGraphBuilder:
 
         start_time = time.time()
 
-        logger.info(f"Building graph with {len(entities)} entities and {len(relationships)} relationships")
+        logger.info(
+            f"Building graph with {len(entities)} entities and {len(relationships)} relationships"
+        )
 
         # Process entities
         self._process_entities(entities, source_id)
@@ -458,7 +483,9 @@ class UltraGraphBuilder:
             self.stats["avg_build_time"] * (self.stats["total_builds"] - 1) + build_time
         ) / self.stats["total_builds"]
 
-        logger.info(f"Graph built in {build_time:.2f}s - Nodes: {metrics.total_nodes}, Edges: {metrics.total_edges}")
+        logger.info(
+            f"Graph built in {build_time:.2f}s - Nodes: {metrics.total_nodes}, Edges: {metrics.total_edges}"
+        )
 
         return {
             "nodes": list(self.nodes.values()),
@@ -479,30 +506,20 @@ class UltraGraphBuilder:
                 if source_id and source_id not in node.source_documents:
                     node.source_documents.append(source_id)
             else:
-                # Create default provenance for builder-constructed nodes
-                from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
-                default_prov = ProvenanceMetadata.create(
-                    source="ultra_graph_builder",
-                    correlation_id="build_graph",
-                    author="system",
-                    governance_scope_id="default_scope",
-                    runtime_attestation_id="default_attestation",
-                    document_id=source_id
-                )
-                
                 # Create new node
                 node = GraphNode(
                     id=node_id,
                     label=entity.get("label", "UNKNOWN"),
                     node_type=entity.get("type", "entity"),
-                    provenance=default_prov,
                     properties=entity.get("properties", {}),
                     confidence=entity.get("confidence", 1.0),
                     source_documents=[source_id] if source_id else [],
                 )
                 self.nodes[node_id] = node
 
-    def _process_relationships(self, relationships: List[Dict], source_id: Optional[str]):
+    def _process_relationships(
+        self, relationships: List[Dict], source_id: Optional[str]
+    ):
         """Process relationships into graph edges"""
         for rel in relationships:
             edge = GraphEdge(
@@ -522,7 +539,9 @@ class UltraGraphBuilder:
             return
 
         # Assess quality
-        metrics = self.quality_assessor.assess_graph_quality(list(self.nodes.values()), self.edges)
+        metrics = self.quality_assessor.assess_graph_quality(
+            list(self.nodes.values()), self.edges
+        )
 
         # Update node quality scores
         for node in self.nodes.values():
@@ -571,13 +590,19 @@ class UltraGraphBuilder:
     def has_edge(self, source_id: str, target_id: str) -> bool:
         """Check whether an edge exists between two nodes"""
         self.ensure_indexes()
-        return any(edge.target_id == target_id for edge in self.edge_index.get(source_id, []))
+        return any(
+            edge.target_id == target_id for edge in self.edge_index.get(source_id, [])
+        )
 
     def remove_node(self, node_id: str):
         """Remove node and all incident edges"""
         if node_id in self.nodes:
             del self.nodes[node_id]
-        self.edges = [edge for edge in self.edges if edge.source_id != node_id and edge.target_id != node_id]
+        self.edges = [
+            edge
+            for edge in self.edges
+            if edge.source_id != node_id and edge.target_id != node_id
+        ]
         self._build_indexes()
 
     def clear_edges(self):
@@ -587,15 +612,23 @@ class UltraGraphBuilder:
 
     def remove_edge(self, source_id: str, target_id: str):
         """Remove a specific directed edge"""
-        self.edges = [edge for edge in self.edges if not (edge.source_id == source_id and edge.target_id == target_id)]
+        self.edges = [
+            edge
+            for edge in self.edges
+            if not (edge.source_id == source_id and edge.target_id == target_id)
+        ]
         self._build_indexes()
 
     def _calculate_metrics(self) -> GraphMetrics:
         """Calculate graph metrics"""
         if self.enable_quality_assessment:
-            return self.quality_assessor.assess_graph_quality(list(self.nodes.values()), self.edges)
+            return self.quality_assessor.assess_graph_quality(
+                list(self.nodes.values()), self.edges
+            )
         else:
-            return GraphMetrics(total_nodes=len(self.nodes), total_edges=len(self.edges))
+            return GraphMetrics(
+                total_nodes=len(self.nodes), total_edges=len(self.edges)
+            )
 
     def query_neighbors(self, node_id: str, max_depth: int = 1) -> List[GraphNode]:
         """Query neighbors of a node"""
@@ -623,7 +656,9 @@ class UltraGraphBuilder:
 
         return [self.node_index[nid] for nid in neighbors if nid in self.node_index]
 
-    def find_path(self, source_id: str, target_id: str, max_depth: Optional[int] = 5) -> Optional[List[str]]:
+    def find_path(
+        self, source_id: str, target_id: str, max_depth: Optional[int] = 5
+    ) -> Optional[List[str]]:
         """Find shortest path between two nodes"""
         self.ensure_indexes()
         if source_id not in self.node_index or target_id not in self.node_index:
@@ -652,11 +687,15 @@ class UltraGraphBuilder:
 
     def get_subgraph(self, node_ids: List[str]) -> Dict[str, Any]:
         """Extract subgraph containing specified nodes"""
-        subgraph_nodes = [self.node_index[nid] for nid in node_ids if nid in self.node_index]
+        subgraph_nodes = [
+            self.node_index[nid] for nid in node_ids if nid in self.node_index
+        ]
 
         node_id_set = set(node_ids)
         subgraph_edges = [
-            edge for edge in self.edges if edge.source_id in node_id_set and edge.target_id in node_id_set
+            edge
+            for edge in self.edges
+            if edge.source_id in node_id_set and edge.target_id in node_id_set
         ]
 
         return {"nodes": subgraph_nodes, "edges": subgraph_edges}
@@ -730,7 +769,6 @@ class UltraGraphBuilder:
 
             # Validate that we received a governed session, not a raw adapter
             from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
-
             if not isinstance(governed_session, GovernedNeo4jSession):
                 raise TypeError(
                     f"GOVERNANCE VIOLATION: export_to_neo4j requires GovernedNeo4jSession, "
@@ -743,7 +781,9 @@ class UltraGraphBuilder:
                 label = node.node_type or "GraphNode"
                 if node.confidence < 1.0:
                     label = f"Quarantined{label}"
-                    logger.warning(f"Node '{node.id}' routed to quarantine (confidence={node.confidence:.2f})")
+                    logger.warning(
+                        f"Node '{node.id}' routed to quarantine (confidence={node.confidence:.2f})"
+                    )
 
                 node_data = {
                     "id": node.id,
@@ -756,11 +796,8 @@ class UltraGraphBuilder:
                         "source_documents": node.source_documents,
                         "created_at": node.created_at.isoformat() if node.created_at else None,
                     },
-                    **{
-                        k: v
-                        for k, v in node.properties.items()
-                        if k not in ("id", "label", "node_type", "confidence", "quality_score", "provenance")
-                    },
+                    **{k: v for k, v in node.properties.items()
+                       if k not in ("id", "label", "node_type", "confidence", "quality_score", "provenance")},
                 }
 
                 governed_session.write_node(label=label, node_data=node_data, merge=True)
@@ -789,11 +826,8 @@ class UltraGraphBuilder:
                         "evidence": edge.evidence,
                         "created_at": edge.created_at.isoformat() if edge.created_at else None,
                     },
-                    **{
-                        k: v
-                        for k, v in edge.properties.items()
-                        if k not in ("weight", "confidence", "quality_score", "provenance")
-                    },
+                    **{k: v for k, v in edge.properties.items()
+                       if k not in ("weight", "confidence", "quality_score", "provenance")},
                 }
 
                 governed_session.write_relationship(

@@ -12,7 +12,6 @@ Verifies that:
 import uuid
 import pytest
 import psycopg2
-from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 from mahoun.core.governance.outbox_worker import OutboxWorker
 from mahoun.core.governance.governance_context import GovernanceContextManager
@@ -90,9 +89,7 @@ def test_sql_migration_compatibility():
     Ensures that our new outbox does not collide with the existing one.
     """
     # This is a static analysis check of the provided migration script
-    base_dir = Path(__file__).resolve().parent.parent.parent
-    migration_path = base_dir / "mahoun" / "graph" / "schema" / "migrations" / "004_transactional_outbox_and_metrics_isolation.sql"
-    with open(migration_path, "r") as f:
+    with open("mahoun/graph/schema/migrations/004_transactional_outbox_and_metrics_isolation.sql", "r") as f:
         content = f.read()
         
     assert "CREATE SCHEMA IF NOT EXISTS governance;" in content

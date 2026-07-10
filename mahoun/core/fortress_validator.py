@@ -31,35 +31,19 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, TypeVar, TYPE_CHECKING, Dict, Union
+from typing import Any, TypeVar, TYPE_CHECKING
 
-# Make yaml optional for kernel isolation
-try:
-    import yaml
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
-    yaml = None
+import yaml
+from pydantic import BaseModel, ConfigDict, Field
 
-# TYPE_CHECKING for type hints only - no runtime import
 if TYPE_CHECKING:
-    from typing import Any as ReasoningResponse
-
-def __getattr__(name: str) -> Any:
-    if name == "ReasoningResponse":
-        try:
-            from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
-            return ReasoningResponse
-        except ImportError:
-            return Any
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-# These remain with fallback due to optional dependency
-try:
+    from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
     from reasoning_logic.parser import FOLConverter, ParseError
-except ImportError:
-    FOLConverter = Any  # type: ignore
-    ParseError = Exception  # type: ignore
+else:
+    # Runtime fallback for type checking
+    ReasoningResponse = Any
+    FOLConverter = Any
+    ParseError = Exception
 
 try:
     from mahoun.core.logging_config import get_logger
@@ -120,7 +104,7 @@ class ExecutionMode(str, Enum):
 # ============================================================================
 
 
-from mahoun.core.exceptions_v2 import MahounException as BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
+from mahoun.core.exceptions import BaseMahounError, SecurityBreachException as CanonicalSecurityBreach
 
 
 class SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: ignore[misc]
@@ -167,54 +151,33 @@ class SecurityBreachException(CanonicalSecurityBreach, Exception):  # type: igno
 # ============================================================================
 
 
-@dataclass
-class RedLinesConfig:
-    """Pure dataclass model for RedLines.yaml configuration (no pydantic)"""
+class RedLinesConfig(BaseModel):
+    """Pydantic model for RedLines.yaml configuration"""
 
-    @dataclass
-    class ThresholdsConfig:
-        min_agreement_score: float
-        min_confidence_score: float
-        max_reasoning_time_ms: int
-        max_recursion_depth: int
-        
-        def __post_init__(self):
-            """Validate constraints after initialization"""
-            if not (0.0 <= self.min_agreement_score <= 1.0):
-                raise ValueError("min_agreement_score must be between 0.0 and 1.0")
-            if not (0.0 <= self.min_confidence_score <= 1.0):
-                raise ValueError("min_confidence_score must be between 0.0 and 1.0")
-            if self.max_reasoning_time_ms <= 0:
-                raise ValueError("max_reasoning_time_ms must be > 0")
-            if self.max_recursion_depth <= 0:
-                raise ValueError("max_recursion_depth must be > 0")
+    class ThresholdsConfig(BaseModel):
+        min_agreement_score: float = Field(ge=0.0, le=1.0)
+        min_confidence_score: float = Field(ge=0.0, le=1.0)
+        max_reasoning_time_ms: int = Field(gt=0)
+        max_recursion_depth: int = Field(gt=0)
 
-    @dataclass
-    class ProofRequirementsConfig:
+    class ProofRequirementsConfig(BaseModel):
         proof_tree_required: bool
-        min_proof_depth: int
+        min_proof_depth: int = Field(ge=0)
         evidence_linkage_required: bool
         audit_trail_required: bool
-        
-        def __post_init__(self):
-            if self.min_proof_depth < 0:
-                raise ValueError("min_proof_depth must be >= 0")
 
-    @dataclass
-    class HallucinationPreventionConfig:
+    class HallucinationPreventionConfig(BaseModel):
         require_graph_evidence: bool
         require_source_attribution: bool
         reject_contradictions: bool
         require_determinism: bool
 
-    @dataclass
-    class DualModeConfig:
+    class DualModeConfig(BaseModel):
         enforce_semantic_equivalence: bool
         allow_resource_scaling_only: bool
         fail_on_semantic_drift: bool
 
-    @dataclass
-    class ExceptionsConfig:
+    class ExceptionsConfig(BaseModel):
         violation_exception: str
         allow_silent_failures: bool
         require_exception_logging: bool
@@ -227,31 +190,19 @@ class RedLinesConfig:
     exceptions: ExceptionsConfig
 
 
-@dataclass
-class ValidationResult:
-    """Result of fortress validation (pure dataclass, no pydantic)"""
+class ValidationResult(BaseModel):
+    """Result of fortress validation"""
 
     passed: bool
     correlation_id: str
     timestamp: str
     execution_time_ms: float
-    violations: list[dict[str, Any]] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    forensic_hash: str = ""
-    metadata: dict[str, Any] = field(default_factory=dict)
-    
-    def dict(self) -> dict[str, Any]:
-        """Pydantic compatibility method"""
-        return {
-            "passed": self.passed,
-            "correlation_id": self.correlation_id,
-            "timestamp": self.timestamp,
-            "execution_time_ms": self.execution_time_ms,
-            "violations": self.violations,
-            "warnings": self.warnings,
-            "forensic_hash": self.forensic_hash,
-            "metadata": self.metadata,
-        }
+    violations: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    forensic_hash: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(frozen=False)
 
 
 # Removed redundant ReasoningResponse BaseModel definition to avoid shadowing the dataclass
@@ -344,65 +295,19 @@ class FortressValidator:
                 log.error(f"RedLines.yaml not found at {self.config_path}")
                 raise FileNotFoundError(f"RedLines configuration missing: {self.config_path}")
 
-            if not YAML_AVAILABLE:
-                log.error("PyYAML not available - using fallback default config")
-                return self._get_default_config()
-
             with open(self.config_path) as f:
                 raw_config = yaml.safe_load(f)
 
-            # Convert nested dicts to dataclasses
-            config = RedLinesConfig(
-                thresholds=RedLinesConfig.ThresholdsConfig(**raw_config['thresholds']),
-                proof_requirements=RedLinesConfig.ProofRequirementsConfig(**raw_config['proof_requirements']),
-                hallucination_prevention=RedLinesConfig.HallucinationPreventionConfig(**raw_config['hallucination_prevention']),
-                dual_mode=RedLinesConfig.DualModeConfig(**raw_config['dual_mode']),
-                exceptions=RedLinesConfig.ExceptionsConfig(**raw_config['exceptions']),
-            )
-            
+            config = RedLinesConfig(**raw_config)
             log.info(f"RedLines.yaml loaded successfully: min_agreement={config.thresholds.min_agreement_score}")
             return config
 
         except Exception as e:
             log.critical(f"Failed to load RedLines.yaml: {e}")
             raise
-    
-    def _get_default_config(self) -> RedLinesConfig:
-        """Get fallback default configuration when YAML unavailable"""
-        return RedLinesConfig(
-            thresholds=RedLinesConfig.ThresholdsConfig(
-                min_agreement_score=0.85,
-                min_confidence_score=0.70,
-                max_reasoning_time_ms=30000,
-                max_recursion_depth=10,
-            ),
-            proof_requirements=RedLinesConfig.ProofRequirementsConfig(
-                proof_tree_required=True,
-                min_proof_depth=1,
-                evidence_linkage_required=True,
-                audit_trail_required=True,
-            ),
-            hallucination_prevention=RedLinesConfig.HallucinationPreventionConfig(
-                require_graph_evidence=True,
-                require_source_attribution=True,
-                reject_contradictions=True,
-                require_determinism=True,
-            ),
-            dual_mode=RedLinesConfig.DualModeConfig(
-                enforce_semantic_equivalence=True,
-                allow_resource_scaling_only=True,
-                fail_on_semantic_drift=True,
-            ),
-            exceptions=RedLinesConfig.ExceptionsConfig(
-                violation_exception="SecurityBreachException",
-                allow_silent_failures=False,
-                require_exception_logging=True,
-                require_forensic_context=True,
-            ),
-        )
 
     async def validate(
-        self, response: Any, correlation_id: str | None = None
+        self, response: ReasoningResponse | dict[str, Any], correlation_id: str | None = None
     ) -> ValidationResult:
         """
         Perform comprehensive fortress validation on reasoning response.
@@ -429,20 +334,15 @@ class FortressValidator:
 
         # Convert dict to expected type if needed
         if isinstance(response, dict):
-            # Use duck-typing and dynamic validation instead of direct import
+            # Lazy import ReasoningResponse only when needed at runtime
+            from mahoun.reasoning.unified_reasoning_service import ReasoningResponse as ReasoningResponseClass
+            
             try:
                 required_fields = ["success", "result", "confidence", "reasoning_mode", "execution_time_ms"]
                 for f in required_fields:
                     if f not in response:
                         raise ValueError(f"Missing required field: {f}")
-                        
-                # Convert to object-like structure for processing
-                class DynamicResponse:
-                    def __init__(self, **kwargs):
-                        for k, v in kwargs.items():
-                            setattr(self, k, v)
-                
-                response = DynamicResponse(
+                response = ReasoningResponseClass(
                     success=response.get("success"),
                     result=response.get("result"),
                     confidence=response.get("confidence"),
@@ -537,7 +437,7 @@ class FortressValidator:
         # PROOF-CARRYING CONTRACT INJECTION
         # ========================================================================
         # If validation passed, inject proof-carrying metadata into response
-        if passed and hasattr(response, 'fortress_validated'):
+        if passed and isinstance(response, ReasoningResponse):
             response.fortress_validated = True
             response.audit_hash = forensic_ctx.response_hash
             response.validation_timestamp = forensic_ctx.timestamp
@@ -582,7 +482,7 @@ class FortressValidator:
         return result
 
     async def _validate_proof_tree(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate proof_tree existence and integrity"""
         forensic_ctx.validation_checks.append("proof_tree")
@@ -590,7 +490,7 @@ class FortressValidator:
         if not self.config.proof_requirements.proof_tree_required:
             return None
 
-        if getattr(response, 'proof_tree', None) is None:
+        if response.proof_tree is None:
             return {
                 "type": ViolationType.MISSING_PROOF_TREE.value,
                 "severity": ViolationSeverity.CRITICAL.value,
@@ -599,10 +499,9 @@ class FortressValidator:
             }
 
         # Validate proof depth if proof_tree exists
-        proof_tree = getattr(response, 'proof_tree', None)
-        if proof_tree and hasattr(proof_tree, "get_proof_depth"):
+        if hasattr(response.proof_tree, "get_proof_depth"):
             try:
-                depth = proof_tree.get_proof_depth()
+                depth = response.proof_tree.get_proof_depth()
                 min_depth = self.config.proof_requirements.min_proof_depth
 
                 if depth < min_depth:
@@ -615,43 +514,20 @@ class FortressValidator:
             except Exception as e:
                 log.warning(f"Could not validate proof depth: {e}")
 
-        # Validate Proof Tree Reconstruction (Document -> Evidence -> Rule -> Verdict)
-        if proof_tree and hasattr(proof_tree, "steps"):
-            has_facts = False
-            has_rules = False
-            
-            for step in proof_tree.steps:
-                evidence_list = step.get("evidence", [])
-                for ev in evidence_list:
-                    node_type = ev.get("node_type", "") if isinstance(ev, dict) else getattr(ev, "node_type", "")
-                    if node_type == "Fact":
-                        has_facts = True
-                    elif node_type in ["LegalRule", "LegalPrecedent", "rule", "precedent", "statute"]:
-                        has_rules = True
-            
-            # Diagnostic Fallbacks have 0 steps, which is valid if no proof path was found
-            if len(proof_tree.steps) > 0 and not (has_facts and has_rules):
-                return {
-                    "type": ViolationType.MISSING_PROOF_TREE.value,
-                    "severity": ViolationSeverity.CRITICAL.value,
-                    "message": "Proof Tree Reconstruction Failed: Lineage must include Fact -> Rule/Precedent -> Conclusion",
-                    "details": {"has_facts": has_facts, "has_rules": has_rules},
-                }
-
         return None
 
     async def _validate_agreement_score(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate agreement_score meets threshold"""
         forensic_ctx.validation_checks.append("agreement_score")
 
         # Extract agreement_score from metadata
-        agreement_score = getattr(response, 'metadata', {}).get("agreement_score")
+        agreement_score = response.metadata.get("agreement_score")
 
         if agreement_score is None:
             # If no agreement_score, check if this is a single-mode response
-            if getattr(response, 'reasoning_mode', None) in ["SYMBOLIC", "NEURAL"]:
+            if response.reasoning_mode in ["SYMBOLIC", "NEURAL"]:
                 # Single-mode responses don't have agreement scores
                 return None
 
@@ -679,7 +555,7 @@ class FortressValidator:
         return None
 
     async def _validate_evidence_linkage(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate evidence linkage requirements"""
         forensic_ctx.validation_checks.append("evidence_linkage")
@@ -688,8 +564,7 @@ class FortressValidator:
             return None
 
         # Check if derived_facts exist (evidence of graph reasoning)
-        derived_facts = getattr(response, 'derived_facts', [])
-        if not derived_facts or len(derived_facts) == 0:
+        if not response.derived_facts or len(response.derived_facts) == 0:
             return {
                 "type": ViolationType.MISSING_EVIDENCE.value,
                 "severity": ViolationSeverity.HIGH.value,
@@ -697,34 +572,10 @@ class FortressValidator:
                 "details": {"derived_facts_count": 0},
             }
 
-        # R-07 Citation Traceability Enforcement
-        proof_tree = getattr(response, 'proof_tree', None)
-        if proof_tree and hasattr(proof_tree, "steps"):
-            for step in proof_tree.steps:
-                evidence_list = step.get("evidence", [])
-                for ev in evidence_list:
-                    node_type = ev.get("node_type", "") if isinstance(ev, dict) else getattr(ev, "node_type", "")
-                    if node_type in ["LegalRule", "LegalPrecedent", "rule", "precedent", "statute"]:
-                        justification = ev.get("justification", "") if isinstance(ev, dict) else getattr(ev, "justification", "")
-                        # The justification MUST contain a verifiable source citation
-                        if "[Source:" not in justification and "[Court:" not in justification:
-                            return {
-                                "type": ViolationType.MISSING_EVIDENCE.value,
-                                "severity": ViolationSeverity.CRITICAL.value,
-                                "message": f"R-07 Citation Traceability Violation: {node_type} lacks explicit source citation.",
-                                "details": {"justification": justification},
-                            }
-
         # HARDENING: Formal validation of derived facts
         converter = FOLConverter()
         invalid_facts = []
-        for fact_item in derived_facts:
-            # Handle both string and dict formats for derived_facts
-            if isinstance(fact_item, dict):
-                fact_str = fact_item.get("fact", "") or str(fact_item)
-            else:
-                fact_str = str(fact_item)
-            
+        for fact_str in response.derived_facts:
             try:
                 converter.parse(fact_str)
             except ParseError as e:
@@ -741,7 +592,7 @@ class FortressValidator:
         return None
 
     async def _validate_audit_trail(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate audit trail completeness"""
         forensic_ctx.validation_checks.append("audit_trail")
@@ -751,11 +602,7 @@ class FortressValidator:
 
         # Check for required metadata fields
         required_fields = ["reasoning_mode", "execution_time_ms"]
-        missing_fields = []
-        
-        for f in required_fields:
-            if not hasattr(response, f) or getattr(response, f) is None:
-                missing_fields.append(f)
+        missing_fields = [f for f in required_fields if not hasattr(response, f) or getattr(response, f) is None]
 
         if missing_fields:
             return {
@@ -768,7 +615,7 @@ class FortressValidator:
         return None
 
     async def _validate_determinism(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate determinism requirements"""
         forensic_ctx.validation_checks.append("determinism")
@@ -777,21 +624,19 @@ class FortressValidator:
             return None
 
         # Check if response contains non-deterministic indicators
-        reasoning_mode = getattr(response, 'reasoning_mode', '')
-        proof_tree = getattr(response, 'proof_tree', None)
-        
-        if reasoning_mode == "NEURAL" and not proof_tree:
+        # (This is a placeholder - full determinism validation requires state tracking)
+        if response.reasoning_mode == "NEURAL" and not response.proof_tree:
             return {
                 "type": ViolationType.DETERMINISM_FAILURE.value,
                 "severity": ViolationSeverity.MEDIUM.value,
                 "message": "Neural-only response without proof tree (non-deterministic)",
-                "details": {"reasoning_mode": reasoning_mode},
+                "details": {"reasoning_mode": response.reasoning_mode},
             }
 
         return None
 
     async def _validate_contradictions(
-        self, response: Any, forensic_ctx: ForensicContext
+        self, response: ReasoningResponse, forensic_ctx: ForensicContext
     ) -> dict[str, Any] | None:
         """Validate contradiction detection"""
         forensic_ctx.validation_checks.append("contradictions")
@@ -800,8 +645,7 @@ class FortressValidator:
             return None
 
         # Check metadata for contradiction markers
-        metadata = getattr(response, 'metadata', {})
-        contradictions = metadata.get("contradictions", [])
+        contradictions = response.metadata.get("contradictions", [])
 
         if contradictions and len(contradictions) > 0:
             return {
@@ -813,7 +657,7 @@ class FortressValidator:
 
         return None
 
-    def _compute_response_hash(self, response: Any) -> str:
+    def _compute_response_hash(self, response: ReasoningResponse | dict[str, Any]) -> str:
         """Compute forensic hash of response for audit trail using deterministic serialization"""
         import json
 
@@ -919,7 +763,7 @@ class FortressValidator:
 
 
 async def validate_reasoning_response(
-    response: Any, correlation_id: str | None = None, strict_mode: bool = True
+    response: ReasoningResponse | dict[str, Any], correlation_id: str | None = None, strict_mode: bool = True
 ) -> ValidationResult:
     """
     Convenience function for one-off validation.

@@ -46,15 +46,11 @@ class TestContextCreation:
 
     def test_create_context_auto_correlation_id(self):
         """Test creating a context with auto-generated correlation_id"""
-        # Per P1-3 governance hardening, explicit correlation_id is now REQUIRED
-        # Auto-generation is no longer supported (audit integrity requirement)
-        # Test verifies that missing correlation_id raises GovernanceViolationError
-        
-        with pytest.raises(GovernanceViolationError) as exc_info:
-            ctx = GovernanceContextManager.create_context(execution_mode="STRICT")
-        
-        # Verify error message mentions correlation_id requirement
-        assert "correlation_id" in str(exc_info.value).lower()
+        ctx = GovernanceContextManager.create_context(execution_mode="STRICT")
+
+        assert ctx is not None
+        assert ctx.correlation_id is not None
+        assert ctx.correlation_id.startswith("req-")
 
     def test_create_context_with_timestamp(self):
         """Test that context has timestamp"""

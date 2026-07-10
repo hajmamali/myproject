@@ -214,12 +214,12 @@ def get_runtime_settings() -> MahounRuntimeSettings:
     # - Default embedding model
     # - Optional components can be enabled via env (default: True for server mode)
     return MahounRuntimeSettings(
-        mode=os.getenv("MAHOUN_MODE", "server_full"),
-        graph_enabled=_env_bool("MAHOUN_GRAPH_ENABLED", True),
-        graph_backend=os.getenv("MAHOUN_GRAPH_BACKEND", "local_full"),
-        lora_training_enabled=_env_bool("MAHOUN_LORA_TRAINING_ENABLED", True),
-        lora_inference_backend=os.getenv("MAHOUN_LORA_INFERENCE_BACKEND", "local_gpu"),
-        llm_backend=os.getenv("MAHOUN_LLM_BACKEND", "local_gpu"),
+        mode="server_full",  # FORCED ENTERPRISE MODE
+        graph_enabled=True,
+        graph_backend="local_full",
+        lora_training_enabled=True,
+        lora_inference_backend="local_gpu",
+        llm_backend="local_gpu",
         embedding_backend="bge-default",
         embedding_model_path=os.getenv("MAHOUN_EMBEDDING_MODEL_PATH", "models/paraphrase-multilingual-mpnet-base-277M-v2-Q8_0.gguf"),
         llm_model_path=os.getenv("MAHOUN_LLM_MODEL_PATH", ""),

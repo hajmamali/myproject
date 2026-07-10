@@ -86,54 +86,19 @@ class GNNGraphBuilder:
         similarity_threshold_related: float = 0.70,
         max_edges_per_node: int = 50,
         device: Optional[str] = None,
-        embed_model_instance: Optional[Any] = None,  # SentenceTransformer
-        correlation_id: str = "",
     ):
         """
         Initialize GNN Graph Builder with governed session factory.
-        
-        DEPENDENCY INJECTION CONTRACT:
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        embed_model_instance MUST be injected by bootstrap (primary path).
-        Lazy fallback is REMOVED — fail-closed enforcement only.
-        
-        Args:
-            service_registry: Service registry (optional)
-            session_factory: Governed Neo4j session factory (optional)
-            embed_model: Model name (deprecated, only for backward compatibility)
-            similarity_threshold_similar: Threshold for SIMILAR edges
-            similarity_threshold_related: Threshold for RELATED edges
-            max_edges_per_node: Maximum edges per node
-            device: Device for computation (cuda/cpu)
-            embed_model_instance: Pre-constructed SentenceTransformer (MANDATORY in production)
-            correlation_id: Request tracking ID for observability
         """
-        import time
-        self._correlation_id = correlation_id or f"gnn-{time.time()}"
-        
         self._registry = service_registry
         self.device = device
-        self.embed_model_name = embed_model  # Kept for backward compat
+        self.embed_model_name = embed_model
         self.similarity_threshold_similar = similarity_threshold_similar
         self.similarity_threshold_related = similarity_threshold_related
         self.max_edges_per_node = max_edges_per_node
 
-        # DI enforcement
-        if embed_model_instance is not None:
-            # PRIMARY PATH: Bootstrap-injected model
-            self._embed_model = embed_model_instance
-            log.info(
-                f"[{self._correlation_id}] ✅ GNNGraphBuilder initialized "
-                f"(bootstrap-injected model)"
-            )
-        else:
-            # FAIL-CLOSED: No construction allowed
-            self._embed_model = None
-            log.warning(
-                f"[{self._correlation_id}] ⚠️  GNNGraphBuilder initialized "
-                f"without embedding model. Operations requiring embeddings will fail. "
-                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
-            )
+        # Lazy initialized components
+        self._embed_model = None
         
         # Governed session factory
         self._session_factory = session_factory
@@ -151,23 +116,13 @@ class GNNGraphBuilder:
         return torch
 
     def _get_embed_model(self):
-        """
-        DEPRECATED: Lazy embedding model loading.
-        
-        This method exists for backward compatibility only. In production,
-        the embedding model MUST be injected via constructor.
-        
-        Raises:
-            ValueError: If embedding model was not injected (fail-closed)
-        """
         if self._embed_model is None:
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "GNNGraphBuilder requires a pre-constructed SentenceTransformer "
-                "instance via the `embed_model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
-            )
+            import torch
+            from sentence_transformers import SentenceTransformer
+            if self.device is None:
+                self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            log.info(f"Loading embedding model: {self.embed_model_name} on {self.device}")
+            self._embed_model = SentenceTransformer(self.embed_model_name, device=self.device)
         return self._embed_model
 
     def build_from_jsonl(

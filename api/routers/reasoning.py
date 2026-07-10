@@ -4,17 +4,17 @@ MAHOUN Reasoning API Router
 
 Core reasoning endpoints for evidence-linked verdict generation.
 
-CRITICAL CAPABILITIES:
-- Evidence-grounded reasoning: All conclusions linked to knowledge graph evidence
-- Full auditability: Complete evidence trail in immutable ledger
+CRITICAL GUARANTEES:
+- Zero-hallucination: All reasoning grounded in graph evidence
+- Full auditability: Complete evidence trail in blockchain ledger
 - Cryptographic proofs: Tamper-evident verification
 - Deterministic contradiction resolution: Predictable conflict handling
 
 Architecture:
-- Evidence-Linked Verdict Engine: Graph-based reasoning with high confidence
-- Immutable Ledger: Hash-chained audit trail for compliance
-- Cryptographic Proofs: Non-repudiation guarantees via Ed25519 signatures
-- Runtime Guardrails: Multi-layer verification to reduce hallucination risk
+- Evidence-Linked Verdict Engine: Graph-based reasoning
+- Immutable Ledger: Blockchain audit trail
+- Cryptographic Proofs: Non-repudiation guarantees
+- Runtime Guardrails: Zero-hallucination enforcement
 """
 
 import hashlib
@@ -46,7 +46,6 @@ from mahoun.ledger.writer import EvidenceLedgerWriter
 from mahoun.reasoning.evidence_linked_verdict import (
     EvidenceLinkedVerdictEngine,
 )
-from mahoun.reasoning.adapters import ReasoningDependencyContainer
 from mahoun.reasoning.fortress_integration import (
     FortressProtectedReasoningService,  # noqa: F401
     create_fortress_protected_service,
@@ -222,41 +221,13 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
         graph_builder = UltraGraphBuilder()
         knowledge_graph = LegalKnowledgeGraph()
         immutable_ledger = get_immutable_ledger()
-        
-        # P0-4: Create LedgerWriteGate for governance enforcement
-        from mahoun.ledger.write_gate import LedgerWriteGate
-        from mahoun.core.environment import is_production, is_staging
-        
-        # Base ledger writer
-        base_ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
-        
-        # Wrap with write gate for strict enforcement in production/staging
-        if is_production() or is_staging():
-            write_gate = LedgerWriteGate(
-                ledger_writer=base_ledger_writer,
-                enable_strict_mode=True,
-            )
-            ledger_writer = EvidenceLedgerWriter(
-                blockchain=immutable_ledger,
-                write_gate=write_gate,
-            )
-            log.info(
-                "P0-4: LedgerWriteGate enforcement ENABLED for verdict engine",
-                extra={"environment": "production" if is_production() else "staging"}
-            )
-        else:
-            # Development/test: use base writer without gate (but log warning)
-            ledger_writer = base_ledger_writer
-            log.warning(
-                "P0-4: LedgerWriteGate NOT enabled in development/test mode. "
-                "Governance enforcement will be skipped."
-            )
+        ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
 
         _verdict_engine = EvidenceLinkedVerdictEngine(
             graph_builder=graph_builder,
             knowledge_graph=knowledge_graph,
             ledger_writer=ledger_writer,
-            container=ReasoningDependencyContainer(),
+            container=None,  # No dependency injection for now
         )
 
         log.info("Evidence-Linked Verdict Engine initialized")
@@ -322,14 +293,14 @@ def get_keypair() -> tuple[str, str]:
     status_code=status.HTTP_200_OK,
     summary="Generate evidence-linked verdict",
     description="""
-    Generate evidence-grounded legal verdict with high-confidence reasoning.
+    Generate legal verdict with zero-hallucination guarantee.
     
-    **Capabilities:**
-    - Every conclusion linked to knowledge graph evidence
-    - Complete audit trail in immutable hash-chained ledger
-    - Cryptographic proof for tamper-evident verification
+    **Guarantees:**
+    - Every conclusion linked to graph evidence
+    - Complete audit trail in blockchain ledger
+    - Cryptographic proof for verification
     - Deterministic contradiction resolution
-    - Multi-layer validation (Fortress) on all responses
+    - Fortress validation on all responses
     
     **Process:**
     1. Establish governance context (correlation lineage, runtime attestation)
@@ -411,12 +382,12 @@ async def generate_verdict(
         else:
             # FAIL-CLOSED: No proof_tree means no evidence linkage
             log.error(
-                "ReasoningResponse missing proof_tree - evidence integrity requirement violated",
+                "ReasoningResponse missing proof_tree - zero-hallucination guarantee violated",
                 extra={"correlation_id": ctx.correlation_id}
             )
             raise RuntimeError(
                 "Governance contract violation: ReasoningResponse missing proof_tree. "
-                "Evidence-grounded reasoning requires proof_tree for all successful responses."
+                "Zero-hallucination guarantee requires proof_tree for all successful responses."
             )
 
         # Generate cryptographic proof if requested

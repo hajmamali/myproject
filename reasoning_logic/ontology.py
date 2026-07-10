@@ -81,16 +81,11 @@ class LegalOntology:
                 env_context = get_current_environment()
                 self.strict_mode = env_context.is_production()
                 env_name = env_context.environment.value
-                if not self.strict_mode:
-                    env = os.getenv("MAHOUN_ENV", "development").lower()
-                    if env == "production":
-                        self.strict_mode = True
-                        env_name = env
             except Exception as e:
-                # Fallback: direct env var check for strict boolean casting
-                env = os.getenv("MAHOUN_ENV", "development").lower()
-                self.strict_mode = (env == "production")
-                env_name = env
+                # Fallback for edge cases (should not happen in normal operation)
+                logger.warning(f"Failed to get canonical environment: {e}. Defaulting to strict_mode=True")
+                self.strict_mode = True
+                env_name = "unknown"
         else:
             self.strict_mode = strict_mode
             env_name = "explicit"

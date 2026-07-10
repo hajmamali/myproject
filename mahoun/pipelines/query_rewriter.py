@@ -58,8 +58,6 @@ References
 * Requirements: `.kiro/specs/dependency-injection-refactor/bugfix.md` §Hidden OpenAI Construction
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import os
@@ -67,10 +65,9 @@ import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, FrozenSet, List, Optional, Protocol, Tuple
+from typing import Dict, FrozenSet, List, Optional, Protocol, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import openai
     from mahoun.llm.provider_protocol import LLMProviderProtocol
 
 from mahoun.pipelines._logging import setup_logger
@@ -240,20 +237,21 @@ class LLMQueryRewriter:
         self,
         api_key: Optional[str] = None,
         model: str = "gpt-3.5-turbo",
-        client: Optional[openai.OpenAI] = None,
+        client: Optional["OpenAI"] = None,
         timeout: int = 10,
         correlation_id: str = "",
     ):
         """
         Args:
-            api_key: OpenAI API key (ignored, deprecated fallback)
+            api_key: OpenAI API key (only for DEPRECATED lazy fallback)
             model: OpenAI model identifier
             client: Pre-constructed OpenAI client (MANDATORY in production).
+                   If None, attempts DEPRECATED lazy construction via api_key.
             timeout: Request timeout in seconds
             correlation_id: Request tracking ID for audit trail
         
         Raises:
-            ValueError: If client is not provided (fail-closed)
+            ValueError: If neither client nor api_key provided (fail-closed)
         """
         import uuid
         self._correlation_id = correlation_id or f"llm-{uuid.uuid4().hex[:8]}"
@@ -262,28 +260,75 @@ class LLMQueryRewriter:
         
         if client is not None:
             # PRIMARY PATH: Bootstrap-injected client
-            self.client: openai.OpenAI = client
+            self.client: "OpenAI" = client
             self._injection_mode = "bootstrap"
             _logger.info(
                 f"[{self._correlation_id}] ✅ LLMQueryRewriter initialized "
                 f"(bootstrap-injected client, model={model})"
             )
             
+        elif api_key is not None:
+            # DEPRECATED FALLBACK: Lazy construction via API key
+            _logger.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: LLMQueryRewriter "
+                f"initialized with api_key fallback. Bootstrap injection is MANDATORY. "
+                f"Remediation: Update bootstrap/runtime.py to inject OpenAI client."
+            )
+            self.client = self._lazy_construct_client(api_key)
+            self._injection_mode = "lazy_fallback"
+            
         else:
-            # FAIL-CLOSED: No client provided
+            # FAIL-CLOSED: Neither client nor api_key provided
             _logger.error(
                 f"[{self._correlation_id}] ❌ BOOTSTRAP VIOLATION: "
-                f"LLMQueryRewriter requires OpenAI `client` to be injected via bootstrap wiring."
+                f"LLMQueryRewriter requires either `client` (primary) or "
+                f"`api_key` (deprecated fallback). Neither provided."
             )
             raise ValueError(
-                "OpenAI client dependency was not injected. "
-                "LLMQueryRewriter requires a pre-constructed OpenAI client "
-                "instance via the `client` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject OpenAI client."
+                "LLMQueryRewriter requires OpenAI client injection. "
+                "Primary path: Inject via bootstrap wiring. "
+                "Deprecated fallback: Provide api_key parameter. "
+                "Remediation: Update bootstrap/runtime.py."
             )
         
         _logger.info(f"LLM rewriter initialized: {model}")
+    
+    def _lazy_construct_client(self, api_key: str) -> "OpenAI":
+        """
+        DEPRECATED: Lazy OpenAI client construction.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
+        import time
+        try:
+            from openai import OpenAI
+            
+            start = time.time()
+            client = OpenAI(api_key=api_key, timeout=self._timeout)
+            latency_ms = (time.time() - start) * 1000
+            
+            _logger.warning(
+                f"[{self._correlation_id}] ⚠️  OpenAI client constructed lazily "
+                f"(latency={latency_ms:.2f}ms). This is DEPRECATED."
+            )
+            return client
+            
+        except ImportError:
+            _logger.error(
+                f"[{self._correlation_id}] ❌ openai package not installed "
+                f"and no client injected."
+            )
+            raise ImportError(
+                "openai package not installed. "
+                "Install with: pip install openai OR "
+                "inject pre-constructed client via bootstrap wiring."
+            )
+        except Exception as e:
+            _logger.error(
+                f"[{self._correlation_id}] ❌ Lazy client construction failed: {e}"
+            )
+            raise RuntimeError(f"Failed to construct OpenAI client: {e}")
 
     def rewrite(self, query: str) -> str:
         """Rewrite query using LLM"""

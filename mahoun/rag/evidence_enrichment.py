@@ -45,28 +45,14 @@ _DATE_RE = re.compile(r"([0-9۰-۹]{4}[/-][0-9۰-۹]{1,2}[/-][0-9۰-۹]{1,2})")
 _YEAR_RE = re.compile(r"(?:سال\s*)?([0-9۰-۹]{4})")
 
 
-
-# 🚀 Import Unified Entity from MAHOUN v2.0
-from mahoun.core.models.entity import Entity
-
 @dataclass(frozen=True)
+class Entity:
+    entity_type: str
+    text: str
+    start: int
+    end: int
+    identity: Dict[str, str] = field(default_factory=dict)
 
-# ============================================================================
-# 🚀 ENTITY CLASS MIGRATED TO MAHOUN v2.0
-# ============================================================================
-#
-# The Entity class from this file has been consolidated into the unified
-# MAHOUN Entity v2.0 system at: mahoun/core/models/entity.py
-#
-# 🌟 NEW FEATURES IN UNIFIED ENTITY:
-# identity mapping, frozen dataclass, simplicity
-#
-# 🔙 BACKWARD COMPATIBILITY: 100% maintained through import aliases
-# 📊 PERFORMANCE: Significantly improved with quantum fingerprinting
-# 🛡️  SECURITY: Enhanced validation and normalization
-#
-# Previous Entity class was here (lines 53-60)
-# Now automatically imported from canonical location above ⬆️
 
 @dataclass(frozen=True)
 class EnrichedEvidence:
@@ -307,11 +293,3 @@ def enrich_evidence(
         overall_weight=overall_weight,
         metadata=metadata or {},
     )
-
-# ============================================================================
-# 🔙 BACKWARD COMPATIBILITY ALIASES
-# ============================================================================
-
-# Ensure existing code continues to work unchanged
-# This module used frozen dataclasses
-Entity = FrozenEntity  # Use immutable version for compatibility

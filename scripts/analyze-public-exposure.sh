@@ -111,8 +111,8 @@ SAFE_FILES=(
     "pyproject.toml"
     "requirements.txt"
     "Makefile"
-    "docker/docker-compose.yml"
-    "docker/Dockerfile"
+    "docker-compose.yml"
+    "Dockerfile"
     ".gitignore"
     ".env.example"
 )

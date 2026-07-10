@@ -44,9 +44,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
-from mahoun.core.fortress_validator import get_logger
+from mahoun.core.fortress_validator import ReasoningResponse, get_logger
 from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
-from mahoun.reasoning.unified_reasoning_service import ReasoningMode, ReasoningResponse
+from mahoun.reasoning.unified_reasoning_service import ReasoningMode
 
 log = get_logger(__name__)
 
@@ -156,50 +156,11 @@ class VerdictProofTree:
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize proof tree to dictionary."""
-        base_dict = {
+        return {
             "depth": self.get_proof_depth(),
             "size": self.get_proof_size(),
             "steps": [dict(step) for step in self.steps],
             "evidence_nodes": self.get_evidence_nodes(),
-        }
-        
-        # ✅ GAP 4: Add rag_provenance section if present in steps metadata
-        # This enables full RAG evidence auditability in proof tree
-        rag_provenance = self._extract_rag_provenance()
-        if rag_provenance:
-            base_dict["rag_provenance"] = rag_provenance
-        
-        return base_dict
-    
-    def _extract_rag_provenance(self) -> dict[str, Any] | None:
-        """
-        Extract RAG provenance metadata from steps if available.
-        
-        Returns:
-            RAG provenance dict with merkle_root and evidence_items, or None if no RAG evidence present
-        """
-        # Check if any step has rag_evidence_metadata
-        rag_evidence_items = []
-        
-        for step in self.steps:
-            rag_metadata = step.get("rag_evidence_metadata")
-            if rag_metadata and isinstance(rag_metadata, list):
-                rag_evidence_items.extend(rag_metadata)
-        
-        if not rag_evidence_items:
-            return None
-        
-        # Extract merkle_root from first item (all items should have same root)
-        merkle_root = None
-        for item in rag_evidence_items:
-            if isinstance(item, dict) and "merkle_root" in item:
-                merkle_root = item["merkle_root"]
-                break
-        
-        return {
-            "evidence_count": len(rag_evidence_items),
-            "merkle_root": merkle_root,
-            "evidence_items": rag_evidence_items,
         }
 
 
@@ -387,7 +348,7 @@ class VerdictEngineAdapter:
             if hasattr(step, "__dataclass_fields__"):
                 # It's a dataclass, convert to dict
                 step_dict = {
-                    "statement": getattr(step, "statement", getattr(step, "conclusion", "")),
+                    "conclusion": getattr(step, "conclusion", ""),
                     "evidence": getattr(step, "evidence", []),
                     "confidence": getattr(step, "confidence", confidence),
                 }
@@ -419,59 +380,8 @@ class VerdictEngineAdapter:
             "timestamp": datetime.now(UTC).isoformat(),
             "adapter_version": "2.0.0",
         }
-        
-        # ✅ GAP 4 INTEGRATION: Extract rag_provenance from verdict_result.metadata
-        if hasattr(verdict_result, "metadata") and isinstance(verdict_result.metadata, dict):
-            if "rag_provenance" in verdict_result.metadata:
-                metadata["rag_provenance"] = verdict_result.metadata["rag_provenance"]
-                log.debug(
-                    f"[{correlation_id}] GAP 4: Extracted RAG provenance from verdict: "
-                    f"{metadata['rag_provenance']['evidence_count']} items"
-                )
 
-        # ============================================================================
-        # P1-3: LEDGER HASH VERIFICATION
-        # ============================================================================
-        # Extract ledger_hash from verdict result if available (from EvidenceLedgerWriter)
-        # This ensures the verdict was properly recorded in the immutable ledger
-        # before being returned to the API layer.
-        #
-        # GOVERNANCE RULE:
-        # - If ledger_hash is missing in production/staging, log warning
-        # - Include ledger_hash in metadata for audit trail
-        # - Allow graceful degradation in dev/test (log only)
-        # ============================================================================
-        ledger_hash = None
-        if hasattr(verdict_result, "ledger_hash"):
-            ledger_hash = verdict_result.ledger_hash
-        elif isinstance(verdict_result, dict) and "ledger_hash" in verdict_result:
-            ledger_hash = verdict_result["ledger_hash"]
-        
-        if ledger_hash:
-            metadata["ledger_hash"] = ledger_hash
-            metadata["p1_3_ledger_verified"] = True
-            log.debug(f"[{correlation_id}] P1-3: Ledger hash verified: {ledger_hash[:16]}...")
-        else:
-            # Check environment - fail-closed in production/staging
-            from mahoun.core.environment import is_production, is_staging
-            
-            if is_production() or is_staging():
-                log.warning(
-                    f"[{correlation_id}] P1-3: MISSING LEDGER HASH in production/staging - "
-                    f"verdict may not be properly recorded",
-                    extra={
-                        "p1_3_violation": "missing_ledger_hash",
-                        "verdict_id": verdict_id,
-                        "environment": "production" if is_production() else "staging",
-                    }
-                )
-            else:
-                log.debug(f"[{correlation_id}] P1-3: Ledger hash not present (dev/test mode)")
-            
-            metadata["p1_3_ledger_verified"] = False
-            metadata["ledger_hash"] = None
-
-        return ReasoningResponse.create_unvalidated(
+        return ReasoningResponse(
             success=True,
             result=final_verdict,
             confidence=confidence,
@@ -495,11 +405,9 @@ class VerdictEngineAdapter:
         derived_facts = []
 
         for step in steps:
-            # Extract conclusion or statement
+            # Extract conclusion
             if "conclusion" in step:
                 derived_facts.append(step["conclusion"])
-            elif "statement" in step:
-                derived_facts.append(step["statement"])
 
             # Extract derived predicates
             if "derived" in step:
@@ -566,7 +474,7 @@ class VerdictEngineAdapter:
         # Create empty proof tree
         proof_tree = VerdictProofTree(steps=tuple())
 
-        return ReasoningResponse.create_unvalidated(
+        return ReasoningResponse(
             success=False,
             result=f"ADAPTATION_FAILED: {str(error)}",
             confidence=0.0,

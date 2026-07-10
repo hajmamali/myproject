@@ -12,13 +12,11 @@ import importlib
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import numpy as np
 import torch
-
-if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
 
 from mahoun.core.logging import setup_logger
@@ -162,24 +160,19 @@ class SemanticChunker:
                 f"(bootstrap-injected embedding model)"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "SemanticChunker requires a pre-constructed SentenceTransformer "
-                "instance via the `embed_model_instance` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy construction with loud warning
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: SemanticChunker "
+                f"initialized without injected model. Will attempt lazy construction on first use. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self._embed_model_name = embed_model
+            self.embed_model = None  # Will be loaded lazily
 
         # Load NER model
-        tokenizer = AutoTokenizer.from_pretrained(
-            ner_model,
-            local_files_only=True  # AirGap: block HuggingFace downloads
-        )
-        model = AutoModelForTokenClassification.from_pretrained(
-            ner_model,
-            local_files_only=True  # AirGap: block HuggingFace downloads
-        )
+        tokenizer = AutoTokenizer.from_pretrained(ner_model)
+        model = AutoModelForTokenClassification.from_pretrained(ner_model)
         self.ner_pipeline = pipeline(
             "ner",
             model=model,
@@ -190,12 +183,44 @@ class SemanticChunker:
         log.info("NER model loaded")
 
     def _get_embed_model(self):
-        """Return the injected embedding model. Fail-closed if not available."""
+        """
+        DEPRECATED: Lazy-load SentenceTransformer on first use.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
         if self.embed_model is None:
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "This should never happen — constructor enforces injection."
+            import time
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model construction triggered. "
+                f"This is a DEPRECATED fallback path."
             )
+            try:
+                from sentence_transformers import SentenceTransformer
+                
+                start = time.time()
+                self.embed_model = SentenceTransformer(self._embed_model_name, device=self.device)
+                latency_ms = (time.time() - start) * 1000
+                
+                log.warning(
+                    f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                    f"(model={self._embed_model_name}, latency={latency_ms:.2f}ms)"
+                )
+            except ImportError:
+                log.error(
+                    f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                    f"and no model injected."
+                )
+                raise ImportError(
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers OR "
+                    "inject pre-constructed model via bootstrap wiring."
+                )
+            except Exception as e:
+                log.error(
+                    f"[{self._correlation_id}] ❌ Lazy model construction failed: {e}"
+                )
+                raise RuntimeError(f"Failed to construct embedding model: {e}")
         return self.embed_model
 
     def _compute_embeddings(self, sentences: list[str]) -> np.ndarray:

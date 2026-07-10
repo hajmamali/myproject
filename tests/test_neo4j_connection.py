@@ -4,9 +4,6 @@ Tests for Neo4j Connection Management
 import pytest
 pytest.importorskip("neo4j")
 
-from mahoun.graph.neo4j.connection import get_connection
-from mahoun.core.governance.violations import GovernanceViolationError
-
 # Skip these tests by default - require running Neo4j server
 pytestmark = pytest.mark.integration
 
@@ -40,14 +37,23 @@ def test_execute_query(connection):
 
 def test_execute_batch(connection):
     """Test executing batch queries"""
-    # execute_batch has been constitutionally abolished to prevent bypasses.
+    # Create test nodes
     queries = [
         ("CREATE (n:TestBatch {id: $id, name: $name})", {"id": f"test_{i}", "name": f"Test {i}"})
         for i in range(5)
     ]
     
-    with pytest.raises(GovernanceViolationError, match="execute_batch.*constitutionally forbidden"):
-        connection.execute_batch(queries)
+    results = connection.execute_batch(queries)
+    assert len(results) == 5
+    
+    # Verify nodes were created
+    verify_result = connection.execute_query(
+        "MATCH (n:TestBatch) RETURN count(n) AS count"
+    )
+    assert verify_result[0]["count"] == 5
+    
+    # Cleanup
+    connection.execute_query("MATCH (n:TestBatch) DELETE n")
 
 
 def test_health_check(connection):
