@@ -20,6 +20,8 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from datetime import datetime
 
+from .invariants_contracts import InvariantSpecContract
+
 
 # ============================================================================
 # LedgerEntry Contracts
@@ -341,59 +343,6 @@ class VerifyIntegrityError(BaseModel):
     )
     
     model_config = ConfigDict(extra="forbid")
-
-
-# ============================================================================
-# Invariant Specification Contracts
-# ============================================================================
-
-class InvariantSpecContract(BaseModel):
-    """
-    Contract for invariant specification.
-    
-    Validates: Requirement 2.2 - Invariant metadata structure
-    """
-    id: str = Field(
-        ...,
-        pattern="^EL-I[0-9]+$",
-        description="Invariant ID (e.g., 'EL-I1')"
-    )
-    name: str = Field(
-        ...,
-        min_length=1,
-        max_length=200,
-        description="Invariant name"
-    )
-    description: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000,
-        description="Invariant description"
-    )
-    enforced_at: List[str] = Field(
-        ...,
-        min_length=1,
-        description="List of enforcement points (module paths)"
-    )
-    failure_consequence: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000,
-        description="Consequence of invariant violation"
-    )
-    
-    model_config = ConfigDict(
-        extra="forbid",
-        json_schema_extra={
-            "example": {
-                "id": "EL-I1",
-                "name": "Evidence Required",
-                "description": "Every published verdict must have at least one evidence reference.",
-                "enforced_at": ["mahoun/ledger/guards.py::validate_entry"],
-                "failure_consequence": "Verdicts without evidence can be published, leading to hallucinated conclusions."
-            }
-        }
-    )
 
 
 class GetInvariantsOutput(BaseModel):

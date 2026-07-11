@@ -418,14 +418,38 @@ class TestCausalRelationContract:
                 strength=1.1
             )
     
-    def test_explanation_optional(self):
-        """Test explanation is optional."""
+    def test_explanation_required(self):
+        """Test explanation is now REQUIRED (single-ownership enforcement).
+
+        Per contracts_investigating.md (2026-07-10), the semantic fork between
+        core_contracts.CausalRelationContract and reasoning_contracts.CausalRelationContract
+        was resolved by making `explanation` a required field with max_length=2000.
+        """
+        # Missing explanation must raise ValidationError
+        with pytest.raises(ValidationError):
+            CausalRelationContract(
+                cause="A",
+                effect="B",
+                strength=0.5
+            )
+
+        # Empty/whitespace explanation must raise ValidationError
+        with pytest.raises(ValidationError):
+            CausalRelationContract(
+                cause="A",
+                effect="B",
+                strength=0.5,
+                explanation=""
+            )
+
+        # Valid explanation is accepted
         relation = CausalRelationContract(
             cause="A",
             effect="B",
-            strength=0.5
+            strength=0.5,
+            explanation="Because A causes B"
         )
-        assert relation.explanation == ""
+        assert relation.explanation == "Because A causes B"
 
 
 class TestReasoningResultContract:

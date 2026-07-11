@@ -1,0 +1,98 @@
+version: 1
+contracts:
+  ReasoningStepContract:
+    owner: reasoning_contracts.py
+    module: mahoun.schemas.contracts.reasoning_contracts
+    domain: reasoning
+    status: stable
+    fingerprint: 42bcb44906e292326cfb85946c6af425757af76f1421082e3d9880430badedf3
+  CausalRelationContract:
+    owner: reasoning_contracts.py
+    module: mahoun.schemas.contracts.reasoning_contracts
+    domain: reasoning
+    status: stable
+    fingerprint: 0c98cbc080cf7bac79d09f5ab658703b257bd91ad54f3509a77f082179279052
+  EvidenceReferenceContract:
+    owner: reasoning_contracts.py
+    module: mahoun.schemas.contracts.reasoning_contracts
+    domain: reasoning
+    status: stable
+    fingerprint: 7408872925f5406d2a194662ebaac4fa87aec964cb6fb28081e864464a76a6c4
+  VerdictStepContract:
+    owner: reasoning_contracts.py
+    module: mahoun.schemas.contracts.reasoning_contracts
+    domain: reasoning
+    status: stable
+    fingerprint: b9cb1312caef6d618b78b5d4bc3fc0324c2937b1260b2acd65cfec4cd0b1bc18
+  EntityContract:
+    owner: graph_contracts.py
+    module: mahoun.schemas.contracts.graph_contracts
+    domain: graph
+    status: stable
+    fingerprint: 27f5908e05adf87b904e2bc291bffc5ac1213828d51885754d1e9b6f46d4c8a3
+  RelationshipContract:
+    owner: graph_contracts.py
+    module: mahoun.schemas.contracts.graph_contracts
+    domain: graph
+    status: stable
+    fingerprint: 0965480f645aac14309ba9dd77e5532450bebadb005127ee6e72d6a87a1afed0
+  GraphMetricsContract:
+    owner: graph_contracts.py
+    module: mahoun.schemas.contracts.graph_contracts
+    domain: graph
+    status: stable
+    fingerprint: c3be100b11d10688f9d30250d7324b19f553b0d9185f7d95bc5af0892ab62b1b
+  GraphNodeContract:
+    owner: graph_contracts.py
+    module: mahoun.schemas.contracts.graph_contracts
+    domain: graph
+    status: stable
+    fingerprint: 6997cafb68b5e62e687e13d028f44af5f7635740a183f727b0c409a90bf53f06
+  GraphEdgeContract:
+    owner: graph_contracts.py
+    module: mahoun.schemas.contracts.graph_contracts
+    domain: graph
+    status: stable
+    fingerprint: 49a5e9bd0e92a2f294dff1947457ef7df3cdee82ecaad2580183ff79895f8370
+  InvariantSpecContract:
+    owner: invariants_contracts.py
+    module: mahoun.schemas.contracts.invariants_contracts
+    domain: governance
+    status: stable
+    fingerprint: 624e85271de29fdc324b9be48782df2652d3b9acc11cab89649a8e78e6193b5b
+  InvariantVersionContract:
+    owner: invariants_contracts.py
+    module: mahoun.schemas.contracts.invariants_contracts
+    domain: governance
+    status: stable
+    fingerprint: 6ceac2d351b1626506c8ab65eec312ad2e8121dc2f12acc1d86513ab1a684fe1
+  InvariantStatisticsContract:
+    owner: invariants_contracts.py
+    module: mahoun.schemas.contracts.invariants_contracts
+    domain: governance
+    status: stable
+    fingerprint: 4827c72673fb4037b47893d15ae86cce1e1541cd5d6c4213f1b59283d308c9fe
+  LedgerEntryContract:
+    owner: ledger_contracts.py
+    module: mahoun.schemas.contracts.ledger_contracts
+    domain: ledger
+    status: stable
+    fingerprint: 0a02f40c5f4399d800fb4722de9bb2af327aeac82b2422e9e35ccadcbcc04a86
+  LegalDocTypeContract:
+    owner: core_contracts.py
+    module: mahoun.schemas.contracts.core_contracts
+    domain: core
+    status: stable
+    fingerprint: 9b3e176bfa9c518e001e331dea48580542a89acd713ef1e373be848780628e9d
+  ReasoningResultContract:
+    owner: core_contracts.py
+    module: mahoun.schemas.contracts.core_contracts
+    domain: core
+    status: stable
+    fingerprint: 1917a10c576c92edd8fc3c705d03b118d029a4fec56d433377604769bac9195d
+  UncertaintyEstimateContract:
+    owner: core_contracts.py
+    module: mahoun.schemas.contracts.core_contracts
+    domain: core
+    status: stable
+    fingerprint: a4d9c96bff56d0a550ce45f16f84f618beff8438340b95826fa52069d590a4e4
