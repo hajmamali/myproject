@@ -1,0 +1,148 @@
+# ============================================================================
+# MAHOUN Governance Kernel - Docker Compose
+# ============================================================================
+#
+# Development and testing environment for the governance kernel
+#
+# Usage:
+#   docker-compose -f docker-compose.kernel.yml up
+#   docker-compose -f docker-compose.kernel.yml down
+#
+# ============================================================================
+
+version: '3.9'
+
+services:
+  # ===========================================================================
+  # Governance Kernel Service
+  # ===========================================================================
+  governance-kernel:
+    build:
+      context: .
+      dockerfile: Dockerfile.kernel
+    image: mahoun-kernel:latest
+    container_name: mahoun-governance-kernel
+    
+    # Security hardening
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "1001:1001"  # governance:governance
+    
+    # Resource limits
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: 0.5
+    
+    # Ports
+    ports:
+      - "8080:8080"  # Governance API
+      - "9090:9090"  # Metrics
+    
+    # Environment
+    environment:
+      - MAHOUN_ENV=production
+      - MAHOUN_GOVERNANCE_PORT=8080
+      - MAHOUN_METRICS_PORT=9090
+      - PYTHONUNBUFFERED=1
+    
+    # Temporary filesystem (RAM-based)
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Networks
+    networks:
+      - governance-net
+
+  # ===========================================================================
+  # Optional: Prometheus for metrics scraping
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: mahoun-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - governance-net
+    profiles:
+      - monitoring
+
+  # ===========================================================================
+  # Optional: Grafana for visualization
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: mahoun-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    networks:
+      - governance-net
+    profiles:
+      - monitoring
+
+networks:
+  governance-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+# ============================================================================
+# Examples:
+# ============================================================================
+#
+# Start kernel only:
+#   docker-compose -f docker-compose.kernel.yml up governance-kernel
+#
+# Start with monitoring:
+#   docker-compose -f docker-compose.kernel.yml --profile monitoring up
+#
+# Test health:
+#   curl http://localhost:8080/health
+#
+# Test enforcement:
+#   curl -X POST http://localhost:8080/v1/governance/enforce \
+#     -H "Content-Type: application/json" \
+#     -d '{"query_type": "READ", "correlation_id": "test-123", "actor_id": "user-1"}'
+#
+# View metrics:
+#   curl http://localhost:9090/metrics
+#
+# ============================================================================

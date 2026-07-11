@@ -1,0 +1,217 @@
+# ============================================================================
+# MAHOUN Grafana Datasources Configuration
+# ============================================================================
+# Purpose: Auto-provision all monitoring data sources
+# ============================================================================
+
+apiVersion: 1
+
+datasources:
+  # ==========================================================================
+  # PROMETHEUS - Primary Metrics Source
+  # ==========================================================================
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    
+    jsonData:
+      httpMethod: POST
+      
+      # Query optimization
+      queryTimeout: 60s
+      timeInterval: 15s
+      
+      # Exemplars (link traces to metrics)
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+      
+      # Custom headers
+      customQueryParameters: ''
+      
+      # Prometheus type and version
+      prometheusType: Prometheus
+      prometheusVersion: 2.51.0
+      
+      # Cache settings
+      cacheLevel: High
+      
+      # Alerting
+      manageAlerts: true
+      
+      # Incremental queries
+      incrementalQuerying: true
+      incrementalQueryOverlapWindow: 10m
+      
+      # Disable metrics lookup (performance)
+      disableMetricsLookup: false
+    
+    # Query editor configuration
+    queryEditorMode: builder
+
+  # ==========================================================================
+  # LOKI - Log Aggregation
+  # ==========================================================================
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    
+    jsonData:
+      httpMethod: POST
+      
+      # Query timeout
+      timeout: 60
+      
+      # Max lines per query
+      maxLines: 1000
+      
+      # Derived fields (extract trace IDs from logs)
+      derivedFields:
+        - name: TraceID
+          matcherRegex: "trace_id[=:]([\\w]+)"
+          url: "$${__value.raw}"
+          datasourceUid: tempo
+          urlDisplayLabel: "View Trace"
+        
+        - name: RequestID
+          matcherRegex: "request_id[=:]([\\w-]+)"
+          url: ""
+          # Internal field, no URL navigation
+      
+      # Alert configuration
+      manageAlerts: true
+      
+      # Query splitting
+      querySplitting:
+        enabled: true
+        interval: 15m
+
+  # ==========================================================================
+  # TEMPO - Distributed Tracing
+  # ==========================================================================
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    editable: false
+    
+    jsonData:
+      httpMethod: GET
+      
+      # Trace to logs integration
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ['service', 'instance', 'pod']
+        mappedTags: [{ key: 'service.name', value: 'service' }]
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1m'
+        spanEndTimeShift: '1m'
+        filterByTraceID: true
+        filterBySpanID: false
+      
+      # Trace to metrics integration
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
+        queries:
+          - name: 'Request rate'
+            query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))'
+          - name: 'Request duration'
+            query: 'histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])) by (le))'
+          - name: 'Error rate'
+            query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags,status_code="STATUS_CODE_ERROR"}[5m]))'
+      
+      # Service graph
+      serviceMap:
+        datasourceUid: prometheus
+      
+      # Node graph
+      nodeGraph:
+        enabled: true
+      
+      # Search
+      search:
+        hide: false
+      
+      # Span bar
+      spanBar:
+        type: 'Tag'
+        tag: 'http.path'
+
+  # ==========================================================================
+  # ALERTMANAGER - Alert Management
+  # ==========================================================================
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    editable: false
+    
+    jsonData:
+      implementation: prometheus
+      handleGrafanaManagedAlerts: false
+
+  # ==========================================================================
+  # POSTGRES - Direct Database Access (Read-only)
+  # ==========================================================================
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    editable: false
+    
+    secureJsonData:
+      password: ${DB_POSTGRES_PASSWORD}
+    
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      
+      # Query timeout
+      postgresVersion: 1600
+      timescaledb: false
+
+  # ==========================================================================
+  # REDIS - Cache Metrics (via exporter)
+  # ==========================================================================
+  - name: Redis
+    type: prometheus
+    access: proxy
+    url: http://redis-exporter:9121
+    editable: false
+    
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+
+  # ==========================================================================
+  # TEST DATA - For development/testing
+  # ==========================================================================
+  - name: TestData
+    type: testdata
+    access: direct
+    url: ""
+    editable: true
+    
+    jsonData:
+      # Only available in development
+      environment: ${MAHOUN_ENV}
+
+# =============================================================================
+# DELETABLE DATASOURCES
+# =============================================================================
+# List of datasources that should be deleted from database if not in config
+deleteDatasources:
+  - name: Graphite
+  - name: InfluxDB
+  - name: MySQL

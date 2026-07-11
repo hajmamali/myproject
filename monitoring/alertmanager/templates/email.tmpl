@@ -1,0 +1,187 @@
+{{ define "email.default.html" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #1976d2; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+        .content { background: #f5f5f5; padding: 20px; }
+        .alert { background: white; margin: 10px 0; padding: 15px; border-left: 4px solid #ff9800; border-radius: 3px; }
+        .alert.critical { border-left-color: #f44336; }
+        .alert.warning { border-left-color: #ff9800; }
+        .alert.info { border-left-color: #2196f3; }
+        .label { display: inline-block; background: #e0e0e0; padding: 3px 8px; margin: 2px; border-radius: 3px; font-size: 12px; }
+        .footer { background: #e0e0e0; padding: 15px; border-radius: 0 0 5px 5px; font-size: 12px; color: #666; }
+        .button { display: inline-block; background: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; margin: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+        th { background: #1976d2; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🚨 MAHOUN Alert Notification</h2>
+            <p>{{ len .Alerts }} alert(s) detected</p>
+        </div>
+        <div class="content">
+            {{ range .Alerts }}
+            <div class="alert {{ .Labels.severity }}">
+                <h3>{{ .Labels.alertname }}</h3>
+                <p><strong>Status:</strong> {{ .Status }}</p>
+                <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+                <p><strong>Service:</strong> {{ .Labels.service }}</p>
+                <p><strong>Component:</strong> {{ .Labels.component }}</p>
+                <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+                
+                <table>
+                    <tr><th>Label</th><th>Value</th></tr>
+                    {{ range .Labels.SortedPairs }}
+                    <tr><td>{{ .Name }}</td><td>{{ .Value }}</td></tr>
+                    {{ end }}
+                </table>
+                
+                <p>
+                    <a href="{{ .GeneratorURL }}" class="button">View in Prometheus</a>
+                    {{ if .Annotations.runbook }}
+                    <a href="{{ .Annotations.runbook }}" class="button">View Runbook</a>
+                    {{ end }}
+                </p>
+                
+                <p><strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+                {{ if .EndsAt }}
+                <p><strong>Ended:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+        <div class="footer">
+            <p>MAHOUN Platform Monitoring | Generated at {{ now.Format "2006-01-02 15:04:05 MST" }}</p>
+            <p>Do not reply to this email. Contact platform-team@mahoun.internal for assistance.</p>
+        </div>
+    </div>
+</body>
+</html>
+{{ end }}
+
+{{ define "email.critical.html" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #fff3e0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #d32f2f; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+        .content { background: white; padding: 20px; border: 3px solid #d32f2f; }
+        .alert { background: #ffebee; margin: 10px 0; padding: 15px; border-left: 6px solid #d32f2f; }
+        .metrics { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .action-required { background: #fff3cd; border: 2px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .button { display: inline-block; background: #d32f2f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 CRITICAL ALERT</h1>
+            <h2>Immediate Action Required</h2>
+        </div>
+        <div class="content">
+            <div class="action-required">
+                <h3>⚠️ This is a CRITICAL alert requiring immediate attention!</h3>
+                <p>Incident response procedures should be initiated.</p>
+            </div>
+            
+            {{ range .Alerts }}
+            <div class="alert">
+                <h2>{{ .Labels.alertname }}</h2>
+                <p><strong>Service:</strong> {{ .Labels.service }} | <strong>Component:</strong> {{ .Labels.component }}</p>
+                
+                <div class="metrics">
+                    <h4>Alert Details:</h4>
+                    <p>{{ .Annotations.description }}</p>
+                    <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+                </div>
+                
+                <p><strong>Started at:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
+                <p><strong>Duration:</strong> {{ .StartsAt.Sub now }}</p>
+                
+                <p>
+                    <a href="{{ .GeneratorURL }}" class="button">View Metrics</a>
+                    {{ if .Annotations.runbook }}
+                    <a href="{{ .Annotations.runbook }}" class="button">Emergency Runbook</a>
+                    {{ end }}
+                    <a href="{{ template "__alert_silence_link" . }}" class="button">Silence Alert</a>
+                </p>
+            </div>
+            {{ end }}
+            
+            <div class="action-required">
+                <h4>Next Steps:</h4>
+                <ol>
+                    <li>Acknowledge this alert in the incident management system</li>
+                    <li>Check the runbook for troubleshooting steps</li>
+                    <li>Notify the on-call team if not already aware</li>
+                    <li>Update the incident channel with status</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+{{ end }}
+
+{{ define "slack.critical.text" }}
+*🚨 CRITICAL ALERT - Immediate Action Required*
+
+{{ range .Alerts }}
+*Alert:* {{ .Labels.alertname }}
+*Service:* {{ .Labels.service }} | *Component:* {{ .Labels.component }}
+*Severity:* {{ .Labels.severity }}
+
+*Description:*
+{{ .Annotations.description }}
+
+*Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+*Duration:* {{ .StartsAt.Sub now }}
+
+{{ if .Annotations.runbook }}
+📖 *Runbook:* {{ .Annotations.runbook }}
+{{ end }}
+
+---
+{{ end }}
+
+*Total Alerts:* {{ len .Alerts }}
+*Generated:* {{ now.Format "2006-01-02 15:04:05 MST" }}
+{{ end }}
+
+{{ define "slack.governance.text" }}
+*⚠️ GOVERNANCE ALERT*
+
+{{ range .Alerts }}
+*Alert:* {{ .Labels.alertname }}
+*Validation ID:* {{ .Labels.validation_id }}
+
+*Issue:*
+{{ .Annotations.description }}
+
+*Impact:* This may indicate a governance breach or system integrity issue.
+
+*Started:* {{ .StartsAt.Format "15:04:05" }}
+{{ end }}
+
+*Action Required:* Review governance logs and initiate breach analysis if necessary.
+{{ end }}
+
+{{ define "__alert_silence_link" }}
+{{ .ExternalURL }}/#/silences/new?filter=%7B
+{{- range .CommonLabels.SortedPairs -}}
+{{- if ne .Name "alertname" -}}
+{{- .Name }}%3D"{{- .Value -}}"%2C
+{{- end -}}
+{{- end -}}
+alertname%3D"{{ .CommonLabels.alertname }}"%7D
+{{ end }}

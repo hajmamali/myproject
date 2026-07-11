@@ -1,0 +1,388 @@
+# ============================================================================
+# MAHOUN Governance Kernel - Prometheus Alert Rules
+# ============================================================================
+#
+# Critical alerting for governance kernel with:
+# - Security alerts (P0 - immediate response)
+# - Availability alerts (P1 - 5 min response) 
+# - Performance alerts (P2 - 15 min response)
+# - Capacity alerts (P3 - 1 hour response)
+#
+# ============================================================================
+
+groups:
+
+# ============================================================================
+# P0 - CRITICAL SECURITY ALERTS
+# ============================================================================
+
+- name: governance-security-p0
+  interval: 15s  # Frequent evaluation for security
+  rules:
+  
+  # CRITICAL: Governance bypass attempt detected
+  - alert: GovernanceBypassAttemptCritical
+    expr: increase(governance_change_attempts[1m]) > 0
+    for: 0s  # Immediate alert
+    labels:
+      severity: critical
+      priority: p0
+      component: governance-kernel
+      alert_type: security_breach
+      runbook_url: "https://docs.mahoun.ai/runbooks/governance-bypass"
+    annotations:
+      summary: "🚨 CRITICAL: Governance bypass attempt detected"
+      description: |
+        Governance kernel instance {{ $labels.instance }} has detected {{ $value }} bypass attempts in the last minute.
+        This indicates a potential security breach or misconfiguration.
+        
+        **Immediate Actions Required:**
+        1. Check audit logs for suspicious activity
+        2. Verify governance lock integrity  
+        3. Review recent configuration changes
+        4. Consider isolating affected instance
+      
+      grafana_dashboard: "https://grafana.mahoun.ai/d/governance-kernel-overview"
+      alert_priority: "P0 - CRITICAL SECURITY"
+  
+  # CRITICAL: Governance not initialized 
+  - alert: GovernanceNotInitializedCritical
+    expr: governance_initialized == 0
+    for: 30s
+    labels:
+      severity: critical
+      priority: p0
+      component: governance-kernel
+      alert_type: security_config
+    annotations:
+      summary: "🚨 CRITICAL: Governance lock not initialized"
+      description: |
+        Governance kernel instance {{ $labels.instance }} is running without governance initialization.
+        This creates a security vulnerability where governance can be bypassed.
+        
+        **Immediate Actions:**
+        1. Restart the governance kernel instance
+        2. Verify initialization sequence in logs
+        3. Check for configuration errors
+        4. Block traffic to instance until resolved
+  
+  # CRITICAL: Enforcement disabled in production
+  - alert: GovernanceEnforcementDisabledCritical  
+    expr: governance_enforcement_enabled == 0 and on() label_replace(up{job="governance-kernel"}, "environment", "$1", "__meta_kubernetes_namespace", "mahoun-governance-(.+)")
+    for: 10s
+    labels:
+      severity: critical
+      priority: p0
+      component: governance-kernel
+      alert_type: security_config
+    annotations:
+      summary: "🚨 CRITICAL: Governance enforcement disabled in production"
+      description: |
+        Governance enforcement is disabled on instance {{ $labels.instance }} in what appears to be a production environment.
+        This violates security policy and creates compliance risks.
+
+# ============================================================================
+# P1 - HIGH AVAILABILITY ALERTS  
+# ============================================================================
+
+- name: governance-availability-p1
+  interval: 30s
+  rules:
+  
+  # HIGH: Kernel instance down
+  - alert: GovernanceKernelDown
+    expr: up{job="governance-kernel"} == 0
+    for: 1m
+    labels:
+      severity: high  
+      priority: p1
+      component: governance-kernel
+      alert_type: availability
+    annotations:
+      summary: "🔴 HIGH: Governance kernel instance down"
+      description: |
+        Governance kernel instance {{ $labels.instance }} has been down for over 1 minute.
+        This reduces system availability and may impact governance enforcement.
+        
+        **Actions:**
+        1. Check pod/container logs
+        2. Verify resource availability
+        3. Check for crash loops
+        4. Scale up if needed
+  
+  # HIGH: Multiple instances down
+  - alert: GovernanceKernelMultipleInstancesDown
+    expr: count(up{job="governance-kernel"} == 0) >= 2
+    for: 2m
+    labels:
+      severity: high
+      priority: p1
+      component: governance-kernel
+      alert_type: availability
+    annotations:
+      summary: "🔴 HIGH: Multiple governance kernel instances down"
+      description: |
+        {{ $value }} governance kernel instances are currently down.
+        This significantly impacts system availability and governance coverage.
+        
+        **Escalation Required:**
+        1. Check cluster health
+        2. Review resource constraints
+        3. Investigate infrastructure issues
+        4. Consider emergency scaling
+  
+  # HIGH: Unhealthy instances
+  - alert: GovernanceKernelUnhealthy
+    expr: up{job="governance-kernel"} == 1 and (governance_initialized == 0 or governance_enforcement_enabled == 0)
+    for: 3m
+    labels:
+      severity: high
+      priority: p1
+      component: governance-kernel
+      alert_type: availability
+    annotations:
+      summary: "🔴 HIGH: Governance kernel instance unhealthy"
+      description: |
+        Instance {{ $labels.instance }} is running but not properly functioning:
+        - Initialized: {{ with query "governance_initialized{instance=\"$labels.instance\"}" }}{{ . | first | value }}{{ end }}
+        - Enforcement: {{ with query "governance_enforcement_enabled{instance=\"$labels.instance\"}" }}{{ . | first | value }}{{ end }}
+
+# ============================================================================
+# P2 - PERFORMANCE ALERTS
+# ============================================================================
+
+- name: governance-performance-p2
+  interval: 1m
+  rules:
+  
+  # MEDIUM: High error rate
+  - alert: GovernanceKernelHighErrorRate
+    expr: |
+      (
+        sum(rate(http_requests_total{job="governance-kernel", code=~"5.."}[5m])) by (instance) 
+        / 
+        sum(rate(http_requests_total{job="governance-kernel"}[5m])) by (instance)
+      ) > 0.05
+    for: 5m
+    labels:
+      severity: medium
+      priority: p2  
+      component: governance-kernel
+      alert_type: performance
+    annotations:
+      summary: "🟡 MEDIUM: High error rate in governance kernel"
+      description: |
+        Instance {{ $labels.instance }} is experiencing {{ $value | humanizePercentage }} error rate over the last 5 minutes.
+        This may indicate performance issues or misconfigurations.
+        
+        **Actions:**
+        1. Check application logs for errors
+        2. Review recent requests for patterns
+        3. Monitor resource utilization
+        4. Consider scaling if load-related
+  
+  # MEDIUM: High response latency
+  - alert: GovernanceKernelHighLatency
+    expr: |
+      histogram_quantile(0.95, 
+        sum(rate(http_request_duration_seconds_bucket{job="governance-kernel"}[5m])) by (le, instance)
+      ) > 0.1
+    for: 5m
+    labels:
+      severity: medium
+      priority: p2
+      component: governance-kernel
+      alert_type: performance
+    annotations:
+      summary: "🟡 MEDIUM: High response latency in governance kernel"
+      description: |
+        95th percentile response time for {{ $labels.instance }} is {{ $value }}s.
+        This exceeds the SLA threshold of 100ms and may impact user experience.
+  
+  # MEDIUM: High memory usage
+  - alert: GovernanceKernelHighMemoryUsage
+    expr: |
+      (
+        process_resident_memory_bytes{job="governance-kernel"} 
+        / 
+        (container_spec_memory_limit_bytes{container="governance-kernel"} > 0)
+      ) > 0.8
+    for: 10m
+    labels:
+      severity: medium
+      priority: p2
+      component: governance-kernel
+      alert_type: performance
+    annotations:
+      summary: "🟡 MEDIUM: High memory usage in governance kernel"
+      description: |
+        Instance {{ $labels.instance }} is using {{ $value | humanizePercentage }} of allocated memory.
+        Consider scaling up if usage continues to increase.
+
+# ============================================================================
+# P3 - CAPACITY PLANNING ALERTS
+# ============================================================================
+
+- name: governance-capacity-p3
+  interval: 5m
+  rules:
+  
+  # LOW: Sustained high CPU
+  - alert: GovernanceKernelHighCPUUsage
+    expr: |
+      rate(process_cpu_seconds_total{job="governance-kernel"}[5m]) > 0.8
+    for: 30m
+    labels:
+      severity: low
+      priority: p3
+      component: governance-kernel
+      alert_type: capacity
+    annotations:
+      summary: "🔵 LOW: Sustained high CPU usage"
+      description: |
+        Instance {{ $labels.instance }} has been using high CPU for 30+ minutes.
+        Consider capacity planning and scaling strategies.
+  
+  # LOW: High request rate
+  - alert: GovernanceKernelHighRequestRate  
+    expr: |
+      sum(rate(http_requests_total{job="governance-kernel"}[5m])) by (instance) > 100
+    for: 15m
+    labels:
+      severity: low
+      priority: p3
+      component: governance-kernel
+      alert_type: capacity
+    annotations:
+      summary: "🔵 LOW: High sustained request rate"
+      description: |
+        Instance {{ $labels.instance }} is handling {{ $value }} requests/second.
+        Monitor for capacity planning needs.
+
+# ============================================================================
+# CUSTOM BUSINESS LOGIC ALERTS
+# ============================================================================
+
+- name: governance-business-logic
+  interval: 1m
+  rules:
+  
+  # Governance mode changes
+  - alert: GovernanceModeChanged
+    expr: |
+      changes(governance_initialized[10m]) > 0
+    for: 0s
+    labels:
+      severity: medium
+      priority: p2
+      component: governance-kernel
+      alert_type: configuration
+    annotations:
+      summary: "🟡 NOTICE: Governance mode changed"
+      description: |
+        Governance configuration changed on {{ $labels.instance }}.
+        Verify this change was authorized and expected.
+  
+  # Unusual governance request patterns
+  - alert: GovernanceUnusualRequestPattern
+    expr: |
+      (
+        sum(rate(http_requests_total{job="governance-kernel", path="/v1/governance/enforce"}[5m])) 
+        / 
+        sum(rate(http_requests_total{job="governance-kernel"}[5m]))
+      ) < 0.1
+    for: 10m
+    labels:
+      severity: low
+      priority: p3
+      component: governance-kernel
+      alert_type: business_logic
+    annotations:
+      summary: "🔵 NOTICE: Unusual governance request pattern"
+      description: |
+        Governance enforcement requests are unusually low ({{ $value | humanizePercentage }}).
+        This may indicate integration issues or changed usage patterns.
+
+# ============================================================================
+# SLA MONITORING
+# ============================================================================
+
+- name: governance-sla
+  interval: 1m
+  rules:
+  
+  # SLA: Availability target 99.9%
+  - alert: GovernanceSLAAvailabilityBreach
+    expr: |
+      (
+        avg_over_time(up{job="governance-kernel"}[1h]) < 0.999
+      )
+    for: 5m
+    labels:
+      severity: high
+      priority: p1
+      component: governance-kernel
+      alert_type: sla
+    annotations:
+      summary: "🔴 SLA BREACH: Availability below 99.9%"
+      description: |
+        Governance kernel availability over the last hour: {{ $value | humanizePercentage }}
+        This breaches the SLA requirement of 99.9% availability.
+  
+  # SLA: Response time target 95th percentile < 50ms
+  - alert: GovernanceSLALatencyBreach
+    expr: |
+      histogram_quantile(0.95, 
+        sum(rate(http_request_duration_seconds_bucket{job="governance-kernel"}[1h])) by (le)
+      ) > 0.05
+    for: 10m
+    labels:
+      severity: medium
+      priority: p2
+      component: governance-kernel
+      alert_type: sla
+    annotations:
+      summary: "🟡 SLA BREACH: Response time above 50ms"
+      description: |
+        95th percentile response time over the last hour: {{ $value }}ms
+        This breaches the SLA requirement of <50ms response time.
+
+# ============================================================================
+# INFRASTRUCTURE ALERTS
+# ============================================================================
+
+- name: governance-infrastructure
+  interval: 2m
+  rules:
+  
+  # Kubernetes pod restart loop
+  - alert: GovernanceKernelPodRestartLoop
+    expr: |
+      increase(kube_pod_container_status_restarts_total{container="governance-kernel"}[10m]) > 3
+    for: 0s
+    labels:
+      severity: high
+      priority: p1
+      component: governance-kernel
+      alert_type: infrastructure
+    annotations:
+      summary: "🔴 HIGH: Governance kernel in restart loop"
+      description: |
+        Pod {{ $labels.pod }} has restarted {{ $value }} times in 10 minutes.
+        Check logs for crash causes and resource constraints.
+  
+  # Pending pods
+  - alert: GovernanceKernelPodPending
+    expr: |
+      kube_pod_status_phase{phase="Pending", pod=~"governance-kernel.*"} == 1
+    for: 5m
+    labels:
+      severity: medium
+      priority: p2
+      component: governance-kernel
+      alert_type: infrastructure
+    annotations:
+      summary: "🟡 MEDIUM: Governance kernel pod pending"
+      description: |
+        Pod {{ $labels.pod }} has been in Pending state for 5+ minutes.
+        Check for resource constraints or scheduling issues.

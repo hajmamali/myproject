@@ -1,0 +1,346 @@
+# ============================================================================
+# MAHOUN Alertmanager Configuration - Alert Routing & Notification
+# ============================================================================
+# Purpose: Route, deduplicate, and deliver alerts to appropriate channels
+# Features: Multi-channel routing, throttling, silencing
+# ============================================================================
+
+global:
+  # Default SMTP configuration
+  smtp_from: 'alertmanager@mahoun.internal'
+  smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+  smtp_auth_username: '${SMTP_USERNAME}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+  
+  # Default Slack webhook (if configured)
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+  
+  # PagerDuty integration key (if configured)
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+  
+  # HTTP client configuration
+  http_config:
+    follow_redirects: true
+  
+  # Time to resolve alerts if no updates
+  resolve_timeout: 5m
+
+# =============================================================================
+# TEMPLATES (Custom message formatting)
+# =============================================================================
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# =============================================================================
+# ROUTE CONFIGURATION (Alert routing tree)
+# =============================================================================
+route:
+  # Default receiver for all alerts
+  receiver: 'default-receiver'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Wait time before sending first notification for a new group
+  group_wait: 30s
+  
+  # Wait time before sending notification about new alerts in existing group
+  group_interval: 5m
+  
+  # Wait time before re-notifying about an alert
+  repeat_interval: 4h
+  
+  # Routes (evaluated in order)
+  routes:
+    # ---------------------------------------------------------------------------
+    # CRITICAL ALERTS (Immediate notification)
+    # ---------------------------------------------------------------------------
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 1h
+      
+      routes:
+        # Critical governance alerts → PagerDuty + Slack
+        - match:
+            component: governance
+          receiver: 'governance-critical'
+          continue: true
+        
+        # Critical database alerts → Database team
+        - match_re:
+            service: '(neo4j|postgresql|redis|chromadb)'
+          receiver: 'database-critical'
+          continue: true
+        
+        # Critical API alerts → Platform team
+        - match:
+            component: api
+          receiver: 'api-critical'
+          continue: true
+    
+    # ---------------------------------------------------------------------------
+    # WARNING ALERTS (Throttled notification)
+    # ---------------------------------------------------------------------------
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 5m
+      group_interval: 10m
+      repeat_interval: 12h
+      
+      routes:
+        # Performance warnings
+        - match_re:
+            alertname: '.*Slow.*|.*HighLatency.*'
+          receiver: 'performance-warnings'
+        
+        # Resource warnings
+        - match_re:
+            alertname: '.*HighMemory.*|.*HighCPU.*|.*DiskSpace.*'
+          receiver: 'infrastructure-warnings'
+    
+    # ---------------------------------------------------------------------------
+    # INFO ALERTS (Low priority, batched)
+    # ---------------------------------------------------------------------------
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 10m
+      group_interval: 30m
+      repeat_interval: 24h
+    
+    # ---------------------------------------------------------------------------
+    # INFRASTRUCTURE ALERTS (Host & container issues)
+    # ---------------------------------------------------------------------------
+    - match:
+        component: infrastructure
+      receiver: 'infrastructure-team'
+      group_by: ['alertname', 'instance']
+      group_wait: 2m
+      group_interval: 5m
+      repeat_interval: 6h
+    
+    # ---------------------------------------------------------------------------
+    # MONITORING STACK ALERTS (Prometheus, Loki, Tempo issues)
+    # ---------------------------------------------------------------------------
+    - match:
+        tier: monitoring
+      receiver: 'monitoring-team'
+      group_wait: 5m
+      repeat_interval: 12h
+
+# =============================================================================
+# INHIBITION RULES (Suppress redundant alerts)
+# =============================================================================
+inhibit_rules:
+  # Inhibit all warnings if critical alert exists for same service
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service', 'alertname']
+  
+  # Inhibit database alerts if database is down
+  - source_match_re:
+      alertname: '(Neo4jDown|PostgreSQLDown|RedisDown|ChromaDBDown)'
+    target_match_re:
+      service: '(neo4j|postgresql|redis|chromadb)'
+    equal: ['service']
+  
+  # Inhibit API performance alerts if API is down
+  - source_match:
+      alertname: 'APIServerDown'
+    target_match_re:
+      alertname: '(HighAPIErrorRate|APIResponseTimeSlow)'
+  
+  # Inhibit container alerts if host is down
+  - source_match_re:
+      alertname: 'Host.*'
+    target_match_re:
+      alertname: 'Container.*'
+    equal: ['instance']
+
+# =============================================================================
+# RECEIVERS (Notification endpoints)
+# =============================================================================
+receivers:
+  # ---------------------------------------------------------------------------
+  # DEFAULT RECEIVER (Catch-all)
+  # ---------------------------------------------------------------------------
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'platform-team@mahoun.internal'
+        headers:
+          Subject: '[MAHOUN] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+
+  # ---------------------------------------------------------------------------
+  # CRITICAL ALERTS (Multi-channel)
+  # ---------------------------------------------------------------------------
+  - name: 'critical-alerts'
+    # Email
+    email_configs:
+      - to: 'oncall@mahoun.internal,platform-lead@mahoun.internal'
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+        html: '{{ template "email.critical.html" . }}'
+        send_resolved: true
+    
+    # Slack (if configured)
+    slack_configs:
+      - channel: '#alerts-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.critical.text" . }}'
+        send_resolved: true
+        actions:
+          - type: button
+            text: 'Runbook 📖'
+            url: '{{ (index .Alerts 0).Annotations.runbook }}'
+          - type: button
+            text: 'Silence 🔇'
+            url: '{{ template "__alert_silence_link" . }}'
+    
+    # PagerDuty (if configured)
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        description: '{{ .GroupLabels.alertname }}'
+        severity: 'critical'
+        details:
+          firing: '{{ template "pagerduty.details" . }}'
+
+  # ---------------------------------------------------------------------------
+  # GOVERNANCE CRITICAL (Highest priority)
+  # ---------------------------------------------------------------------------
+  - name: 'governance-critical'
+    email_configs:
+      - to: 'governance-team@mahoun.internal,cto@mahoun.internal'
+        headers:
+          Subject: '[GOVERNANCE BREACH] {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+        html: '{{ template "email.governance.html" . }}'
+    
+    slack_configs:
+      - channel: '#governance-alerts'
+        title: '⚠️ GOVERNANCE: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.governance.text" . }}'
+        color: 'danger'
+
+  # ---------------------------------------------------------------------------
+  # DATABASE CRITICAL
+  # ---------------------------------------------------------------------------
+  - name: 'database-critical'
+    email_configs:
+      - to: 'database-team@mahoun.internal'
+        headers:
+          Subject: '[DATABASE CRITICAL] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.database.html" . }}'
+    
+    slack_configs:
+      - channel: '#database-alerts'
+        title: '💾 DATABASE: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.database.text" . }}'
+
+  # ---------------------------------------------------------------------------
+  # API CRITICAL
+  # ---------------------------------------------------------------------------
+  - name: 'api-critical'
+    email_configs:
+      - to: 'backend-team@mahoun.internal'
+        headers:
+          Subject: '[API CRITICAL] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.api.html" . }}'
+    
+    slack_configs:
+      - channel: '#api-alerts'
+        title: '🌐 API: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.api.text" . }}'
+
+  # ---------------------------------------------------------------------------
+  # WARNING ALERTS
+  # ---------------------------------------------------------------------------
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'platform-team@mahoun.internal'
+        headers:
+          Subject: '[WARNING] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.warning.html" . }}'
+        send_resolved: false
+    
+    slack_configs:
+      - channel: '#alerts-warnings'
+        title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.warning.text" . }}'
+        color: 'warning'
+
+  # ---------------------------------------------------------------------------
+  # PERFORMANCE WARNINGS
+  # ---------------------------------------------------------------------------
+  - name: 'performance-warnings'
+    slack_configs:
+      - channel: '#performance-alerts'
+        title: '🐌 PERFORMANCE: {{ .GroupLabels.alertname }}'
+        text: '{{ template "slack.performance.text" . }}'
+
+  # ---------------------------------------------------------------------------
+  # INFRASTRUCTURE WARNINGS
+  # ---------------------------------------------------------------------------
+  - name: 'infrastructure-warnings'
+    email_configs:
+      - to: 'infrastructure-team@mahoun.internal'
+        headers:
+          Subject: '[INFRA WARNING] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.infrastructure.html" . }}'
+
+  # ---------------------------------------------------------------------------
+  # INFO ALERTS (Low priority)
+  # ---------------------------------------------------------------------------
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'platform-team@mahoun.internal'
+        headers:
+          Subject: '[INFO] Daily alert summary'
+        html: '{{ template "email.info.html" . }}'
+        send_resolved: false
+
+  # ---------------------------------------------------------------------------
+  # INFRASTRUCTURE TEAM
+  # ---------------------------------------------------------------------------
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure-team@mahoun.internal'
+        headers:
+          Subject: '[INFRASTRUCTURE] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.infrastructure.html" . }}'
+
+  # ---------------------------------------------------------------------------
+  # MONITORING TEAM
+  # ---------------------------------------------------------------------------
+  - name: 'monitoring-team'
+    email_configs:
+      - to: 'monitoring-team@mahoun.internal'
+        headers:
+          Subject: '[MONITORING] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.monitoring.html" . }}'
+
+# =============================================================================
+# TIME INTERVALS (Notification schedules - optional)
+# =============================================================================
+# time_intervals:
+#   - name: business-hours
+#     time_intervals:
+#       - times:
+#           - start_time: '09:00'
+#             end_time: '18:00'
+#         weekdays: ['monday:friday']
+#   
+#   - name: off-hours
+#     time_intervals:
+#       - times:
+#           - start_time: '18:00'
+#             end_time: '09:00'
+#       - weekdays: ['saturday', 'sunday']

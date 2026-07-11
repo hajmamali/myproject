@@ -1,0 +1,374 @@
+# ============================================================================
+# MAHOUN Alert Rules - Production-Grade Monitoring
+# ============================================================================
+# Purpose: Comprehensive alerting for MAHOUN platform health & performance
+# Severity Levels: critical, warning, info
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # GOVERNANCE KERNEL ALERTS
+  # ==========================================================================
+  - name: governance_kernel_alerts
+    interval: 30s
+    rules:
+      - alert: GovernanceKernelDown
+        expr: up{job="governance-kernel"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: governance
+          service: governance-kernel
+        annotations:
+          summary: "Governance Kernel is down"
+          description: "Governance Kernel has been down for more than 1 minute. This is a critical failure affecting all governance decisions."
+          runbook: "https://docs.mahoun.internal/runbooks/governance-kernel-down"
+
+      - alert: GovernanceValidationFailureRate
+        expr: |
+          (
+            rate(mahoun_governance_validation_failures_total[5m]) /
+            rate(mahoun_governance_validation_total[5m])
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          component: governance
+        annotations:
+          summary: "High governance validation failure rate"
+          description: "More than 5% of governance validations are failing (current: {{ $value | humanizePercentage }})"
+
+      - alert: GovernanceResponseTimeSlow
+        expr: |
+          histogram_quantile(0.95,
+            rate(mahoun_governance_validation_duration_seconds_bucket[5m])
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: governance
+        annotations:
+          summary: "Slow governance validation responses"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2s)"
+
+  # ==========================================================================
+  # API SERVER ALERTS
+  # ==========================================================================
+  - name: api_server_alerts
+    interval: 30s
+    rules:
+      - alert: APIServerDown
+        expr: up{job="api-server"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "API Server is down"
+          description: "API Server has been unreachable for 2 minutes"
+
+      - alert: HighAPIErrorRate
+        expr: |
+          (
+            rate(http_requests_total{job="api-server",status=~"5.."}[5m]) /
+            rate(http_requests_total{job="api-server"}[5m])
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: APIResponseTimeSlow
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job="api-server"}[5m])
+          ) > 5.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Slow API responses"
+          description: "95th percentile API response time is {{ $value }}s"
+
+      - alert: APIHighRequestRate
+        expr: rate(http_requests_total{job="api-server"}[1m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Very high API request rate"
+          description: "API receiving {{ $value }} requests/second - possible DDoS or traffic spike"
+
+  # ==========================================================================
+  # NEO4J GRAPH DATABASE ALERTS
+  # ==========================================================================
+  - name: neo4j_alerts
+    interval: 60s
+    rules:
+      - alert: Neo4jDown
+        expr: up{job="neo4j"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          db_type: graph
+        annotations:
+          summary: "Neo4j is down"
+          description: "Neo4j database has been unreachable for 2 minutes"
+
+      - alert: Neo4jHighMemoryUsage
+        expr: |
+          (neo4j_database_heap_used_bytes / neo4j_database_heap_max_bytes) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Neo4j high memory usage"
+          description: "Neo4j heap usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+
+      - alert: Neo4jSlowQueries
+        expr: neo4j_cypher_query_execution_latency_milliseconds{quantile="0.95"} > 5000
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Neo4j slow query performance"
+          description: "95th percentile query latency is {{ $value }}ms"
+
+      - alert: Neo4jHighTransactionRate
+        expr: rate(neo4j_transaction_started_total[5m]) > 500
+        for: 10m
+        labels:
+          severity: info
+          component: database
+        annotations:
+          summary: "High Neo4j transaction rate"
+          description: "{{ $value }} transactions/second - monitor for performance impact"
+
+      - alert: Neo4jConnectionPoolExhausted
+        expr: neo4j_bolt_connections_running >= neo4j_bolt_connections_max
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Neo4j connection pool exhausted"
+          description: "All available connections are in use - new requests will be rejected"
+
+  # ==========================================================================
+  # POSTGRESQL ALERTS
+  # ==========================================================================
+  - name: postgresql_alerts
+    interval: 60s
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          db_type: relational
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been unreachable for 2 minutes"
+
+      - alert: PostgreSQLHighConnections
+        expr: |
+          (pg_stat_database_numbackends / pg_settings_max_connections) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "{{ $value | humanizePercentage }} of connections in use (threshold: 80%)"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_statements_mean_exec_time_seconds > 5.0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL slow query performance"
+          description: "Average query execution time is {{ $value }}s"
+
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag_seconds > 300
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL replication lag"
+          description: "Replication is {{ $value }}s behind primary"
+
+      - alert: PostgreSQLDiskSpaceLow
+        expr: |
+          (pg_database_size_bytes / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql"}) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL disk space low"
+          description: "Database disk usage is {{ $value | humanizePercentage }}"
+
+  # ==========================================================================
+  # REDIS CACHE ALERTS
+  # ==========================================================================
+  - name: redis_alerts
+    interval: 30s
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been unreachable for 1 minute"
+
+      - alert: RedisHighMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RedisHighEvictionRate
+        expr: rate(redis_evicted_keys_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis key eviction rate"
+          description: "{{ $value }} keys/second being evicted - consider increasing memory"
+
+      - alert: RedisConnectionsHigh
+        expr: redis_connected_clients / redis_config_maxclients > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis connection count"
+          description: "{{ $value | humanizePercentage }} of max connections in use"
+
+      - alert: RedisSlowCommands
+        expr: redis_slowlog_length > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis slow command log growing"
+          description: "{{ $value }} slow commands logged - investigate performance"
+
+  # ==========================================================================
+  # CHROMADB VECTOR DATABASE ALERTS
+  # ==========================================================================
+  - name: chromadb_alerts
+    interval: 60s
+    rules:
+      - alert: ChromaDBDown
+        expr: up{job="chromadb"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          db_type: vector
+        annotations:
+          summary: "ChromaDB is down"
+          description: "ChromaDB vector database has been unreachable for 2 minutes"
+
+      - alert: ChromaDBHighQueryLatency
+        expr: chromadb_query_latency_seconds{quantile="0.95"} > 3.0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "ChromaDB high query latency"
+          description: "95th percentile query latency is {{ $value }}s"
+
+      - alert: ChromaDBCollectionSizeGrowing
+        expr: rate(chromadb_collection_items_total[1h]) > 10000
+        for: 30m
+        labels:
+          severity: info
+          component: database
+        annotations:
+          summary: "ChromaDB collection growing rapidly"
+          description: "{{ $value }} items/hour being added - monitor storage capacity"
+
+  # ==========================================================================
+  # INFRASTRUCTURE ALERTS
+  # ==========================================================================
+  - name: infrastructure_alerts
+    interval: 60s
+    rules:
+      - alert: HostHighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: HostHighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: HostDiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Only {{ $value }}% disk space remaining on {{ $labels.mountpoint }}"
+
+      - alert: ContainerHighMemoryUsage
+        expr: |
+          (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Container {{ $labels.name }} high memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: ContainerRestartingFrequently
+        expr: rate(container_restart_count[15m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Container {{ $labels.name }} restarting frequently"
+          description: "Container has restarted {{ $value }} times in 15 minutes"

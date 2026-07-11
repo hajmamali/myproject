@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""
+Neo4j Governance Compliance Validator
+====================================
+Comprehensive validation of governance architecture compliance.
+
+Checks:
+1. MutationAuthorizationBoundary.inspect() call locations
+2. _raw_executor usage patterns
+3. _authorized_write_ctx management
+4. Direct driver creation violations
+5. Raw session usage bypasses
+
+Usage:
+    python scripts/validate_governance_compliance.py
+"""
+
+import os
+import re
+import sys
+from pathlib import Path
+from typing import List, Dict, Set, Tuple
+from dataclasses import dataclass
+from enum import Enum
+
+
+class ViolationSeverity(Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM" 
+    LOW = "LOW"
+
+
+@dataclass
+class GovernanceViolation:
+    file_path: str
+    line_number: int
+    severity: ViolationSeverity
+    category: str
+    description: str
+    code_snippet: str
+
+
+class GovernanceValidator:
+    """Validates Neo4j governance architecture compliance"""
+    
+    def __init__(self, repo_root: Path):
+        self.repo_root = repo_root
+        self.violations: List[GovernanceViolation] = []
+        
+        # Allowlist for direct Neo4j access
+        self.neo4j_allowlist = {
+            "mahoun/graph/neo4j/connection.py",
+            "mahoun/graph/neo4j/schema.py", 
+            "api/database.py",  # Now governance-compliant
+        }
+        
+        # Test patterns (more lenient)
+        self.test_patterns = {
+            "tests/",
+            "test_",
+            "/fixtures/",
+        }
+        
+        # Exclude patterns (ignore these completely)
+        self.exclude_patterns = {
+            "venv/",
+            ".venv/",
+            "__pycache__/",
+            ".git/",
+            "node_modules/",
+            ".pytest_cache/",
+        }
+    
+    def validate_all(self) -> bool:
+        """Run all governance validation checks"""
+        print("🛡️  MAHOUN Governance Compliance Validation")
+        print("=" * 50)
+        
+        self._check_mutation_boundary_usage()
+        self._check_direct_driver_creation()
+        self._check_raw_session_usage()
+        self._check_authorized_context_usage()
+        self._check_mutation_bypasses()
+        
+        return self._report_results()
+    
+    def _check_mutation_boundary_usage(self):
+        """Verify MutationAuthorizationBoundary.inspect() is called correctly"""
+        print("🔍 Checking MutationAuthorizationBoundary.inspect() usage...")
+        
+        inspect_calls = self._find_pattern(
+            r'MutationAuthorizationBoundary\.inspect\(',
+            include_patterns=['*.py']
+        )
+        
+        if not inspect_calls:
+            self.violations.append(GovernanceViolation(
+                file_path="ARCHITECTURE",
+                line_number=0,
+                severity=ViolationSeverity.CRITICAL,
+                category="MISSING_BOUNDARY",
+                description="No MutationAuthorizationBoundary.inspect() calls found",
+                code_snippet=""
+            ))
+        
+        # Verify it's called in the right place (connection.py)
+        connection_calls = [c for c in inspect_calls if 'connection.py' in c[0]]
+        if not connection_calls:
+            self.violations.append(GovernanceViolation(
+                file_path="mahoun/graph/neo4j/connection.py",
+                line_number=0,
+                severity=ViolationSeverity.CRITICAL,
+                category="MISSING_CHOKEPOINT",
+                description="MutationAuthorizationBoundary.inspect() not called in connection chokepoint",
+                code_snippet=""
+            ))
+    
+    def _check_direct_driver_creation(self):
+        """Check for forbidden direct driver creation"""
+        print("🚫 Checking direct Neo4j driver creation...")
+        
+        patterns = [
+            r'AsyncGraphDatabase\.driver\(',
+            r'GraphDatabase\.driver\(',
+        ]
+        
+        for pattern in patterns:
+            matches = self._find_pattern(pattern, include_patterns=['*.py'])
+            
+            for file_path, line_num, line_content in matches:
+                # Check if file is in allowlist
+                is_allowed = False
+                is_test = any(test_pattern in file_path for test_pattern in self.test_patterns)
+                
+                for allowed_path in self.neo4j_allowlist:
+                    if allowed_path in file_path:
+                        is_allowed = True
+                        break
+                
+                if not is_allowed and not is_test:
+                    self.violations.append(GovernanceViolation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        severity=ViolationSeverity.CRITICAL,
+                        category="DIRECT_DRIVER_CREATION",
+                        description=f"Direct Neo4j driver creation outside allowlist",
+                        code_snippet=line_content.strip()
+                    ))
+                elif is_test:
+                    # Test files should have governance guards
+                    if "MAHOUN_ALLOW_UNGOVERNED_SEEDING" not in self._read_file_content(file_path):
+                        self.violations.append(GovernanceViolation(
+                            file_path=file_path,
+                            line_number=line_num,
+                            severity=ViolationSeverity.HIGH,
+                            category="TEST_MISSING_GUARD",
+                            description="Test file lacks governance guard check",
+                            code_snippet=line_content.strip()
+                        ))
+    
+    def _check_raw_session_usage(self):
+        """Check for raw session usage bypassing governance"""
+        print("🔍 Checking raw session usage...")
+        
+        raw_session_pattern = r'\.session\(\)'
+        matches = self._find_pattern(raw_session_pattern, include_patterns=['*.py'])
+        
+        for file_path, line_num, line_content in matches:
+            # Skip if it's governed_session, comments, or in tests
+            if ('governed_session' in line_content or 
+                line_content.strip().startswith('#') or
+                line_content.strip().startswith('*') or
+                line_content.strip().startswith('//') or
+                '"""' in line_content or
+                "'" in line_content and line_content.count("'") >= 2):
+                continue
+            if any(test_pattern in file_path for test_pattern in self.test_patterns):
+                continue
+            
+            # Check context - should use governed patterns
+            file_content = self._read_file_content(file_path)
+            if 'GovernedNeo4jSession' not in file_content and 'governed_session' not in file_content:
+                self.violations.append(GovernanceViolation(
+                    file_path=file_path,
+                    line_number=line_num,
+                    severity=ViolationSeverity.MEDIUM,
+                    category="RAW_SESSION_USAGE",
+                    description="Raw session usage without governance context",
+                    code_snippet=line_content.strip()
+                ))
+    
+    def _check_authorized_context_usage(self):
+        """Check _authorized_write_ctx usage patterns"""
+        print("🔐 Checking _authorized_write_ctx usage...")
+        
+        ctx_pattern = r'_authorized_write_ctx'
+        matches = self._find_pattern(ctx_pattern, include_patterns=['*.py'])
+        
+        # Should be used in mutation_boundary.py and governance_kernel.py
+        expected_files = {
+            'mutation_boundary.py',
+            'governance_kernel.py'
+        }
+        
+        found_files = set()
+        for file_path, line_num, line_content in matches:
+            if any(test_pattern in file_path for test_pattern in self.test_patterns):
+                continue
+            found_files.add(Path(file_path).name)
+        
+        for expected in expected_files:
+            if expected not in found_files:
+                self.violations.append(GovernanceViolation(
+                    file_path=f"*{expected}",
+                    line_number=0,
+                    severity=ViolationSeverity.HIGH,
+                    category="MISSING_CONTEXT_USAGE",
+                    description=f"_authorized_write_ctx not found in {expected}",
+                    code_snippet=""
+                ))
+    
+    def _check_mutation_bypasses(self):
+        """Check for potential mutation bypasses"""
+        print("⚠️  Checking for potential mutation bypasses...")
+        
+        mutation_patterns = [
+            r'CREATE\s+\(',
+            r'MERGE\s+\(',
+            r'DELETE\s+',
+            r'SET\s+\w+\.',
+        ]
+        
+        for pattern in mutation_patterns:
+            matches = self._find_pattern(pattern, include_patterns=['*.py'])
+            
+            for file_path, line_num, line_content in matches:
+                if any(test_pattern in file_path for test_pattern in self.test_patterns):
+                    continue
+                
+                # Check if it's in a string (likely Cypher query)
+                if '"' in line_content or "'" in line_content:
+                    file_content = self._read_file_content(file_path)
+                    if ('GovernedNeo4jSession' not in file_content and 
+                        'governed_session' not in file_content):
+                        self.violations.append(GovernanceViolation(
+                            file_path=file_path,
+                            line_number=line_num,
+                            severity=ViolationSeverity.MEDIUM,
+                            category="POTENTIAL_MUTATION_BYPASS",
+                            description="Mutation Cypher without governance context",
+                            code_snippet=line_content.strip()
+                        ))
+    
+    def _should_exclude_file(self, file_path: str) -> bool:
+        """Check if file should be excluded from validation"""
+        return any(exclude in file_path for exclude in self.exclude_patterns)
+    
+    def _find_pattern(self, pattern: str, include_patterns: List[str]) -> List[Tuple[str, int, str]]:
+        """Find pattern occurrences in files"""
+        matches = []
+        
+        for include_pattern in include_patterns:
+            if include_pattern == '*.py':
+                files = list(self.repo_root.rglob('*.py'))
+            else:
+                files = list(self.repo_root.rglob(include_pattern))
+            
+            for file_path in files:
+                rel_path = str(file_path.relative_to(self.repo_root))
+                
+                # Skip excluded files
+                if self._should_exclude_file(rel_path):
+                    continue
+                    
+                try:
+                    content = file_path.read_text(encoding='utf-8')
+                    for line_num, line in enumerate(content.split('\n'), 1):
+                        if re.search(pattern, line):
+                            matches.append((rel_path, line_num, line))
+                except (UnicodeDecodeError, OSError):
+                    continue
+        
+        return matches
+    
+    def _read_file_content(self, file_path: str) -> str:
+        """Read file content safely"""
+        try:
+            full_path = self.repo_root / file_path
+            return full_path.read_text(encoding='utf-8')
+        except (UnicodeDecodeError, OSError):
+            return ""
+    
+    def _report_results(self) -> bool:
+        """Report validation results"""
+        print("\n📊 GOVERNANCE COMPLIANCE REPORT")
+        print("=" * 50)
+        
+        if not self.violations:
+            print("✅ EXCELLENT: No governance violations detected!")
+            print("🏰 Your MAHOUN fortress is perfectly secure!")
+            return True
+        
+        # Group by severity
+        by_severity = {}
+        for violation in self.violations:
+            sev = violation.severity.value
+            if sev not in by_severity:
+                by_severity[sev] = []
+            by_severity[sev].append(violation)
+        
+        total = len(self.violations)
+        print(f"❌ VIOLATIONS DETECTED: {total}")
+        
+        for severity in [ViolationSeverity.CRITICAL, ViolationSeverity.HIGH, 
+                        ViolationSeverity.MEDIUM, ViolationSeverity.LOW]:
+            sev_violations = by_severity.get(severity.value, [])
+            if sev_violations:
+                print(f"\n🚨 {severity.value} ({len(sev_violations)} violations):")
+                for v in sev_violations[:5]:  # Show first 5 of each severity
+                    print(f"   📁 {v.file_path}:{v.line_number}")
+                    print(f"      {v.description}")
+                    if v.code_snippet:
+                        print(f"      Code: {v.code_snippet}")
+                if len(sev_violations) > 5:
+                    print(f"   ... and {len(sev_violations) - 5} more")
+        
+        print(f"\n🔧 REMEDIATION NEEDED:")
+        print("   1. Fix CRITICAL violations immediately")
+        print("   2. Replace direct drivers with governed connections")
+        print("   3. Use connection.execute_query() for read-only queries")
+        print("   4. All mutations must go through GovernedNeo4jSession")
+        
+        return False
+
+
+def main():
+    """Main entry point"""
+    repo_root = Path(__file__).parent.parent
+    validator = GovernanceValidator(repo_root)
+    
+    success = validator.validate_all()
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()

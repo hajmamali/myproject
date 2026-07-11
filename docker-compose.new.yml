@@ -1,0 +1,853 @@
+# ============================================================================
+# MAHOUN Platform - New Unified Architecture
+# ============================================================================
+# Replaces: docker-compose.yml, docker-compose.prod.yml (650+ lines)
+# Size: 3 containers vs 8+ legacy containers
+# Focus: Security, performance, maintainability
+# ============================================================================
+
+version: '3.9'
+
+x-common-env: &common-env
+  MAHOUN_ENV: ${MAHOUN_ENV:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  TZ: UTC
+
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+x-security-opts: &security-opts
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  # ==========================================================================
+  # Governance Kernel - Pure governance runtime (87MB)
+  # ==========================================================================
+  governance-kernel:
+    build:
+      context: .
+      dockerfile: Dockerfile.kernel
+    image: mahoun/governance-kernel:${VERSION:-latest}
+    container_name: mahoun-governance-kernel
+    <<: *restart-policy
+    <<: *security-opts
+    
+    ports:
+      - "${KERNEL_PORT:-8080}:8080"
+    
+    environment:
+      <<: *common-env
+      MAHOUN_GUARD_MODE: STRICT
+      GOVERNANCE_MODE: STRICT
+      AUDIT_ENABLED: "true"
+    
+    volumes:
+      - governance-audit:/app/audit:rw
+      - governance-temp:/tmp:rw
+    
+    networks:
+      - governance-net
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ==========================================================================
+  # API Server - FastAPI endpoints only (200MB)
+  # ==========================================================================
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: mahoun/api-server:${VERSION:-latest}
+    container_name: mahoun-api-server
+    <<: *restart-policy
+    
+    ports:
+      - "${API_PORT:-8000}:8000"
+    
+    environment:
+      <<: *common-env
+      GOVERNANCE_KERNEL_URL: http://governance-kernel:8080
+      
+      # Database connections
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-mahoun}
+      POSTGRES_USER: ${POSTGRES_USER:-mahoun}
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD:?DB_POSTGRES_PASSWORD required}
+      
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+      
+      # Security
+      JWT_SECRET: ${SECURITY_JWT_SECRET:?SECURITY_JWT_SECRET required}
+      API_KEY: ${API_KEY:?API_KEY required}
+    
+    volumes:
+      - api-logs:/app/logs:rw
+    
+    networks:
+      - api-net
+      - governance-net
+    
+    depends_on:
+      governance-kernel:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # MCP Server - Model Context Protocol (100MB)
+  # ==========================================================================
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    image: mahoun/mcp-server:${VERSION:-latest}
+    container_name: mahoun-mcp-server
+    <<: *restart-policy
+    
+    ports:
+      - "${MCP_PORT:-8001}:8000"
+    
+    environment:
+      <<: *common-env
+      GOVERNANCE_KERNEL_URL: http://governance-kernel:8080
+    
+    networks:
+      - mcp-net
+      - governance-net
+    
+    depends_on:
+      governance-kernel:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ==========================================================================
+  # Redis - Enterprise-Grade Caching & Session Store
+  # ==========================================================================
+  redis:
+    image: redis:7.4.2-alpine3.19   # Latest security-patched Alpine
+    container_name: mahoun-redis-enterprise
+    <<: *restart-policy
+    
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_SENTINEL_PORT:-26379}:26379"  # Sentinel for HA
+    
+    environment:
+      <<: *common-env
+      # Redis Configuration
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+      REDIS_MAXMEMORY: ${REDIS_MAXMEMORY:-1gb}
+      REDIS_MAXMEMORY_POLICY: "allkeys-lru"
+      
+      # Persistence Configuration  
+      REDIS_SAVE_POLICY: "900 1 300 10 60 10000"  # Enhanced save policy
+      REDIS_AOF_ENABLED: "yes"
+      REDIS_AOF_FSYNC: "everysec"  # Balance between performance & durability
+      
+      # Network & Security
+      REDIS_PROTECTED_MODE: "no"   # Handled by Docker networks
+      REDIS_TCP_BACKLOG: "511"
+      REDIS_TCP_KEEPALIVE: "300"
+      REDIS_TIMEOUT: "0"
+      
+      # Performance Tuning
+      REDIS_DATABASES: "16"
+      REDIS_CLIENT_OUTPUT_BUFFER_LIMIT: "replica 256mb 64mb 60"
+      REDIS_HZ: "100"              # Background task frequency
+      REDIS_DYNAMIC_HZ: "yes"      # Adaptive frequency
+      
+      # Monitoring & Logging
+      REDIS_LOGLEVEL: "notice"
+      REDIS_SYSLOG_ENABLED: "no"
+      REDIS_LATENCY_MONITOR_THRESHOLD: "100"  # Monitor >100ms ops
+    
+    command: |
+      sh -c '
+      echo "Starting Redis Enterprise Configuration..."
+      
+      # Create Redis configuration
+      cat > /usr/local/etc/redis/redis.conf << EOF
+      # Network
+      bind 0.0.0.0
+      port 6379
+      tcp-backlog $${REDIS_TCP_BACKLOG}
+      tcp-keepalive $${REDIS_TCP_KEEPALIVE}
+      timeout $${REDIS_TIMEOUT}
+      
+      # Security  
+      requirepass $${REDIS_PASSWORD}
+      protected-mode no
+      
+      # Memory Management
+      maxmemory $${REDIS_MAXMEMORY}
+      maxmemory-policy $${REDIS_MAXMEMORY_POLICY}
+      
+      # Persistence (Hybrid RDB + AOF)
+      save $${REDIS_SAVE_POLICY}
+      stop-writes-on-bgsave-error yes
+      rdbcompression yes
+      rdbchecksum yes
+      dbfilename dump.rdb
+      
+      # AOF Configuration  
+      appendonly $${REDIS_AOF_ENABLED}
+      appendfilename "appendonly.aof"
+      appendfsync $${REDIS_AOF_FSYNC}
+      no-appendfsync-on-rewrite no
+      auto-aof-rewrite-percentage 100
+      auto-aof-rewrite-min-size 64mb
+      
+      # Performance
+      databases $${REDIS_DATABASES}
+      hz $${REDIS_HZ}
+      dynamic-hz $${REDIS_DYNAMIC_HZ}
+      
+      # Client Management
+      client-output-buffer-limit normal 0 0 0
+      client-output-buffer-limit $${REDIS_CLIENT_OUTPUT_BUFFER_LIMIT}
+      client-output-buffer-limit pubsub 32mb 8mb 60
+      
+      # Logging
+      loglevel $${REDIS_LOGLEVEL}
+      logfile ""
+      syslog-enabled $${REDIS_SYSLOG_ENABLED}
+      
+      # Advanced Features
+      latency-monitor-threshold $${REDIS_LATENCY_MONITOR_THRESHOLD}
+      
+      # Modules (if needed)
+      # loadmodule /usr/lib/redis/modules/redisearch.so
+      # loadmodule /usr/lib/redis/modules/redisjson.so
+      EOF
+      
+      echo "✅ Redis configuration created"
+      echo "🚀 Starting Redis server with enterprise config..."
+      
+      exec redis-server /usr/local/etc/redis/redis.conf
+      '
+    
+    volumes:
+      - redis-data:/data
+      - redis-logs:/var/log/redis
+      - redis-conf:/usr/local/etc/redis
+    
+    networks:
+      - api-net
+      - monitoring-net
+    
+    healthcheck:
+      test: |
+        redis-cli --no-auth-warning -a "$${REDIS_PASSWORD}" ping | grep PONG &&
+        redis-cli --no-auth-warning -a "$${REDIS_PASSWORD}" info replication | grep role:master
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        labels: "service,environment,cache"
+    
+    labels:
+      - "com.mahoun.service=redis"
+      - "com.mahoun.environment=${MAHOUN_ENV:-production}"
+      - "com.mahoun.database.type=cache"
+      - "com.mahoun.backup.enabled=true"
+      - "com.mahoun.ha.enabled=true"
+
+# ============================================================================
+# Infrastructure Services (Profiles-based)
+# ============================================================================
+  postgres:
+    image: postgres:16.6-alpine3.19  # Latest security-patched version
+    container_name: mahoun-postgres-enterprise
+    <<: *restart-policy
+    profiles:
+      - storage      # Only with --profile storage
+      - production   # Or --profile production
+    
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    environment:
+      # Core Database Configuration
+      POSTGRES_DB: ${POSTGRES_DB:-mahoun}
+      POSTGRES_USER: ${POSTGRES_USER:-mahoun}
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD:?DB_POSTGRES_PASSWORD required}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C --auth-host=md5 --auth-local=peer"
+      
+      # Data Directory & Cluster Configuration
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_HOST_AUTH_METHOD: "md5"
+      
+      # Performance Tuning (Production-grade)
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-1GB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-3GB}  
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: "0.9"
+      POSTGRES_WAL_BUFFERS: "64MB"
+      POSTGRES_DEFAULT_STATISTICS_TARGET: "500"  # Enhanced for complex queries
+      POSTGRES_RANDOM_PAGE_COST: "1.1"  # SSD-optimized
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: "300"   # High concurrent workload
+      POSTGRES_WORK_MEM: "32MB"         # Per-query memory  
+      
+      # WAL & Recovery Configuration (Enterprise-grade)
+      POSTGRES_MIN_WAL_SIZE: "2GB"
+      POSTGRES_MAX_WAL_SIZE: "8GB"  
+      POSTGRES_WAL_LEVEL: "replica"     # Enable streaming replication
+      POSTGRES_MAX_WAL_SENDERS: "10"    # Allow replica connections
+      POSTGRES_WAL_KEEP_SEGMENTS: "64"  # Keep WAL for recovery
+      POSTGRES_ARCHIVE_MODE: "on"       # Enable WAL archiving
+      POSTGRES_ARCHIVE_COMMAND: "test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f"
+      
+      # Connection & Security Settings
+      POSTGRES_MAX_CONNECTIONS: "500"    # High-concurrency support
+      POSTGRES_SUPERUSER_RESERVED_CONNECTIONS: "5"
+      POSTGRES_STATEMENT_TIMEOUT: "300000"  # 5 minute query timeout
+      POSTGRES_LOCK_TIMEOUT: "30000"        # 30 second lock timeout
+      
+      # Logging & Monitoring (Comprehensive)
+      POSTGRES_LOG_DESTINATION: "stderr,csvlog"
+      POSTGRES_LOG_STATEMENT: "mod"         # Log all modifications
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: "1000"  # Log slow queries (>1s)
+      POSTGRES_LOG_CHECKPOINTS: "on"
+      POSTGRES_LOG_CONNECTIONS: "on"
+      POSTGRES_LOG_DISCONNECTIONS: "on"
+      POSTGRES_LOG_LOCK_WAITS: "on"
+      POSTGRES_LOG_TEMP_FILES: "10240"      # Log temp files >10MB
+      
+      # Security Hardening  
+      POSTGRES_SSL: "on"
+      POSTGRES_SSL_PREFER_SERVER_CIPHERS: "on"
+      POSTGRES_PASSWORD_ENCRYPTION: "scram-sha-256"  # Modern encryption
+      POSTGRES_ROW_SECURITY: "on"           # Enable row-level security
+      
+      # Advanced Features
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: "pg_stat_statements,auto_explain,pg_buffercache"
+      POSTGRES_AUTO_EXPLAIN_LOG_MIN_DURATION: "5s"  # Auto-explain slow queries
+      POSTGRES_AUTO_EXPLAIN_LOG_ANALYZE: "on"
+      
+      # Timezone & Locale
+      TZ: "UTC"
+      LANG: "en_US.UTF-8"
+      LC_ALL: "en_US.UTF-8"
+    
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-archive:/var/lib/postgresql/archive
+      - postgres-backups:/var/lib/postgresql/backups
+      - postgres-logs:/var/log/postgresql  
+      - ./sql/init:/docker-entrypoint-initdb.d:ro
+      - ./sql/ssl:/var/lib/postgresql/ssl:ro
+    
+    networks:
+      - api-net
+      - monitoring-net
+    
+    healthcheck:
+      test: |
+        pg_isready -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun} -h localhost -p 5432 &&
+        psql -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun} -c "SELECT 1;" > /dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
+        labels: "service,environment,database"
+    
+    labels:
+      - "com.mahoun.service=postgresql"
+      - "com.mahoun.environment=${MAHOUN_ENV:-production}"
+      - "com.mahoun.database.type=relational"
+      - "com.mahoun.backup.enabled=true"
+      - "com.mahoun.replication.enabled=true"
+
+  neo4j:
+    image: neo4j:5.24-community-bullseye  # Latest stable with security patches
+    container_name: mahoun-neo4j-enterprise
+    <<: *restart-policy
+    profiles:
+      - storage      # Only with --profile storage
+      - production   # Or --profile production
+    
+    ports:
+      - "${NEO4J_BOLT_PORT:-7687}:7687"   # Bolt protocol
+      - "${NEO4J_HTTP_PORT:-7474}:7474"   # HTTP interface  
+      - "${NEO4J_HTTPS_PORT:-7473}:7473"  # HTTPS interface
+      - "${NEO4J_BACKUP_PORT:-6362}:6362" # Backup port
+    
+    environment:
+      # Authentication & Security
+      NEO4J_AUTH: neo4j/${DB_NEO4J_PASSWORD:?DB_NEO4J_PASSWORD required}
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      
+      # Advanced Plugins & Extensions
+      NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
+      NEO4J_apoc_export_file_enabled: "true"
+      NEO4J_apoc_import_file_enabled: "true" 
+      NEO4J_apoc_import_file_use__neo4j__config: "true"
+      
+      # Memory Optimization (Production-grade)
+      NEO4J_dbms_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-2G}
+      NEO4J_dbms_memory_heap_max__size: ${NEO4J_HEAP_MAX:-4G}
+      NEO4J_dbms_memory_pagecache_size: ${NEO4J_PAGECACHE:-2G}
+      
+      # Connection & Performance Tuning
+      NEO4J_dbms_connector_bolt_thread__pool__min__size: 5
+      NEO4J_dbms_connector_bolt_thread__pool__max__size: 400
+      NEO4J_dbms_connector_bolt_thread__pool__keep__alive: 5m
+      
+      # Security Hardening
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*,n10s.*"
+      NEO4J_dbms_security_procedures_allowlist: "apoc.*,gds.*,n10s.*"
+      NEO4J_dbms_logs_security_level: "INFO"
+      NEO4J_dbms_security_auth__enabled: "true"
+      
+      # Network & Protocol Configuration
+      NEO4J_dbms_default__listen__address: "0.0.0.0"
+      NEO4J_dbms_connector_bolt_listen__address: ":7687"
+      NEO4J_dbms_connector_http_listen__address: ":7474"
+      NEO4J_dbms_connector_https_listen__address: ":7473"
+      
+      # Monitoring & Metrics (Enterprise-grade)
+      NEO4J_server_metrics_enabled: "true"
+      NEO4J_server_metrics_prometheus_enabled: "true"
+      NEO4J_server_metrics_prometheus_endpoint: "0.0.0.0:2004"
+      NEO4J_server_metrics_csv_enabled: "true"
+      NEO4J_server_metrics_csv_interval: "30s"
+      
+      # Query Performance & Logging
+      NEO4J_dbms_logs_query_enabled: "INFO"
+      NEO4J_dbms_logs_query_threshold: "1s"
+      NEO4J_dbms_logs_query_parameter__logging__enabled: "false"  # Security
+      NEO4J_dbms_track__query__allocation: "true"
+      NEO4J_dbms_logs_query_page__logging__enabled: "true"
+      
+      # Transaction & Concurrency
+      NEO4J_dbms_transaction_timeout: "60s"
+      NEO4J_dbms_transaction_concurrent_maximum: "1000"
+      
+      # Backup & Recovery Configuration  
+      NEO4J_dbms_backup_enabled: "true"
+      NEO4J_dbms_backup_listen__address: "0.0.0.0:6362"
+      
+      # JVM Performance Tuning
+      NEO4J_dbms_jvm_additional: >-
+        -XX:+UseG1GC 
+        -XX:+UnlockExperimentalVMOptions 
+        -XX:+UseCGroupMemoryLimitForHeap
+        -XX:MaxGCPauseMillis=200
+        -XX:G1HeapRegionSize=16m
+        -XX:+DisableExplicitGC
+    
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - neo4j-import:/var/lib/neo4j/import
+      - neo4j-plugins:/plugins
+      - neo4j-backups:/backups:rw
+      - neo4j-conf:/conf:ro
+    
+    networks:
+      - api-net
+      - monitoring-net
+    
+    healthcheck:
+      test: |
+        cypher-shell -u neo4j -p $$DB_NEO4J_PASSWORD "
+        CALL db.ping() YIELD success 
+        RETURN success" || exit 1
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        labels: "service,environment,database"
+    
+    labels:
+      - "com.mahoun.service=neo4j"
+      - "com.mahoun.environment=${MAHOUN_ENV:-production}"
+      - "com.mahoun.database.type=graph"
+      - "com.mahoun.backup.enabled=true"
+
+  chromadb:
+    image: chromadb/chroma:0.5.23  # Latest stable production release
+    container_name: mahoun-chromadb-enterprise  
+    <<: *restart-policy
+    profiles:
+      - storage      # Only with --profile storage
+      - production   # Or --profile production
+    
+    ports:
+      - "${CHROMADB_PORT:-8001}:8000"
+      - "${CHROMADB_ADMIN_PORT:-8002}:8001"  # Admin interface
+    
+    environment:
+      # Core Configuration
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /chroma/chroma
+      ANONYMIZED_TELEMETRY: "FALSE"
+      ALLOW_RESET: "FALSE"  # Security: Prevent data reset in production
+      
+      # Authentication & Security (Enterprise)
+      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: ${CHROMA_AUTH_PROVIDER:-chromadb.auth.token_auth_server_credentials_provider.TokenAuthServerCredentialsProvider}
+      CHROMA_SERVER_AUTH_CREDENTIALS: ${CHROMA_TOKEN:-}
+      CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER: "X-Chroma-Token"
+      CHROMA_AUTH_TOKEN_TRANSPORT_HEADER: "Authorization"
+      
+      # Performance Configuration
+      CHROMA_SERVER_HTTP_PORT: "8000"
+      CHROMA_SERVER_HOST: "0.0.0.0"  
+      CHROMA_SERVER_CORS_ALLOW_ORIGINS: '["*"]'  # Configure for production
+      
+      # Database Backend (SQLite with WAL mode for performance)
+      CHROMA_DB_IMPL: "chromadb.db.impl.sqlite.SqliteDB"
+      CHROMA_SQLITE_DATABASE: "/chroma/chroma/chroma.sqlite3"
+      CHROMA_SQLITE_JOURNAL_MODE: "WAL"          # Write-Ahead Logging
+      CHROMA_SQLITE_SYNCHRONOUS: "NORMAL"       # Balance safety/performance
+      CHROMA_SQLITE_CACHE_SIZE: "10000"         # 10MB cache
+      
+      # Collection & Indexing Configuration
+      CHROMA_COLLECTION_MAX_NAME_LENGTH: "63"
+      CHROMA_DEFAULT_EMBEDDING_FUNCTION: "sentence_transformers"
+      
+      # Logging & Monitoring
+      CHROMA_LOG_LEVEL: "INFO"
+      CHROMA_SERVER_GRPC_PORT: "50051"
+      
+      # Memory & Resource Limits  
+      CHROMA_SEGMENT_CACHE_POLICY: "LRU"
+      CHROMA_MAX_SEGMENT_SIZE: "100000000"       # 100MB segments
+      CHROMA_SEGMENT_DIRECTORY: "/chroma/segments"
+      
+      # Backup & Recovery
+      CHROMA_BACKUP_ENABLED: "true"
+      CHROMA_BACKUP_INTERVAL: "3600"             # Hourly backups
+      CHROMA_BACKUP_RETENTION: "168"             # Keep 7 days
+      
+      # Advanced Performance Tuning
+      UVICORN_WORKERS: "4"                       # Multiple workers  
+      UVICORN_WORKER_CLASS: "uvicorn.workers.UvicornWorker"
+      UVICORN_LOG_LEVEL: "info"
+      UVICORN_ACCESS_LOG: "true"
+    
+    volumes:
+      - chromadb-data:/chroma/chroma
+      - chromadb-segments:/chroma/segments  
+      - chromadb-backups:/chroma/backups
+      - chromadb-logs:/chroma/logs
+      - chromadb-config:/chroma/config:ro
+    
+    networks:
+      - api-net
+      - monitoring-net
+    
+    healthcheck:
+      test: |
+        curl -f "http://localhost:8000/api/v1/heartbeat" &&
+        curl -f "http://localhost:8000/api/v1/version" | grep -q "version" &&
+        curl -f "http://localhost:8000/api/v1/pre-flight-checks" | grep -q '"max_batch_size"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        labels: "service,environment,vector"
+    
+    labels:
+      - "com.mahoun.service=chromadb"
+      - "com.mahoun.environment=${MAHOUN_ENV:-production}"
+      - "com.mahoun.database.type=vector"
+      - "com.mahoun.backup.enabled=true"
+      - "com.mahoun.auth.enabled=true"
+
+# ============================================================================
+# Enterprise Volumes - Optimized & Backed Up
+# ============================================================================
+volumes:
+  # Governance Kernel Volumes
+  governance-audit:
+    name: mahoun_governance_audit_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/governance/audit
+  
+  governance-temp:
+    name: mahoun_governance_temp_${MAHOUN_ENV:-prod}
+    driver: local
+  
+  # API Server Volumes  
+  api-logs:
+    name: mahoun_api_logs_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_DIR:-./logs}/api
+  
+  # Neo4j Enterprise Volumes
+  neo4j-data:
+    name: mahoun_neo4j_data_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/neo4j/data
+  
+  neo4j-logs:
+    name: mahoun_neo4j_logs_${MAHOUN_ENV:-prod} 
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_DIR:-./logs}/neo4j
+  
+  neo4j-import:
+    name: mahoun_neo4j_import_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/neo4j/import
+  
+  neo4j-plugins:
+    name: mahoun_neo4j_plugins_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/neo4j/plugins
+  
+  neo4j-backups:
+    name: mahoun_neo4j_backups_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${BACKUP_DIR:-./backups}/neo4j
+  
+  neo4j-conf:
+    name: mahoun_neo4j_conf_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CONFIG_DIR:-./config}/neo4j
+
+  # PostgreSQL Enterprise Volumes
+  postgres-data:
+    name: mahoun_postgres_data_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none  
+      o: bind
+      device: ${DATA_DIR:-./data}/postgres/data
+  
+  postgres-archive:
+    name: mahoun_postgres_archive_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/postgres/archive
+  
+  postgres-backups:
+    name: mahoun_postgres_backups_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${BACKUP_DIR:-./backups}/postgres
+  
+  postgres-logs:
+    name: mahoun_postgres_logs_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_DIR:-./logs}/postgres
+  
+  # Redis Enterprise Volumes
+  redis-data:
+    name: mahoun_redis_data_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/redis/data
+  
+  redis-logs:
+    name: mahoun_redis_logs_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_DIR:-./logs}/redis
+  
+  redis-conf:
+    name: mahoun_redis_conf_${MAHOUN_ENV:-prod}
+    driver: local
+  
+  # ChromaDB Enterprise Volumes  
+  chromadb-data:
+    name: mahoun_chromadb_data_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/chromadb/data
+  
+  chromadb-segments:
+    name: mahoun_chromadb_segments_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/chromadb/segments
+  
+  chromadb-backups:
+    name: mahoun_chromadb_backups_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${BACKUP_DIR:-./backups}/chromadb
+  
+  chromadb-logs:
+    name: mahoun_chromadb_logs_${MAHOUN_ENV:-prod}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_DIR:-./logs}/chromadb
+  
+  chromadb-config:
+    name: mahoun_chromadb_config_${MAHOUN_ENV:-prod}
+    driver: local
+
+# ============================================================================
+# Networks - Clean topology
+# ============================================================================
+networks:
+  governance-net:
+    name: mahoun_governance
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
+    
+  api-net:
+    name: mahoun_api
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.2.0/24
+    
+  mcp-net:
+    name: mahoun_mcp
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.3.0/24
