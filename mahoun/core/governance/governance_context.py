@@ -83,6 +83,9 @@ class GovernanceContext:
     deterministic_resolver: DeterministicResolver
     ontology_enforcer: OntologyEnforcer
 
+    # Optional actor identity for audit trail compatibility
+    actor_id: str | None = None
+
     # Runtime state
     proof_tracking_active: bool = True
     contradiction_hooks_active: bool = True
@@ -101,6 +104,7 @@ class GovernanceContext:
             "correlation_id": self.correlation_id,
             "timestamp": self.timestamp,
             "execution_mode": self.execution_mode,
+            "actor_id": self.actor_id,
             "governance_components": {
                 "provenance_tracker": True,
                 "validator_pipeline": True,
@@ -165,6 +169,7 @@ class GovernanceContext:
             correlation_id=child_id,
             timestamp=datetime.now(UTC).isoformat(),
             execution_mode=self.execution_mode,
+            actor_id=self.actor_id,
             provenance_tracker=self.provenance_tracker,
             validator_pipeline=self.validator_pipeline,
             deterministic_resolver=self.deterministic_resolver,
@@ -238,29 +243,33 @@ class GovernanceContextManager:
     """
 
     # Replaced with contextvars for async-safe isolation (P0 GOVERNANCE CONTEXT ISOLATION)
-    # Using immutable tuple to prevent cross-task contamination via shared list object.
-    _governance_stack: ContextVar[tuple[GovernanceContext, ...] | None] = ContextVar(
+    # We store a per-context list and replace it on push to keep tests/backward compatibility.
+    _governance_stack: ContextVar[list[GovernanceContext] | None] = ContextVar(
         "mahoun_governance_stack", default=None
     )
 
     @classmethod
-    def _get_stack(cls) -> tuple[GovernanceContext, ...]:
-        """Return the isolated stack for the current async context."""
+    def _get_stack(cls) -> list[GovernanceContext]:
+        """Return a mutable stack for the current async context."""
         stack = cls._governance_stack.get()
-        return stack if stack is not None else ()
+        if stack is None:
+            stack = []
+            cls._governance_stack.set(stack)
+        return stack
 
     @classmethod
     def _reset_for_test(cls) -> None:
         """
         Test-only helper to reset governance context for the current async task.
         """
-        cls._governance_stack.set(())
+        cls._governance_stack.set([])
 
     @classmethod
     def create_context(
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> GovernanceContext:
         """
         Create a new governance context.
@@ -268,6 +277,7 @@ class GovernanceContextManager:
         Args:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode (STRICT, AUDIT, etc.)
+            actor_id: Optional actor identity for audit trail compatibility
 
         Returns:
             GovernanceContext instance
@@ -286,6 +296,7 @@ class GovernanceContextManager:
             correlation_id=corr_id,
             timestamp=datetime.now(UTC).isoformat(),
             execution_mode=execution_mode,
+            actor_id=actor_id,
             provenance_tracker=provenance_tracker,
             validator_pipeline=validator_pipeline,
             deterministic_resolver=deterministic_resolver,
@@ -298,6 +309,7 @@ class GovernanceContextManager:
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> AsyncIterator[GovernanceContext]:
         """
         Async context manager for active governance context.
@@ -307,6 +319,7 @@ class GovernanceContextManager:
         Args:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode
+            actor_id: Optional actor identity for audit trail compatibility
 
         Yields:
             GovernanceContext instance
@@ -314,7 +327,11 @@ class GovernanceContextManager:
         Raises:
             GovernanceViolationError: If context cannot be established
         """
-        ctx = cls.create_context(correlation_id=correlation_id, execution_mode=execution_mode)
+        ctx = cls.create_context(
+            correlation_id=correlation_id,
+            execution_mode=execution_mode,
+            actor_id=actor_id,
+        )
 
         try:
             # Validate governance scope
@@ -322,7 +339,7 @@ class GovernanceContextManager:
 
             # Push to isolated context stack (IMMUTABLE update for true isolation)
             stack = cls._get_stack()
-            token = cls._governance_stack.set(stack + (ctx,))
+            token = cls._governance_stack.set([*stack, ctx])
 
             log.info(
                 "GovernanceContext activated",
