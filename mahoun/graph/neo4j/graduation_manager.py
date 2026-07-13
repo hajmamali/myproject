@@ -21,6 +21,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from mahoun.core.governance.provenance_factory import ProvenanceFactory
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,15 +106,18 @@ class GraduationManager:
                 f"Only quarantined nodes can be graduated."
             )
 
-        # Build graduation data
+        # Build graduation provenance using factory (includes all required fields)
         graduation_timestamp = datetime.now(timezone.utc).isoformat()
-        graduation_provenance = {
-            "source": f"graduation_manager:{attestation_source}",
-            "graduated_at": graduation_timestamp,
-            "original_quarantined_label": quarantined_label,
-            "attestation_source": attestation_source,
-            "attestation_metadata": attestation_metadata or {},
-        }
+        graduation_provenance = ProvenanceFactory.create(
+            source=f"graduation_manager:{attestation_source}",
+            correlation_id=f"graduation-{node_id}",
+            author=attestation_source,
+            governance_scope_id=self._session._governance_scope_id,
+            runtime_attestation_id=self._session._session._correlation_id if hasattr(self._session, '_session') else graduation_timestamp,
+            lineage_parent=None,
+            document_id=node_id,
+            pipeline_version="graduation_manager",
+        ).to_dict()
 
         # Write the graduated node with canonical label and confidence=1.0
         node_data = {

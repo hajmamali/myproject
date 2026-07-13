@@ -39,6 +39,7 @@ class LegalRule:
     version: int = 1
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    provenance: Optional[Any] = None
 
 
 @dataclass
@@ -54,6 +55,7 @@ class LegalPrecedent:
     version: int = 1
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    provenance: Optional[Any] = None
 
 
 class LegalKnowledgeGraph:
@@ -300,6 +302,13 @@ class LegalKnowledgeGraph:
             )
             log.debug(f"Added legal rule: {rule_id}")
         
+        # Set provenance
+        rule.provenance = {
+            "source": "knowledge_graph",
+            "added_at": now,
+            "rule_id": rule_id,
+            "version": rule.version,
+        }
         self.legal_rules[rule_id] = rule
         self._save_to_storage()
         return rule

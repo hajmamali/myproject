@@ -298,6 +298,7 @@ class GovernanceContextManager:
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> AsyncIterator[GovernanceContext]:
         """
         Async context manager for active governance context.

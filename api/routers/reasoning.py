@@ -37,7 +37,11 @@ from mahoun.core.governance import (
 )
 from mahoun.core.fortress_validator import SecurityBreachException
 from mahoun.core.logging import setup_logger
-from mahoun.core.runtime_config import is_desktop_minimal, should_skip_graph
+from mahoun.core.runtime_config import (
+    get_runtime_settings,
+    is_desktop_minimal,
+    should_skip_graph,
+)
 from mahoun.crypto.proof_system import ProofSystem
 from mahoun.crypto.signatures import generate_keypair
 from mahoun.graph.ultra_graph_builder import UltraGraphBuilder

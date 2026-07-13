@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Sequence
@@ -43,7 +44,7 @@ class ValidationGateResult:
 class PipelineResult:
     """Immutable result of the full validation pipeline."""
     passed: bool
-    gate_results: tuple  # Tuple[ValidationGateResult, ...]
+    gate_results: List[ValidationGateResult]  # List of ValidationGateResult
     correlation_id: str
     timestamp: str
     pipeline_hash: str
@@ -148,7 +149,7 @@ class ValidatorPipeline:
 
         return PipelineResult(
             passed=True,
-            gate_results=tuple(results),
+            gate_results=results,
             correlation_id=cid,
             timestamp=ts,
             pipeline_hash=self._compute_hash(node_data),
@@ -211,7 +212,7 @@ class ValidatorPipeline:
 
         return PipelineResult(
             passed=True,
-            gate_results=tuple(results),
+            gate_results=results,
             correlation_id=cid,
             timestamp=ts,
             pipeline_hash=self._compute_hash(relationship_data),
@@ -315,3 +316,274 @@ def strict_schema_validation_gate(
                 correlation_id=correlation_id,
             )
         ) from e
+
+
+# ============================================================================
+# Strict Node Label Validation (PATCH P0-1)
+# ============================================================================
+
+import unicodedata as _unicodedata
+
+# Canonical ontology allowlist of hardened node labels.
+# This is intentionally minimal — callers register additional labels via
+# register_label() when their ontology is approved by the kernel.
+ALLOWED_NODE_LABELS: "frozenset[str]" = frozenset({
+    "Case",
+    "Verdict",
+    "LawArticle",
+    "Chunk",
+    "QuarantinedChunk",
+    "QuarantinedVerdict",
+    "Document",
+    "Provenance",
+    "AuditTrail",
+    "Evidence",
+})
+
+# Strict character allowlist for node labels: ASCII letters, digits, underscore.
+_LABEL_CHAR_RE = re.compile(r"^[A-Za-z0-9_]+$")
+
+# Characters that may break Cypher context when interpolated via f-string/format().
+# Any presence of these chars in a label is an injection attempt.
+_CYPHER_INJECTION_CHARS = frozenset(";()`'\"\\/{<>= \t\r\n")
+
+
+def _register_ontology_label(label: str) -> None:
+    """Add a label to the runtime allowlist (used in tests / extension points)."""
+    global ALLOWED_NODE_LABELS
+    ALLOWED_NODE_LABELS = ALLOWED_NODE_LABELS | {label}
+
+
+def _strip_quarantine_prefix(label: str) -> str:
+    """Strip the Quarantined* prefix for allowlist lookup only."""
+    if label.startswith("Quarantined"):
+        return label[len("Quarantined"):]
+    return label
+
+
+def validate_node_label(
+    label: object,
+    *,
+    correlation_id: Optional[str] = None,
+) -> None:
+    """Strictly validate a Neo4j node label to prevent Cypher injection.
+
+    Defenses, in this order (fail-fast on first violation):
+
+      P1. Non-empty after strip.
+      P2. ASCII-only character allowlist (`A-Z a-z 0-9 _`).
+      P3. NFKC stability — NFKC(label) must equal label (catches fullwidth /
+          compatibility-form homoglyphs that visually mimic allowed chars).
+      P4. No Cypher-injection metacharacters: ; ( ) ` ' " \\ / { } < > = space.
+      P5. Must be present in the canonical ontology allowlist
+          (Quarantined* prefix is stripped before lookup).
+
+    Args:
+        label: Candidate label string.
+        correlation_id: Optional correlation ID propagated to the violation.
+
+    Raises:
+        GovernanceViolationError: ONTOLOGY_VIOLATION (CRITICAL) on any failure.
+    """
+    if not isinstance(label, str):
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message="Node label must be a non-empty string",
+                details={"type": type(label).__name__},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    # P1: non-empty after strip
+    stripped = label.strip()
+    if not stripped:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message="Node label must be non-empty and non-whitespace",
+                details={"label": label},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    # P2: ASCII-only characters
+    non_ascii = [c for c in label if ord(c) > 127]
+    if non_ascii:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    f"Node label contains {len(non_ascii)} non-ASCII character(s); "
+                    "non-ASCII labels are rejected to defeat Unicode homoglyph attacks."
+                ),
+                details={
+                    "label": label,
+                    "first_non_ascii": non_ascii[0],
+                    "first_non_ascii_codepoint": f"U+{ord(non_ascii[0]):04X}",
+                },
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    # P3: NFKC stability (fullwidth / compatibility normalization detection)
+    nfkc = _unicodedata.normalize("NFKC", label)
+    if nfkc != label:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    "Node label fails NFKC normalization (compatibility / "
+                    "homoglyph form detected). Labels must be in canonical form."
+                ),
+                details={"label": label, "nfkc_normalized": nfkc},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    # P4: strict character allowlist (defeats Cypher injection / comment escape)
+    injection_chars = [c for c in label if c in _CYPHER_INJECTION_CHARS]
+    if injection_chars:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    "Node label violates strict label character rules: "
+                    f"contains Cypher/metacharacter injection token(s): "
+                    f"{sorted(set(injection_chars))!r}"
+                ),
+                details={
+                    "label": label,
+                    "injection_chars": sorted(set(injection_chars)),
+                },
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    if not _LABEL_CHAR_RE.match(label):
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    "Node label must match strict character allowlist "
+                    "[A-Za-z0-9_]+"
+                ),
+                details={"label": label},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+    # P5: ontology allowlist (Quarantined* prefix stripped before lookup)
+    lookup = _strip_quarantine_prefix(label)
+    if lookup not in ALLOWED_NODE_LABELS:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.ONTOLOGY_VIOLATION,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    f"Node label '{label}' is not in the ontology allowlist "
+                    f"(resolved '{lookup}')"
+                ),
+                details={"label": label, "resolved": lookup},
+                source="validate_node_label",
+                correlation_id=correlation_id,
+            )
+        )
+
+
+# ============================================================================
+# Property Key Validation (Constitutional Invariant)
+# ============================================================================
+
+# P1: Allowed property key characters
+_PROPERTY_KEY_CHAR_RE = re.compile(r"^[a-zA-Z0-9_]+$")
+
+# P3: Reserved kernel keys (cannot be overridden by user code)
+KERNEL_RESERVED_KEYS = frozenset({
+    "_id",
+    "_hash",
+    "_signature",
+    "_created_at",
+    "_updated_at",
+    "_deleted",
+    "_tombstoned",
+    "_active",
+    "_version",
+    "_proof_ref",
+    "_provenance_ref",
+    "created_at",
+    "updated_at",
+    "provenance",
+    "meta",
+})
+
+
+def validate_property_keys(
+    properties: Dict[str, Any],
+    context: str = "node",
+    correlation_id: Optional[str] = None,
+) -> None:
+    """
+    Validate property keys for strict governance compliance.
+
+    P1: Only [a-zA-Z0-9_]+ characters allowed.
+    P3: Reserved kernel keys cannot be overridden by user code.
+
+    Raises:
+        GovernanceViolationError on any violation.
+    """
+    if not properties:
+        return
+    
+    for key in properties.keys():
+        # P1: Check character allowlist
+        if not _PROPERTY_KEY_CHAR_RE.match(key):
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.ONTOLOGY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=(
+                        f"Property key '{key}' contains disallowed characters. "
+                        "Only [a-zA-Z0-9_]+ are permitted."
+                    ),
+                    details={
+                        "context": context,
+                        "invalid_key": key,
+                        "allowed_pattern": "[a-zA-Z0-9_]+",
+                    },
+                    source="validate_property_keys",
+                    correlation_id=correlation_id,
+                )
+            )
+        
+        # P3: Check reserved keys
+        if key in KERNEL_RESERVED_KEYS:
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.ONTOLOGY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=(
+                        f"Property key '{key}' is kernel-reserved and cannot be "
+                        "overridden by user code."
+                    ),
+                    details={
+                        "context": context,
+                        "reserved_key": key,
+                        "reserved_keys": sorted(KERNEL_RESERVED_KEYS),
+                    },
+                    source="validate_property_keys",
+                    correlation_id=correlation_id,
+                )
+            )

@@ -48,7 +48,7 @@ from unittest.mock import Mock, patch
 
 # Core imports
 from mahoun.core.models import ReasoningResult, ReasoningStep
-from mahoun.core.exceptions import BaseMahounError, LogicViolationException
+from mahoun.core.exceptions_v2 import MahounException as BaseMahounError, LogicViolationException
 
 # Graph imports
 from mahoun.graph.ultra_graph_builder import (
@@ -66,7 +66,7 @@ from mahoun.ledger.blockchain import ImmutableLedger
 from mahoun.ledger.models import LedgerEntry
 from mahoun.ledger.write_gate import (
     LedgerWriteGate,
-    GovernanceContext
+    LedgerWriteContext  # Renamed from GovernanceContext per architecture refactor
 )
 
 
@@ -529,7 +529,7 @@ class TestComplexLegalReasoningScenario:
         )
         
         # Governance context
-        gov_ctx = GovernanceContext(
+        gov_ctx = LedgerWriteContext(
             actor_id="reasoning_engine",
             correlation_id="req_scenario_test_001",
             invariant_checks_passed=True,
@@ -663,7 +663,7 @@ class TestReasoningEdgeCases:
             created_at=datetime.now(UTC)
         )
         
-        gov_ctx = GovernanceContext(
+        gov_ctx = LedgerWriteContext(
             actor_id="reasoning_engine",
             correlation_id="req_test_002",
             invariant_checks_passed=True,
@@ -701,7 +701,7 @@ class TestReasoningEdgeCases:
             created_at=datetime.now(UTC)
         )
         
-        gov_ctx = GovernanceContext(
+        gov_ctx = LedgerWriteContext(
             actor_id="reasoning_engine",
             correlation_id="req_test_003",
             invariant_checks_passed=True,
@@ -743,7 +743,7 @@ class TestSystemIntegrity:
             created_at=datetime(2026, 6, 6, 12, 0, 0, tzinfo=UTC)  # Fixed time
         )
         
-        gov_ctx = GovernanceContext(
+        gov_ctx = LedgerWriteContext(
             actor_id="reasoning_engine",
             correlation_id="req_determ",
             invariant_checks_passed=True,

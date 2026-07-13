@@ -10,9 +10,7 @@ Upgraded with:
 - Type hints
 """
 
-
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
@@ -25,7 +23,7 @@ from tqdm import tqdm
 from mahoun.graph.gnn.gat_reranker import GATReranker
 from core.monitoring.wandb_logger import AdvancedWandBLogger
 from core.monitoring.metrics_tracker import MetricsTracker
-from mahoun.pipelines._logging import setup_logger
+from mahoun.core.logging import setup_logger
 
 log = setup_logger("gat_trainer")
 
@@ -79,13 +77,9 @@ class GATTrainer:
 
         optimizer_name = config.get("optimizer", "adam").lower()
         if optimizer_name == "adamw":
-            self.optimizer = AdamW(
-                model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
-            )
+            self.optimizer = AdamW(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         else:
-            self.optimizer = Adam(
-                model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
-            )
+            self.optimizer = Adam(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
 
         scheduler_name = config.get("scheduler", "cosine").lower()
         if scheduler_name == "cosine":
@@ -165,9 +159,7 @@ class GATTrainer:
                 scores, batch_data["relevant_mask"], batch_data["irrelevant_mask"]
             )
             bce_loss = self._compute_bce_loss(scores, batch_data["labels"])
-            contrastive_loss = self._compute_contrastive_loss(
-                batch_data["embeddings"], batch_data["labels"]
-            )
+            contrastive_loss = self._compute_contrastive_loss(batch_data["embeddings"], batch_data["labels"])
 
             loss = (
                 self.lambda_margin * margin_loss
@@ -207,9 +199,7 @@ class GATTrainer:
             return None
 
         relevant_indices = [
-            self.graph_data.doc_id_to_idx[doc_id]
-            for doc_id in relevant_docs
-            if doc_id in self.graph_data.doc_id_to_idx
+            self.graph_data.doc_id_to_idx[doc_id] for doc_id in relevant_docs if doc_id in self.graph_data.doc_id_to_idx
         ]
         irrelevant_indices = [
             self.graph_data.doc_id_to_idx[doc_id]
@@ -340,22 +330,20 @@ class GATTrainer:
                 return 1.0 / i
         return 0.0
 
-    def _log_metrics(
-        self, epoch: int, train_metrics: Dict[str, float], val_metrics: Dict[str, float]
-    ):
+    def _log_metrics(self, epoch: int, train_metrics: Dict[str, float], val_metrics: Dict[str, float]):
         """
         Log metrics with graph statistics and uncertainty calibration
-        
+
         ENHANCED: Now includes graph stats and uncertainty monitoring
         """
         log.info(
             f"Epoch {epoch} - Loss: {train_metrics['loss']:.4f}, "
             f"Recall@5: {val_metrics['recall@5']:.4f}, MRR: {val_metrics['mrr']:.4f}"
         )
-        
+
         # NEW: Compute graph statistics
         graph_stats = self._compute_graph_statistics()
-        
+
         # NEW: Compute uncertainty calibration if available
         uncertainty_metrics = self._compute_uncertainty_calibration(val_metrics)
 
@@ -372,73 +360,74 @@ class GATTrainer:
                 "val/mrr": val_metrics["mrr"],
                 "learning_rate": self.optimizer.param_groups[0]["lr"],
             }
-            
+
             # Add graph statistics
             if graph_stats:
-                metrics_dict.update({
-                    "graph/num_nodes": graph_stats.get("num_nodes", 0),
-                    "graph/num_edges": graph_stats.get("num_edges", 0),
-                    "graph/avg_degree": graph_stats.get("avg_degree", 0),
-                    "graph/density": graph_stats.get("density", 0),
-                    "graph/clustering_coeff": graph_stats.get("clustering_coefficient", 0),
-                })
-            
+                metrics_dict.update(
+                    {
+                        "graph/num_nodes": graph_stats.get("num_nodes", 0),
+                        "graph/num_edges": graph_stats.get("num_edges", 0),
+                        "graph/avg_degree": graph_stats.get("avg_degree", 0),
+                        "graph/density": graph_stats.get("density", 0),
+                        "graph/clustering_coeff": graph_stats.get("clustering_coefficient", 0),
+                    }
+                )
+
             # Add uncertainty metrics
             if uncertainty_metrics:
-                metrics_dict.update({
-                    "uncertainty/calibration_error": uncertainty_metrics.get("calibration_error", 0),
-                    "uncertainty/coverage": uncertainty_metrics.get("coverage", 0),
-                })
-            
+                metrics_dict.update(
+                    {
+                        "uncertainty/calibration_error": uncertainty_metrics.get("calibration_error", 0),
+                        "uncertainty/coverage": uncertainty_metrics.get("coverage", 0),
+                    }
+                )
+
             self.wandb_logger.log_metrics(metrics_dict, step=epoch)
-    
+
     def _compute_graph_statistics(self) -> Dict[str, Any]:
         """
         Compute graph statistics for monitoring
-        
+
         NEW: Graph statistics logging
-        
+
         Returns:
             Dictionary with graph statistics
         """
         try:
             from mahoun.graph.gnn.graph_builder import LegalGraphBuilder
-            
+
             # Create temporary graph builder
             builder = LegalGraphBuilder(device=self.device)
-            
+
             # Compute statistics on current graph
             stats = builder.get_graph_statistics(self.graph_data)
-            
+
             return stats
-            
+
         except Exception as e:
             log.warning(f"Failed to compute graph statistics: {e}")
             return {}
-    
-    def _compute_uncertainty_calibration(
-        self,
-        val_metrics: Dict[str, float]
-    ) -> Dict[str, float]:
+
+    def _compute_uncertainty_calibration(self, val_metrics: Dict[str, float]) -> Dict[str, float]:
         """
         Compute uncertainty calibration metrics
-        
+
         NEW: Uncertainty calibration monitoring
-        
+
         Args:
             val_metrics: Validation metrics
-            
+
         Returns:
             Dictionary with calibration metrics
         """
         try:
             # Check if uncertainty estimator is available
-            if not hasattr(self, 'uncertainty_estimator') or self.uncertainty_estimator is None:
+            if not hasattr(self, "uncertainty_estimator") or self.uncertainty_estimator is None:
                 return {}
-            
+
             if not self.uncertainty_estimator.is_trained:
                 return {}
-            
+
             # Get validation predictions and uncertainties
             # This would require validation data with features
             # For now, return placeholder
@@ -446,7 +435,7 @@ class GATTrainer:
                 "calibration_error": 0.0,
                 "coverage": 0.95,
             }
-            
+
         except Exception as e:
             log.warning(f"Failed to compute uncertainty calibration: {e}")
             return {}
@@ -454,7 +443,7 @@ class GATTrainer:
     def _save_checkpoint(self, epoch: int, metrics: Dict[str, float], is_best: bool = False):
         """
         Save checkpoint with W&B artifact tracking
-        
+
         ENHANCED: Now tracks model artifacts in W&B
         """
         checkpoint = {
@@ -472,12 +461,10 @@ class GATTrainer:
             },
         }
 
-        path = self.checkpoint_dir / (
-            "best_model.pt" if is_best else f"checkpoint_epoch_{epoch}.pt"
-        )
+        path = self.checkpoint_dir / ("best_model.pt" if is_best else f"checkpoint_epoch_{epoch}.pt")
         torch.save(checkpoint, path)
         log.info(f"Saved checkpoint to {path}")
-        
+
         # NEW: Log model artifact to W&B
         if is_best and self.wandb_logger:
             try:
@@ -488,14 +475,12 @@ class GATTrainer:
                     "recall@10": metrics.get("recall@10", 0),
                     "model_config": checkpoint["config"],
                 }
-                
+
                 self.wandb_logger.log_model_artifact(
-                    model_path=str(path),
-                    artifact_name="gat-reranker-best",
-                    metadata=artifact_metadata
+                    model_path=str(path), artifact_name="gat-reranker-best", metadata=artifact_metadata
                 )
-                
+
                 log.info("Logged model artifact to W&B")
-                
+
             except Exception as e:
                 log.warning(f"Failed to log model artifact to W&B: {e}")

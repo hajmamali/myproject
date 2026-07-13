@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import json
 
-from mahoun.pipelines._logging import setup_logger
+from mahoun.core.logging import setup_logger
 
 log = setup_logger("graph_analytics")
 

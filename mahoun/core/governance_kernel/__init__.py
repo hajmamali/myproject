@@ -3,18 +3,20 @@ GOVERNANCE KERNEL (ISOLATED LAYER)
 P0.4 - Zero external dependencies, import-safe in any context.
 
 This module contains ONLY stdlib imports and provides:
-- MutationAuthorizationBoundary
 - QueryType enum
-- enforce_governance()
-- Context management for governance state
+- Basic query classification
+- Minimal governance enforcement functions
+
+For full governance functionality, import from:
+- mahoun.core.governance.governance_context (GovernanceContext)
+- mahoun.core.governance.mutation_boundary (MutationAuthorizationBoundary)
 """
 
 from __future__ import annotations
 
 from contextvars import ContextVar
-from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional
 
 
 # =============================================================================
@@ -74,87 +76,6 @@ class GovernanceError(Exception):
 
 
 # =============================================================================
-# Governance Context
-# =============================================================================
-
-@dataclass
-class GovernanceContext:
-    """Governance context for audit trail."""
-    correlation_id: str
-    actor_id: str
-    scope_id: Optional[str] = None
-
-
-_governance_context: ContextVar[Optional[GovernanceContext]] = ContextVar(
-    "mahoun_governance_context", default=None
-)
-
-
-def get_current_context() -> Optional[GovernanceContext]:
-    """Get the current governance context."""
-    return _governance_context.get()
-
-
-def set_governance_context(ctx: GovernanceContext) -> None:
-    """Set the governance context."""
-    _governance_context.set(ctx)
-
-
-def clear_governance_context() -> None:
-    """Clear the governance context."""
-    _governance_context.set(None)
-
-
-# =============================================================================
-# Mutation Authorization Boundary
-# =============================================================================
-
-class MutationAuthorizationBoundary:
-    """
-    Authorization boundary for graph mutations.
-    Enforces governance policies before any mutation.
-    """
-    
-    @staticmethod
-    def validate(
-        query_type: QueryType,
-        correlation_id: Optional[str],
-        actor_id: Optional[str],
-        allow_destructive: bool = False,
-    ) -> None:
-        """
-        Validate mutation against governance policies.
-        
-        Raises GovernanceError if validation fails.
-        """
-        if query_type == QueryType.READ:
-            return
-        
-        if query_type == QueryType.WRITE:
-            if not correlation_id or not actor_id:
-                raise GovernanceError(
-                    "WRITE queries require correlation_id and actor_id"
-                )
-            return
-        
-        if query_type == QueryType.DESTRUCTIVE:
-            if not correlation_id or not actor_id:
-                raise GovernanceError(
-                    "DESTRUCTIVE queries require correlation_id and actor_id"
-                )
-            if not allow_destructive:
-                raise GovernanceError(
-                    "DESTRUCTIVE queries require allow_destructive=True"
-                )
-            return
-        
-        if query_type == QueryType.UNKNOWN:
-            raise GovernanceError(
-                "UNKNOWN query type - cannot execute. Treat as WRITE by default."
-            )
-
-
-# =============================================================================
 # Main Enforcement Function
 # =============================================================================
 
@@ -169,6 +90,28 @@ def enforce_governance(
     
     Raises GovernanceError if policy violated.
     """
-    MutationAuthorizationBoundary.validate(
-        query_type, correlation_id, actor_id, allow_destructive
-    )
+    if query_type == QueryType.READ:
+        return
+    
+    if query_type == QueryType.WRITE:
+        if not correlation_id or not actor_id:
+            raise GovernanceError(
+                "WRITE queries require correlation_id and actor_id"
+            )
+        return
+    
+    if query_type == QueryType.DESTRUCTIVE:
+        if not correlation_id or not actor_id:
+            raise GovernanceError(
+                "DESTRUCTIVE queries require correlation_id and actor_id"
+            )
+        if not allow_destructive:
+            raise GovernanceError(
+                "DESTRUCTIVE queries require allow_destructive=True"
+            )
+        return
+    
+    if query_type == QueryType.UNKNOWN:
+        raise GovernanceError(
+            "UNKNOWN query type - cannot execute. Treat as WRITE by default."
+        )

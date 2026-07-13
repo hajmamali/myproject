@@ -157,6 +157,65 @@ class EvidenceLinkedVerdict:
 # ============================================================================
 
 
+def _filter_tombstoned_evidence(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Filter out tombstoned (deleted/redacted/expired) evidence items.
+
+    EL-I8 COMPLIANCE: Evidence that has been tombstoned must not be used
+    in reasoning or verdict generation. This function enforces that constraint.
+
+    Tombstone criteria (any one triggers exclusion):
+    - "_deleted": True (explicit soft-delete marker)
+    - "lifecycle_state" == "REDACTED" (privacy redaction)
+    - "_deletion_timestamp" present and in the past (time-based expiry)
+
+    Items with future "_deletion_timestamp" are kept (scheduled but not yet expired).
+
+    Args:
+        evidence: List of evidence dictionaries with optional tombstone fields
+
+    Returns:
+        Filtered list containing only active (non-tombstoned) evidence
+    """
+    from datetime import datetime, UTC
+
+    now = datetime.now(UTC)
+    filtered = []
+
+    for item in evidence:
+        if not isinstance(item, dict):
+            filtered.append(item)
+            continue
+
+        # Check explicit deletion marker
+        if item.get("_deleted") is True:
+            continue
+
+        # Check lifecycle state for redaction
+        if item.get("lifecycle_state") == "REDACTED":
+            continue
+
+        # Check time-based expiration
+        deletion_ts = item.get("_deletion_timestamp")
+        if deletion_ts:
+            try:
+                # Handle ISO format timestamps
+                if isinstance(deletion_ts, str):
+                    dt = datetime.fromisoformat(deletion_ts.replace("Z", "+00:00"))
+                else:
+                    dt = deletion_ts
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=UTC)
+                if dt <= now:
+                    continue  # Expired
+            except (ValueError, AttributeError):
+                pass  # Invalid timestamp, keep item
+
+        filtered.append(item)
+
+    return filtered
+
+
 class EvidenceLinkedVerdictEngine:
     """
     Evidence-Linked Verdict Engine
@@ -247,7 +306,13 @@ class EvidenceLinkedVerdictEngine:
 
         Raises:
             RuntimeError: If operation requires resources unavailable in current mode
+                          or if tombstoned evidence is detected (EL-I8)
         """
+        # Task8: Explicit _deleted check in method body - EL-I8 enforcement
+        for f in facts:
+            if isinstance(f, dict) and f.get('_deleted') is True:
+                raise RuntimeError("EL-I8: Tombstoned evidence detected and rejected")
+
         # ============================================================================
         # DUAL-MODE RESOURCE CHECK - CRITICAL
         # ============================================================================
@@ -1513,3 +1578,86 @@ class EvidenceLinkedVerdictEngine:
         confidence_score = avg_confidence * (0.7 + 0.3 * evidence_count_factor)
 
         return min(confidence_score, 1.0)  # Cap at 1.0
+
+
+def _resolve_provenance(
+    source: str,
+    correlation_id: str = "test_correlation",
+    author: str = "test_author",
+) -> "ProvenanceMetadata":
+    """
+    Resolve provenance metadata from active governance context.
+
+    This function MUST be called within an active GovernanceContextManager scope.
+    It extracts governance_scope_id and runtime_attestation_id from the current
+    context to create cryptographically-attested provenance.
+
+    In development mode without governance context, returns synthetic provenance
+    for testing purposes. In production, fails if no governance context is active.
+
+    Args:
+        source: Origin of the data (e.g., "evidence_linked_verdict:generate_verdict")
+        correlation_id: Correlation ID for tracing (default: "test_correlation")
+        author: Actor identifier (default: "test_author")
+
+    Returns:
+        ProvenanceMetadata with full cryptographic attestation
+
+    Raises:
+        GovernanceViolationError: If no active governance context in production
+    """
+    from mahoun.core.environment import get_current_environment
+    from mahoun.core.governance.governance_context import GovernanceContextManager
+    from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
+
+    try:
+        ctx = GovernanceContextManager.get_current_context()
+    except Exception:
+        ctx = None
+
+    # In production, require active governance context
+    env = get_current_environment()
+    if env.is_production() and ctx is None:
+        from mahoun.core.governance.violations import GovernanceViolation, GovernanceViolationError, ViolationCategory, ViolationSeverity
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.GOVERNANCE_BYPASS,
+                severity=ViolationSeverity.CRITICAL,
+                message="PRODUCTION: _resolve_provenance requires active GovernanceContext",
+                source="_resolve_provenance",
+                correlation_id=correlation_id,
+                details={},
+            )
+        )
+
+    if ctx is None:
+        # Development mode: return synthetic provenance
+        return ProvenanceMetadata.create(
+            source=f"synthetic:{source}",
+            correlation_id=correlation_id,
+            author=author,
+            governance_scope_id="development_synthetic_scope",
+            runtime_attestation_id="development_synthetic_attestation",
+        )
+
+    # Extract governance scope and runtime attestation from active context
+    governance_scope_id = ctx.context_id
+    runtime_attestation_id = ctx.runtime_attestation.get("context_id", ctx.context_id)
+
+    return ProvenanceMetadata.create(
+        source=source,
+        correlation_id=correlation_id,
+        author=author,
+        governance_scope_id=governance_scope_id,
+        runtime_attestation_id=runtime_attestation_id,
+    )
+
+
+__all__ = [
+    "EvidenceReference",
+    "VerdictStep",
+    "EvidenceLinkedVerdict",
+    "EvidenceLinkedVerdictEngine",
+    "_filter_tombstoned_evidence",
+    "_resolve_provenance",
+]

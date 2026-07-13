@@ -12,7 +12,6 @@ Features:
 - Calibration metrics
 """
 
-
 import torch
 import gpytorch
 from gpytorch.models import ExactGP
@@ -22,7 +21,7 @@ from gpytorch.distributions import MultivariateNormal
 from typing import Tuple, Optional, List, Dict
 
 from core.models import UncertaintyEstimate
-from mahoun.pipelines._logging import setup_logger
+from mahoun.core.logging import setup_logger
 
 log = setup_logger("uncertainty_estimator")
 
@@ -57,9 +56,7 @@ class LegalGaussianProcess(ExactGP):
         self.covar_module = ScaleKernel(RBFKernel())
 
         log.info(
-            f"Initialized LegalGaussianProcess with "
-            f"{train_x.shape[0]} training points, "
-            f"feature_dim={train_x.shape[1]}"
+            f"Initialized LegalGaussianProcess with {train_x.shape[0]} training points, feature_dim={train_x.shape[1]}"
         )
 
     def forward(self, x: torch.Tensor) -> MultivariateNormal:
@@ -94,9 +91,7 @@ class UncertaintyEstimator:
     - Device management
     """
 
-    def __init__(
-        self, feature_dim: int = 64, device: str = "cuda" if torch.cuda.is_available() else "cpu"
-    ):
+    def __init__(self, feature_dim: int = 64, device: str = "cuda" if torch.cuda.is_available() else "cpu"):
         """
         Initialize Uncertainty Estimator
 
@@ -110,9 +105,7 @@ class UncertaintyEstimator:
         self.model: Optional[LegalGaussianProcess] = None
         self.is_trained = False
 
-        log.info(
-            f"Initialized UncertaintyEstimator: " f"feature_dim={feature_dim}, device={device}"
-        )
+        log.info(f"Initialized UncertaintyEstimator: feature_dim={feature_dim}, device={device}")
 
     def fit(
         self,
@@ -173,15 +166,10 @@ class UncertaintyEstimator:
                 losses.append(loss.item())
 
                 if verbose and (i % 20 == 0 or i == num_iterations - 1):
-                    log.debug(
-                        f"GP training iteration {i}/{num_iterations}, " f"loss: {loss.item():.4f}"
-                    )
+                    log.debug(f"GP training iteration {i}/{num_iterations}, loss: {loss.item():.4f}")
 
             self.is_trained = True
-            log.info(
-                f"GP training completed: {num_iterations} iterations, "
-                f"final loss: {losses[-1]:.4f}"
-            )
+            log.info(f"GP training completed: {num_iterations} iterations, final loss: {losses[-1]:.4f}")
 
             return {"losses": losses}
 
@@ -252,9 +240,7 @@ class UncertaintyEstimator:
 
         return lower, upper
 
-    def estimate_uncertainty(
-        self, features: torch.Tensor, confidence_level: float = 0.95
-    ) -> UncertaintyEstimate:
+    def estimate_uncertainty(self, features: torch.Tensor, confidence_level: float = 0.95) -> UncertaintyEstimate:
         """
         Get uncertainty estimate as Pydantic model
 
@@ -279,9 +265,7 @@ class UncertaintyEstimator:
             upper_bound=upper[0].item(),
         )
 
-    def calibration_analysis(
-        self, features: torch.Tensor, true_values: torch.Tensor
-    ) -> Dict[str, float]:
+    def calibration_analysis(self, features: torch.Tensor, true_values: torch.Tensor) -> Dict[str, float]:
         """
         Analyze calibration of uncertainty estimates
 
@@ -355,7 +339,7 @@ class UncertaintyEstimator:
         self.likelihood.load_state_dict(checkpoint["likelihood_state_dict"])
 
         log.info(f"Loaded uncertainty estimator from {path}")
-    
+
     def update(
         self,
         new_features: torch.Tensor,
@@ -363,13 +347,13 @@ class UncertaintyEstimator:
         max_training_samples: int = 1000,
         num_iterations: int = 50,
         learning_rate: float = 0.1,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> Dict[str, List[float]]:
         """
         Incrementally update GP with new data (online learning)
-        
+
         Uses sliding window to keep recent N samples for efficiency.
-        
+
         Args:
             new_features: New training features [M, D]
             new_targets: New training targets [M]
@@ -377,7 +361,7 @@ class UncertaintyEstimator:
             num_iterations: Number of training iterations
             learning_rate: Learning rate for optimizer
             verbose: Print training progress
-            
+
         Returns:
             Training history
         """
@@ -390,121 +374,106 @@ class UncertaintyEstimator:
                     new_targets,
                     num_iterations=num_iterations,
                     learning_rate=learning_rate,
-                    verbose=verbose
+                    verbose=verbose,
                 )
-            
+
             # Get existing training data
             old_features = self.model.train_inputs[0]
             old_targets = self.model.train_targets
-            
+
             # Combine old and new data
             combined_features = torch.cat([old_features, new_features.to(self.device)], dim=0)
             combined_targets = torch.cat([old_targets, new_targets.to(self.device)], dim=0)
-            
+
             # Apply sliding window if needed
             if combined_features.shape[0] > max_training_samples:
                 # Keep most recent samples
                 combined_features = combined_features[-max_training_samples:]
                 combined_targets = combined_targets[-max_training_samples:]
-                log.info(
-                    f"Applied sliding window: kept {max_training_samples} most recent samples"
-                )
-            
+                log.info(f"Applied sliding window: kept {max_training_samples} most recent samples")
+
             log.info(
                 f"Incremental training: {old_features.shape[0]} old + "
                 f"{new_features.shape[0]} new = {combined_features.shape[0]} total samples"
             )
-            
+
             # Retrain with combined data (warm start from existing parameters)
             old_state = self.model.state_dict()
-            
+
             # Reinitialize model with new data
-            self.model = LegalGaussianProcess(
-                combined_features,
-                combined_targets,
-                self.likelihood
-            )
+            self.model = LegalGaussianProcess(combined_features, combined_targets, self.likelihood)
             self.model = self.model.to(self.device)
-            
+
             # Warm start: load previous parameters
             try:
                 self.model.load_state_dict(old_state, strict=False)
                 log.debug("Warm start: loaded previous model parameters")
             except Exception as e:
                 log.warning(f"Could not warm start model: {e}")
-            
+
             self.model.train()
             self.likelihood.train()
-            
+
             # Optimizer
             optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
-            
+
             # Loss function
             mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self.model)
-            
+
             # Training loop
             losses = []
-            
+
             for i in range(num_iterations):
                 optimizer.zero_grad()
                 output = self.model(combined_features)
                 loss = -mll(output, combined_targets)
                 loss.backward()
                 optimizer.step()
-                
+
                 losses.append(loss.item())
-                
+
                 if verbose and (i % 10 == 0 or i == num_iterations - 1):
-                    log.debug(
-                        f"Incremental training iteration {i}/{num_iterations}, "
-                        f"loss: {loss.item():.4f}"
-                    )
-            
-            log.info(
-                f"Incremental training completed: {num_iterations} iterations, "
-                f"final loss: {losses[-1]:.4f}"
-            )
-            
+                    log.debug(f"Incremental training iteration {i}/{num_iterations}, loss: {loss.item():.4f}")
+
+            log.info(f"Incremental training completed: {num_iterations} iterations, final loss: {losses[-1]:.4f}")
+
             return {"losses": losses}
-            
+
         except Exception as e:
             log.error(f"Error in incremental training: {e}")
             raise
-    
+
     def estimate_uncertainty_batch(
-        self,
-        features: torch.Tensor,
-        confidence_level: float = 0.95,
-        batch_size: int = 32
+        self, features: torch.Tensor, confidence_level: float = 0.95, batch_size: int = 32
     ) -> List[UncertaintyEstimate]:
         """
         Estimate uncertainty for batch of samples (optimized for efficiency)
-        
+
         Args:
             features: Input features [N, D]
             confidence_level: Confidence level for intervals
             batch_size: Batch size for processing (for memory efficiency)
-            
+
         Returns:
             List of UncertaintyEstimate objects
         """
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
-        
+
         if features.dim() == 1:
             features = features.unsqueeze(0)
-        
+
         num_samples = features.shape[0]
         estimates = []
-        
+
         # Process in batches
         for i in range(0, num_samples, batch_size):
-            batch_features = features[i:i + batch_size]
-            
+            batch_features = features[i : i + batch_size]
+
             # Get predictions
             mean, uncertainty = self.predict_with_uncertainty(batch_features)
             lower, upper = self.get_confidence_interval(batch_features, confidence_level)
-            
+
             # Create UncertaintyEstimate objects
             for j in range(batch_features.shape[0]):
                 estimate = UncertaintyEstimate(
@@ -515,7 +484,7 @@ class UncertaintyEstimator:
                     upper_bound=upper[j].item(),
                 )
                 estimates.append(estimate)
-        
+
         log.debug(f"Batch uncertainty estimation completed for {num_samples} samples")
-        
+
         return estimates

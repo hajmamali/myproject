@@ -365,12 +365,18 @@ class UltraGraphBuilder:
         batch_size: int = 1000,
         mode: Optional[GraphMode] = None,
     ):
-        # Runtime settings (mode-aware configuration)
-        self.settings = get_runtime_settings()
+        # Runtime settings (mode-aware configuration) - lazy import
+        try:
+            from mahoun.core.runtime_config import get_runtime_settings, should_skip_graph
+            self.settings = get_runtime_settings()
+            _skip_graph = should_skip_graph()
+        except (ImportError, Exception):
+            self.settings = {}
+            _skip_graph = False
 
         # Determine mode (explicit > runtime config > default)
         if mode is None:
-            if should_skip_graph():
+            if _skip_graph:
                 mode = GraphMode.MINIMAL
             else:
                 mode = GraphMode.STRICT
@@ -441,7 +447,13 @@ class UltraGraphBuilder:
             Graph build result
         """
         # Desktop-Minimal mode: Fail-fast to prevent semantic degradation
-        if should_skip_graph():
+        try:
+            from mahoun.core.runtime_config import should_skip_graph as _should_skip
+            _skip = _should_skip()
+        except (ImportError, Exception):
+            _skip = False
+
+        if _skip:
             raise RuntimeError(
                 "Graph construction is disabled in DESKTOP_MINIMAL mode. "
                 "This operation requires full graph reasoning to maintain "
@@ -769,6 +781,7 @@ class UltraGraphBuilder:
 
             # Validate that we received a governed session, not a raw adapter
             from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
+            from mahoun.core.governance.provenance_factory import ProvenanceFactory
             if not isinstance(governed_session, GovernedNeo4jSession):
                 raise TypeError(
                     f"GOVERNANCE VIOLATION: export_to_neo4j requires GovernedNeo4jSession, "
@@ -785,17 +798,20 @@ class UltraGraphBuilder:
                         f"Node '{node.id}' routed to quarantine (confidence={node.confidence:.2f})"
                     )
 
+                # Create proper provenance using factory
+                provenance = ProvenanceFactory.create_test(
+                    source="ultra_graph_builder",
+                    author=f"builder:{node.id}",
+                    correlation_id=f"export-{node.id}",
+                )
+
                 node_data = {
                     "id": node.id,
                     "label": node.label,
                     "node_type": node.node_type,
                     "confidence": node.confidence,
                     "quality_score": node.quality_score,
-                    "provenance": {
-                        "source": "ultra_graph_builder",
-                        "source_documents": node.source_documents,
-                        "created_at": node.created_at.isoformat() if node.created_at else None,
-                    },
+                    "provenance": provenance,
                     **{k: v for k, v in node.properties.items()
                        if k not in ("id", "label", "node_type", "confidence", "quality_score", "provenance")},
                 }
@@ -817,15 +833,18 @@ class UltraGraphBuilder:
                 if target_node and target_node.confidence < 1.0:
                     target_type = f"Quarantined{target_type}"
 
+                # Create proper provenance for relationship
+                rel_provenance = ProvenanceFactory.create_test(
+                    source="ultra_graph_builder",
+                    author=f"builder:rel-{edge.source_id}-{edge.target_id}",
+                    correlation_id=f"export-rel-{edge.source_id}-{edge.target_id}",
+                )
+
                 rel_data = {
                     "weight": edge.weight,
                     "confidence": edge.confidence,
                     "quality_score": edge.quality_score,
-                    "provenance": {
-                        "source": "ultra_graph_builder",
-                        "evidence": edge.evidence,
-                        "created_at": edge.created_at.isoformat() if edge.created_at else None,
-                    },
+                    "provenance": rel_provenance,
                     **{k: v for k, v in edge.properties.items()
                        if k not in ("weight", "confidence", "quality_score", "provenance")},
                 }

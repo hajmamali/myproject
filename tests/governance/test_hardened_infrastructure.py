@@ -35,6 +35,7 @@ from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
 from mahoun.graph.neo4j.graduation_manager import GraduationManager, GraduationError
 from mahoun.graph.ultra_graph_builder import UltraGraphBuilder, GraphNode, GraphEdge
 from mahoun.pipelines.ingestion.hardened_legal_pipeline import HardenedLegalPipeline
+from mahoun.pipelines.ingestion.provenance_aware_mapper import ProvenanceAwareNERMapper
 
 from tests.fixtures.provenance_factory import build_test_provenance
 
@@ -65,11 +66,11 @@ def setup_governance_context():
         execution_mode="STRICT",
     )
     ctx.validate_governance_scope()
-    stack = GovernanceContextManager._get_stack()
-    stack.append(ctx)
+    # _governance_stack holds an immutable tuple — use the ContextVar API directly.
+    current = GovernanceContextManager._get_stack()
+    token = GovernanceContextManager._governance_stack.set(current + (ctx,))
     yield ctx
-    if ctx in stack:
-        stack.remove(ctx)
+    GovernanceContextManager._governance_stack.reset(token)
 
 
 @pytest.fixture
@@ -194,7 +195,7 @@ class TestQuarantineRouting:
             "title": "Uncertain Node",
             "court_name": "Tehran",
             "confidence": 0.85,  # Low confidence!
-            "provenance": {"source": "test"},
+            "provenance": build_test_provenance(correlation_id="test-corr-id-999"),
         }
         
         governed_session.write_node(label="Verdict", node_data=node_data, merge=True)
@@ -298,8 +299,8 @@ class TestFacadeBackdoorSeal:
         node_2 = GraphNode(
             id="node-400",
             label="ماده 11",
-            node_type="Verdict",
-            confidence=0.75,  # Low confidence! Routes to quarantine
+            node_type="LawArticle",  # Valid target for REFERS_TO
+            confidence=1.0,
         )
         builder.nodes[node_1.id] = node_1
         builder.nodes[node_2.id] = node_2
@@ -307,7 +308,7 @@ class TestFacadeBackdoorSeal:
         edge = GraphEdge(
             source_id="node-300",
             target_id="node-400",
-            relationship_type="CITES",
+            relationship_type="REFERS_TO",  # Valid: Verdict -> LawArticle
             confidence=0.9,
         )
         builder.edges.append(edge)

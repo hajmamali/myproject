@@ -120,16 +120,21 @@ class HardenedLegalPipeline:
     Implements the 'Process-Once, Use-Twice' model with strict integrity gates.
     """
     def __init__(
-        self, 
+        self,
         ner_engine: Optional[LegalNEREngine] = None,
         refiner: Optional[LLMRefinementService] = None,
-        confidence_threshold: float = 0.75
+        confidence_threshold: float = 0.75,
+        mapper = None,
+        gate = None,
+        id_gen = None,
+        llm_refiner=None,
+
     ):
         self.ner_engine = ner_engine or LegalNEREngine()
         self.refiner = refiner or LLMRefinementService()
-        self.id_gen = DeterministicEntityIDGenerator()
-        self.mapper = ProvenanceAwareNERMapper()
-        self.gate = ConfidenceGate(threshold=confidence_threshold)
+        self.id_gen = id_gen or DeterministicEntityIDGenerator()
+        self.mapper = mapper or ProvenanceAwareNERMapper()
+        self.gate = gate or ConfidenceGate(threshold=confidence_threshold)
         self.breaker = PipelineCircuitBreaker()
         
     async def process_document(

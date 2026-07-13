@@ -1,0 +1,415 @@
+# ============================================================================
+# MAHOUN AI Runtime - Prometheus Alert Rules
+# ============================================================================
+# Purpose: Comprehensive alerting for AI runtime health, performance, and compliance
+# Features: Critical, Warning, and Info level alerts with detailed context
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # CRITICAL ALERTS - Immediate Action Required
+  # ==========================================================================
+  - name: ai_runtime_critical
+    interval: 10s
+    rules:
+      # --------------------------------------------------------------------------
+      # Service Availability
+      # --------------------------------------------------------------------------
+      - alert: AIRuntimeDown
+        expr: mahoun_ai_runtime_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: ai_runtime
+          tier: application
+        annotations:
+          summary: "AI Runtime service is down on {{ $labels.instance }}"
+          description: "AI Runtime has been unavailable for more than 30 seconds. No AI inference requests can be processed."
+          runbook: "https://docs.mahoun.internal/runbooks/ai-runtime-down"
+          dashboard: "https://grafana.mahoun.internal/d/ai-runtime-nexus"
+
+      - alert: AIRuntimeNotReady
+        expr: mahoun_ai_readiness_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: ai_runtime
+          tier: application
+        annotations:
+          summary: "AI Runtime is not ready on {{ $labels.instance }}"
+          description: "Kubernetes readiness probe is failing. Critical components (models or memory) are unhealthy."
+          runbook: "https://docs.mahoun.internal/runbooks/ai-runtime-not-ready"
+
+      - alert: AIRuntimeNotAlive
+        expr: mahoun_ai_liveness_status == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: ai_runtime
+          tier: application
+        annotations:
+          summary: "AI Runtime liveness check failed on {{ $labels.instance }}"
+          description: "Service is unresponsive. Kubernetes will restart the pod."
+          runbook: "https://docs.mahoun.internal/runbooks/ai-runtime-liveness-failure"
+
+      # --------------------------------------------------------------------------
+      # Component Health
+      # --------------------------------------------------------------------------
+      - alert: AIComponentUnhealthy
+        expr: mahoun_ai_component_health_status == 3
+        for: 1m
+        labels:
+          severity: critical
+          component: ai_runtime
+          tier: application
+        annotations:
+          summary: "AI component {{ $labels.component }} is unhealthy on {{ $labels.instance }}"
+          description: "Component status is UNHEALTHY (3). System functionality is impaired."
+          runbook: "https://docs.mahoun.internal/runbooks/component-unhealthy"
+
+      - alert: NoModelsAvailable
+        expr: mahoun_ai_models_available_total == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: model_runtime
+          tier: application
+        annotations:
+          summary: "No GGUF models available on {{ $labels.instance }}"
+          description: "AI Runtime cannot perform inference without available models."
+          runbook: "https://docs.mahoun.internal/runbooks/no-models-available"
+
+      # --------------------------------------------------------------------------
+      # Resource Exhaustion
+      # --------------------------------------------------------------------------
+      - alert: AIRuntimeMemoryExhausted
+        expr: mahoun_ai_runtime_memory_percent > 98
+        for: 1m
+        labels:
+          severity: critical
+          component: memory
+          tier: infrastructure
+        annotations:
+          summary: "AI Runtime memory exhausted on {{ $labels.instance }}"
+          description: "Memory usage is at {{ $value | humanizePercentage }}. System may crash or OOM kill imminent."
+          runbook: "https://docs.mahoun.internal/runbooks/memory-exhausted"
+
+      - alert: AIRuntimeDiskFull
+        expr: mahoun_ai_runtime_disk_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: disk
+          tier: infrastructure
+        annotations:
+          summary: "AI Runtime disk full on {{ $labels.instance }}"
+          description: "Disk usage is at {{ $value | humanizePercentage }}. Cannot write cache or logs."
+          runbook: "https://docs.mahoun.internal/runbooks/disk-full"
+
+      # --------------------------------------------------------------------------
+      # Governance & Compliance
+      # --------------------------------------------------------------------------
+      - alert: GovernanceViolationDetected
+        expr: rate(mahoun_ai_governance_violations_total{severity="CRITICAL"}[1m]) > 0
+        for: 10s
+        labels:
+          severity: critical
+          component: governance
+          tier: security
+        annotations:
+          summary: "CRITICAL governance violation on {{ $labels.instance }}"
+          description: "Violation type: {{ $labels.violation_type }}. AI responses are non-compliant with RedLines.yaml."
+          runbook: "https://docs.mahoun.internal/runbooks/governance-violation"
+          dashboard: "https://grafana.mahoun.internal/d/ai-runtime-nexus"
+
+      - alert: FortressValidatorDown
+        expr: mahoun_ai_governance_fortress_validator_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: governance
+          tier: security
+        annotations:
+          summary: "FortressValidator unavailable on {{ $labels.instance }}"
+          description: "Cannot validate AI responses against governance rules. System is non-compliant."
+          runbook: "https://docs.mahoun.internal/runbooks/fortress-validator-down"
+
+      - alert: AirGapComplianceViolation
+        expr: mahoun_ai_airgap_compliance_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: network_isolation
+          tier: security
+        annotations:
+          summary: "Air-gap compliance violated on {{ $labels.instance }}"
+          description: "System is not properly isolated. Network configuration is incorrect."
+          runbook: "https://docs.mahoun.internal/runbooks/airgap-compliance-violation"
+
+      # --------------------------------------------------------------------------
+      # High Error Rate
+      # --------------------------------------------------------------------------
+      - alert: AIInferenceHighFailureRate
+        expr: |
+          (
+            rate(mahoun_ai_inference_requests_total{status="failure"}[5m])
+            /
+            rate(mahoun_ai_inference_requests_total[5m])
+          ) > 0.25
+        for: 2m
+        labels:
+          severity: critical
+          component: inference
+          tier: application
+        annotations:
+          summary: "High inference failure rate on {{ $labels.instance }} for model {{ $labels.model_name }}"
+          description: "Failure rate is {{ $value | humanizePercentage }}. Over 25% of requests are failing."
+          runbook: "https://docs.mahoun.internal/runbooks/high-inference-failure-rate"
+
+  # ==========================================================================
+  # WARNING ALERTS - Investigation Required
+  # ==========================================================================
+  - name: ai_runtime_warning
+    interval: 30s
+    rules:
+      # --------------------------------------------------------------------------
+      # Component Degradation
+      # --------------------------------------------------------------------------
+      - alert: AIComponentDegraded
+        expr: mahoun_ai_component_health_status == 2
+        for: 5m
+        labels:
+          severity: warning
+          component: ai_runtime
+          tier: application
+        annotations:
+          summary: "AI component {{ $labels.component }} is degraded on {{ $labels.instance }}"
+          description: "Component status is DEGRADED (2). System is functional but not optimal."
+          runbook: "https://docs.mahoun.internal/runbooks/component-degraded"
+
+      - alert: NoEmbeddingModels
+        expr: mahoun_ai_embedding_models_available == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: embedding_service
+          tier: application
+        annotations:
+          summary: "No embedding models available on {{ $labels.instance }}"
+          description: "Embedding service cannot generate embeddings without models."
+          runbook: "https://docs.mahoun.internal/runbooks/no-embedding-models"
+
+      # --------------------------------------------------------------------------
+      # Resource Pressure
+      # --------------------------------------------------------------------------
+      - alert: AIRuntimeHighMemoryUsage
+        expr: mahoun_ai_runtime_memory_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: memory
+          tier: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is at {{ $value | humanizePercentage }}. May impact performance."
+          runbook: "https://docs.mahoun.internal/runbooks/high-memory-usage"
+
+      - alert: AIRuntimeHighCPUUsage
+        expr: mahoun_ai_runtime_cpu_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: cpu
+          tier: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is at {{ $value | humanizePercentage }}. May cause request throttling."
+          runbook: "https://docs.mahoun.internal/runbooks/high-cpu-usage"
+
+      - alert: AIRuntimeHighDiskUsage
+        expr: mahoun_ai_runtime_disk_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: disk
+          tier: infrastructure
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is at {{ $value | humanizePercentage }}. Consider cleaning cache."
+          runbook: "https://docs.mahoun.internal/runbooks/high-disk-usage"
+
+      # --------------------------------------------------------------------------
+      # Performance Degradation
+      # --------------------------------------------------------------------------
+      - alert: AIInferenceHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(mahoun_ai_inference_duration_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: inference
+          tier: application
+        annotations:
+          summary: "High inference latency on {{ $labels.instance }} for model {{ $labels.model_name }}"
+          description: "P95 latency is {{ $value | humanizeDuration }}. Users may experience slow responses."
+          runbook: "https://docs.mahoun.internal/runbooks/high-inference-latency"
+
+      - alert: AIInferenceLowThroughput
+        expr: mahoun_ai_inference_tokens_per_second < 10
+        for: 5m
+        labels:
+          severity: warning
+          component: inference
+          tier: application
+        annotations:
+          summary: "Low inference throughput on {{ $labels.instance }} for model {{ $labels.model_name }}"
+          description: "Tokens per second is {{ $value | humanize }}. Performance is degraded."
+          runbook: "https://docs.mahoun.internal/runbooks/low-inference-throughput"
+
+      - alert: AIEmbeddingHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(mahoun_ai_embedding_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: embedding_service
+          tier: application
+        annotations:
+          summary: "High embedding generation latency on {{ $labels.instance }}"
+          description: "P95 latency is {{ $value | humanizeDuration }}. May impact RAG performance."
+          runbook: "https://docs.mahoun.internal/runbooks/high-embedding-latency"
+
+      # --------------------------------------------------------------------------
+      # Model Loading Issues
+      # --------------------------------------------------------------------------
+      - alert: FrequentModelLoadFailures
+        expr: rate(mahoun_ai_model_load_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: model_runtime
+          tier: application
+        annotations:
+          summary: "Frequent model load failures on {{ $labels.instance }}"
+          description: "Model {{ $labels.model_name }} is failing to load. Reason: {{ $labels.reason }}."
+          runbook: "https://docs.mahoun.internal/runbooks/model-load-failures"
+
+      # --------------------------------------------------------------------------
+      # Health Check Issues
+      # --------------------------------------------------------------------------
+      - alert: HealthCheckFailures
+        expr: rate(mahoun_ai_health_check_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: health_check
+          tier: monitoring
+        annotations:
+          summary: "Frequent health check failures on {{ $labels.instance }}"
+          description: "Component {{ $labels.component }} health checks are failing."
+          runbook: "https://docs.mahoun.internal/runbooks/health-check-failures"
+
+      - alert: HealthCheckSlowness
+        expr: |
+          rate(mahoun_ai_health_check_duration_seconds_sum[5m])
+          /
+          rate(mahoun_ai_health_check_duration_seconds_count[5m])
+          > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: health_check
+          tier: monitoring
+        annotations:
+          summary: "Health checks are slow on {{ $labels.instance }}"
+          description: "Average health check duration is {{ $value | humanizeDuration }}."
+          runbook: "https://docs.mahoun.internal/runbooks/slow-health-checks"
+
+      # --------------------------------------------------------------------------
+      # Cache Performance
+      # --------------------------------------------------------------------------
+      - alert: LowEmbeddingCacheHitRate
+        expr: |
+          (
+            rate(mahoun_ai_embedding_cache_hits_total[10m])
+            /
+            (rate(mahoun_ai_embedding_cache_hits_total[10m]) + rate(mahoun_ai_embedding_cache_misses_total[10m]))
+          ) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+          tier: performance
+        annotations:
+          summary: "Low embedding cache hit rate on {{ $labels.instance }}"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}. Consider increasing cache size."
+          runbook: "https://docs.mahoun.internal/runbooks/low-cache-hit-rate"
+
+      # --------------------------------------------------------------------------
+      # Governance Warnings
+      # --------------------------------------------------------------------------
+      - alert: GovernanceValidationFailures
+        expr: |
+          (
+            rate(mahoun_ai_governance_validations_total{result="fail"}[5m])
+            /
+            rate(mahoun_ai_governance_validations_total[5m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: governance
+          tier: security
+        annotations:
+          summary: "High governance validation failure rate on {{ $labels.instance }}"
+          description: "{{ $value | humanizePercentage }} of validations are failing."
+          runbook: "https://docs.mahoun.internal/runbooks/governance-validation-failures"
+
+  # ==========================================================================
+  # INFO ALERTS - Informational / Low Priority
+  # ==========================================================================
+  - name: ai_runtime_info
+    interval: 1m
+    rules:
+      # --------------------------------------------------------------------------
+      # Model Changes
+      # --------------------------------------------------------------------------
+      - alert: ModelLoadedSuccessfully
+        expr: changes(mahoun_ai_models_loaded_total[5m]) > 0
+        for: 10s
+        labels:
+          severity: info
+          component: model_runtime
+          tier: application
+        annotations:
+          summary: "Model loaded on {{ $labels.instance }}"
+          description: "A new model has been successfully loaded into memory."
+
+      # --------------------------------------------------------------------------
+      # Uptime Milestones
+      # --------------------------------------------------------------------------
+      - alert: AIRuntimeUptime24Hours
+        expr: mahoun_ai_runtime_uptime_seconds > 86400
+        for: 1m
+        labels:
+          severity: info
+          component: ai_runtime
+          tier: monitoring
+        annotations:
+          summary: "AI Runtime has been up for 24+ hours on {{ $labels.instance }}"
+          description: "Uptime: {{ $value | humanizeDuration }}. System is stable."
+
+      # --------------------------------------------------------------------------
+      # Network Isolation Warnings
+      # --------------------------------------------------------------------------
+      - alert: NetworkCallAttemptBlocked
+        expr: rate(mahoun_ai_airgap_network_call_attempts_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: info
+          component: network_isolation
+          tier: security
+        annotations:
+          summary: "Network call attempts blocked on {{ $labels.instance }}"
+          description: "Component {{ $labels.component }} attempted to reach {{ $labels.destination }}."
+          runbook: "https://docs.mahoun.internal/runbooks/network-call-blocked"

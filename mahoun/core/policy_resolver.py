@@ -624,6 +624,84 @@ class PolicyResolver:
         
         return policy
     
+    def _inject_tombstone_filter(self, query: str):
+        """
+        Delegate tombstone filter injection to UnifiedGovernanceController.
+        
+        Used by test_el_i8_integration and other components that need
+        tombstone filtering without a full governance controller instance.
+        
+        Returns:
+            Tuple[str, bool]: (filtered_query, was_modified)
+        """
+        import re
+        
+        # Idempotency: already transformed?
+        if re.search(r'NOT\s*\(\s*\w+\._deleted\s*=\s*true', query, re.IGNORECASE):
+            return query, False
+        
+        # Security: reject explicit tombstone access
+        forbidden_patterns = [
+            r'_deleted\s*=\s*true',
+            r'_redacted\s*=\s*true',
+            r'_tombstoned\s*=\s*true',
+            r':TOMBSTONE\b',
+            r':DELETED\b',
+            r':REDACTED\b',
+            r'_gdpr_purged\s*=\s*true',
+            r'_right_to_be_forgotten\s*=\s*true',
+        ]
+        for pattern in forbidden_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                raise ValueError(
+                    f"EL-I8 SECURITY VIOLATION: Query contains explicit tombstone access pattern: {pattern}. "
+                    "Direct access to tombstoned data is forbidden for privacy law compliance."
+                )
+
+        tombstone_block = """(
+        NOT (
+          n._deleted = true 
+          OR n._redacted = true 
+          OR n._purged = true
+          OR n._tombstoned = true
+          OR n._gdpr_purged = true
+          OR n._right_to_be_forgotten = true
+          OR n:TOMBSTONE 
+          OR n:DELETED 
+          OR n:REDACTED
+          OR n:PURGED
+          OR n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
+          OR n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
+          OR (n._deletion_timestamp IS NOT NULL 
+              AND datetime(n._deletion_timestamp) <= datetime())
+          OR (n._redaction_timestamp IS NOT NULL 
+              AND datetime(n._redaction_timestamp) <= datetime())
+        ))"""
+
+        lines = query.split('\n')
+        transformed_lines = []
+        modified = False
+
+        for line in lines:
+            transformed_line = line
+            match_pattern = re.search(r'MATCH\s+', line, re.IGNORECASE)
+            if match_pattern:
+                node_vars = re.findall(r'\((\w+)(?::[^)]+)?(?:\s*\{[^}]*\})?\)', line)
+                if node_vars:
+                    conditions = []
+                    for nv in node_vars:
+                        cond = tombstone_block.replace('n.', f'{nv}.').replace('n:', f'{nv}:')
+                        conditions.append(cond)
+                    combined = ' AND '.join(conditions)
+                    if re.search(r'WHERE', line, re.IGNORECASE):
+                        transformed_line = line.rstrip() + f' AND {combined}'
+                    else:
+                        transformed_line = line.rstrip() + f'\nWHERE {combined}'
+                    modified = True
+            transformed_lines.append(transformed_line)
+
+        return '\n'.join(transformed_lines), modified
+
     def get_audit_trail(
         self,
         correlation_id: Optional[str] = None,

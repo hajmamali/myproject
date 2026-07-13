@@ -219,7 +219,9 @@ def test_tombstone_filter_injection_active_view(unified_controller, governance_c
     # Transformation should occur
     assert decision.query_transformed is True
     assert "tombstone_filter_active_view" in decision.transformations_applied
-    assert "_deleted IS NULL" in decision.transformed_query
+    # Check for the comprehensive tombstone filter pattern (NOT function with _deleted)
+    assert "NOT (" in decision.transformed_query
+    assert "n._deleted = true" in decision.transformed_query
 
 
 def test_no_tombstone_filter_historical_view(unified_controller, governance_context):
@@ -316,11 +318,11 @@ def test_enterprise_full_capabilities(governance_context):
     """Test that ENTERPRISE_FULL profile enables full capabilities."""
     # Configure for enterprise
     import os
-    old_mode = os.environ.get("MAHOUN_EXECUTION_MODE")
-    os.environ["MAHOUN_EXECUTION_MODE"] = "full"
+    old_profile = os.environ.get("MAHOUN_DEPLOYMENT_PROFILE")
+    os.environ["MAHOUN_DEPLOYMENT_PROFILE"] = "enterprise_full"
     
     try:
-        profile_manager = ProfileManager(auto_select=True)
+        profile_manager = ProfileManager(auto_select=False)
         policy_resolver = PolicyResolver(profile_manager=profile_manager)
         controller = UnifiedGovernanceController(policy_resolver=policy_resolver)
         
@@ -339,10 +341,10 @@ def test_enterprise_full_capabilities(governance_context):
         assert policy.reasoning_budget.value == "high"
     finally:
         # Restore original mode
-        if old_mode:
-            os.environ["MAHOUN_EXECUTION_MODE"] = old_mode
+        if old_profile:
+            os.environ["MAHOUN_DEPLOYMENT_PROFILE"] = old_profile
         else:
-            os.environ.pop("MAHOUN_EXECUTION_MODE", None)
+            os.environ.pop("MAHOUN_DEPLOYMENT_PROFILE", None)
 
 
 # ============================================================================
@@ -558,8 +560,9 @@ def test_production_reasoning_workflow(unified_controller, governance_context):
     assert decision.view_mode == "active"
     assert decision.query_transformed is True
     
-    # Should have tombstone filters
-    assert "_deleted IS NULL" in decision.transformed_query
+    # Should have tombstone filters (comprehensive pattern)
+    assert "NOT (" in decision.transformed_query
+    assert "_deleted = true" in decision.transformed_query
 
 
 def test_forensic_audit_workflow(unified_controller, governance_context):

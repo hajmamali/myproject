@@ -50,6 +50,7 @@ from mahoun.core.governance_lock import GovernanceLock, GovernanceMode, Security
 
 try:
     from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector
+
     METRICS_AVAILABLE = True
 except ImportError:
     METRICS_AVAILABLE = False
@@ -1174,6 +1175,71 @@ class UnifiedReasoningService:
         else:
             return await self._neural_general_fallback(request, legal_patterns)
 
+    async def _neural_reasoning(self, request: ReasoningRequest) -> ReasoningResponse:
+        """
+        Dispatcher for neural reasoning methods.
+
+        Routes to the appropriate neural service based on task type
+        and wraps the dict result in a ReasoningResponse.
+
+        Args:
+            request: Reasoning request
+
+        Returns:
+            ReasoningResponse with neural reasoning result
+        """
+        import time
+
+        start_time = time.perf_counter()
+
+        try:
+            if not self.enable_neural:
+                return ReasoningResponse(
+                    success=False,
+                    result=None,
+                    confidence=0.0,
+                    reasoning_mode=ReasoningMode.NEURAL,
+                    execution_time_ms=0.0,
+                    error="Neural reasoning disabled",
+                )
+
+            # Route to appropriate neural method based on task
+            neural_result = None
+            if request.task == ReasoningTask.QUESTION_ANSWERING:
+                neural_result = await self._neural_question_answering(request)
+            elif request.task == ReasoningTask.EXPLANATION:
+                neural_result = await self._neural_explanation(request)
+            elif request.task in [ReasoningTask.FORWARD_INFERENCE, ReasoningTask.BACKWARD_PROOF]:
+                neural_result = await self._neural_deep_reasoning(request)
+            else:
+                neural_result = await self._neural_general_reasoning(request)
+
+            execution_time = (time.perf_counter() - start_time) * 1000
+
+            # Wrap dict result in ReasoningResponse
+            return ReasoningResponse(
+                success=neural_result.get("success", True),
+                result=neural_result.get("answer") or neural_result.get("result"),
+                confidence=neural_result.get("confidence", 0.0),
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                explanation=neural_result.get("explanation"),
+                derived_facts=neural_result.get("derived_facts"),
+                metadata=neural_result.get("metadata", {}),
+            )
+
+        except Exception as e:
+            logger.error(f"Neural reasoning dispatcher failed: {e}", exc_info=True)
+            execution_time = (time.perf_counter() - start_time) * 1000
+            return ReasoningResponse(
+                success=False,
+                result=None,
+                confidence=0.0,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                error=str(e),
+            )
+
     def _extract_legal_patterns(self, facts: list[str], rules: list[str]) -> dict[str, Any]:
         """Extract legal reasoning patterns from facts and rules"""
         patterns = {
@@ -1897,9 +1963,9 @@ class UnifiedReasoningService:
         if response.confidence < 0.0 or response.confidence > 1.0:
             raise InvariantViolation("G_RESPONSE_VALIDITY", {"error": f"Invalid confidence: {response.confidence}"})
 
-    async def _neural_reasoning_with_validation(self, request: ReasoningRequest) -> ReasoningResponse:
+    async def _neural_reasoning_with_guardrail(self, request: ReasoningRequest) -> ReasoningResponse:
         """
-        Neural reasoning with SYMBOLIC VALIDATION
+        Neural reasoning with SYMBOLIC VALIDATION (Guardrail Wrapper)
 
         GUARDRAIL: Neural outputs are validated by symbolic layer
         """

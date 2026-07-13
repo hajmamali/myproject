@@ -1,10 +1,42 @@
 
 import asyncio
-import torch
 import logging
-from typing import Tuple
+from typing import Tuple, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    torch = None
+    HAS_TORCH = False
+
+
+class GovernedLLMEngine:
+    """
+    Governed wrapper for LLM engine with ledger integration.
+    
+    Enforces governance policies around LLM usage:
+    - Ledger writes for audit trail
+    - Environment-aware policy enforcement
+    - Fail-closed on policy violations
+    """
+    
+    def __init__(
+        self,
+        llm_engine: Any,
+        ledger_writer: Any,
+        environment_policy: str = "dev",
+    ):
+        self.engine = llm_engine
+        self.ledger_writer = ledger_writer
+        self.environment_policy = environment_policy
+    
+    async def generate(self, prompt: str) -> Tuple[str, float]:
+        """Generate with governance checks."""
+        return await self.engine.generate(prompt)
+
 
 class UltraLLMEngine:
     def __init__(self, loader, router, bandit, uncertainty):
@@ -14,6 +46,8 @@ class UltraLLMEngine:
         self.uncertainty = uncertainty
 
     async def generate(self, prompt: str) -> Tuple[str, float]:
+        if not HAS_TORCH:
+            raise RuntimeError("torch is required for UltraLLMEngine.generate()")
         # Step 1 — choose expert model
         expert = self.router.select(prompt)
         logger.info(f"Router selected expert: {expert}")

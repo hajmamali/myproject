@@ -13,6 +13,7 @@ from mahoun.invariants.ledger_invariants import (
     LEDGER_INVARIANTS,
     get_invariant_by_id,
     get_all_invariants,
+    verify_el_i8_registration,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "LEDGER_INVARIANTS",
     "get_invariant_by_id",
     "get_all_invariants",
+    "verify_el_i8_registration",
 ]

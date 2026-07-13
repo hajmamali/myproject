@@ -41,9 +41,12 @@ if TYPE_CHECKING:
     from reasoning_logic.parser import FOLConverter, ParseError
 else:
     # Runtime fallback for type checking
-    ReasoningResponse = Any
-    FOLConverter = Any
-    ParseError = Exception
+    from mahoun.reasoning.unified_reasoning_service import ReasoningResponse
+    try:
+        from reasoning_logic.parser import FOLConverter, ParseError
+    except ImportError:
+        FOLConverter = Any
+        ParseError = Exception
 
 try:
     from mahoun.core.logging_config import get_logger
