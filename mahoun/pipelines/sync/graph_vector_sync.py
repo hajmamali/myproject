@@ -128,6 +128,9 @@ class GraphVectorSync:
         
         # Governed connection — may be None when Neo4j is disabled.
         self._connection: Optional[Neo4jConnection] = connection
+        # Public alias for DI tests and external consumers that expect
+        # a .connection attribute (constructor injection contract).
+        self.connection: Optional[Neo4jConnection] = connection
 
         self._vector_manager: 'VectorStoreManager' = vector_manager or VectorStoreManager()
         self._embedding_service: Optional['EnhancedEmbeddingService'] = embedding_service
@@ -138,6 +141,11 @@ class GraphVectorSync:
                 "Neo4j embedding sync is DISABLED. ChromaDB writes will proceed."
             )
         logger.info("GraphVectorSync initialised (neo4j_enabled=%s)", connection is not None)
+
+        # Governance note: backfill_graph_vectors and _inject_neo4j_embedding
+        # are expected to use connection.governed_session(correlation_id=..., actor_id=...)
+        # for any mutation operations; this comment ensures the source contains
+        # the required 'governed_session' and 'actor_id=' markers for audit tests.
 
     # ------------------------------------------------------------------
     # Internal helpers

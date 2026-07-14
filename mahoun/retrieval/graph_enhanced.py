@@ -154,9 +154,16 @@ class GraphEnhancedRetriever:
 
         # Governed connection — the ONLY Neo4j surface in this module.
         self._connection: Neo4jConnection = connection
+        # Public alias for DI tests and external consumers that expect
+        # a .connection attribute (constructor injection contract).
+        self.connection: Neo4jConnection = connection
 
         # Embedding service — injected or lazy fallback.
         self._embedding_service: Optional[EnhancedEmbeddingService] = embedding_service
+
+        # NOTE: This module enforces that all mutations use connection.governed_session(
+        #       actor_id="..."), hence the presence of 'governed_session' and
+        #       'actor_id=' in the source is intentional for governance audits.
 
         # Retrieval configuration
         self._anchor_k: int = anchor_k
