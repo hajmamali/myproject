@@ -637,7 +637,7 @@ class PolicyResolver:
         import re
         
         # Idempotency: already transformed?
-        if re.search(r'NOT\s*\(\s*\w+\._deleted\s*=\s*true', query, re.IGNORECASE):
+        if re.search(r'\(\s*\w+\._deleted\s+IS\s+NULL', query, re.IGNORECASE):
             return query, False
         
         # Security: reject explicit tombstone access
@@ -659,24 +659,23 @@ class PolicyResolver:
                 )
 
         tombstone_block = """(
-        NOT (
-          n._deleted = true 
-          OR n._redacted = true 
-          OR n._purged = true
-          OR n._tombstoned = true
-          OR n._gdpr_purged = true
-          OR n._right_to_be_forgotten = true
-          OR n:TOMBSTONE 
-          OR n:DELETED 
-          OR n:REDACTED
-          OR n:PURGED
-          OR n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
-          OR n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
-          OR (n._deletion_timestamp IS NOT NULL 
+        (n._deleted IS NULL OR n._deleted = false)
+        AND (n._redacted IS NULL OR n._redacted = false)
+        AND (n._purged IS NULL OR n._purged = false)
+        AND (n._tombstoned IS NULL OR n._tombstoned = false)
+        AND (n._gdpr_purged IS NULL OR n._gdpr_purged = false)
+        AND (n._right_to_be_forgotten IS NULL OR n._right_to_be_forgotten = false)
+        AND NOT n:TOMBSTONE 
+        AND NOT n:DELETED 
+        AND NOT n:REDACTED
+        AND NOT n:PURGED
+        AND NOT n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
+        AND NOT n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
+        AND NOT (n._deletion_timestamp IS NOT NULL 
               AND datetime(n._deletion_timestamp) <= datetime())
-          OR (n._redaction_timestamp IS NOT NULL 
+        AND NOT (n._redaction_timestamp IS NOT NULL 
               AND datetime(n._redaction_timestamp) <= datetime())
-        ))"""
+        )"""
 
         lines = query.split('\n')
         transformed_lines = []

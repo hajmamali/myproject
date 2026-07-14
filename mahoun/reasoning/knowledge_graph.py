@@ -109,6 +109,50 @@ class LegalKnowledgeGraph:
                 )
         
         log.info(f"Initialized LegalKnowledgeGraph (storage={storage_path}, semantic={enable_semantic})")
+
+    def _resolve_entity_provenance(self, source: str, correlation_id: str, author: str, *, preserve_existing: Optional[Any] = None) -> Any:
+        if preserve_existing is not None:
+            return preserve_existing
+
+        try:
+            from mahoun.reasoning.evidence_linked_verdict import _resolve_provenance
+
+            provenance = _resolve_provenance(
+                source=source,
+                correlation_id=correlation_id,
+                author=author,
+            )
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            log.warning("Falling back to synthetic provenance for knowledge graph entity: %s", exc)
+            provenance = None
+
+        if provenance is None:
+            return {
+                "source": source,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": author,
+                "correlation_id": correlation_id,
+                "governance_scope_id": "development_synthetic_scope",
+                "runtime_attestation_id": "development_synthetic_attestation",
+            }
+
+        if hasattr(provenance, "to_dict"):
+            data = provenance.to_dict()
+            data.setdefault("created_at", data.get("timestamp"))
+            data.setdefault("created_by", data.get("author"))
+            return data
+
+        return provenance
+
+    @staticmethod
+    def _serialize_provenance(provenance: Optional[Any]) -> Optional[Any]:
+        if provenance is None:
+            return None
+        if isinstance(provenance, dict):
+            return provenance
+        if hasattr(provenance, "to_dict"):
+            return provenance.to_dict()
+        return {"value": str(provenance)}
     
     def enable_semantic_search(
         self,
@@ -201,7 +245,8 @@ class LegalKnowledgeGraph:
                     "metadata": rule.metadata,
                     "version": rule.version,
                     "created_at": rule.created_at,
-                    "updated_at": rule.updated_at
+                    "updated_at": rule.updated_at,
+                    "provenance": self._serialize_provenance(rule.provenance),
                 })
             json.dump(rules_data, f, ensure_ascii=False, indent=2)
         
@@ -220,7 +265,8 @@ class LegalKnowledgeGraph:
                     "metadata": prec.metadata,
                     "version": prec.version,
                     "created_at": prec.created_at,
-                    "updated_at": prec.updated_at
+                    "updated_at": prec.updated_at,
+                    "provenance": self._serialize_provenance(prec.provenance),
                 })
             json.dump(prec_data, f, ensure_ascii=False, indent=2)
         
@@ -303,12 +349,12 @@ class LegalKnowledgeGraph:
             log.debug(f"Added legal rule: {rule_id}")
         
         # Set provenance
-        rule.provenance = {
-            "source": "knowledge_graph",
-            "added_at": now,
-            "rule_id": rule_id,
-            "version": rule.version,
-        }
+        rule.provenance = self._resolve_entity_provenance(
+            source="knowledge_graph:add_legal_rule",
+            correlation_id=rule_id,
+            author="mahoun_knowledge_graph",
+            preserve_existing=old_rule.provenance if rule_id in self.legal_rules else None,
+        )
         self.legal_rules[rule_id] = rule
         self._save_to_storage()
         return rule
@@ -380,6 +426,13 @@ class LegalKnowledgeGraph:
             )
             log.debug(f"Added precedent: {case_id}")
         
+        prec.provenance = self._resolve_entity_provenance(
+            source="knowledge_graph:add_precedent",
+            correlation_id=case_id,
+            author="mahoun_knowledge_graph",
+            preserve_existing=old_prec.provenance if case_id in self.precedents else None,
+        )
+
         self.precedents[case_id] = prec
         self._save_to_storage()
         return prec

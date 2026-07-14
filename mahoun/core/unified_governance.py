@@ -656,6 +656,8 @@ class UnifiedGovernanceController:
         mahoun_filter_indicators = [
             r'NOT\s*\(\s*n\._deleted\s*=\s*true',
             r'WHERE\s+(\([^)]*\s+)?NOT\s*\(\s*n\._deleted',
+            r'_deleted\s+IS\s+NULL',
+            r'_deleted\s*=\s*false',
             r'mahoun\.isTombstoned',
         ]
         
@@ -689,23 +691,26 @@ class UnifiedGovernanceController:
         
         # Advanced tombstone filter function (deployed as Neo4j user-defined function)
         tombstone_filter_function = """
-        NOT (
-          n._deleted = true 
-          OR n._redacted = true 
-          OR n._purged = true
-          OR n._tombstoned = true
-          OR n._gdpr_purged = true
-          OR n._right_to_be_forgotten = true
-          OR n:TOMBSTONE 
-          OR n:DELETED 
-          OR n:REDACTED
-          OR n:PURGED
-          OR n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
-          OR n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
-          OR (n._deletion_timestamp IS NOT NULL 
-              AND datetime(n._deletion_timestamp) <= datetime())
-          OR (n._redaction_timestamp IS NOT NULL 
-              AND datetime(n._redaction_timestamp) <= datetime())
+        (
+          (n._deleted IS NULL OR n._deleted = false)
+          AND NOT (
+            n._deleted = true 
+            OR n._redacted = true 
+            OR n._purged = true
+            OR n._tombstoned = true
+            OR n._gdpr_purged = true
+            OR n._right_to_be_forgotten = true
+            OR n:TOMBSTONE 
+            OR n:DELETED 
+            OR n:REDACTED
+            OR n:PURGED
+            OR n.status IN ['deleted', 'redacted', 'purged', 'tombstoned']
+            OR n.lifecycle_state IN ['DELETED', 'REDACTED', 'PURGED']
+            OR (n._deletion_timestamp IS NOT NULL 
+                AND datetime(n._deletion_timestamp) <= datetime())
+            OR (n._redaction_timestamp IS NOT NULL 
+                AND datetime(n._redaction_timestamp) <= datetime())
+          )
         )"""
         
         modified = False

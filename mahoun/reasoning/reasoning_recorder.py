@@ -19,6 +19,7 @@ import hashlib
 import json
 
 from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
+from mahoun.core.governance.violations import GovernanceViolation, GovernanceViolationError, ViolationCategory, ViolationSeverity
 
 
 @dataclass(frozen=True)
@@ -66,10 +67,19 @@ class ReasoningRecorder:
         if env.is_production() or env.is_staging():
             ctx = GovernanceContextManager.get_current_context()
             if ctx is None:
-                raise RuntimeError(
-                    "P0-1 GOVERNANCE VIOLATION: Cannot record reasoning step "
-                    f"in {env.environment.value} without active GovernanceContext. "
-                    "Operation blocked."
+                raise GovernanceViolationError(
+                    GovernanceViolation(
+                        category=ViolationCategory.GOVERNANCE_BYPASS,
+                        severity=ViolationSeverity.CRITICAL,
+                        message=(
+                            "P0-1 GOVERNANCE VIOLATION: Cannot record reasoning step "
+                            f"in {env.environment.value} without active GovernanceContext. "
+                            "Operation blocked."
+                        ),
+                        source="ReasoningRecorder",
+                        correlation_id="unknown",
+                        details={},
+                    )
                 )
             return ctx.provenance_tracker.create_provenance(
                 source=f"governed_{operation}",
