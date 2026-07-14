@@ -25,27 +25,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-try:
-    from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier as NLIVerifier
-except Exception:
-    NLIVerifier = None
-
-try:
-    from mahoun.guardrails.ultra_citation_auditor import UltraCitationAuditor as CitationAuditor
-except Exception:
-    CitationAuditor = None
-
-try:
-    from mahoun.uncertainty.service import (
-        UncertaintyConfig,
-        UncertaintyMethod,
-        UncertaintyService,
-    )
-except Exception:
-    UncertaintyConfig = None
-    UncertaintyMethod = None
-    UncertaintyService = None
-
 
 class ReasoningMode(str, Enum):
     """Reasoning execution modes"""
@@ -177,8 +156,7 @@ class ReasoningChain:
         # Initialize NLI Verifier
         if self.config.nli_enabled and self._nli_verifier is None:
             try:
-                if NLIVerifier is None:
-                    raise RuntimeError("UltraNLIVerifier import failed")
+                # from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier as NLIVerifier
                 self._nli_verifier = NLIVerifier(threshold=self.config.nli_threshold)
                 self.nli_available = True
                 logger.info("✅ NLI Verifier initialized")
@@ -193,8 +171,7 @@ class ReasoningChain:
         # Initialize Citation Auditor
         if self.config.citation_audit_enabled and self._citation_auditor is None:
             try:
-                if CitationAuditor is None:
-                    raise RuntimeError("UltraCitationAuditor import failed")
+                # from mahoun.guardrails.ultra_citation_auditor import UltraCitationAuditor as CitationAuditor
                 self._citation_auditor = CitationAuditor(
                     min_accuracy=self.config.citation_min_accuracy
                 )
@@ -211,12 +188,8 @@ class ReasoningChain:
         # Initialize Uncertainty Service
         if self.config.uncertainty_enabled and self._uncertainty_service is None:
             try:
-                if (
-                    UncertaintyConfig is None
-                    or UncertaintyMethod is None
-                    or UncertaintyService is None
-                ):
-                    raise RuntimeError("Uncertainty service imports failed")
+                # from mahoun.uncertainty.service import UncertaintyService, UncertaintyConfig
+                # from mahoun.uncertainty.service import UncertaintyMethod
                 uncertainty_config = UncertaintyConfig(
                     default_method=UncertaintyMethod.ENSEMBLE
                 )

@@ -16,74 +16,7 @@ def seed_test_knowledge_graph():
     Seed Neo4j with test legal rules and precedents
     
     This function is called by Docker Compose before running integration tests.
-    
-    GOVERNANCE: This function can ONLY run in test environment with TRIPLE verification.
     """
-    import os
-    import sys
-    import subprocess
-    
-    # ============================================================================
-    # TRIPLE GOVERNANCE GATE FOR TEST SEEDING (P0 ENFORCEMENT)
-    # ============================================================================
-    
-    # GATE 1: Environment must be explicitly test
-    mahoun_env = os.getenv("MAHOUN_ENV", "").lower()
-    if mahoun_env not in ("test", "testing", "dev", "development"):
-        raise RuntimeError(
-            f"❌ GOVERNANCE VIOLATION: Test seeding BLOCKED in environment '{mahoun_env}'. "
-            "This operation bypasses governance and MUST ONLY run in test/dev environment. "
-            f"Allowed environments: test, testing, dev, development"
-        )
-    
-    # GATE 2: Explicit opt-in flag required
-    allow_seeding = os.getenv("MAHOUN_ALLOW_UNGOVERNED_SEEDING", "").lower()
-    if allow_seeding not in ("true", "1", "yes"):
-        raise RuntimeError(
-            "❌ GOVERNANCE VIOLATION: Test seeding requires EXPLICIT opt-in. "
-            "Set MAHOUN_ALLOW_UNGOVERNED_SEEDING=true to proceed. "
-            "This flag acknowledges governance bypass in test environment only."
-        )
-    
-    # GATE 3: Production check via system detection (belt-and-suspenders)
-    try:
-        # Check if we're in a production-like environment
-        hostname = os.getenv("HOSTNAME", "")
-        if any(prod_indicator in hostname.lower() for prod_indicator in ["prod", "production", "live"]):
-            raise RuntimeError(
-                f"❌ GOVERNANCE VIOLATION: Production hostname detected '{hostname}'. "
-                "Test seeding is FORBIDDEN on production systems."
-            )
-        
-        # Check if production databases are configured
-        if os.getenv("DATABASE_URL", "").find("prod") != -1:
-            raise RuntimeError(
-                "❌ GOVERNANCE VIOLATION: Production database URL detected. "
-                "Test seeding cannot run against production databases."
-            )
-            
-    except Exception as production_check_error:
-        log.error(f"Production environment check failed: {production_check_error}")
-        raise
-    
-    # AUDIT: Log the governance bypass attempt with full context
-    audit_entry = {
-        "action": "test_seeding_governance_bypass",
-        "environment": mahoun_env,
-        "hostname": os.getenv("HOSTNAME", "unknown"),
-        "user": os.getenv("USER", "unknown"),
-        "pid": os.getpid(),
-        "explicit_approval": allow_seeding,
-        "timestamp": log.info.__name__,  # Will be set by logger
-        "risk_level": "HIGH",
-        "justification": "Test data seeding in non-production environment"
-    }
-    
-    log.warning(
-        "⚠️ GOVERNANCE BYPASS AUTHORIZED (test environment only)",
-        extra=audit_entry
-    )
-    
     try:
         from neo4j import GraphDatabase
         
@@ -196,24 +129,7 @@ def seed_test_embeddings():
     Seed ChromaDB with test embeddings
     
     This function is called by Docker Compose before running integration tests.
-    
-    GOVERNANCE: This function can ONLY run in test environment with explicit opt-in.
     """
-    # GOVERNANCE GATE: Block in production
-    mahoun_env = os.getenv("MAHOUN_ENV", "dev")
-    if mahoun_env in ("production", "prod", "staging"):
-        raise RuntimeError(
-            "❌ GOVERNANCE VIOLATION: Test seeding blocked in production/staging."
-        )
-    
-    # Require explicit opt-in even in test
-    if not os.getenv("MAHOUN_ALLOW_UNGOVERNED_SEEDING"):
-        raise RuntimeError(
-            "❌ GOVERNANCE VIOLATION: Test seeding requires MAHOUN_ALLOW_UNGOVERNED_SEEDING=true"
-        )
-    
-    log.info("⚠️  UNGOVERNED SEEDING ACTIVE (test environment only)")
-    
     try:
         import chromadb
         

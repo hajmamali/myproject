@@ -13,7 +13,6 @@ Upgraded with:
 - Enhanced logging
 """
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,7 +20,6 @@ from torch_geometric.nn import GATv2Conv
 from torch_geometric.data import Data
 from torch_geometric.utils import k_hop_subgraph
 import networkx as nx
-import numpy as np
 from typing import List, Dict, Any, Optional, Tuple, Union
 from pathlib import Path
 import asyncio
@@ -30,7 +28,7 @@ from core.models import LegalDocument, RetrievalResult, UncertaintyEstimate, Rea
 from mahoun.graph.gnn.graph_builder import LegalGraphBuilder
 from mahoun.graph.gnn.uncertainty_estimator import UncertaintyEstimator
 from core.reasoning.reranking_cot import RerankingCoTGenerator
-from mahoun.pipelines._logging import setup_logger
+from mahoun.core.logging import setup_logger
 
 log = setup_logger("gat_reranker")
 
@@ -139,9 +137,7 @@ class GATReranker(nn.Module):
 
         # Message passing through GAT layers
         for i, conv in enumerate(self.convs):
-            x, (edge_idx, alpha) = conv(
-                x, edge_index, edge_attr=edge_attr, return_attention_weights=True
-            )
+            x, (edge_idx, alpha) = conv(x, edge_index, edge_attr=edge_attr, return_attention_weights=True)
             x = F.elu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
@@ -228,14 +224,15 @@ class GATRerankerService:
         self.uncertainty_estimator = None
         if enable_uncertainty:
             self.uncertainty_estimator = UncertaintyEstimator(
-                feature_dim=128, device=device  # Will be updated based on model
+                feature_dim=128,
+                device=device,  # Will be updated based on model
             )
             log.info("Uncertainty estimation enabled")
 
         # NEW: Graph builder
         self.graph_builder = graph_builder or LegalGraphBuilder(device=device)
         log.info("Graph builder initialized")
-        
+
         # NEW: Chain-of-Thought generator
         self.cot_generator = RerankingCoTGenerator(language="fa")
         log.info("Chain-of-Thought generator initialized")
@@ -340,9 +337,9 @@ class GATRerankerService:
     ) -> List[RetrievalResult]:
         """
         Rerank search results with uncertainty quantification and error handling
-        
+
         Final Score = alpha * retrieval_score + beta * gat_score + gamma * pagerank
-        
+
         Args:
             query: Search query
             results: List of search results with 'id' and 'score'
@@ -353,7 +350,7 @@ class GATRerankerService:
             k_hop: K-hop neighborhood for subgraph
             return_explanation: Whether to return CoT reasoning
             return_uncertainty: Whether to return uncertainty estimates
-            
+
         Returns:
             List of RetrievalResult (Pydantic models) with scores and uncertainty
         """
@@ -363,7 +360,7 @@ class GATRerankerService:
 
         # Extract result IDs
         result_ids = [r["id"] for r in results]
-        
+
         # Map IDs to node indices
         result_indices = []
         for doc_id in result_ids:
@@ -377,32 +374,32 @@ class GATRerankerService:
         # Get scores with error handling
         gat_scores = {}
         if self.mode == "gat":
+            try:
+                gat_scores = self._compute_gat_scores(result_indices, k_hop, return_explanation)
+            except torch.cuda.OutOfMemoryError:
+                log.warning("GPU OOM during GAT scoring, retrying on CPU")
+                # Move model to CPU and retry
+                old_device = self.device
+                self.device = "cpu"
+                self.model = self.model.to("cpu")
                 try:
                     gat_scores = self._compute_gat_scores(result_indices, k_hop, return_explanation)
-                except torch.cuda.OutOfMemoryError:
-                    log.warning("GPU OOM during GAT scoring, retrying on CPU")
-                    # Move model to CPU and retry
-                    old_device = self.device
-                    self.device = "cpu"
-                    self.model = self.model.to("cpu")
-                    try:
-                        gat_scores = self._compute_gat_scores(result_indices, k_hop, return_explanation)
-                    except Exception as e:
-                        log.error(f"GAT scoring failed on CPU: {e}, falling back to PageRank")
-                        self.mode = "pagerank"
-                    finally:
-                        # Try to move back to original device
-                        try:
-                            self.device = old_device
-                            self.model = self.model.to(old_device)
-                        except:
-                            pass
                 except Exception as e:
-                    log.error(f"GAT scoring failed: {e}, falling back to PageRank")
-                    if self.fallback_to_pagerank:
-                        self.mode = "pagerank"
-                    else:
-                        raise
+                    log.error(f"GAT scoring failed on CPU: {e}, falling back to PageRank")
+                    self.mode = "pagerank"
+                finally:
+                    # Try to move back to original device
+                    try:
+                        self.device = old_device
+                        self.model = self.model.to(old_device)
+                    except Exception:
+                        pass
+            except Exception as e:
+                log.error(f"GAT scoring failed: {e}, falling back to PageRank")
+                if self.fallback_to_pagerank:
+                    self.mode = "pagerank"
+                else:
+                    raise
 
         pagerank_scores_dict = {}
         if self.pagerank_scores is not None:
@@ -452,7 +449,7 @@ class GATRerankerService:
                 cross_encoder_score=result.get("cross_encoder_score"),
                 gnn_score=gat_score if gat_score > 0 else None,
                 pagerank_score=pagerank_normalized if pagerank_normalized > 0 else None,
-                uncertainty=uncertainty_estimate
+                uncertainty=uncertainty_estimate,
             )
 
             reranked_results.append(retrieval_result)
@@ -491,9 +488,7 @@ class GATRerankerService:
                     return_attention=True,
                 )
             else:
-                scores = self.model(
-                    subgraph_data.x, subgraph_data.edge_index, subgraph_data.edge_attr
-                )
+                scores = self.model(subgraph_data.x, subgraph_data.edge_index, subgraph_data.edge_attr)
                 attention_weights = None
 
         # Map back to original indices
@@ -506,9 +501,7 @@ class GATRerankerService:
                 # Try to attach doc_id if mapping exists on graph
                 try:
                     if hasattr(self.graph_data, "idx_to_doc_id") and self.graph_data.idx_to_doc_id:
-                        explanation["doc_id"] = self.graph_data.idx_to_doc_id.get(
-                            orig_idx, str(orig_idx)
-                        )
+                        explanation["doc_id"] = self.graph_data.idx_to_doc_id.get(orig_idx, str(orig_idx))
                 except Exception:
                     pass
                 score_dict["explanation"] = explanation
@@ -590,9 +583,7 @@ class GATRerankerService:
                 neighbor_idx = src_nodes[top_indices[i]].item()
                 attention = top_values[i].item()
 
-                layer_explanation["top_neighbors"].append(
-                    {"node_idx": neighbor_idx, "attention": attention}
-                )
+                layer_explanation["top_neighbors"].append({"node_idx": neighbor_idx, "attention": attention})
 
             explanations.append(layer_explanation)
 
@@ -617,13 +608,9 @@ class GATRerankerService:
         """
         # Run rerank in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, lambda: self.rerank(query, results, top_k, **kwargs)
-        )
+        return await loop.run_in_executor(None, lambda: self.rerank(query, results, top_k, **kwargs))
 
-    def estimate_uncertainty_for_result(
-        self, result_idx: int, gat_score: float
-    ) -> Optional[UncertaintyEstimate]:
+    def estimate_uncertainty_for_result(self, result_idx: int, gat_score: float) -> Optional[UncertaintyEstimate]:
         """
         Estimate uncertainty for a single result
 
@@ -651,9 +638,7 @@ class GATRerankerService:
                 features = self.graph_data.x[result_idx]
 
                 # Get uncertainty estimate
-                uncertainty = self.uncertainty_estimator.estimate_uncertainty(
-                    features, confidence_level=0.95
-                )
+                uncertainty = self.uncertainty_estimator.estimate_uncertainty(features, confidence_level=0.95)
 
                 return uncertainty
         except Exception as e:
@@ -673,7 +658,7 @@ class GATRerankerService:
             PyG Data object or None
         """
         return self.graph_builder.build_graph(document)
-    
+
     def generate_reasoning(
         self,
         query: str,
@@ -681,13 +666,13 @@ class GATRerankerService:
         scores: Dict[str, float],
         attention_weights: Optional[List[Tuple[torch.Tensor, torch.Tensor]]] = None,
         uncertainty: Optional[UncertaintyEstimate] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> List[ReasoningStep]:
         """
         Generate chain-of-thought reasoning for reranking decision
-        
+
         NEW: Chain-of-Thought integration
-        
+
         Args:
             query: User query
             document: Document being ranked
@@ -695,7 +680,7 @@ class GATRerankerService:
             attention_weights: GAT attention weights
             uncertainty: Uncertainty estimate
             metadata: Additional metadata (node_degree, entity_types, etc.)
-            
+
         Returns:
             List of ReasoningStep objects explaining the ranking
         """
@@ -706,34 +691,31 @@ class GATRerankerService:
                 scores=scores,
                 attention_weights=attention_weights,
                 uncertainty=uncertainty,
-                metadata=metadata
+                metadata=metadata,
             )
-            
+
             log.debug(f"Generated {len(reasoning_steps)} reasoning steps for document {document.id}")
-            
+
             return reasoning_steps
-            
+
         except Exception as e:
             log.error(f"Error generating reasoning: {e}")
             return []
-    
-    def _convert_to_retrieval_results(
-        self,
-        results: List[Dict[str, Any]]
-    ) -> List[RetrievalResult]:
+
+    def _convert_to_retrieval_results(self, results: List[Dict[str, Any]]) -> List[RetrievalResult]:
         """
         Convert dict results to RetrievalResult Pydantic models
-        
+
         Helper method for fallback scenarios
-        
+
         Args:
             results: List of result dictionaries
-            
+
         Returns:
             List of RetrievalResult objects
         """
         retrieval_results = []
-        
+
         for result in results:
             try:
                 retrieval_result = RetrievalResult(
@@ -746,13 +728,13 @@ class GATRerankerService:
                     cross_encoder_score=result.get("cross_encoder_score"),
                     gnn_score=result.get("gnn_score", result.get("gat_score")),
                     pagerank_score=result.get("pagerank_score"),
-                    uncertainty=None  # No uncertainty in fallback
+                    uncertainty=None,  # No uncertainty in fallback
                 )
                 retrieval_results.append(retrieval_result)
             except Exception as e:
                 log.warning(f"Failed to convert result to RetrievalResult: {e}")
                 continue
-        
+
         return retrieval_results
 
 

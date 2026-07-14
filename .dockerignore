@@ -1,525 +1,232 @@
 # ============================================================================
-# MAHOUN Docker Build Context Optimization
+# MAHOUN Platform - Backend .dockerignore
 # ============================================================================
-# Purpose: Exclude unnecessary files from Docker build context for security,
-#          performance, and to prevent accidental inclusion of sensitive data
-# Security: Prevents secrets, keys, and sensitive data from entering images
-# Performance: Reduces build context size and build time
+# Exclude files from Docker build context to speed up builds and reduce image size
 # ============================================================================
 
-# ============================================================================
-# Version Control & Git
-# ============================================================================
+# Git
 .git/
-.github/
 .gitignore
 .gitattributes
-.gitmodules
-*.git*
-.hg/
-.svn/
 
-# ============================================================================
-# IDE & Editor Files
-# ============================================================================
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python distribution
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+pip-wheel-metadata/
+
+# IDE & Editor
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 .project
+.pydevproject
 .settings/
 *.sublime-*
-.atom/
-.brackets.json
 
-# ============================================================================
-# CRITICAL - Large Directories (MUST EXCLUDE)
-# ============================================================================
-models/
-venv/
-.venv/
-env/
-.env/
-data/
-runtime/
-artifacts/
-checkpoints/
-htmlcov/
-coverage.json
-audit_scan_results.json
-mypy_output_tmp.txt
-coverage_p0.json
-
-# ============================================================================
-# Development Tools & CI/CD (Exclude from Production Images)
-# ============================================================================
-.pre-commit-config.yaml
-.github/
-ci/first_step/
-ci/scripts/
-ci/mypy/
-ci/schema_baseline.json
-tox.ini
-.coverage
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# ============================================================================
-# Secrets & Sensitive Configuration (CRITICAL - NEVER INCLUDE)
-# ============================================================================
-*.key
-*.pem
-*.crt
-*.p12
-*.pfx
-*.jks
-*secrets*
-*credentials*
-*password*
-.env.local
-.env.production
-.env.*.local
-.env.enterprise
-vault/
-certificates/
-private/
-.ssh/
-.gnupg/
-
-# Environment files (exclude all except .env.example)
-.env
-.env.*
-!.env.example
-!.env.backend.example
-
-# ============================================================================
-# Data & Runtime Files (Exclude Persistent Data)
-# ============================================================================
-data/
-runtime/
-uploads/
-output/
-vector_store_data/
-logs/
-*.log
-*.log.*
-backup/
-dump/
-export/
-import/
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-dump.sql
-backup.sql
-
-# ============================================================================
-# Test & Development Files
-# ============================================================================
-tests/
-test_*
-*_test.py
-pytest.ini
-conftest.py
-coverage/
-htmlcov/
-.coverage.*
-.pytest_cache/
-.test_classification_backup/
-
-# Test data & fixtures
-fixtures/
-test_data/
-mock_data/
-sample_data/
-
-# ============================================================================
-# Documentation & Reports (Exclude from Runtime Images)
-# ============================================================================
-docs/
-documentation/
-*.md
-!README.md  # Keep main README for package info
-*.rst
-*.txt
-!requirements*.txt  # Keep requirements files
-LICENSE*
-CHANGELOG*
-CONTRIBUTING*
-AUTHORS*
-HISTORY*
-NEWS*
-
-# Reports and audits (sensitive)
-*AUDIT*.md
-*REPORT*.md  
-*ANALYSIS*.md
-*COMPLETION*.md
-*FORENSIC*.md
-*ROADMAP*.md
-*RECOMMENDATION*.md
-
-# ============================================================================
-# Build Artifacts & Compiled Files
-# ============================================================================
-build/
-dist/
-*.egg-info/
-.eggs/
-*.egg
-*.whl
-*.tar.gz
-target/
-out/
-bin/
-obj/
-
-# Compiled Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# ============================================================================
-# Node.js & Frontend (If Applicable)
-# ============================================================================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.yarn-integrity
-.npm
-.eslintcache
-package-lock.json
-yarn.lock
-
-# ============================================================================
-# Docker & Container Files (Prevent Inception)
-# ============================================================================
-Dockerfile*
-!Dockerfile.kernel
-!Dockerfile.api  
-!Dockerfile.mcp
-docker-compose*.yml
-!docker-compose.unified.yml  # Keep unified for reference
-.dockerignore
-*.dockerfile
-k8s/
-helm/
-kubernetes/
-
-# ============================================================================
-# Cloud & Infrastructure Files
-# ============================================================================
-.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.lock.hcl
-terraform.tfvars
-terraform.tfvars.json
-*.tfvars
-
-# Ansible
-playbooks/
-inventory/
-ansible.cfg
-*.retry
-
-# ============================================================================
-# Monitoring & Observability (Exclude Config, Keep Code)
-# ============================================================================
-monitoring/
-grafana-data/
-prometheus-data/
-alertmanager-data/
-jaeger-data/
-loki-data/
-tempo-data/
-
-# ============================================================================
-# Temporary & Cache Files
-# ============================================================================
-tmp/
-temp/
-.tmp/
-.temp/
-cache/
-.cache/
-*.tmp
-*.temp
-*.cache
-
-# OS temporary files
-*~
+# OS files
 .DS_Store
+Thumbs.db
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
-Thumbs.db
 
-# ============================================================================
-# Archives & Compressed Files (Potential Security Risk)
-# ============================================================================
-*.zip
-*.tar
-*.tar.gz
-*.tgz
-*.tar.bz2
-*.tbz2
-*.tar.xz
-*.txz
-*.rar
-*.7z
-*.gz
-*.bz2
-*.xz
+# Environment files (NEVER include secrets!)
+.env
+.env.*
+!.env.example
 
-# ============================================================================
-# Media Files (Large, Not Needed in Runtime)
-# ============================================================================
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.svg
-*.ico
-*.mp3
-*.mp4
-*.avi
-*.mov
-*.wmv
-*.flv
-*.webm
-*.pdf
-*.doc
-*.docx
-*.ppt
-*.pptx
-*.xls
-*.xlsx
-
-# ============================================================================
-# Development Utilities (Tool-specific)
-# ============================================================================
-
-# Jupyter Notebooks
-.ipynb_checkpoints/
-*.ipynb
-
-# VS Code
-.vscode/
-*.code-workspace
-
-# PyCharm
-.idea/
-*.iml
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# Vim
-[._]*.s[a-v][a-z]
-[._]*.sw[a-p]
-[._]s[a-rt-v][a-z]
-[._]ss[a-gi-z]
-[._]sw[a-p]
-
-# ============================================================================
-# Language-Specific Exclusions
-# ============================================================================
-
-# Python
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-ENV/
-env.bak/
-venv.bak/
-__pycache__/
-.mypy_cache/
-
-# Large model files & data
-models/
-checkpoints/
-artifacts/
-cache/
-.cache/
-data/
-runtime/
-vector_store_data/
-exports/
-imports/
-
-# Test & coverage artifacts  
-tests/
-test_*
-*_test.py
-pytest.ini
-conftest.py
-coverage/
-htmlcov/
-.coverage.*
+# Testing
 .pytest_cache/
-.test_classification_backup/
-coverage*.json
-audit_scan_results.json
-mypy_output_tmp.txt
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+coverage.xml
+*.cover
+.mypy_cache/
+.ruff_cache/
+.basedpyright/
 
-# Build artifacts
-build/
-dist/
-*.egg-info/
-.eggs/
-*.egg
-*.whl
-*.tar.gz
-target/
-out/
-bin/
-obj/
+# Logs
+*.log
+logs/
+*.log.*
 
-# ============================================================================
-# MAHOUN Governance Kernel - STRICT EXCLUSIONS
-# ============================================================================
-# For governance kernel: Root of Trust - Minimal Attack Surface
+# Database files (should not be in image)
+*.db
+*.sqlite
+*.sqlite3
+vector_store_data/
+neo4j_data/
 
-# Reasoning & LLM Components (NOT needed in governance kernel)
-mahoun/reasoning/
-mahoun/llm/ 
-mahoun/rag/
-mahoun/retrieval/
-mahoun/pipelines/
-mahoun/agents/
-mahoun/domain/
-mahoun/finetuning/
-mahoun/self_improve/
-mahoun/nlp/
-mahoun/orchestrator/
-mahoun/graph/gnn/
-mahoun/graph/training/
-mahoun/graph/optimizer/
-mahoun/ultra_systems/
+# Runtime directories (should be mounted, not copied)
+uploads/
+data/
+output/
+runtime/
+models/
 
-# Infrastructure services (separate containers)
-mahoun/infrastructure/
-mahoun/monitoring/
-mahoun/metrics/
-mahoun/dashboard/
-mahoun/bootstrap/
-
-# Development & testing  
-tests/
+# Documentation
 docs/
+*.md
+!README.md
+ARCHITECTURE*.md
+BRUTAL*.md
+CI_*.md
+DOCKER*.md
+FRONTEND*.md
+GOLDEN*.md
+HEALTH*.md
+HEAVY*.md
+MAHOUN*.md
+PLATFORM*.md
+PROJECT*.md
+REAL*.md
+REASONING*.md
+REFACTORING*.md
+STABILITY*.md
+SYSTEM*.md
+TYPE*.md
+WIRING*.md
+WHY*.md
+*.fa.md
+
+# Markdown files (except README)
 reports/
+proof_pack/
+گزارش_*.md
+مقایسه_*.md
+راهنمای_*.md
+برآورد_*.md
+محاسبات_*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+ci/
+first_step_ci_cd/
+scripts/ci_*
+scripts/backup*.py
+scripts/restore*.py
+scripts/validate_*.py
+scripts/execute_*.py
+scripts/phase_*.py
+scripts/verify_*.py
+scripts/check_*.py
+scripts/quick_*.py
+
+# Tests (exclude from production, include in testing stage)
+tests/
+test_*.py
+*_test.py
+conftest.py
+pytest.ini
+.pytest_cache/
+
+# Standalone test scripts (moved to tests/)
+run_symbolic_tests*.py
+test_symbolic_standalone.py
+test_graph_to_fol_standalone.py
+test_hardened_ocr.py
+verify_hardening.py
+
+# Debug and validation utilities (keep in root, exclude from image)
+debug_*.py
+switchboard_validation.py
+
+# Docker files (don't need these in the image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Frontend (not needed in backend image)
 frontend/
-reasoning_logic/
+node_modules/
 
-# Custom Project Exclusions (MAHOUN-Specific)
-# ============================================================================
+# Mypy
+mypy.ini
+mypy_baseline.txt
+mypy_fresh.txt
 
-# Legacy containers (being replaced)
-Dockerfile.backend  # Deprecated monolith
+# Monitoring configs (mounted separately if needed)
+monitoring/
 
-# Kiro IDE files
-.kiro/
-.kilocode/
-.kilo/
-.antigravitycli/
+# Secrets & keys
+*.key
+*.pem
+*.crt
+*.csr
+secrets/
+.secrets/
 
-# Cursor IDE
-.cursor/
-
-# Devin AI
-.devin/
-
-# Custom analysis files (potentially sensitive)
-.test_classification_backup/
-CONTAINER_CONSOLIDATION_AUDIT.md
-DATABASE_USAGE_ANALYSIS.md  
-DOCKER_SMART_CLEANUP_PLAN.md
-ENTERPRISE_STACK_GUIDE.md
-ENTERPRISE_MONITORING_COMPLETION_REPORT.md
-INFRASTRUCTURE_AUDIT_BRUTAL.md
-
-# Development scripts (keep in repo, exclude from images)
-scripts/manage_enterprise_stack.sh
-scripts/monitoring_stack_manager.sh
-scripts/container_security_scan.sh
-
-# ============================================================================
-# Security Scanning Exclusions (Tools Generate Large Files)
-# ============================================================================
-.trivyignore
-trivy-results.json
-grype-results.json
-snyk-results.json
-security-scan-*
-vulnerability-report-*
-
-# ============================================================================
-# Performance Testing & Benchmarks
-# ============================================================================
-benchmark-results/
-performance-reports/
-load-test-results/
-profiling-data/
-*.prof
-*.perf
-
-# ============================================================================
-# Backup Files (Prevent Accidental Inclusion)
-# ============================================================================
+# Backup files
 *.bak
 *.backup
-*.old
-*.orig
-*.save
-*~
+*.tmp
+*.temp
 
-# Database backups
-*.dump
-*.sql.gz
-*.sql.bz2
+# Build artifacts
+*.tar.gz
+*.zip
 
-# Configuration backups
-config.*.bak
-settings.*.old
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
 
-# ============================================================================
-# Final Notes
-# ============================================================================
-# This .dockerignore is designed to:
-# 1. Maximize security by excluding sensitive files
-# 2. Optimize build performance by reducing context size  
-# 3. Prevent accidental leakage of development artifacts
-# 4. Maintain clean, minimal production images
-# 
-# Review and update regularly as project structure evolves.
-# Always test build contexts after modifications.
-# ============================================================================
+# Archive directories
+mahoun/core/archive/
+mahoun/rag/archive/
+mahoun/agents/archive/
+
+# Temporary analysis files
+*_ANALYSIS.md
+*_AUDIT.md
+*_REPORT.md
+*_COMPLETE.md
+*_SUMMARY.md
+*_GUIDE.md
+*_PLAN.md
+*_STATUS.md
+*_ROADMAP.md
+*_TIMELINE.md
+CORE_*.md
+PHASE_*.md
+ENTERPRISE_*.md
+GRAPH_*.md
+INTEGRATION_*.md
+RETRIEVAL_*.md
+SCHEMA_*.md
+UID_*.md
+TECHNICAL_*.md
+FORENSIC_*.md
+
+# Coverage files
+.coverage*
+coverage_baseline.txt
+htmlcov/
+
+# Shell scripts (except deploy)
+run_*.sh
+!scripts/deploy_server.sh

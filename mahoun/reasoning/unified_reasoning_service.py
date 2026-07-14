@@ -27,15 +27,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-# Define InvariantViolation if not available
-try:
-    guardrails_exceptions = importlib.import_module("mahoun.guardrails.exceptions")
-    InvariantViolation = guardrails_exceptions.InvariantViolation
-except (ImportError, AttributeError):
-    class InvariantViolation(Exception):
-        """Governance invariant violation"""
-        pass
-
 # Import symbolic reasoning (our fixed FOL engine)
 from reasoning_logic import (
     BackwardChaining,
@@ -59,6 +50,7 @@ from mahoun.core.governance_lock import GovernanceLock, GovernanceMode, Security
 
 try:
     from mahoun.infrastructure.observability.metrics_migration import get_metrics_collector
+
     METRICS_AVAILABLE = True
 except ImportError:
     METRICS_AVAILABLE = False
@@ -155,69 +147,8 @@ class ReasoningResponse:
     # ========================================================================
     # PROOF-CARRYING CONTRACT FIELDS (MANDATORY for successful responses)
     # ========================================================================
-    # ========================================================================
-    # PROOF-CARRYING CONTRACT FIELDS (MANDATORY for successful responses)
-    # ========================================================================
     fortress_validated: bool = False
     """Whether this response has been validated by FortressValidator"""
-
-    # Global flag to control validation during construction
-    _VALIDATION_ENABLED = True
-    _CONSTRUCTION_MODE = False
-
-    def __post_init__(self):
-        """
-        CRITICAL: Enforce proof-carrying contract at construction time.
-        
-        A successful reasoning response is INVALID unless ALL governance
-        requirements are met. This is enforced at object creation to 
-        prevent bypass via direct instantiation.
-        """
-        # Skip validation if explicitly disabled (for internal construction only)
-        if not ReasoningResponse._VALIDATION_ENABLED or ReasoningResponse._CONSTRUCTION_MODE:
-            return
-            
-        if self.success:
-            # MANDATORY GOVERNANCE CHECK: Success requires fortress validation
-            if not self.fortress_validated:
-                raise InvariantViolation(
-                    "GOVERNANCE VIOLATION: Successful reasoning response requires fortress_validated=True. "
-                    "All responses must pass through FortressValidator before being marked successful. "
-                    "This is a constitutional requirement for zero-hallucination guarantee."
-                )
-            
-            # MANDATORY GOVERNANCE CHECK: Success requires proof tree
-            if self.proof_tree is None:
-                raise InvariantViolation(
-                    "GOVERNANCE VIOLATION: Successful reasoning response requires proof_tree. "
-                    "This is mandated by constitution/RedLines.yaml proof_tree_required=true."
-                )
-            
-            # MANDATORY GOVERNANCE CHECK: Success requires audit hash  
-            if not self.metadata.get("audit_hash"):
-                raise InvariantViolation(
-                    "GOVERNANCE VIOLATION: Successful reasoning response requires audit_hash in metadata. "
-                    "This enables forensic verification and tamper detection."
-                )
-
-    @classmethod
-    def create_unvalidated(cls, **kwargs):
-        """
-        Create response without validation (for internal use only).
-        
-        This method is for fortress validator and other internal components
-        that need to create responses during the validation process.
-        """
-        old_mode = cls._CONSTRUCTION_MODE
-        cls._CONSTRUCTION_MODE = True
-        try:
-            return cls(**kwargs)
-        finally:
-            cls._CONSTRUCTION_MODE = old_mode
-
-    def _is_under_construction(self) -> bool:
-        """Legacy method - now uses class-level flags"""
-        return ReasoningResponse._CONSTRUCTION_MODE
 
     audit_hash: str | None = None
     """Forensic audit hash (SHA256) for tamper detection"""
@@ -987,22 +918,7 @@ class UnifiedReasoningService:
                 )
 
             except Exception as validation_error:
-                # ============================================================================
-                # P1-1: FAIL-CLOSED GUARDRAIL HANDLING
-                # ============================================================================
                 # Validation system failure - FAIL-SAFE: reject neural output
-                # 
-                # CRITICAL GOVERNANCE RULE:
-                # If any guardrail component (ContradictionDetector, NLI verifier, etc.)
-                # fails during validation, the system MUST fail-closed:
-                # - Neural output is REJECTED (never falls back to unvalidated output)
-                # - Error is logged with full forensic context
-                # - Response returns success=False with explicit error message
-                # - No silent degradation or bypass allowed
-                #
-                # This ensures zero-hallucination guarantee is maintained even under
-                # partial system failures.
-                # ============================================================================
                 logger.error(
                     "NEURAL VALIDATION: Validation system failure - rejecting neural output (fail-safe)",
                     extra={
@@ -1010,7 +926,6 @@ class UnifiedReasoningService:
                         "neural_output_preview": neural_output[:200],
                         "fail_safe_behavior": "reject_neural_output",
                         "security_violation": True,
-                        "p1_1_enforcement": "fail_closed_guaranteed",
                     },
                     exc_info=True,
                 )
@@ -1235,24 +1150,95 @@ class UnifiedReasoningService:
 
     async def _neural_fallback_reasoning(self, request: ReasoningRequest) -> dict[str, Any]:
         """
-        Diagnostic Fallback Reasoning
-        =============================
+        Advanced Neural Fallback Reasoning
+        ==================================
 
-        When symbolic and neural reasoning fail, this provides a deterministic
-        diagnostic fallback instead of hallucinating heuristic results.
+        When symbolic reasoning fails, this provides:
+        1. Pattern-based legal reasoning
+        2. Heuristic rule application
+        3. Legal precedent matching
+        4. Probabilistic inference
+
+        This is NOT just template responses - it's real reasoning!
         """
-        logger.warning(f"Diagnostic Fallback activated for request: {request.task.value}")
-        
-        return {
-            "answer": "Reasoning failed: Could not derive valid proof path. Returning diagnostic fallback.",
-            "confidence": 0.0,
-            "explanation": "Diagnostic Fallback: No valid symbolic or neural reasoning path could be established.",
-            "derived_facts": [],
-            "metadata": {
-                "fallback_type": "diagnostic_fallback",
-                "original_task": request.task.value
-            }
-        }
+
+        # 1. Extract legal patterns from facts and rules
+        legal_patterns = self._extract_legal_patterns(request.facts, request.rules)
+
+        # 2. Apply heuristic reasoning based on task type
+        if request.task == ReasoningTask.FORWARD_INFERENCE:
+            return await self._neural_forward_inference_fallback(request, legal_patterns)
+        elif request.task == ReasoningTask.BACKWARD_PROOF:
+            return await self._neural_backward_proof_fallback(request, legal_patterns)
+        elif request.task == ReasoningTask.QUESTION_ANSWERING:
+            return await self._neural_qa_fallback(request, legal_patterns)
+        else:
+            return await self._neural_general_fallback(request, legal_patterns)
+
+    async def _neural_reasoning(self, request: ReasoningRequest) -> ReasoningResponse:
+        """
+        Dispatcher for neural reasoning methods.
+
+        Routes to the appropriate neural service based on task type
+        and wraps the dict result in a ReasoningResponse.
+
+        Args:
+            request: Reasoning request
+
+        Returns:
+            ReasoningResponse with neural reasoning result
+        """
+        import time
+
+        start_time = time.perf_counter()
+
+        try:
+            if not self.enable_neural:
+                return ReasoningResponse(
+                    success=False,
+                    result=None,
+                    confidence=0.0,
+                    reasoning_mode=ReasoningMode.NEURAL,
+                    execution_time_ms=0.0,
+                    error="Neural reasoning disabled",
+                )
+
+            # Route to appropriate neural method based on task
+            neural_result = None
+            if request.task == ReasoningTask.QUESTION_ANSWERING:
+                neural_result = await self._neural_question_answering(request)
+            elif request.task == ReasoningTask.EXPLANATION:
+                neural_result = await self._neural_explanation(request)
+            elif request.task in [ReasoningTask.FORWARD_INFERENCE, ReasoningTask.BACKWARD_PROOF]:
+                neural_result = await self._neural_deep_reasoning(request)
+            else:
+                neural_result = await self._neural_general_reasoning(request)
+
+            execution_time = (time.perf_counter() - start_time) * 1000
+
+            # Wrap dict result in ReasoningResponse
+            return ReasoningResponse(
+                success=neural_result.get("success", True),
+                result=neural_result.get("answer") or neural_result.get("result"),
+                confidence=neural_result.get("confidence", 0.0),
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                explanation=neural_result.get("explanation"),
+                derived_facts=neural_result.get("derived_facts"),
+                metadata=neural_result.get("metadata", {}),
+            )
+
+        except Exception as e:
+            logger.error(f"Neural reasoning dispatcher failed: {e}", exc_info=True)
+            execution_time = (time.perf_counter() - start_time) * 1000
+            return ReasoningResponse(
+                success=False,
+                result=None,
+                confidence=0.0,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                error=str(e),
+            )
 
     def _extract_legal_patterns(self, facts: list[str], rules: list[str]) -> dict[str, Any]:
         """Extract legal reasoning patterns from facts and rules"""
@@ -1977,9 +1963,9 @@ class UnifiedReasoningService:
         if response.confidence < 0.0 or response.confidence > 1.0:
             raise InvariantViolation("G_RESPONSE_VALIDITY", {"error": f"Invalid confidence: {response.confidence}"})
 
-    async def _neural_reasoning_with_validation(self, request: ReasoningRequest) -> ReasoningResponse:
+    async def _neural_reasoning_with_guardrail(self, request: ReasoningRequest) -> ReasoningResponse:
         """
-        Neural reasoning with SYMBOLIC VALIDATION
+        Neural reasoning with SYMBOLIC VALIDATION (Guardrail Wrapper)
 
         GUARDRAIL: Neural outputs are validated by symbolic layer
         """

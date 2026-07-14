@@ -72,8 +72,7 @@ def governance_context():
     """Create test governance context."""
     return GovernanceContextManager.create_context(
         correlation_id="test-correlation-123",
-        execution_mode="STRICT",
-        actor_id="test_actor"
+        execution_mode="STRICT"
     )
 
 
@@ -220,7 +219,9 @@ def test_tombstone_filter_injection_active_view(unified_controller, governance_c
     # Transformation should occur
     assert decision.query_transformed is True
     assert "tombstone_filter_active_view" in decision.transformations_applied
-    assert "_deleted IS NULL" in decision.transformed_query
+    # Check for the comprehensive tombstone filter pattern (NOT function with _deleted)
+    assert "NOT (" in decision.transformed_query
+    assert "n._deleted = true" in decision.transformed_query
 
 
 def test_no_tombstone_filter_historical_view(unified_controller, governance_context):
@@ -315,43 +316,35 @@ def test_desktop_minimal_constraints(unified_controller, governance_context):
 
 def test_enterprise_full_capabilities(governance_context):
     """Test that ENTERPRISE_FULL profile enables full capabilities."""
-    # This test validates that when profile_name is enterprise_full,
-    # the PolicyResolver correctly maps it to full capabilities.
-    # 
-    # Since we're on laptop (desktop_minimal), we mock the profile to simulate enterprise.
+    # Configure for enterprise
+    import os
+    old_profile = os.environ.get("MAHOUN_DEPLOYMENT_PROFILE")
+    os.environ["MAHOUN_DEPLOYMENT_PROFILE"] = "enterprise_full"
     
-    from unittest.mock import MagicMock
-    
-    # Create a mock profile that simulates ENTERPRISE_FULL
-    mock_profile_manager = MagicMock()
-    mock_profile_manager.profile = MagicMock()
-    mock_profile_manager.profile.profile_name = "enterprise_full"
-    mock_profile_manager.profile.resource_limits = MagicMock(
-        max_concurrent_requests=1000,
-        max_model_size_gb=32,
-        enable_gpu=True
-    )
-    mock_profile_manager.profile.performance_targets = MagicMock(
-        target_latency_ms=100,
-        target_throughput_rps=100
-    )
-    
-    policy_resolver = PolicyResolver(profile_manager=mock_profile_manager)
-    controller = UnifiedGovernanceController(policy_resolver=policy_resolver)
-    
-    query = "MATCH (n:Law) RETURN n"
-    
-    decision = controller.prepare_query_execution(
-        query=query,
-        context=governance_context
-    )
-    
-    policy = decision.policy
-    assert policy.profile_name == "enterprise_full"
-    assert policy.max_graph_depth == 10
-    assert policy.semantic_enabled is True
-    assert policy.embedding_mode.value == "full"
-    assert policy.reasoning_budget.value == "high"
+    try:
+        profile_manager = ProfileManager(auto_select=False)
+        policy_resolver = PolicyResolver(profile_manager=profile_manager)
+        controller = UnifiedGovernanceController(policy_resolver=policy_resolver)
+        
+        query = "MATCH (n:Law) RETURN n"
+        
+        decision = controller.prepare_query_execution(
+            query=query,
+            context=governance_context
+        )
+        
+        policy = decision.policy
+        assert policy.profile_name == "enterprise_full"
+        assert policy.max_graph_depth == 10
+        assert policy.semantic_enabled is True
+        assert policy.embedding_mode.value == "full"
+        assert policy.reasoning_budget.value == "high"
+    finally:
+        # Restore original mode
+        if old_profile:
+            os.environ["MAHOUN_DEPLOYMENT_PROFILE"] = old_profile
+        else:
+            os.environ.pop("MAHOUN_DEPLOYMENT_PROFILE", None)
 
 
 # ============================================================================
@@ -567,8 +560,9 @@ def test_production_reasoning_workflow(unified_controller, governance_context):
     assert decision.view_mode == "active"
     assert decision.query_transformed is True
     
-    # Should have tombstone filters
-    assert "_deleted IS NULL" in decision.transformed_query
+    # Should have tombstone filters (comprehensive pattern)
+    assert "NOT (" in decision.transformed_query
+    assert "_deleted = true" in decision.transformed_query
 
 
 def test_forensic_audit_workflow(unified_controller, governance_context):

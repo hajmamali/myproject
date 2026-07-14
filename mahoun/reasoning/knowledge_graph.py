@@ -22,7 +22,6 @@ from pathlib import Path
 import json
 
 from mahoun.core.logging import setup_logger
-from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
 
 log = setup_logger("knowledge_graph")
 
@@ -40,7 +39,7 @@ class LegalRule:
     version: int = 1
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    provenance: Optional[ProvenanceMetadata] = None  # P1: Provenance for traceability
+    provenance: Optional[Any] = None
 
 
 @dataclass
@@ -56,7 +55,7 @@ class LegalPrecedent:
     version: int = 1
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    provenance: Optional[ProvenanceMetadata] = None  # P1: Provenance for traceability
+    provenance: Optional[Any] = None
 
 
 class LegalKnowledgeGraph:
@@ -110,6 +109,50 @@ class LegalKnowledgeGraph:
                 )
         
         log.info(f"Initialized LegalKnowledgeGraph (storage={storage_path}, semantic={enable_semantic})")
+
+    def _resolve_entity_provenance(self, source: str, correlation_id: str, author: str, *, preserve_existing: Optional[Any] = None) -> Any:
+        if preserve_existing is not None:
+            return preserve_existing
+
+        try:
+            from mahoun.reasoning.evidence_linked_verdict import _resolve_provenance
+
+            provenance = _resolve_provenance(
+                source=source,
+                correlation_id=correlation_id,
+                author=author,
+            )
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            log.warning("Falling back to synthetic provenance for knowledge graph entity: %s", exc)
+            provenance = None
+
+        if provenance is None:
+            return {
+                "source": source,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": author,
+                "correlation_id": correlation_id,
+                "governance_scope_id": "development_synthetic_scope",
+                "runtime_attestation_id": "development_synthetic_attestation",
+            }
+
+        if hasattr(provenance, "to_dict"):
+            data = provenance.to_dict()
+            data.setdefault("created_at", data.get("timestamp"))
+            data.setdefault("created_by", data.get("author"))
+            return data
+
+        return provenance
+
+    @staticmethod
+    def _serialize_provenance(provenance: Optional[Any]) -> Optional[Any]:
+        if provenance is None:
+            return None
+        if isinstance(provenance, dict):
+            return provenance
+        if hasattr(provenance, "to_dict"):
+            return provenance.to_dict()
+        return {"value": str(provenance)}
     
     def enable_semantic_search(
         self,
@@ -202,7 +245,8 @@ class LegalKnowledgeGraph:
                     "metadata": rule.metadata,
                     "version": rule.version,
                     "created_at": rule.created_at,
-                    "updated_at": rule.updated_at
+                    "updated_at": rule.updated_at,
+                    "provenance": self._serialize_provenance(rule.provenance),
                 })
             json.dump(rules_data, f, ensure_ascii=False, indent=2)
         
@@ -221,7 +265,8 @@ class LegalKnowledgeGraph:
                     "metadata": prec.metadata,
                     "version": prec.version,
                     "created_at": prec.created_at,
-                    "updated_at": prec.updated_at
+                    "updated_at": prec.updated_at,
+                    "provenance": self._serialize_provenance(prec.provenance),
                 })
             json.dump(prec_data, f, ensure_ascii=False, indent=2)
         
@@ -235,31 +280,6 @@ class LegalKnowledgeGraph:
         
         log.debug("Saved knowledge graph to storage")
     
-    def _resolve_provenance(self, entity_type: str) -> ProvenanceMetadata:
-        """P1: Resolve provenance through GovernanceContext or use explicit synthetic fallback."""
-        try:
-            from mahoun.core.governance.governance_context import GovernanceContextManager
-            ctx = GovernanceContextManager.get_current_context()
-            if ctx is not None:
-                return ctx.provenance_tracker.create_provenance(
-                    source=f"{entity_type}_creation",
-                    correlation_id=ctx.correlation_id,
-                    author="mahoun_knowledge_graph",
-                    governance_scope_id=ctx.context_id,
-                    runtime_attestation_id=ctx.runtime_attestation.get("context_id", ctx.context_id),
-                    lineage_parent=None,
-                )
-        except Exception:
-            pass
-        return ProvenanceMetadata.create(
-            source=f"synthetic_{entity_type}",
-            correlation_id=f"synthetic_{entity_type}_correlation",
-            author="mahoun_dev_mode",
-            governance_scope_id="development_synthetic_scope",
-            runtime_attestation_id="development_synthetic_attestation",
-            lineage_parent=None,
-        )
-
     def add_legal_rule(
         self,
         rule_id: str,
@@ -285,8 +305,11 @@ class LegalKnowledgeGraph:
         """
         now = datetime.now(timezone.utc).isoformat()
         
+        # Check if rule exists (update with version history)
         if rule_id in self.legal_rules:
             old_rule = self.legal_rules[rule_id]
+            
+            # Archive old version
             if rule_id not in self._rule_versions:
                 self._rule_versions[rule_id] = []
             self._rule_versions[rule_id].append({
@@ -296,6 +319,8 @@ class LegalKnowledgeGraph:
                 "confidence": old_rule.confidence,
                 "archived_at": now
             })
+            
+            # Create new version
             new_version = old_rule.version + 1
             rule = LegalRule(
                 rule_id=rule_id,
@@ -308,7 +333,9 @@ class LegalKnowledgeGraph:
                 created_at=old_rule.created_at,
                 updated_at=now
             )
+            log.info(f"Updated legal rule: {rule_id} (v{new_version})")
         else:
+            # Create new rule
             rule = LegalRule(
                 rule_id=rule_id,
                 condition=condition,
@@ -319,10 +346,15 @@ class LegalKnowledgeGraph:
                 created_at=now,
                 updated_at=now
             )
+            log.debug(f"Added legal rule: {rule_id}")
         
-        # P1: Attach provenance
-        rule.provenance = self._resolve_provenance("legal_rule")
-        
+        # Set provenance
+        rule.provenance = self._resolve_entity_provenance(
+            source="knowledge_graph:add_legal_rule",
+            correlation_id=rule_id,
+            author="mahoun_knowledge_graph",
+            preserve_existing=old_rule.provenance if rule_id in self.legal_rules else None,
+        )
         self.legal_rules[rule_id] = rule
         self._save_to_storage()
         return rule
@@ -352,8 +384,11 @@ class LegalKnowledgeGraph:
         """
         now = datetime.now(timezone.utc).isoformat()
         
+        # Check if precedent exists (update with version history)
         if case_id in self.precedents:
             old_prec = self.precedents[case_id]
+            
+            # Archive old version
             if case_id not in self._precedent_versions:
                 self._precedent_versions[case_id] = []
             self._precedent_versions[case_id].append({
@@ -362,6 +397,8 @@ class LegalKnowledgeGraph:
                 "decision": old_prec.decision,
                 "archived_at": now
             })
+            
+            # Create new version
             new_version = old_prec.version + 1
             prec = LegalPrecedent(
                 case_id=case_id,
@@ -374,7 +411,9 @@ class LegalKnowledgeGraph:
                 created_at=old_prec.created_at,
                 updated_at=now
             )
+            log.info(f"Updated precedent: {case_id} (v{new_version})")
         else:
+            # Create new precedent
             prec = LegalPrecedent(
                 case_id=case_id,
                 facts=facts,
@@ -385,10 +424,15 @@ class LegalKnowledgeGraph:
                 created_at=now,
                 updated_at=now
             )
+            log.debug(f"Added precedent: {case_id}")
         
-        # P1: Attach provenance
-        prec.provenance = self._resolve_provenance("legal_precedent")
-        
+        prec.provenance = self._resolve_entity_provenance(
+            source="knowledge_graph:add_precedent",
+            correlation_id=case_id,
+            author="mahoun_knowledge_graph",
+            preserve_existing=old_prec.provenance if case_id in self.precedents else None,
+        )
+
         self.precedents[case_id] = prec
         self._save_to_storage()
         return prec

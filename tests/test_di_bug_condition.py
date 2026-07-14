@@ -206,7 +206,7 @@ class TestClassB_DriverCreation:
             rel = _rel(py_file)
             if rel in ALLOWLIST:
                 continue
-            if "__pycache__" in rel or ".git" in rel or "venv" in rel or "tests" in rel:
+            if "__pycache__" in rel or ".git" in rel:
                 continue
             for i, line in enumerate(py_file.read_text(encoding="utf-8", errors="ignore").splitlines()):
                 if "GraphDatabase.driver(" in line:
@@ -225,7 +225,7 @@ class TestClassB_DriverCreation:
             rel = _rel(py_file)
             if rel in ALLOWLIST:
                 continue
-            if "__pycache__" in rel or ".git" in rel or "venv" in rel or "tests" in rel:
+            if "__pycache__" in rel or ".git" in rel:
                 continue
             for i, line in enumerate(py_file.read_text(encoding="utf-8", errors="ignore").splitlines()):
                 if "AsyncGraphDatabase.driver(" in line:

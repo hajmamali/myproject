@@ -99,11 +99,6 @@ class GraphConnectionError(KnowledgeGraphError):
     error_code = "GRAPH_CONNECTION_ERROR"
 
 
-class GraphResolutionFailure(KnowledgeGraphError):
-    """Graph retrieval was required but could not produce a valid result."""
-    error_code = "GRAPH_RESOLUTION_FAILURE"
-
-
 # =============================================================================
 # Configuration Errors
 # =============================================================================

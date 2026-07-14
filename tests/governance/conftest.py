@@ -87,11 +87,9 @@ def unfreeze_dataclass():
 
 @pytest.fixture(autouse=True)
 def reset_governance_lock():
-    """Reset governance lock and active governance context around each test."""
+    """Reset governance lock before each test"""
     GovernanceLock._reset()
-    GovernanceContextManager._reset_for_test()
     yield
-    GovernanceContextManager._reset_for_test()
     GovernanceLock._reset()
 
 
@@ -130,7 +128,7 @@ class MockProofTree:
 @pytest.fixture
 def valid_response() -> ReasoningResponse:
     """Create a valid reasoning response that passes all checks"""
-    return ReasoningResponse.create_unvalidated(
+    return ReasoningResponse(
         success=True,
         result="Tax exemption applies under Article 143",
         confidence=0.92,
@@ -149,7 +147,7 @@ def valid_response() -> ReasoningResponse:
 @pytest.fixture
 def valid_response_symbolic() -> ReasoningResponse:
     """Create a valid symbolic-only response"""
-    return ReasoningResponse.create_unvalidated(
+    return ReasoningResponse(
         success=True,
         result="Tax exemption applies",
         confidence=0.95,
@@ -164,7 +162,7 @@ def valid_response_symbolic() -> ReasoningResponse:
 @pytest.fixture
 def invalid_response_no_proof() -> ReasoningResponse:
     """Response missing proof_tree (should fail)"""
-    return ReasoningResponse.create_unvalidated(
+    return ReasoningResponse(
         success=True,
         result="Tax exemption applies",
         confidence=0.85,
@@ -179,7 +177,7 @@ def invalid_response_no_proof() -> ReasoningResponse:
 @pytest.fixture
 def invalid_response_low_agreement() -> ReasoningResponse:
     """Response with agreement_score below 0.85 threshold"""
-    return ReasoningResponse.create_unvalidated(
+    return ReasoningResponse(
         success=True,
         result="Tax exemption applies",
         confidence=0.80,

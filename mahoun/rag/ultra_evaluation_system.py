@@ -290,7 +290,7 @@ class SemanticSimilarityCalculator(MetricCalculator):
     def __init__(
         self,
         model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-        model: Optional[SentenceTransformer] = None,
+        model: Optional["SentenceTransformer"] = None,
         correlation_id: str = "",
     ):
         """
@@ -313,14 +313,52 @@ class SemanticSimilarityCalculator(MetricCalculator):
                 f"(bootstrap-injected model)"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "SemanticSimilarityCalculator requires a pre-constructed SentenceTransformer "
-                "instance via the `model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy construction
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: SemanticSimilarityCalculator "
+                f"initialized without injected model. Attempting lazy construction. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self.model = self._lazy_construct_model()
+    
+    def _lazy_construct_model(self) -> "SentenceTransformer":
+        """
+        DEPRECATED: Lazy model construction fallback.
+        
+        This method exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
+        import time
+        try:
+            from sentence_transformers import SentenceTransformer
+            
+            start = time.time()
+            model = SentenceTransformer(self.model_name)
+            latency_ms = (time.time() - start) * 1000
+            
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                f"(model={self.model_name}, latency={latency_ms:.2f}ms). "
+                f"This is a DEPRECATED fallback path."
+            )
+            return model
+            
+        except ImportError:
+            log.error(
+                f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                f"and no model injected."
+            )
+            raise ImportError(
+                "sentence-transformers not installed. "
+                "Install with: pip install sentence-transformers OR "
+                "inject pre-constructed model via bootstrap wiring."
+            )
+        except Exception as e:
+            log.error(
+                f"[{self._correlation_id}] ❌ Lazy model construction failed: {e}"
+            )
+            raise RuntimeError(f"Failed to construct embedding model: {e}")
     
     def calculate(self, sample: EvaluationSample) -> float:
         """Calculate semantic similarity"""

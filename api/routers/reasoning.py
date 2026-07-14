@@ -37,7 +37,11 @@ from mahoun.core.governance import (
 )
 from mahoun.core.fortress_validator import SecurityBreachException
 from mahoun.core.logging import setup_logger
-from mahoun.core.runtime_config import is_desktop_minimal, should_skip_graph
+from mahoun.core.runtime_config import (
+    get_runtime_settings,
+    is_desktop_minimal,
+    should_skip_graph,
+)
 from mahoun.crypto.proof_system import ProofSystem
 from mahoun.crypto.signatures import generate_keypair
 from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -46,7 +50,6 @@ from mahoun.ledger.writer import EvidenceLedgerWriter
 from mahoun.reasoning.evidence_linked_verdict import (
     EvidenceLinkedVerdictEngine,
 )
-from mahoun.reasoning.adapters import ReasoningDependencyContainer
 from mahoun.reasoning.fortress_integration import (
     FortressProtectedReasoningService,  # noqa: F401
     create_fortress_protected_service,
@@ -222,41 +225,13 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
         graph_builder = UltraGraphBuilder()
         knowledge_graph = LegalKnowledgeGraph()
         immutable_ledger = get_immutable_ledger()
-        
-        # P0-4: Create LedgerWriteGate for governance enforcement
-        from mahoun.ledger.write_gate import LedgerWriteGate
-        from mahoun.core.environment import is_production, is_staging
-        
-        # Base ledger writer
-        base_ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
-        
-        # Wrap with write gate for strict enforcement in production/staging
-        if is_production() or is_staging():
-            write_gate = LedgerWriteGate(
-                ledger_writer=base_ledger_writer,
-                enable_strict_mode=True,
-            )
-            ledger_writer = EvidenceLedgerWriter(
-                blockchain=immutable_ledger,
-                write_gate=write_gate,
-            )
-            log.info(
-                "P0-4: LedgerWriteGate enforcement ENABLED for verdict engine",
-                extra={"environment": "production" if is_production() else "staging"}
-            )
-        else:
-            # Development/test: use base writer without gate (but log warning)
-            ledger_writer = base_ledger_writer
-            log.warning(
-                "P0-4: LedgerWriteGate NOT enabled in development/test mode. "
-                "Governance enforcement will be skipped."
-            )
+        ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
 
         _verdict_engine = EvidenceLinkedVerdictEngine(
             graph_builder=graph_builder,
             knowledge_graph=knowledge_graph,
             ledger_writer=ledger_writer,
-            container=ReasoningDependencyContainer(),
+            container=None,  # No dependency injection for now
         )
 
         log.info("Evidence-Linked Verdict Engine initialized")

@@ -66,26 +66,35 @@ class GovernanceViolationError(Exception):
 # MUTATION AUTHORIZATION BOUNDARY
 # ============================================================================
 
-# Canonical authorization state — import from single source of truth.
-# This guarantees kernel._authorized_write_ctx is mutation_boundary._authorized_write_ctx.
-from mahoun.core.governance.authorization_state import (
-    _authorized_write_ctx,
-    is_authorized as _is_authorized_state,
-    set_authorized as _set_authorized_state,
-    reset_authorized as _reset_authorized_state,
+_authorized_write_ctx: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "_authorized_write_ctx", default=False
 )
 
 class KernelMutationBoundary:
     """Zero-dependency Cypher inspector."""
 
+    MUTATION_KEYWORDS = frozenset({"MERGE", "CREATE", "DELETE", "SET", "REMOVE", "DROP", "DETACH"})
+    FORBIDDEN_PROCEDURES = frozenset({"apoc", "dbms", "plugin", "custom"})
+
     @staticmethod
     def classify_query(query: str) -> QueryType:
-        """Classify Cypher intent by delegating to the canonical boundary."""
-        from mahoun.core.governance.mutation_boundary import CypherLexer
-        is_mutation, violations = CypherLexer.analyze_intent(query)
+        """Classify Cypher intent without external dependencies."""
+        normalized = unicodedata.normalize('NFKC', query)
+        # Strip comments
+        clean = re.sub(r"/\*.*?\*/", " ", normalized, flags=re.DOTALL)
+        clean = re.sub(r"//.*$", "", clean, flags=re.MULTILINE)
         
-        if violations:
-            return QueryType.FORBIDDEN
+        tokens = re.findall(r"[\w\.]+", clean)
+        is_mutation = False
+        
+        for token in tokens:
+            t_upper = token.upper()
+            if t_upper in KernelMutationBoundary.MUTATION_KEYWORDS:
+                is_mutation = True
+            if "." in token:
+                prefix = token.split(".")[0].lower()
+                if prefix in KernelMutationBoundary.FORBIDDEN_PROCEDURES:
+                    return QueryType.FORBIDDEN
         
         return QueryType.WRITE if is_mutation else QueryType.READ
 
@@ -97,7 +106,7 @@ class KernelMutationBoundary:
         if q_type == QueryType.READ:
             return
 
-        if _is_authorized_state():
+        if _authorized_write_ctx.get():
             return
 
         raise GovernanceViolationError(
@@ -115,11 +124,11 @@ class KernelMutationBoundary:
 # ============================================================================
 
 def is_governance_authorized() -> bool:
-    return _is_authorized_state()
+    return _authorized_write_ctx.get()
 
 def set_governance_authority(state: bool) -> Any:
     """Set authority state and return token for reset."""
-    return _set_authorized_state(state)
+    return _authorized_write_ctx.set(state)
 
 def reset_governance_authority(token: Any) -> None:
-    _reset_authorized_state(token)
+    _authorized_write_ctx.reset(token)

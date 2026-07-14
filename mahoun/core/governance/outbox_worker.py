@@ -166,25 +166,13 @@ class OutboxWorker:
             logger.info(f"Projected Chunk {aggregate_id} ({action})")
             
         elif action == 'DELETE':
-            # Governed Soft Tombstone — preserves forensic history.
-            #
-            # Why soft delete here?
-            #   MahouN is built on Provenance, Ledger, and Forensics.
-            #   Physical DETACH DELETE would destroy the audit chain for any
-            #   receipt, relationship, or provenance that references this node.
-            #   Keeping the node as a tombstone (_deleted=True) ensures that
-            #   the PostgreSQL DELETE event is traceable in the graph layer.
-            #
-            #   Queries that fetch active nodes must filter: WHERE n._deleted IS NULL
-            session.delete_node(
-                label="Chunk",
-                node_id=aggregate_id,
-                soft_delete=True,
-                deleted_reason="outbox_delete_event",
-                source_event_id=str(event.get("event_id", "")),
+            # Idempotent DELETE
+            session.run(
+                "MATCH (n:Chunk {id: $id}) DETACH DELETE n",
+                {"id": aggregate_id}
             )
-            logger.info(f"Projected Chunk {aggregate_id} (DELETE → soft tombstone)")
-
+            logger.info(f"Projected Chunk {aggregate_id} (DELETE)")
+            
         return True
 
 if __name__ == "__main__":

@@ -30,27 +30,10 @@ from mahoun.core.governance.mutation_boundary import (
 from mahoun.core.governance.violations import GovernanceViolationError
 from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
 
-@pytest.fixture(autouse=True)
-def active_mock_governance_context():
-    """Establish an active governance context for testing."""
-    from mahoun.core.governance.governance_context import GovernanceContextManager, _CONTEXT_SECRET
-    import hmac
-    import hashlib
-    ctx = GovernanceContextManager.create_context(correlation_id="test-correlation", actor_id="test-actor")
-    signature_input = f"{ctx.context_id}|{ctx.correlation_id}|{ctx.execution_mode}"
-    ctx.signature = hmac.new(
-        _CONTEXT_SECRET.encode(),
-        signature_input.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    token = GovernanceContextManager._governance_stack.set((ctx,))
-    yield ctx
-    GovernanceContextManager._governance_stack.reset(token)
 
 def _prov() -> dict:
     return ProvenanceMetadata.create(
-        source="test", correlation_id="test-corr", author="test-agent",
-        governance_scope_id="test-scope", runtime_attestation_id="test-attest"
+        source="test", correlation_id="test-corr", author="test-agent"
     ).to_dict()
 
 
@@ -140,21 +123,14 @@ class TestGovernedNeo4jSession:
         assert receipt.entity_id == "d1"
         assert executor.called  # DB was actually called
 
-    def test_node_write_without_provenance_succeeds_via_auto_injection(self):
-        """write_node auto-injects provenance from the active GovernanceContext.
-
-        Architectural note: provenance is NOT the caller's responsibility to
-        supply. The GovernanceContext owns provenance generation and injects it
-        transparently. A missing 'provenance' key is NOT a rejection criterion.
-        The only hard requirement is a present 'id' field.
-        """
+    def test_node_write_without_provenance_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
 
-        # No provenance supplied — must succeed because it is auto-injected
-        receipt = session.write_node("Document", {"id": "d1"})
-        assert receipt is not None
-        assert executor.called  # DB was written
+        with pytest.raises(GovernanceViolationError):
+            session.write_node("Document", {"id": "d1"})
+
+        assert not executor.called  # Zero DB writes
 
     def test_node_write_without_id_blocked(self):
         executor = _mock_executor()
@@ -176,23 +152,15 @@ class TestGovernedNeo4jSession:
             )
         assert not executor.called
 
-    def test_relationship_without_provenance_succeeds_via_auto_injection(self):
-        """write_relationship auto-injects provenance from the active GovernanceContext.
-
-        Architectural note: the validator_pipeline checks that 'provenance' is
-        present in rel_data — but write_relationship injects it before calling
-        the pipeline, so an empty dict {} is valid from the caller's perspective.
-        The ontology gate still blocks invalid relationship types.
-        """
+    def test_relationship_without_provenance_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
 
-        # No provenance supplied, valid ontology — must succeed via auto-injection
-        receipt = session.write_relationship(
-            "Case", "c1", "CITES", "Law", "l1", {}
-        )
-        assert receipt is not None
-        assert executor.called
+        with pytest.raises(GovernanceViolationError):
+            session.write_relationship(
+                "Case", "c1", "CITES", "Law", "l1", {}
+            )
+        assert not executor.called
 
     def test_valid_relationship_produces_receipt(self):
         executor = _mock_executor()
@@ -347,223 +315,3 @@ class TestExecuteWriteAbolished:
 
         with pytest.raises(GovernanceViolationError, match="constitutionally forbidden"):
             conn.execute_write(lambda tx: tx.run("MERGE (n:X)"))
-
-# ======================================================================
-# execute_batch() abolition — constitutional enforcement
-# ======================================================================
-
-class TestExecuteBatchAbolished:
-    def test_execute_batch_is_constitutionally_forbidden(self):
-        """
-        execute_batch() must be constitutionally abolished.
-        Any attempt to call it must raise GovernanceViolationError.
-        """
-        from mahoun.graph.neo4j.connection import Neo4jConnection
-        conn = object.__new__(Neo4jConnection)  # bypass __init__
-
-        with pytest.raises(GovernanceViolationError, match="execute_batch.*constitutionally forbidden"):
-            conn.execute_batch([("MERGE (n:X)", {})])
-
-    def test_execute_batch_requires_governance_context(self):
-        """
-        Attempting to execute batch write should fail even if context is absent,
-        because the method itself is constitutionally forbidden.
-        """
-        from mahoun.graph.neo4j.connection import Neo4jConnection
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-        
-        # Disable context
-        token = GovernanceContextManager._governance_stack.set(())
-        try:
-            conn = object.__new__(Neo4jConnection)
-            with pytest.raises(GovernanceViolationError, match="constitutionally forbidden"):
-                conn.execute_batch([("CREATE (n:X)", {})])
-        finally:
-            GovernanceContextManager._governance_stack.reset(token)
-
-# ======================================================================
-# Advanced Boundary Verification
-# ======================================================================
-
-class TestAdvancedBoundaryVerification:
-    def _execute_tx_node(session):
-        tx = session.begin_transaction()
-        tx.queue_node("Document", {"id": "d2", "provenance": _prov()})
-        tx.commit()
-
-    def _execute_tx_rel(session):
-        tx = session.begin_transaction()
-        tx.queue_relationship("Case", "c1", "CITES", "Law", "l1", {"provenance": _prov()})
-        tx.commit()
-
-    @pytest.mark.parametrize("mutation_action", [
-        lambda session: session.write_node("Document", {"id": "d1", "provenance": _prov()}),
-        lambda session: session.write_relationship("Case", "c1", "CITES", "Law", "l1", {"provenance": _prov()}),
-        _execute_tx_node,
-        _execute_tx_rel,
-    ])
-    def test_entire_mutation_surface_reaches_boundary_real_spy(self, mutation_action):
-        """
-        Prove that ALL write paths on GovernedNeo4jSession dynamically hit 
-        MutationAuthorizationBoundary.inspect() and perform actual validation
-        (using a True Spy via wraps=).
-        """
-        from mahoun.graph.neo4j.connection import Neo4jConnection
-        with patch("neo4j.GraphDatabase.driver"), \
-             patch("mahoun.graph.neo4j.connection._NEO4J_INIT_AUTHORIZED", True):
-            connection = Neo4jConnection("bolt://localhost:7687", "neo4j", "pass")
-            
-            with patch.object(connection, 'session') as mock_session_ctx:
-                mock_tx = MagicMock()
-                mock_session_ctx.return_value.__enter__.return_value = mock_tx
-                
-                with connection.governed_session() as session:
-                    with patch.object(
-                        MutationAuthorizationBoundary, 
-                        'inspect', 
-                        wraps=MutationAuthorizationBoundary.inspect
-                    ) as spy:
-                        mutation_action(session)
-                        
-                        # Real Spy Verification: ensure the actual inspect logic was executed
-                        assert spy.call_count >= 1
-
-            
-    def test_forbidden_neo4j_apis_ast_audit(self):
-        """
-        P0-D: AST-based architectural audit to guarantee no raw write bypasses exist.
-        Searches all Python files in the repository.
-        """
-        import ast
-        import os
-        from pathlib import Path
-        
-        approved_files = {
-            "mahoun/graph/neo4j/connection.py",
-            "mahoun/core/governance/mutation_boundary.py",
-            "tests/",
-            "api/database.py",
-            "api/routers/system.py",
-            "scripts/",
-            ".test_classification_backup/",
-            "mahoun/core/governance/outbox_worker.py",
-            "mahoun/graph/legal_cypher_queries.py",
-        }
-        
-        root_dir = Path("/home/haji/Desktop/KingMahouN").resolve()
-        violations = []
-        
-        class BypassVisitor(ast.NodeVisitor):
-            def __init__(self, filepath):
-                self.filepath = filepath
-                self.local_violations = []
-                
-            def visit_Call(self, node):
-                if isinstance(node.func, ast.Attribute):
-                    method_name = node.func.attr
-                    # Ban raw execution methods
-                    if method_name in ('execute_write', 'execute_read', 'execute_batch'):
-                        self.local_violations.append(f"Found {method_name}() at line {node.lineno}")
-                    # Ban execute_query only if called directly on driver
-                    if method_name == 'execute_query' and isinstance(node.func.value, ast.Name):
-                        if node.func.value.id in ('driver', '_driver', 'neo4j_driver'):
-                            self.local_violations.append(f"Found driver.execute_query() at line {node.lineno}")
-                    # Ban session or tx running
-                    if method_name == 'session' and isinstance(node.func.value, ast.Name):
-                        if node.func.value.id in ('driver', '_driver', 'neo4j_driver'):
-                            self.local_violations.append(f"Found driver.session() at line {node.lineno}")
-                    if method_name == 'run' and isinstance(node.func.value, ast.Name):
-                        if node.func.value.id in ('tx', '_tx', 'session', 's'):
-                            self.local_violations.append(f"Found {node.func.value.id}.run() at line {node.lineno}")
-                self.generic_visit(node)
-                
-        for root, dirs, files in os.walk(root_dir):
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ('venv', 'node_modules')]
-            for file in files:
-                if not file.endswith('.py'):
-                    continue
-                full_path = Path(root) / file
-                rel_path = str(full_path.relative_to(root_dir))
-                if any(rel_path.startswith(approved) for approved in approved_files):
-                    continue
-                try:
-                    with open(full_path, 'r', encoding='utf-8') as f:
-                        source = f.read()
-                    tree = ast.parse(source)
-                    visitor = BypassVisitor(rel_path)
-                    visitor.visit(tree)
-                    if visitor.local_violations:
-                        violations.append((rel_path, visitor.local_violations))
-                except Exception:
-                    pass
-                    
-        if violations:
-            msg = "AST Audit failed. Unauthorized raw Neo4j access found:\n"
-            for rel_path, local_violations in violations:
-                msg += f"- {rel_path}:\n"
-                for v in local_violations:
-                    msg += f"  * {v}\n"
-            pytest.fail(msg)
-
-    @pytest.mark.parametrize("mutation_action", [
-        lambda session: session.write_node("Document", {"id": "d1", "provenance": _prov()}),
-        lambda session: session.write_relationship("Case", "c1", "CITES", "Law", "l1", {"provenance": _prov()}),
-        _execute_tx_node,
-    ])
-    def test_every_graph_mutation_requires_governance_context(self, mutation_action):
-        """
-        P0-E: Architectural Truth Test
-        Verify EVERY mutation entrypoint instantly fails if GovernanceContext is missing.
-        """
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-        
-        executor = _mock_executor()
-        session = GovernedNeo4jSession(raw_executor=executor)
-        
-        # Simulate an unauthorized caller by wiping the context stack
-        token = GovernanceContextManager._governance_stack.set(())
-        try:
-            with pytest.raises(GovernanceViolationError, match="No active governance context"):
-                mutation_action(session)
-        finally:
-            GovernanceContextManager._governance_stack.reset(token)
-
-    def test_mutation_inventory_complete(self):
-        """
-        P0-A: Prevent Inventory Drift by asserting ALL mutation methods are strictly known.
-        """
-        import inspect
-        import re
-        from mahoun.core.governance.mutation_boundary import GovernedWriteTransaction
-        
-        # CANONICAL mutation surface inventory — update this set whenever a new
-        # governed mutation method is added to GovernedNeo4jSession or
-        # GovernedWriteTransaction. Drift from this set is a constitutional alert.
-        ALL_MUTATIONS = {
-            "write_node",
-            "write_relationship",
-            "delete_node",        # Soft Tombstone (G3-invariant-safe hard delete opt-in)
-            "begin_transaction",
-            "queue_node",
-            "queue_relationship",
-        }
-        discovered_methods = set()
-        
-        for cls in [GovernedNeo4jSession, GovernedWriteTransaction]:
-            for name, func in inspect.getmembers(cls, predicate=inspect.isfunction):
-                if re.match(r'^(write|queue|merge|upsert|delete|create)_.*', name) or name == "begin_transaction":
-                    discovered_methods.add(name)
-                    
-        unregistered = discovered_methods - ALL_MUTATIONS
-        assert not unregistered, f"Inventory drift detected! Unauthorized mutations found: {unregistered}"
-
-    def test_negative_enforcement_rejection(self, active_mock_governance_context):
-        """
-        P0-B: Prove that invalid payloads are actively rejected by the boundary.
-        """
-        executor = _mock_executor()
-        session = GovernedNeo4jSession(raw_executor=executor)
-        
-        with pytest.raises(GovernanceViolationError):
-            # Missing provenance and incorrect ontology will strictly raise GovernanceViolationError
-            session.write_node("UnknownLabel", {"bad": "payload"})

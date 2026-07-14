@@ -1,9 +1,9 @@
 # ============================================================================
-# ⚠️  DEPRECATED - USE docker-compose.new.yml INSTEAD
+# MAHOUN Platform - Production-Grade Docker Compose
 # ============================================================================
-# This file is kept for compatibility but will be removed soon
-# New architecture: 3 lightweight containers vs 8+ legacy containers  
-# Migration guide: See CONTAINER_CONSOLIDATION_AUDIT.md
+# Profiles:
+#   - default: Backend + Frontend (minimal, laptop-safe)
+#   - full:    All services including Neo4j, Postgres, Redis, ChromaDB
 # ============================================================================
 
 services:

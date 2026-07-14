@@ -44,9 +44,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
-from mahoun.core.fortress_validator import get_logger
+from mahoun.core.fortress_validator import ReasoningResponse, get_logger
 from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
-from mahoun.reasoning.unified_reasoning_service import ReasoningMode, ReasoningResponse
+from mahoun.reasoning.unified_reasoning_service import ReasoningMode
 
 log = get_logger(__name__)
 
@@ -348,7 +348,7 @@ class VerdictEngineAdapter:
             if hasattr(step, "__dataclass_fields__"):
                 # It's a dataclass, convert to dict
                 step_dict = {
-                    "statement": getattr(step, "statement", getattr(step, "conclusion", "")),
+                    "conclusion": getattr(step, "conclusion", ""),
                     "evidence": getattr(step, "evidence", []),
                     "confidence": getattr(step, "confidence", confidence),
                 }
@@ -381,49 +381,7 @@ class VerdictEngineAdapter:
             "adapter_version": "2.0.0",
         }
 
-        # ============================================================================
-        # P1-3: LEDGER HASH VERIFICATION
-        # ============================================================================
-        # Extract ledger_hash from verdict result if available (from EvidenceLedgerWriter)
-        # This ensures the verdict was properly recorded in the immutable ledger
-        # before being returned to the API layer.
-        #
-        # GOVERNANCE RULE:
-        # - If ledger_hash is missing in production/staging, log warning
-        # - Include ledger_hash in metadata for audit trail
-        # - Allow graceful degradation in dev/test (log only)
-        # ============================================================================
-        ledger_hash = None
-        if hasattr(verdict_result, "ledger_hash"):
-            ledger_hash = verdict_result.ledger_hash
-        elif isinstance(verdict_result, dict) and "ledger_hash" in verdict_result:
-            ledger_hash = verdict_result["ledger_hash"]
-        
-        if ledger_hash:
-            metadata["ledger_hash"] = ledger_hash
-            metadata["p1_3_ledger_verified"] = True
-            log.debug(f"[{correlation_id}] P1-3: Ledger hash verified: {ledger_hash[:16]}...")
-        else:
-            # Check environment - fail-closed in production/staging
-            from mahoun.core.environment import is_production, is_staging
-            
-            if is_production() or is_staging():
-                log.warning(
-                    f"[{correlation_id}] P1-3: MISSING LEDGER HASH in production/staging - "
-                    f"verdict may not be properly recorded",
-                    extra={
-                        "p1_3_violation": "missing_ledger_hash",
-                        "verdict_id": verdict_id,
-                        "environment": "production" if is_production() else "staging",
-                    }
-                )
-            else:
-                log.debug(f"[{correlation_id}] P1-3: Ledger hash not present (dev/test mode)")
-            
-            metadata["p1_3_ledger_verified"] = False
-            metadata["ledger_hash"] = None
-
-        return ReasoningResponse.create_unvalidated(
+        return ReasoningResponse(
             success=True,
             result=final_verdict,
             confidence=confidence,
@@ -447,11 +405,9 @@ class VerdictEngineAdapter:
         derived_facts = []
 
         for step in steps:
-            # Extract conclusion or statement
+            # Extract conclusion
             if "conclusion" in step:
                 derived_facts.append(step["conclusion"])
-            elif "statement" in step:
-                derived_facts.append(step["statement"])
 
             # Extract derived predicates
             if "derived" in step:
@@ -518,7 +474,7 @@ class VerdictEngineAdapter:
         # Create empty proof tree
         proof_tree = VerdictProofTree(steps=tuple())
 
-        return ReasoningResponse.create_unvalidated(
+        return ReasoningResponse(
             success=False,
             result=f"ADAPTATION_FAILED: {str(error)}",
             confidence=0.0,

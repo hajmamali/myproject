@@ -353,7 +353,7 @@ def test_no_double_injection_tombstone_filter(controller, context):
         context=context
     )
     
-    assert "_deleted IS NULL" in decision1.transformed_query
+    assert "NOT(n._deleted = true)" in decision1.transformed_query
     
     # Second pass with already-transformed query
     decision2 = controller.prepare_query_execution(
@@ -362,7 +362,7 @@ def test_no_double_injection_tombstone_filter(controller, context):
     )
     
     # Count occurrences of _deleted IS NULL
-    count = decision2.transformed_query.count("_deleted IS NULL")
+    count = decision2.transformed_query.count("NOT(n._deleted = true)")
     
     # Should appear exactly once per node variable, not doubled
     # For single node query, should be 1 or 2 (original + one for safety)

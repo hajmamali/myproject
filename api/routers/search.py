@@ -25,8 +25,6 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, status, HTTPException
 from pydantic import BaseModel, Field
 
-from mahoun.core.governance.violations import MissingExecutionPolicyError
-
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -259,12 +257,6 @@ async def search_verdicts(
     )
 
     try:
-        if payload.filters is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Search execution requires explicit filters/policy. Implicit policy injection is forbidden.",
-            )
-
         # Convert request filters to service filters
         from services.search.legal_search_service import LegalSearchFilters
 
@@ -317,18 +309,30 @@ async def search_verdicts(
             filters_applied=filters_applied,
         )
 
-    except MissingExecutionPolicyError as e:
-        logger.warning("Search blocked بسبب missing execution policy: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Missing execution policy for legal retrieval.",
-        ) from e
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Search backend unavailable",
-        ) from e
+
+        # Safely extract query text - guard against corrupted payload
+        try:
+            query_text = payload.query if payload else ""
+        except Exception:
+            query_text = ""
+
+        # Safely extract filters - guard against Pydantic serialization errors
+        try:
+            filters_applied = (
+                payload.filters.model_dump(exclude_none=True)
+                if payload and payload.filters is not None
+                else None
+            )
+        except Exception:
+            # If filters are corrupted or Pydantic raises an error,
+            # fall back to None to ensure error handler never crashes
+            filters_applied: Optional[Any] = None
+        # Return empty results instead of raising to ensure graceful degradation
+        return VerdictSearchResponse(
+            results=[], total=0, query=query_text, filters_applied=filters_applied
+        )
 
 
 @router.get(
@@ -363,7 +367,7 @@ async def search_health():
 
         # Check Graph
         try:
-            graph_ops = await service._get_graph_ops()
+            graph_ops = service._get_graph_ops()
             health_status["backends"]["graph"] = (
                 "available" if graph_ops else "unavailable"
             )

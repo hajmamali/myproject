@@ -74,26 +74,42 @@ class LegalOntology:
         self.version: str = "unknown"
         self.jurisdiction: str = "default"
         
-        # Determine strict_mode from canonical environment if not explicitly set
-        if strict_mode is None:
-            try:
-                from mahoun.core.environment import get_current_environment
-                env_context = get_current_environment()
-                self.strict_mode = env_context.is_production()
-                env_name = env_context.environment.value
-                if not self.strict_mode:
-                    env = os.getenv("MAHOUN_ENV", "development").lower()
-                    if env == "production":
-                        self.strict_mode = True
-                        env_name = env
-            except Exception as e:
-                # Fallback: direct env var check for strict boolean casting
-                env = os.getenv("MAHOUN_ENV", "development").lower()
-                self.strict_mode = (env == "production")
-                env_name = env
-        else:
+        # Determine strict_mode from explicit argument first, then MAHOUN_ENV,
+        # and finally the canonical environment if available.
+        if strict_mode is not None:
             self.strict_mode = strict_mode
             env_name = "explicit"
+        else:
+            raw_env = os.getenv("MAHOUN_ENV")
+            if raw_env:
+                try:
+                    from mahoun.core.environment import MahounEnvironment
+                    env_value = MahounEnvironment.from_string(raw_env)
+                    self.strict_mode = env_value == MahounEnvironment.PRODUCTION
+                    env_name = env_value.value
+                except Exception as e:
+                    logger.warning(f"Failed to parse MAHOUN_ENV={raw_env}: {e}. Falling back to canonical environment")
+                    env_name = raw_env
+                    try:
+                        from mahoun.core.environment import get_current_environment
+                        env_context = get_current_environment()
+                        self.strict_mode = env_context.is_production()
+                        env_name = env_context.environment.value
+                    except Exception as fallback_error:
+                        logger.warning(f"Failed to get canonical environment: {fallback_error}. Defaulting to strict_mode=True")
+                        self.strict_mode = True
+                        env_name = "unknown"
+            else:
+                try:
+                    from mahoun.core.environment import get_current_environment
+                    env_context = get_current_environment()
+                    self.strict_mode = env_context.is_production()
+                    env_name = env_context.environment.value
+                except Exception as e:
+                    # Fallback for edge cases (should not happen in normal operation)
+                    logger.warning(f"Failed to get canonical environment: {e}. Defaulting to strict_mode=True")
+                    self.strict_mode = True
+                    env_name = "unknown"
         
         # Log strict_mode status for audit trail
         if not self.strict_mode:

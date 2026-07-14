@@ -260,11 +260,11 @@ expected_paths = n * (n + 1) // 2  # n + (n-1) + ... + 1
 
 if len(result.derived_facts) < expected_paths:
     print(f"❌ FAILED: Expected at least {expected_paths} paths, got {len(result.derived_facts)}")
-    raise AssertionError(f"❌ FAILED: Expected at least {expected_paths} paths, got {len(result.derived_facts)}")
+    sys.exit(1)
 
 if elapsed > 5.0:
     print(f"❌ FAILED: Too slow ({elapsed:.3f}s) - optimization needed")
-    raise AssertionError(f"❌ FAILED: Too slow ({elapsed:.3f}s) - optimization needed")
+    sys.exit(1)
 
 print(f"✓ Derived {len(result.derived_facts)} facts in {elapsed:.3f}s")
 print(f"  Iterations: {result.iterations}")

@@ -124,13 +124,14 @@ class HardenedLegalPipeline:
         ner_engine: Optional[LegalNEREngine] = None,
         refiner: Optional[LLMRefinementService] = None,
         confidence_threshold: float = 0.75,
-        mapper: Optional[ProvenanceAwareNERMapper] = None,
-        gate: Optional[ConfidenceGate] = None,
-        id_gen: Optional[DeterministicEntityIDGenerator] = None,
-        llm_refiner: Optional[LLMRefinementService] = None,
+        mapper = None,
+        gate = None,
+        id_gen = None,
+        llm_refiner=None,
+
     ):
         self.ner_engine = ner_engine or LegalNEREngine()
-        self.refiner = llm_refiner or refiner or LLMRefinementService()
+        self.refiner = refiner or LLMRefinementService()
         self.id_gen = id_gen or DeterministicEntityIDGenerator()
         self.mapper = mapper or ProvenanceAwareNERMapper()
         self.gate = gate or ConfidenceGate(threshold=confidence_threshold)

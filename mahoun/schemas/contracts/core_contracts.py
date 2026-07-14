@@ -13,6 +13,8 @@ from typing import Dict, Any, Optional, List
 from enum import Enum
 from datetime import datetime
 
+from .reasoning_contracts import ReasoningStepContract, CausalRelationContract
+
 
 # ============================================================================
 # Runtime Configuration Contracts
@@ -163,66 +165,6 @@ class LegalEntityOutput(BaseModel):
     name: str = Field(..., min_length=1, description="Entity name")
     properties: Dict[str, Any] = Field(..., description="Properties")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence")
-    
-    model_config = ConfigDict(frozen=True)
-
-
-class ReasoningStepContract(BaseModel):
-    """
-    Contract for ReasoningStep model.
-    
-    Validates: Single reasoning step structure
-    """
-    step: str = Field(..., min_length=1, description="Step description")
-    reasoning: str = Field(..., min_length=1, description="Reasoning explanation")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Step confidence")
-    evidence: List[str] = Field(default_factory=list, description="Supporting evidence")
-    
-    @field_validator('step')
-    @classmethod
-    def validate_step(cls, v: str) -> str:
-        """Validate step format."""
-        if not v.strip():
-            raise ValueError("step cannot be empty or whitespace")
-        return v.strip()
-    
-    @field_validator('reasoning')
-    @classmethod
-    def validate_reasoning(cls, v: str) -> str:
-        """Validate reasoning format."""
-        if not v.strip():
-            raise ValueError("reasoning cannot be empty or whitespace")
-        return v.strip()
-    
-    model_config = ConfigDict(frozen=True)
-
-
-class CausalRelationContract(BaseModel):
-    """
-    Contract for CausalRelation model.
-    
-    Validates: Causal relationship structure
-    """
-    cause: str = Field(..., min_length=1, description="Cause description")
-    effect: str = Field(..., min_length=1, description="Effect description")
-    strength: float = Field(..., ge=0.0, le=1.0, description="Relationship strength")
-    explanation: str = Field(default="", description="Explanation of relationship")
-    
-    @field_validator('cause')
-    @classmethod
-    def validate_cause(cls, v: str) -> str:
-        """Validate cause format."""
-        if not v.strip():
-            raise ValueError("cause cannot be empty or whitespace")
-        return v.strip()
-    
-    @field_validator('effect')
-    @classmethod
-    def validate_effect(cls, v: str) -> str:
-        """Validate effect format."""
-        if not v.strip():
-            raise ValueError("effect cannot be empty or whitespace")
-        return v.strip()
     
     model_config = ConfigDict(frozen=True)
 

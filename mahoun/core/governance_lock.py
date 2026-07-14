@@ -254,30 +254,6 @@ class GovernanceLock:
         """Compute integrity hash of governance lock state"""
         state = f"{cls._mode.value}|{cls._initialization_timestamp}|{cls._initialized}"
         return hashlib.sha256(state.encode()).hexdigest()
-    
-    @classmethod
-    def get_or_initialize(
-        cls, 
-        mode: GovernanceMode = GovernanceMode.STRICT,
-        authorization_token: str | None = None
-    ) -> "GovernanceLock":
-        """
-        Get existing lock or initialize a new one.
-        
-        This is a convenience method for testing that allows:
-        - If already initialized: return existing lock
-        - If not initialized: initialize with provided mode
-        
-        Args:
-            mode: Governance mode (default: STRICT)
-            authorization_token: Required for DISABLED mode
-            
-        Returns:
-            GovernanceLock instance
-        """
-        if cls._initialized:
-            return cls
-        return cls.initialize(mode=mode, authorization_token=authorization_token)
 
     @classmethod
     def _reset(cls):

@@ -5,8 +5,6 @@ Embedding Provider with BGE-M3 Support
 Config-driven embedding model loading with instruction prompts
 """
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING, List, Optional, Dict, Any
 import torch
@@ -49,7 +47,7 @@ class EmbeddingProvider:
         batch_size: int = 64,
         max_length: int = 512,
         use_fp16: bool = True,
-        model: Optional[SentenceTransformer] = None,
+        model: Optional["SentenceTransformer"] = None,
         correlation_id: str = "",
         **kwargs
     ):
@@ -92,14 +90,62 @@ class EmbeddingProvider:
                 f"(bootstrap-injected model, dim={self.embedding_dim})"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "EmbeddingProvider requires a pre-constructed SentenceTransformer "
-                "instance via the `model` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy construction with loud warning
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: EmbeddingProvider "
+                f"initialized without injected model. Attempting lazy construction. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self.model = self._lazy_construct_model(model_name, max_length, use_fp16)
+            self.embedding_dim = self.model.get_sentence_embedding_dimension()
+    
+    def _lazy_construct_model(self, model_name: str, max_length: int, use_fp16: bool) -> "SentenceTransformer":
+        """
+        DEPRECATED: Lazy model construction fallback.
+        
+        This method exists only for backward compatibility and will be
+        removed in future versions. Bootstrap wiring is the PRIMARY path.
+        """
+        import time
+        try:
+            from sentence_transformers import SentenceTransformer
+            
+            start = time.time()
+            model = SentenceTransformer(model_name, device=self.device)
+            
+            # Set max length
+            model.max_seq_length = max_length
+            
+            # Enable FP16 if requested and on GPU
+            if use_fp16 and self.device == "cuda":
+                model = model.half()
+                log.info("Enabled FP16 inference")
+            
+            latency_ms = (time.time() - start) * 1000
+            
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model construction completed "
+                f"(model={model_name}, latency={latency_ms:.2f}ms). "
+                f"This is a DEPRECATED fallback path."
+            )
+            return model
+            
+        except ImportError:
+            log.error(
+                f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                f"and no model injected. Cannot proceed."
+            )
+            raise ImportError(
+                "sentence-transformers not installed. "
+                "Install with: pip install sentence-transformers OR "
+                "inject pre-constructed model via bootstrap wiring."
+            )
+        except Exception as e:
+            log.error(
+                f"[{self._correlation_id}] ❌ Lazy model construction failed: {e}"
+            )
+            raise RuntimeError(f"Failed to construct embedding model: {e}")
     
     def encode_queries(
         self,

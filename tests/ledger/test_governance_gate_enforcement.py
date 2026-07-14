@@ -20,7 +20,7 @@ from datetime import datetime, UTC
 from mahoun.ledger.blockchain import ImmutableLedger
 from mahoun.ledger.models import LedgerEntry
 from mahoun.ledger.guards import validate_entry
-from mahoun.core.exceptions import BaseMahounError
+from mahoun.core.exceptions_v2 import MahounException as BaseMahounError
 
 
 class TestLedgerEntryValidation:

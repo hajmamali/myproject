@@ -22,10 +22,10 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 # ============================================================================
-# Global Connection Pools (Neo4j driver REMOVED for governance compliance)
+# Global Connection Pools
 # ============================================================================
 postgres_pool: Optional[asyncpg.Pool] = None
-# neo4j_driver: REMOVED - Use governed connection only via mahoun.graph.neo4j.connection
+neo4j_driver: Optional[AsyncGraphDatabase] = None
 redis_client: Optional[aioredis.Redis] = None
 
 @lru_cache()
@@ -70,95 +70,78 @@ async def get_postgres():
 
 
 # ============================================================================
-# Neo4j - GOVERNANCE COMPLIANT (No Direct Driver Usage)
+# Neo4j
 # ============================================================================
 async def init_neo4j():
-    """
-    Initialize Neo4j connection through governed path ONLY.
-    
-    GOVERNANCE COMPLIANCE:
-    - Uses mahoun.graph.neo4j.connection.get_connection() 
-    - All schema operations go through GovernedNeo4jSession
-    - No direct driver creation - prevents bypass of MutationAuthorizationBoundary
-    """
-    if not HAS_NEO4J:
+    """Initialize Neo4j driver"""
+    if not HAS_NEO4J or AsyncGraphDatabase is None:
         log.warning("Neo4j driver not available. Skipping Neo4j initialization.")
         return
     
+    settings = _get_db_settings().database
+    global neo4j_driver
     try:
-        # GOVERNANCE FIX: Use governed connection instead of direct driver
-        from mahoun.graph.neo4j.connection import get_connection
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-        
-        # Test connection through governance boundary
-        connection = get_connection()
-        test_result = connection.execute_query("RETURN 1 AS test")
-        if test_result and test_result[0].get("test") == 1:
-            log.info("✅ Neo4j connection verified through governance boundary")
-        
-        # Apply schema through governed session (if needed)
-        try:
-            from mahoun.graph.neo4j.init_schema import apply_schema
+        neo4j_driver = AsyncGraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password.get_secret_value()),
+            max_connection_lifetime=settings.neo4j_max_connection_lifetime,
+            max_connection_pool_size=settings.neo4j_max_connection_pool_size,
+            connection_acquisition_timeout=settings.neo4j_connection_timeout
+        )
+        # Test connection and apply schema
+        async with neo4j_driver.session() as session:
+            await session.run("RETURN 1")
             
-            # Create governance context for schema operations
-            async with GovernanceContextManager.active_context(
-                correlation_id="api_database_init_schema",
-                actor_id="system_bootstrap"
-            ):
-                apply_schema()
-                log.info("✅ Neo4j schema applied through governed session")
+            # Apply Graph Schema using Switchboard
+            try:
+                from mahoun.switchboard import switchboard
+                import os
                 
-        except Exception as e:
-            log.warning(f"⚠️ Could not apply Neo4j schema (continuing): {e}")
-            
+                schema_path = switchboard.get_schema("ingestion")
+                if schema_path.endswith('.cypher') and os.path.exists(schema_path):
+                    with open(schema_path, 'r', encoding='utf-8') as f:
+                        cypher_content = f.read()
+                    
+                    # Split by ';' and execute statements individually
+                    statements = [s.strip() for s in cypher_content.split(';') if s.strip() and not s.strip().startswith('//')]
+                    
+                    for statement in statements:
+                        try:
+                            # Skip pure comments that might have slipped through
+                            if not statement.startswith('//'):
+                                await session.run(statement)
+                        except Exception as st_err:
+                            log.warning(f"Neo4j schema execution warning (might be safe to ignore): {st_err}")
+                            
+                    log.info(f"✅ Neo4j schema applied from {schema_path}")
+            except Exception as e:
+                log.warning(f"⚠️ Could not apply Neo4j schema automatically: {e}")
+                
+        log.info("✅ Neo4j driver initialized")
     except Exception as e:
-        log.error(f"❌ Failed to initialize governed Neo4j connection: {e}")
+        log.error(f"❌ Failed to initialize Neo4j driver: {e}")
         raise
 
 
 async def close_neo4j():
-    """Close Neo4j connection through governed path"""
-    try:
-        from mahoun.graph.neo4j.connection import close_connection
-        close_connection()
-        log.info("Neo4j governed connection closed")
-    except ImportError:
-        log.warning("No governed connection to close")
+    """Close Neo4j driver"""
+    global neo4j_driver
+    if neo4j_driver:
+        await neo4j_driver.close()
+        log.info("Neo4j driver closed")
 
 
 async def get_neo4j():
-    """
-    Get Neo4j session through GOVERNED path only.
-    
-    GOVERNANCE COMPLIANCE:
-    - Returns GovernedNeo4jSession instead of raw session
-    - All queries must go through MutationAuthorizationBoundary
-    - Prevents direct driver bypass
-    """
+    """Get Neo4j session"""
     if not HAS_NEO4J:
         raise RuntimeError("Neo4j driver not installed. Install with: pip install neo4j")
-    
-    try:
-        from mahoun.graph.neo4j.connection import get_connection
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-        
-        connection = get_connection()
-        
-        # For API layer operations, create a basic governance context
-        async with GovernanceContextManager.active_context(
-            correlation_id="api_database_query",
-            actor_id="api_layer"
-        ):
-            with connection.governed_session(
-                correlation_id="api_database_query",
-                actor_id="api_layer"
-            ) as session:
-                yield session
-                
-    except ImportError as e:
-        raise RuntimeError(f"Governed Neo4j connection not available: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Failed to get governed Neo4j session: {e}")
+    if not neo4j_driver:
+        await init_neo4j()
+    if neo4j_driver:
+        async with neo4j_driver.session() as session:
+            yield session
+    else:
+        raise RuntimeError("Neo4j driver not initialized")
 
 
 # ============================================================================

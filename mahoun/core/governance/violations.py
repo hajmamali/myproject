@@ -41,6 +41,7 @@ class ViolationCategory(str, Enum):
     PROVENANCE_TAMPERING = "PROVENANCE_TAMPERING"
     LINEAGE_BREAK = "LINEAGE_BREAK"
     AUDIT_INTEGRITY_VIOLATION = "AUDIT_INTEGRITY_VIOLATION"
+    AUDIT_FAILURE = "AUDIT_FAILURE"
     BYPASS_ATTEMPT = "BYPASS_ATTEMPT"
 
     # Lifecycle / CI violations
@@ -133,4 +134,3 @@ class GovernanceViolationError(Exception):
 class MissingExecutionPolicyError(GovernanceViolationError):
     """Raised when an operation requiring explicit policy attempts to run without it."""
     pass
-

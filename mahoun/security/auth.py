@@ -18,7 +18,7 @@ except ImportError:
     jwt = None
 import secrets
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
 import logging

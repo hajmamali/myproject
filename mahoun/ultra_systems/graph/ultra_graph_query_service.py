@@ -282,28 +282,7 @@ class UltraGraphQueryService:
             'optimized_queries': 0,
         }
         
-        print("🚀 Ultra Graph Query Service initialized with GOVERNANCE COMPLIANCE")
-    
-    def _execute_governed_query(self, query: str, params: Dict[str, Any]) -> List[Dict]:
-        """
-        Execute query through governance boundary.
-        
-        GOVERNANCE COMPLIANCE:
-        - All queries go through connection.execute_query() which calls MutationAuthorizationBoundary.inspect()
-        - Mutation queries outside GovernedNeo4jSession will be blocked
-        - Read-only queries pass through normally
-        
-        Args:
-            query: Cypher query
-            params: Query parameters
-            
-        Returns:
-            Query results
-            
-        Raises:
-            GovernanceViolationError: If mutation detected outside governed context
-        """
-        return self.connection.execute_query(query, params)
+        print("🚀 Ultra Graph Query Service initialized")
     
     async def execute_query_async(
         self,
@@ -352,17 +331,12 @@ class UltraGraphQueryService:
             query = optimized_query
             self.stats['optimized_queries'] += 1
         
-        # Execute query through GOVERNANCE BOUNDARY
-        try:
-            # GOVERNANCE FIX: Ensure all queries go through MutationAuthorizationBoundary
-            results = await asyncio.to_thread(
-                self._execute_governed_query,
-                query,
-                params
-            )
-        except Exception as e:
-            logger.error(f"Governed query execution failed: {e}")
-            raise
+        # Execute query
+        results = await asyncio.to_thread(
+            self.connection.execute_query,
+            query,
+            params
+        )
         
         execution_time = time.time() - start_time
         
@@ -446,7 +420,6 @@ class UltraGraphQueryService:
         query = """
         CALL db.index.fulltext.queryNodes('fulltext_index', $query_text)
         YIELD node, score
-        WHERE node._deleted IS NULL
         RETURN node, score
         ORDER BY score DESC
         LIMIT $limit
@@ -494,7 +467,6 @@ class UltraGraphQueryService:
         query = f"""
         MATCH path = (start {{id: $start_id}})-[*1..{max_hops}]-(target)
         WHERE target.{target_property} IS NOT NULL
-        AND NONE(n IN nodes(path) WHERE n._deleted = true)
         WITH path, target.{target_property} as value
         RETURN 
             [node in nodes(path) | node.id] as path_nodes,
@@ -531,7 +503,6 @@ class UltraGraphQueryService:
         query = f"""
         MATCH path = (start {{id: $start_id}})-[r*1..{max_hops}]-(target)
         WHERE target.{target_property} IS NOT NULL
-        AND NONE(n IN nodes(path) WHERE n._deleted = true)
         WITH path, target.{target_property} as value,
              reduce(score = 1.0, rel in relationships(path) | 
                     score * coalesce(rel.confidence, 0.5)) as path_score
@@ -562,7 +533,6 @@ class UltraGraphQueryService:
         MATCH (n:{node_label})
         WHERE n.{temporal_property} >= $start_time
           AND n.{temporal_property} <= $end_time
-          AND n._deleted IS NULL
         RETURN n
         ORDER BY n.{temporal_property} DESC
         LIMIT $limit

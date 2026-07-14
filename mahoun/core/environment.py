@@ -420,6 +420,14 @@ def get_current_environment() -> EnvironmentContext:
     """
     with _ENVIRONMENT_LOCK:
         if _CANONICAL_ENVIRONMENT is None:
+            env_override = os.getenv("MAHOUN_ENV")
+            if env_override:
+                logger.debug(
+                    "⚠️ Environment accessed before bootstrap. Auto-bootstrapping from MAHOUN_ENV=%s.",
+                    env_override,
+                )
+                return bootstrap_environment(override=env_override)
+
             # Check if we're in pytest (auto-bootstrap for tests)
             if "pytest" in sys.modules:
                 logger.debug(
@@ -467,10 +475,6 @@ def reset_environment() -> None:
 
         _CANONICAL_ENVIRONMENT = None
         _ENVIRONMENT_LOCKED = False
-
-
-# Alias for test clarity
-_clear_environment_cache = reset_environment
 
 
 @contextmanager

@@ -13,9 +13,10 @@ breaking the zero-hallucination guarantee.
 ARCHITECTURAL INVARIANTS:
 I1. Determinism: Same graph → Same facts (always)
 I2. Completeness: All graph information → FOL facts (no data loss)
-I3. Type Safety: All conversions are type-checked
-I4. Auditability: Full conversion trace with SHA-256 hashing
-I5. Performance: O(N+E) complexity where N=nodes, E=edges
+I3. Reversibility: Facts → Graph reconstruction (bidirectional)
+I4. Type Safety: All conversions are type-checked
+I5. Auditability: Full conversion trace with SHA-256 hashing
+I6. Performance: O(N+E) complexity where N=nodes, E=edges
 
 QUALITY GUARANTEES:
 - Thread-safe operations

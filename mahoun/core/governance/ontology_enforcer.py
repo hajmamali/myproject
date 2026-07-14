@@ -83,23 +83,12 @@ _DEFAULT_ONTOLOGY_RULES: Tuple[OntologyRule, ...] = (
     OntologyRule("Verdict", "REFERS_TO", "LawArticle", "A verdict refers to a law article"),
     OntologyRule("Verdict", "HAS_PARTY", "Person", "A verdict has a party"),
     OntologyRule("Verdict", "HAS_TAG", "Tag", "A verdict has a tag"),
-    # Test/Quarantine relationships (used by test_graph_builder_export_via_governed_session)
-    OntologyRule("Verdict", "CITES", "QuarantinedVerdict", "A verdict cites a quarantined verdict used in tests"),
     # Graph builder relationships (used by UltraGraphBuilder.export_to_neo4j)
     OntologyRule("GraphNode", "RELATED", "GraphNode", "Generic graph node relationship"),
     # Document-LawArticle linkage
     OntologyRule("Document", "REFERENCES", "LawArticle", "A document references a law article"),
     # Person reverse lookup
     OntologyRule("Person", "PARTY_TO", "Verdict", "A person is party to a verdict"),
-    # -------------------------------------------------------------------------
-    # EntityLinker builder relationships (Patch Group C — schema alignment)
-    # These rules align the kernel ontology with the NER entity_linker builder.
-    # -------------------------------------------------------------------------
-    OntologyRule("Person", "PARTY_IN", "Case", "A person is a party in a case"),
-    OntologyRule("Organization", "PARTY_IN", "Case", "An organization is a party in a case"),
-    OntologyRule("Case", "REFERS_TO", "LawArticle", "A case refers to a law article"),
-    OntologyRule("Case", "HANDLED_BY", "Court", "A case is handled by a court"),
-    OntologyRule("Case", "ABOUT", "Topic", "A case is about a topic"),
 )
 
 
@@ -168,9 +157,12 @@ class OntologyEnforcer:
             # Determine the specific failure reason
             if source_type not in self._valid_relationships:
                 detail_msg = (
-                    f"Unknown source type '{source_type}'. Known types: {sorted(self._valid_relationships.keys())}"
+                    f"Unknown source type '{source_type}'. "
+                    f"Known types: {sorted(self._valid_relationships.keys())}"
                 )
-            elif relationship_type not in self._valid_relationships.get(source_type, set()):
+            elif relationship_type not in self._valid_relationships.get(
+                source_type, set()
+            ):
                 detail_msg = (
                     f"Invalid relationship '{relationship_type}' for "
                     f"source type '{source_type}'. "
@@ -187,7 +179,10 @@ class OntologyEnforcer:
                 GovernanceViolation(
                     category=ViolationCategory.ONTOLOGY_VIOLATION,
                     severity=ViolationSeverity.CRITICAL,
-                    message=(f"Ontology violation: {source_type} -[{relationship_type}]-> {target_type}"),
+                    message=(
+                        f"Ontology violation: {source_type} "
+                        f"-[{relationship_type}]-> {target_type}"
+                    ),
                     details={
                         "source_type": source_type,
                         "relationship_type": relationship_type,
@@ -199,7 +194,9 @@ class OntologyEnforcer:
                 )
             )
 
-    def get_valid_relationships(self, source_type: str) -> FrozenSet[str]:
+    def get_valid_relationships(
+        self, source_type: str
+    ) -> FrozenSet[str]:
         """Get valid relationship types for a given source type.
 
         Args:
@@ -210,7 +207,9 @@ class OntologyEnforcer:
         """
         return frozenset(self._valid_relationships.get(source_type, set()))
 
-    def get_valid_targets(self, source_type: str, relationship_type: str) -> FrozenSet[str]:
+    def get_valid_targets(
+        self, source_type: str, relationship_type: str
+    ) -> FrozenSet[str]:
         """Get valid target types for a source type and relationship.
 
         Args:

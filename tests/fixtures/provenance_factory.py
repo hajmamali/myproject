@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from typing import Dict, Any
 
+from mahoun.core.governance.provenance_factory import ProvenanceFactory
+
 
 def build_test_provenance(
     correlation_id: str,
     author: str = "automated_test_runner",
-    source: str = "test_provenance_builder",
+    source: str = "test",
 ) -> Dict[str, Any]:
     """
     Standard governance-compliant provenance payload
@@ -14,17 +16,9 @@ def build_test_provenance(
     This helper exists to ensure all governance-aware
     tests use a stable and future-compatible provenance
     contract.
-    
-    CRITICAL: Returns full provenance dict with all required fields:
-    - source: Origin of the data (required for validation)
-    - author: Actor identifier (required for validation)
-    - correlation_id: Correlation ID for tracing (required for validation)
-    - timestamp: Timestamp of creation (required for validation)
     """
-
-    return {
-        "source": source,
-        "author": author,
-        "correlation_id": correlation_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    return ProvenanceFactory.create_test(
+        source=source,
+        author=author,
+        correlation_id=correlation_id,
+    )

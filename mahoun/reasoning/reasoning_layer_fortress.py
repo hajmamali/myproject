@@ -147,6 +147,7 @@ class ReasoningLayerFortress:
         
         # Initialize cryptographic components
         self._initialize_cryptography()
+        self.is_initialized = True
         
         logger.info(
             "🏰 REASONING LAYER FORTRESS INITIALIZED",
@@ -749,13 +750,13 @@ _reasoning_fortress: Optional[ReasoningLayerFortress] = None
 def get_reasoning_fortress() -> ReasoningLayerFortress:
     """Get global reasoning fortress instance"""
     global _reasoning_fortress
-    
-    if _reasoning_fortress is None:
+
+    if _reasoning_fortress is None or _reasoning_fortress.is_compromised:
         # Determine security level from canonical environment
         from mahoun.core.environment import get_current_environment
-        
+
         env_context = get_current_environment()
-        
+
         if env_context.is_production():
             security_level = SecurityLevel.FORTRESS
         elif env_context.is_staging():
@@ -764,18 +765,19 @@ def get_reasoning_fortress() -> ReasoningLayerFortress:
             security_level = SecurityLevel.MONITORING
         else:  # development
             security_level = SecurityLevel.PROTECTED
-        
+
         _reasoning_fortress = ReasoningLayerFortress(security_level)
         _reasoning_fortress.start_continuous_monitoring()
-        
+
         logger.info(
             f"🏰 GLOBAL REASONING FORTRESS ACTIVATED: {security_level.value}",
             extra={
                 "security_level": security_level.value,
                 "environment": env_context.environment.value,
+                "reinitialized": _reasoning_fortress.is_compromised is False,
             }
         )
-    
+
     return _reasoning_fortress
 
 

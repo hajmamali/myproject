@@ -237,8 +237,8 @@ class TestThresholdLoweringPrevention:
 
         validator = FortressValidator(strict_mode=True)
 
-        # Create response with low agreement score (use create_unvalidated)
-        response = ReasoningResponse.create_unvalidated(
+        # Create response with low agreement score
+        response = ReasoningResponse(
             success=True,
             result="Result",
             confidence=0.80,
@@ -419,7 +419,7 @@ class TestAPIBypassPrevention:
             async def reason(self, request, correlation_id=None):
                 from mahoun.core.fortress_validator import ReasoningResponse
 
-                return ReasoningResponse.create_unvalidated(
+                return ReasoningResponse(
                     success=True,
                     result="Result",
                     confidence=0.92,
@@ -453,7 +453,7 @@ class TestAPIBypassPrevention:
             async def reason(self, request, correlation_id=None):
                 from mahoun.core.fortress_validator import ReasoningResponse
 
-                return ReasoningResponse.create_unvalidated(
+                return ReasoningResponse(
                     success=True,
                     result="Result",
                     confidence=0.50,

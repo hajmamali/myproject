@@ -58,8 +58,6 @@ from .ledger_contracts import (
     VerifyIntegrityInput,
     VerifyIntegrityOutput,
     VerifyIntegrityError,
-    # Invariants
-    InvariantSpecContract,
     GetInvariantsOutput,
     # Configuration
     LedgerBackendConfig,
@@ -67,7 +65,7 @@ from .ledger_contracts import (
 
 from .invariants_contracts import (
     # Invariant Specification
-    InvariantSpecContract as InvariantSpec,
+    InvariantSpecContract,
     GetInvariantByIdInput,
     GetInvariantByIdOutput,
     GetInvariantByIdError,
@@ -88,6 +86,8 @@ from .invariants_contracts import (
     InvariantStatisticsContract,
     GetInvariantStatisticsOutput,
 )
+
+InvariantSpec = InvariantSpecContract
 
 __all__ = [
     # EvidenceLinkedVerdictEngine
@@ -141,6 +141,9 @@ __all__ = [
     "LedgerBackendConfig",
     # Invariant Specification
     "InvariantSpec",
+    "GetInvariantByIdInput",
+    "GetInvariantByIdOutput",
+    "GetInvariantByIdError",
     "GetInvariantByIdInput",
     "GetInvariantByIdOutput",
     "GetInvariantByIdError",

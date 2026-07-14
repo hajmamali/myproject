@@ -17,7 +17,6 @@ import os
 import time
 import logging
 from pathlib import Path
-from typing import Optional, Dict, List, Any
 import torch
 from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer
@@ -241,7 +240,6 @@ class ModelManager:
                     model = AutoModelForSequenceClassification.from_pretrained(
                         model_name,
                         cache_dir=self.cache_dir,
-                        local_files_only=True,  # AirGap: block HuggingFace downloads
                         **self._get_quantization_config(),
                         **kwargs
                     )
@@ -250,7 +248,6 @@ class ModelManager:
                     model = AutoModel.from_pretrained(
                         model_name,
                         cache_dir=self.cache_dir,
-                        local_files_only=True,  # AirGap: block HuggingFace downloads
                         **self._get_quantization_config(),
                         **kwargs
                     )
@@ -288,7 +285,6 @@ class ModelManager:
                 tokenizer = AutoTokenizer.from_pretrained(
                     model_name,
                     cache_dir=self.cache_dir,
-                    local_files_only=True,  # AirGap: block HuggingFace downloads
                     **kwargs
                 )
                 log.info(f"✅ Successfully loaded tokenizer for {model_name}")

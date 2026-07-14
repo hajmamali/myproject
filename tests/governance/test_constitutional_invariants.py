@@ -128,8 +128,8 @@ class TestOntologyInjectionDefense:
             )
 
         v = exc_info.value.violation
-        assert v.category == ViolationCategory.AUDIT_INTEGRITY_VIOLATION, (
-            f"Expected AUDIT_INTEGRITY_VIOLATION, got {v.category}"
+        assert v.category == ViolationCategory.ONTOLOGY_VIOLATION, (
+            f"Expected ONTOLOGY_VIOLATION, got {v.category}"
         )
         assert v.severity == ViolationSeverity.CRITICAL
 
@@ -397,6 +397,7 @@ class TestIdentityMandatoryMutation:
         """
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
         from mahoun.core.governance.violations import GovernanceViolationError
+        from mahoun.core.governance.governance_context import GovernanceContextManager
 
         execution_happened = []
 
@@ -404,7 +405,14 @@ class TestIdentityMandatoryMutation:
             execution_happened.append(True)
             return []
 
-        # Must NOT raise
+        # Must NOT raise — requires a valid context on the stack
+        ctx = GovernanceContextManager.create_context(
+            correlation_id="test-corr-valid",
+            execution_mode="STRICT",
+        )
+        token = GovernanceContextManager._governance_stack.set(
+            GovernanceContextManager._get_stack() + (ctx,)
+        )
         try:
             session = GovernedNeo4jSession(
                 raw_executor=executor,
@@ -415,6 +423,8 @@ class TestIdentityMandatoryMutation:
             assert session._correlation_id == "test-corr-valid"
         except GovernanceViolationError:
             pytest.fail("Valid identity should not raise GovernanceViolationError")
+        finally:
+            GovernanceContextManager._governance_stack.reset(token)
 
 
 # ---------------------------------------------------------------------------
@@ -552,7 +562,7 @@ class TestUncertaintyAbstentionEnforcement:
             "proof_tree": "proof-tree-hash-abc123",   # non-None string
             "explanation": "Grounded in graph evidence.",
             "derived_facts": [
-                {"fact": "Article 220 is active", "source": "LawArticle:220"}
+                "Article 220 is active",
             ],
             "error": None,
             "metadata": {

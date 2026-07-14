@@ -2,23 +2,16 @@
 Deep Legal Reasoning Engine
 ============================
 
-P0-2 HARDENING:
-- deep_reason() now requires active GovernanceContext in production/staging.
-- Provenance tracking, audit recording, and ledger persistence are mandatory.
-- Development mode permits execution without governance (controlled).
+Main reasoning engine combining:
+- Chain of Thought (CoT)
+- Causal Inference
+- Knowledge Graph
+- Planner / Thought / Executor pattern
 
-The standalone deep_reason() path previously bypassed ALL governance:
-  * governance (NO)
-  * provenance (NO)
-  * ledger (NO)
-  * audit trail (NO)
-
-This is now explicitly enforced at the method boundary.
+Extracted from legacy code with full implementation.
 """
 
-import hashlib
-import os
-from datetime import UTC, datetime
+
 from typing import Any, Dict, List, Optional, Tuple
 
 from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -27,10 +20,6 @@ from mahoun.reasoning.causal_inference import CausalInferenceEngine
 from mahoun.core.models import ReasoningResult
 from mahoun.core.logging import setup_logger
 from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
-from mahoun.ledger.models import LedgerEntry
-from mahoun.ledger.writer import EvidenceLedgerWriter
-from mahoun.ledger.guards import validate_entry
-from mahoun.invariants.versions import INVARIANT_VERSION
 
 log = setup_logger("reasoning_engine")
 
@@ -46,26 +35,15 @@ class DeepLegalReasoningEngine:
     - Evidence assessment
     - Planner / Thought / Executor pattern
     
-    P0-2 HARDENING (COMPLETED):
-    - Governance enforcement is MANDATORY - no bypass mode exists
-    - GovernanceContext required in production/staging
-    - Provenance tracking enforced
-    - Audit recording mandatory
-    - Ledger persistence required
-    - Development mode permits execution without governance (with explicit warnings)
+    Upgraded from legacy code with:
+    - Pydantic models
+    - Better structure
+    - Type hints
+    - Complete implementation from legacy
     """
     
-    def __init__(self, ledger_writer: EvidenceLedgerWriter):
-        """
-        Initialize deep reasoning engine.
-        
-        Args:
-            ledger_writer: Ledger writer for audit persistence (REQUIRED).
-        
-        P0-2: Governance enforcement is ALWAYS enabled.
-        No bypass mode exists. GovernanceContext is required in production/staging.
-        """
-        self.ledger_writer = ledger_writer
+    def __init__(self):
+        """Initialize deep reasoning engine with full legacy implementation"""
         self.knowledge_graph = LegalKnowledgeGraph()
         self.graph_builder = UltraGraphBuilder(
             enable_quality_assessment=False,
@@ -80,7 +58,7 @@ class DeepLegalReasoningEngine:
         # Initialize with basic legal knowledge
         self._initialize_legal_knowledge()
         
-        log.info("P0-2: Initialized DeepLegalReasoningEngine with MANDATORY governance enforcement")
+        log.info("Initialized DeepLegalReasoningEngine with full reasoning capabilities")
     
     def _initialize_legal_knowledge(self):
         """Initialize with basic legal knowledge"""
@@ -158,13 +136,6 @@ class DeepLegalReasoningEngine:
         """
         Perform deep legal reasoning with full 6-step Chain of Thought
         
-        P0-2 HARDENING (COMPLETED):
-        - In production/staging: requires active GovernanceContext,
-          creates provenance, records reasoning steps, persists to ledger.
-          Fails closed if governance is unavailable.
-        - In development: allows execution without governance with explicit warnings.
-        - NO BYPASS MODE EXISTS - governance enforcement is always attempted.
-        
         Process (from legacy code):
         1. Analyze question type
         2. Extract legal concepts
@@ -183,37 +154,6 @@ class DeepLegalReasoningEngine:
         Returns:
             ReasoningResult with complete analysis
         """
-        from mahoun.core.environment import get_current_environment
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-
-        env = get_current_environment()
-        ctx: Any = None
-
-        if env.is_production() or env.is_staging():
-            # P0-2: Mandatory governance enforcement in production/staging
-            if self.ledger_writer is None:
-                raise RuntimeError(
-                    "P0-2 GOVERNANCE VIOLATION: ledger_writer is required in "
-                    f"{env.environment.value}. Cannot persist audit trail."
-                )
-            
-            ctx = GovernanceContextManager.require_context()
-            ctx.require_active_context()
-            
-            log.info(
-                f"P0-2: Governance enforcement active in {env.environment.value}. "
-                f"correlation_id={ctx.correlation_id}"
-            )
-        else:
-            # Development mode: attempt governance but allow without it
-            ctx = GovernanceContextManager.get_current_context()
-            if ctx is None:
-                log.warning(
-                    "P0-2: No active GovernanceContext in development mode. "
-                    "Continuing without governance enforcement. "
-                    "THIS IS ONLY ACCEPTABLE IN DEVELOPMENT."
-                )
-
         if facts is None:
             facts = self._extract_facts_from_context(context)
         
@@ -242,7 +182,7 @@ class DeepLegalReasoningEngine:
             causal_result
         )
         
-        # P0-2: Create Pydantic result model
+        # Create Pydantic result model
         result = ReasoningResult(
             question=question,
             context=context,
@@ -262,37 +202,6 @@ class DeepLegalReasoningEngine:
             reasoning_depth="deep"
         )
         
-        # P0-2: Ledger persistence in production/staging
-        if ctx is not None and self.ledger_writer is not None:
-            try:
-                case_basis = f"{question}|{'|'.join(sorted(facts))}"
-                case_id = hashlib.sha256(case_basis.encode()).hexdigest()[:16]
-                verdict_basis = f"{case_id}|{datetime.now(UTC).strftime('%Y%m%d%H')}"
-                verdict_id = f"deep_{hashlib.sha256(verdict_basis.encode()).hexdigest()[:12]}"
-
-                entry = LedgerEntry(
-                    verdict_id=verdict_id,
-                    case_id=case_id,
-                    referenced_ltm_nodes=cot_result.get("used_rule_ids", []),
-                    referenced_facts=facts,
-                    confidence=confidence,
-                    invariant_version=INVARIANT_VERSION,
-                    guard_mode="GOVERNED",
-                    created_at=datetime.now(UTC),
-                    event_type="deep_reasoning_result",
-                )
-                validate_entry(entry)
-                self.ledger_writer.write(entry)
-                log.info(
-                    f"P0-2: Deep reasoning result persisted to ledger: "
-                    f"verdict_id={verdict_id}"
-                )
-            except Exception as e:
-                log.error(
-                    f"P0-2: Ledger persistence failed - reasoning result "
-                    f"WILL still be returned (soft fail): {e}"
-                )
-
         log.info(
             f"✅ Deep reasoning completed: "
             f"confidence={confidence:.2%}, "

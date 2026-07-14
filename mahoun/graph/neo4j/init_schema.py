@@ -10,7 +10,6 @@ Usage:
     python graph/neo4j/init_schema.py
 """
 
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -21,10 +20,9 @@ sys.path.insert(0, str(project_root))
 
 from mahoun.graph.neo4j.connection import get_connection
 from mahoun.graph.neo4j.schema import SchemaManager
-from mahoun.graph.neo4j.runner import GovernedSchemaRunner
 
 
-async def main() -> int:
+def main():
     """Initialize the legal knowledge graph schema"""
     print("=" * 60)
     print("Legal Knowledge Graph Schema Initialization")
@@ -53,56 +51,45 @@ async def main() -> int:
         print(f"   Response time: {health['response_time_ms']}ms")
         print(f"   Current nodes: {health['node_count']}")
         
-        # GOVERNANCE FIX: Use governed session for schema operations
-        from mahoun.core.governance.governance_context import GovernanceContextManager
-        
-        async with GovernanceContextManager.active_context(
-            correlation_id="schema_initialization",
-            actor_id="system_schema_manager"
-        ):
-            with connection.governed_session(
-                correlation_id="schema_initialization",
-                actor_id="system_schema_manager"
-            ) as governed_session:
-                # Use adapter to bridge SchemaManager (QueryRunner) with GovernedNeo4jSession
-                runner = GovernedSchemaRunner(governed_session)
-                manager = SchemaManager(runner)
-                
-                # Create constraints
-                print("\n🔒 Creating constraints for 10 node types...")
-                if manager.create_constraints():
-                    print("✅ Constraints created successfully")
-                else:
-                    print("⚠️  Some constraints failed to create")
-                
-                # Create indexes
-                print("\n📇 Creating indexes for frequently searched fields...")
-                if manager.create_indexes():
-                    print("✅ Indexes created successfully")
-                else:
-                    print("⚠️  Some indexes failed to create")
-                
-                # Create fulltext indexes
-                print("\n🔍 Creating fulltext indexes for Law, Article, Verdict...")
-                if manager.create_fulltext_indexes():
-                    print("✅ Fulltext indexes created successfully")
-                else:
-                    print("⚠️  Some fulltext indexes failed to create")
-                
-                # Validate schema
-                print("\n✓ Validating schema...")
-                validation = manager.validate_schema()
-                
-                print(f"   Constraints: {'✅' if validation['constraints'] else '❌'}")
-                print(f"   Indexes: {'✅' if validation['indexes'] else '❌'}")
-                print(f"   Fulltext indexes: {'✅' if validation['fulltext_indexes'] else '❌'}")
-                
-                if all(validation.values()):
-                    print("\n🎉 Schema initialization completed successfully!")
-                    return 0
-                else:
-                    print("\n⚠️  Schema initialization completed with warnings")
-                    return 1
+        # Create schema manager
+        with connection.session() as session:
+            manager = SchemaManager(session)
+            
+            # Create constraints
+            print("\n🔒 Creating constraints for 10 node types...")
+            if manager.create_constraints():
+                print("✅ Constraints created successfully")
+            else:
+                print("⚠️  Some constraints failed to create")
+            
+            # Create indexes
+            print("\n📇 Creating indexes for frequently searched fields...")
+            if manager.create_indexes():
+                print("✅ Indexes created successfully")
+            else:
+                print("⚠️  Some indexes failed to create")
+            
+            # Create fulltext indexes
+            print("\n🔍 Creating fulltext indexes for Law, Article, Verdict...")
+            if manager.create_fulltext_indexes():
+                print("✅ Fulltext indexes created successfully")
+            else:
+                print("⚠️  Some fulltext indexes failed to create")
+            
+            # Validate schema
+            print("\n✓ Validating schema...")
+            validation = manager.validate_schema()
+            
+            print(f"   Constraints: {'✅' if validation['constraints'] else '❌'}")
+            print(f"   Indexes: {'✅' if validation['indexes'] else '❌'}")
+            print(f"   Fulltext indexes: {'✅' if validation['fulltext_indexes'] else '❌'}")
+            
+            if all(validation.values()):
+                print("\n🎉 Schema initialization completed successfully!")
+                return 0
+            else:
+                print("\n⚠️  Schema initialization completed with warnings")
+                return 1
         
     except Exception as e:
         print(f"\n❌ Error: {e}")
@@ -116,4 +103,4 @@ async def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    sys.exit(main())

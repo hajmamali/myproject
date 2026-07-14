@@ -38,9 +38,10 @@ class TestP0_1_ProvenanceEnforcement:
 
     def test_production_fails_without_governance_context(self):
         """P0-1: In production, _resolve_provenance() fails without GovernanceContext."""
+        from mahoun.core.governance.violations import GovernanceViolationError
         with temporary_environment("production"):
             from mahoun.reasoning.evidence_linked_verdict import _resolve_provenance
-            with pytest.raises(RuntimeError) as exc_info:
+            with pytest.raises(GovernanceViolationError) as exc_info:
                 _resolve_provenance("test_op")
             assert "GOVERNANCE VIOLATION" in str(exc_info.value)
 
@@ -66,9 +67,10 @@ class TestP0_1_ProvenanceEnforcement:
 
     def test_recorder_production_fails_without_context(self):
         """P0-1: ReasoningRecorder in production fails without GovernanceContext."""
+        from mahoun.core.governance.violations import GovernanceViolationError
         with temporary_environment("production"):
             recorder = ReasoningRecorder()
-            with pytest.raises(RuntimeError):
+            with pytest.raises(GovernanceViolationError):
                 recorder.record_step("test", {"a": 1}, {"r": "ok"}, provenance=None)
 
 

@@ -154,14 +154,15 @@ class PersianSemanticSearch:
                 f"(bootstrap-injected model, dim={self._embedding_dim})"
             )
         else:
-            # FAIL-CLOSED: No construction allowed outside composition root
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "PersianSemanticSearch requires a pre-constructed SentenceTransformer "
-                "instance via the `model_instance` parameter. "
-                "Construction is only permitted in bootstrap/composition root. "
-                "Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
+            # DEPRECATED FALLBACK: Lazy loading
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  DEPRECATED: PersianSemanticSearch "
+                f"initialized without injected model. Will attempt lazy load on first access. "
+                f"Bootstrap wiring is MANDATORY in production. "
+                f"Remediation: Update bootstrap/runtime.py to inject SentenceTransformer."
             )
+            self._model: Optional[SentenceTransformer] = None
+            self._embedding_dim: Optional[int] = None
         
         # Cache for embeddings (text hash -> embedding)
         self._embedding_cache: Dict[str, np.ndarray] = {}
@@ -170,12 +171,44 @@ class PersianSemanticSearch:
     
     @property
     def model(self) -> SentenceTransformer:
-        """Return the injected model. Fail-closed if not available."""
+        """
+        DEPRECATED: Lazy load model on first access.
+        
+        This property exists only for backward compatibility. Bootstrap injection
+        is the PRIMARY path.
+        """
         if self._model is None:
-            raise ValueError(
-                "Embedding model dependency was not injected. "
-                "This should never happen — constructor enforces injection."
+            import time
+            log.warning(
+                f"[{self._correlation_id}] ⚠️  Lazy model loading triggered. "
+                f"This is a DEPRECATED fallback path."
             )
+            try:
+                start = time.time()
+                self._model = SentenceTransformer(self.model_name, device=self.device)
+                self._embedding_dim = self._model.get_sentence_embedding_dimension()
+                latency_ms = (time.time() - start) * 1000
+                
+                log.warning(
+                    f"[{self._correlation_id}] ⚠️  Lazy model loading completed "
+                    f"(model={self.model_name}, dim={self._embedding_dim}, "
+                    f"device={self._model.device}, latency={latency_ms:.2f}ms)"
+                )
+            except ImportError:
+                log.error(
+                    f"[{self._correlation_id}] ❌ sentence-transformers not installed "
+                    f"and no model injected."
+                )
+                raise ImportError(
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers OR "
+                    "inject pre-constructed model via bootstrap wiring."
+                )
+            except Exception as e:
+                log.error(
+                    f"[{self._correlation_id}] ❌ Lazy model loading failed: {e}"
+                )
+                raise RuntimeError(f"Failed to load embedding model: {e}")
         return self._model
     
     @property

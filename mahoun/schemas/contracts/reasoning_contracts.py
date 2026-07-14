@@ -333,8 +333,22 @@ class ReasoningStepContract(BaseModel):
         default_factory=list,
         description="Supporting evidence"
     )
+
+    @field_validator('step')
+    @classmethod
+    def validate_step(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("step cannot be empty or whitespace")
+        return v.strip()
+
+    @field_validator('reasoning')
+    @classmethod
+    def validate_reasoning(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("reasoning cannot be empty or whitespace")
+        return v.strip()
     
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
 
 class ReasonOutput(BaseModel):
@@ -519,8 +533,29 @@ class CausalRelationContract(BaseModel):
         max_length=2000,
         description="Explanation of causal link"
     )
+
+    @field_validator('cause')
+    @classmethod
+    def validate_cause(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("cause cannot be empty or whitespace")
+        return v.strip()
+
+    @field_validator('effect')
+    @classmethod
+    def validate_effect(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("effect cannot be empty or whitespace")
+        return v.strip()
+
+    @field_validator('explanation')
+    @classmethod
+    def validate_explanation(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("explanation cannot be empty or whitespace")
+        return v.strip()
     
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
 
 class DeepReasonOutput(BaseModel):

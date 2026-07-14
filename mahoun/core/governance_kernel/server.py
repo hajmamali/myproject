@@ -27,8 +27,14 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Any, Dict
 
 # Import kernel components
-from mahoun.core.governance_kernel import QueryType, GovernanceViolationError
-from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance_kernel import (
+    QueryType,
+    GovernanceError,
+    enforce_governance,
+    GovernanceContext,
+    set_governance_context,
+    clear_governance_context,
+)
 from mahoun.core.governance_lock import GovernanceLock, GovernanceMode
 
 
@@ -110,11 +116,12 @@ governance_enforcement_enabled {1 if lock.is_enforcement_enabled() else 0}
             allow_destructive = request.get('allow_destructive', False)
             
             # Enforce
-            if query_type in (QueryType.WRITE, QueryType.DDL):
-                if not correlation_id or not actor_id:
-                    raise ValueError("WRITE and DDL queries require correlation_id and actor_id")
-            elif query_type == QueryType.FORBIDDEN:
-                raise ValueError("FORBIDDEN query type - cannot execute")
+            enforce_governance(
+                query_type=query_type,
+                correlation_id=correlation_id,
+                actor_id=actor_id,
+                allow_destructive=allow_destructive,
+            )
             
             response = {
                 "status": "allowed",
@@ -123,7 +130,7 @@ governance_enforcement_enabled {1 if lock.is_enforcement_enabled() else 0}
             }
             self._send_json(200, response)
             
-        except ValueError as e:
+        except GovernanceError as e:
             self._send_json(403, {
                 "status": "denied",
                 "error": "GovernanceError",
@@ -159,16 +166,21 @@ governance_enforcement_enabled {1 if lock.is_enforcement_enabled() else 0}
             request = json.loads(body)
             
             # Create context
-            ctx = GovernanceContextManager.create_context(
+            ctx = GovernanceContext(
                 correlation_id=request['correlation_id'],
                 actor_id=request['actor_id'],
-                operation_type=request.get('query_type')
+                scope_id=request.get('scope_id'),
+                query_type=QueryType[request['query_type']] if 'query_type' in request else None,
+                origin=request.get('origin'),
             )
+            
+            # Set in context var
+            set_governance_context(ctx)
             
             response = {
                 "status": "created",
                 "correlation_id": ctx.correlation_id,
-                "actor_id": getattr(ctx, "actor_id", request['actor_id']),
+                "actor_id": ctx.actor_id,
             }
             self._send_json(200, response)
             

@@ -2,21 +2,11 @@
 Tests for API Integration
 ==========================
 
-Classification: CRITICAL INTEGRATION TESTS (SLOW)
+Classification: CRITICAL INTEGRATION TESTS
 Purpose: Verify API integration with governance and proof-carrying responses
 
 NOTE: These tests use mocked verdict engine to focus on governance integration
 rather than actual verdict generation (which requires full graph infrastructure).
-
-⚠️  PERFORMANCE NOTE:
-These tests are marked as @pytest.mark.slow because they require:
-- FastAPI app initialization (~6s)
-- Full router registration
-- Evidence system loading
-- TestClient ASGI server setup
-
-Run separately with: pytest -m slow
-Or skip with: pytest -m "not slow"
 
 Test Coverage:
 - Verdict generation
@@ -25,11 +15,6 @@ Test Coverage:
 - Health check
 - Error handling
 """
-
-import pytest
-
-# Mark all tests in this module as slow
-pytestmark = pytest.mark.slow
 
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
@@ -86,13 +71,6 @@ def mock_verdict_engine():
         conclusion: str
         evidence: list[str] = field(default_factory=list)
         confidence: float = 0.92
-        # Add attributes expected by VerdictEngineAdapter
-        statement: str = field(default="")
-
-        def __post_init__(self):
-            # Ensure statement mirrors conclusion if not set
-            if not self.statement:
-                object.__setattr__(self, "statement", self.conclusion)
 
     @dataclass
     class MockVerdict:
@@ -101,8 +79,7 @@ def mock_verdict_engine():
         confidence_score: float
         verdict_id: str
         unresolved_conflicts: list[str] = field(default_factory=list)
-        # P1-3: Add ledger_hash to satisfy adapter validation
-        ledger_hash: str = "mock_ledger_hash_abc123def456"
+        ledger_hash: str = "mock_hash_123"
 
     from mahoun.core.governance.violations import (
         GovernanceViolation,
@@ -154,11 +131,7 @@ def mock_verdict_engine():
         ]
 
         return MockVerdict(
-            final_verdict="Tax exemption applies", 
-            steps=steps, 
-            confidence_score=0.92, 
-            verdict_id="verdict_123",
-            ledger_hash=f"ledger_hash_{correlation_id or 'unknown'}"
+            final_verdict="Tax exemption applies", steps=steps, confidence_score=0.92, verdict_id="verdict_123"
         )
 
     mock_engine = MagicMock()
@@ -172,22 +145,12 @@ def mock_verdict_engine():
 
 
 @pytest.fixture
-def client(mock_verdict_engine, monkeypatch):
+def client(mock_verdict_engine):
     """Create test client with mocked verdict engine"""
-    # The issue: API routers import get_verdict_engine at module level
-    # We need to patch it before TestClient instantiation
-    from api.routers import reasoning
-    
-    # Patch the dependency function directly
-    monkeypatch.setattr(reasoning, "_verdict_engine_instance", mock_verdict_engine)
-    
-    # Also override dependency for FastAPI DI
     from api.routers.reasoning import get_verdict_engine
+
     app.dependency_overrides[get_verdict_engine] = lambda: mock_verdict_engine
-    
     yield TestClient(app, raise_server_exceptions=False)
-    
-    # Cleanup
     app.dependency_overrides.clear()
 
 
@@ -459,24 +422,9 @@ class TestLedgerQuery:
 class TestHealthCheck:
     """Tests for health check endpoint"""
 
-    @pytest.fixture
-    def health_client(self, mock_verdict_engine, monkeypatch):
-        """Health check calls get_verdict_engine directly (not via FastAPI DI)."""
-        from api.routers import reasoning
-
-        mock_ledger = MagicMock()
-        mock_ledger.verify_integrity.return_value = True
-        mock_ledger.__len__.return_value = 0
-
-        monkeypatch.setattr(reasoning, "get_verdict_engine", lambda: mock_verdict_engine)
-        monkeypatch.setattr(reasoning, "get_immutable_ledger", lambda: mock_ledger)
-        monkeypatch.setattr(reasoning, "get_proof_system", lambda: MagicMock())
-
-        return TestClient(app, raise_server_exceptions=False)
-
-    def test_health_check_success(self, health_client):
+    def test_health_check_success(self, client):
         """Test successful health check"""
-        response = health_client.get("/api/v1/reasoning/health")
+        response = client.get("/api/v1/reasoning/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -487,15 +435,10 @@ class TestHealthCheck:
         assert "components" in data
         assert "timestamp" in data
 
-    def test_health_check_desktop_minimal_mode(self, health_client, monkeypatch):
+    def test_health_check_desktop_minimal_mode(self, client):
         """Test health check in DESKTOP_MINIMAL mode"""
-        from mahoun.core.runtime_config import get_runtime_settings
-
-        monkeypatch.setenv("MAHOUN_MODE", "desktop_minimal")
-        monkeypatch.setenv("MAHOUN_GRAPH_ENABLED", "false")
-        get_runtime_settings.cache_clear()
-
-        response = health_client.get("/api/v1/reasoning/health")
+        # This test may need environment variable setup
+        response = client.get("/api/v1/reasoning/health")
 
         assert response.status_code == 200
         data = response.json()

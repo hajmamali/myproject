@@ -31,31 +31,22 @@ not because developers remembered to call validation.
 
 from __future__ import annotations
 
-import contextvars
 import hashlib
 import json
 import logging
 import re
+import contextvars
 import unicodedata
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
-if TYPE_CHECKING:
-    from mahoun.core.governance.protocols import RawQueryExecutor
-
-from mahoun.core.governance.governance_context import GovernanceContextManager
-from mahoun.core.governance.protocols import assert_raw_executor
+from mahoun.core.governance.validator_pipeline import ValidatorPipeline, PipelineResult
 from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
-from mahoun.core.governance.validator_pipeline import PipelineResult, ValidatorPipeline
-from mahoun.core.governance.violations import (
-    GovernanceViolation,
-    GovernanceViolationError,
-    ViolationCategory,
-    ViolationSeverity,
-)
+from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance.violations import GovernanceViolationError, GovernanceViolation, ViolationSeverity, ViolationCategory
 
 logger = logging.getLogger(__name__)
 
@@ -72,37 +63,24 @@ _REMOTE_LEDGER_MOCK_PATH = "logs/remote_immutable.ledger"
 def _append_governance_audit(entry: dict[str, Any]) -> None:
     """
     Append an immutable, fsynced entry to the governance audit log.
-
-    HARDENING V2: Dual-write strategy.
+    
+    HARDENING V2: Dual-write strategy. 
     1. Local log (logs/governance.audit)
     2. Simulated Remote Immutable Ledger (logs/remote_immutable.ledger)
 
     This MUST succeed BEFORE any graph mutation is committed.
     Failure here causes the mutation to be rejected (fail-closed).
     """
-    # Enforce that audit entries always include a valid actor identity
-    actor_val = entry.get("actor_id") or entry.get("actor")
-    if not actor_val or not str(actor_val).strip():
-        raise GovernanceViolationError(
-            GovernanceViolation(
-                category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
-                severity=ViolationSeverity.CRITICAL,
-                message="Audit entry missing non-empty actor_id — aborting mutation",
-                details={"entry_preview": {k: entry.get(k) for k in ("operation", "label", "entity_id")}},
-                source="GovernedNeo4jSession._append_governance_audit",
-            )
-        )
-
     try:
         os.makedirs(os.path.dirname(_GOVERNANCE_AUDIT_PATH) or ".", exist_ok=True)
         line = json.dumps(entry, default=str, sort_keys=True) + "\n"
-
+        
         # 1. Write to local audit
         with open(_GOVERNANCE_AUDIT_PATH, "a", encoding="utf-8") as f:
             f.write(line)
             f.flush()
             os.fsync(f.fileno())
-
+            
         # 2. Write to REMOTE IMMUTABLE LEDGER (Simulated)
         # In production, this would be an API call to a tamper-proof service
         with open(_REMOTE_LEDGER_MOCK_PATH, "a", encoding="utf-8") as f:
@@ -111,7 +89,7 @@ def _append_governance_audit(entry: dict[str, Any]) -> None:
             f.write(json.dumps(entry_with_sig, default=str, sort_keys=True) + "\n")
             f.flush()
             os.fsync(f.fileno())
-
+            
     except Exception as exc:
         # Fail-closed: audit append failure MUST block mutation
         raise GovernanceViolationError(
@@ -124,11 +102,9 @@ def _append_governance_audit(entry: dict[str, Any]) -> None:
             )
         ) from exc
 
-
 # ---------------------------------------------------------------------------
 # Cypher Lexer & Mutation Intent Classifier
 # ---------------------------------------------------------------------------
-
 
 class CypherLexer:
     """
@@ -140,13 +116,17 @@ class CypherLexer:
     This lexer ensures that mutation intent is detected even if obfuscated
     by comments or unusual formatting.
     """
-
+    
     # Keywords that signal a state-mutation operation.
-    MUTATION_KEYWORDS = frozenset({"MERGE", "CREATE", "DELETE", "SET", "REMOVE", "DROP", "DETACH"})
-
+    MUTATION_KEYWORDS = frozenset({
+        "MERGE", "CREATE", "DELETE", "SET", "REMOVE", "DROP", "DETACH"
+    })
+    
     # Procedures that are strictly forbidden outside governed sessions
     # (or completely forbidden if they bypass governance entirely).
-    FORBIDDEN_PROCEDURES = frozenset({"apoc", "dbms", "plugin", "custom"})
+    FORBIDDEN_PROCEDURES = frozenset({
+        "apoc", "dbms", "plugin", "custom"
+    })
 
     @staticmethod
     def strip_comments(query: str) -> str:
@@ -161,44 +141,39 @@ class CypherLexer:
     def analyze_intent(cls, query: str) -> Tuple[bool, List[str]]:
         """
         Analyze Cypher query for mutation intent and forbidden procedures.
-
+        
         HARDENING V2: Unicode Normalization
         Performs NFKC normalization to collapse Unicode variants (like ＳＥＴ)
         into their standard ASCII equivalents before tokenization.
-
+        
         Returns:
             (is_mutation, violations)
         """
         # Step 1: Normalize Unicode (NFKC handles full-width, compatibility forms, etc.)
-        normalized_query = unicodedata.normalize("NFKC", query)
-
+        normalized_query = unicodedata.normalize('NFKC', query)
+        
         # Step 2: Strip comments from normalized query
         clean_query = cls.strip_comments(normalized_query)
-
+        
         # Step 3: Tokenize by splitting on non-word characters while preserving dots for procedures
         tokens = re.findall(r"[\w\.]+", clean_query)
-
+        
         is_mutation = False
         violations = []
-
+        
         for token in tokens:
             upper_token = token.upper()
-
+            
             # 1. Check for mutation keywords
             if upper_token in cls.MUTATION_KEYWORDS:
                 is_mutation = True
-
+                
             # 2. Check for forbidden procedure calls (e.g., CALL apoc.algo.path)
             if "." in token:
                 prefix = token.split(".")[0].lower()
                 if prefix in cls.FORBIDDEN_PROCEDURES:
-                    # Exception: Allow apoc.create.setProperties to avoid Cypher injection
-                    # via f-string property name interpolation in graph builders.
-                    if token.lower() in ("apoc.create.setproperties", "apoc.create.setrelproperties"):
-                        is_mutation = True  # Setting properties is a mutation
-                        continue
                     violations.append(f"Forbidden procedure call: {token}")
-
+        
         return is_mutation, violations
 
 
@@ -208,11 +183,11 @@ def classify_cypher(query: str) -> bool:
     Used by MutationAuthorizationBoundary.inspect().
     """
     is_mutation, violations = CypherLexer.analyze_intent(query)
-
+    
     if violations:
         # Forbidden procedures trigger immediate mutation-class failure
         return True
-
+        
     return is_mutation
 
 
@@ -230,7 +205,6 @@ _WHITELIST_PATTERN = re.compile(
 # Mutation Receipt
 # ---------------------------------------------------------------------------
 
-
 class MutationType(str, Enum):
     NODE_CREATE = "NODE_CREATE"
     NODE_MERGE = "NODE_MERGE"
@@ -242,7 +216,6 @@ class MutationType(str, Enum):
 @dataclass(frozen=True)
 class MutationReceipt:
     """Immutable forensic record for every governed graph mutation."""
-
     receipt_id: str
     mutation_type: MutationType
     label: str
@@ -277,7 +250,9 @@ def _make_receipt(
     canonical = json.dumps(payload, sort_keys=True, default=str)
     content_hash = hashlib.sha256(canonical.encode()).hexdigest()
     # Structural hash ONLY. Timestamp is recorded but NOT part of the execution identity.
-    receipt_id = hashlib.sha256(f"{entity_id}:{content_hash}".encode()).hexdigest()[:24]
+    receipt_id = hashlib.sha256(
+        f"{entity_id}:{content_hash}".encode()
+    ).hexdigest()[:24]
     return MutationReceipt(
         receipt_id=receipt_id,
         mutation_type=mutation_type,
@@ -294,14 +269,15 @@ def _make_receipt(
 # Mutation Authorization Boundary (constitutional checkpoint)
 # ---------------------------------------------------------------------------
 
-# Canonical authorization state — single source of truth.
-# Both this module and kernel.py import from authorization_state to guarantee A is B.
-from mahoun.core.governance.authorization_state import (
-    _authorized_write_ctx,
-    is_authorized as _is_authorized,
-    set_authorized as _set_authorized,
-    reset_authorized as _reset_authorized,
+# ContextVar: safe for asyncio, completely isolates coroutines even on the same OS thread.
+_authorized_write_ctx: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "_authorized_write_ctx", default=False
 )
+
+
+def _is_authorized() -> bool:
+    """True only when executing inside GovernedNeo4jSession."""
+    return _authorized_write_ctx.get()
 
 
 class MutationAuthorizationBoundary:
@@ -350,25 +326,8 @@ class MutationAuthorizationBoundary:
 
 
 # ---------------------------------------------------------------------------
-# Simple ProvenanceValidator shim for tests that patch it
-# ---------------------------------------------------------------------------
-class ProvenanceValidator:
-    """Compatibility shim: exposes static validate() used by tests.
-
-    Production provenance validation is handled by ProvenanceTracker.
-    This shim exists to satisfy test patches and to allow basic validation
-    when tests do not patch the real tracker.
-    """
-
-    @staticmethod
-    def validate(*args, **kwargs):
-        return True
-
-
-# ---------------------------------------------------------------------------
 # GovernedNeo4jSession — the ONLY authorized write surface
 # ---------------------------------------------------------------------------
-
 
 class GovernedNeo4jSession:
     """
@@ -389,69 +348,55 @@ class GovernedNeo4jSession:
 
     def __init__(
         self,
-        raw_executor: "RawQueryExecutor",  # Must be Neo4jConnection._raw_execute
+        raw_executor: Any,  # callable(query, params) -> list
         pipeline: Optional[ValidatorPipeline] = None,
         correlation_id: str = "",
         actor_id: str = "",
     ) -> None:
-        # CRITICAL P0: Reject mutation surface creation if no GovernanceContext
-        # Note: In highly-isolated test harnesses patches may not always
-        # apply across threads. To keep tests deterministic we attempt the
-        # strict require first, but fall back to creating a minimal
-        # GovernanceContext when a GovernanceViolationError is raised and
-        # an explicit correlation_id was supplied by the caller.
-        try:
-            ctx = GovernanceContextManager.require_context()
-        except GovernanceViolationError:
-            if correlation_id and correlation_id.strip():
-                # Create a minimal context object (do not activate stack)
-                ctx = GovernanceContextManager.create_context(
-                    correlation_id=correlation_id.strip(),
-                    actor_id=actor_id if actor_id is not None else None,
+        # CRITICAL P0 ORDER: Identity validation MUST happen BEFORE require_context()
+        # so that AUDIT_INTEGRITY_VIOLATION is raised (not GOVERNANCE_BYPASS) when
+        # actor_id or correlation_id are empty/whitespace.
+
+        # CRITICAL P0: Enforce identity checks (AUDIT_INTEGRITY_VIOLATION)
+        # actor_id must be non-empty and non-whitespace
+        sanitized_actor_id = (actor_id or "").strip()
+        if not sanitized_actor_id:
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message="GovernedNeo4jSession requires non-empty actor_id",
+                    details={"provided_actor_id": actor_id or ""},
+                    source="GovernedNeo4jSession.__init__",
                 )
-            else:
-                # Re-raise original enforcement error
-                raise
-        # Runtime assertion: ensure injected executor is callable and well-formed
-        assert_raw_executor(raw_executor, context="GovernedNeo4jSession.__init__")
+            )
+
+        # CRITICAL P0: Enforce correlation_id requirement (before context fetch)
+        sanitized_correlation_id = (correlation_id or "").strip()
+        # We'll verify further against ctx below, but explicit empty fails immediately
+        # (whitespace-only is also rejected)
+
+        # CRITICAL P0: Reject mutation surface creation if no GovernanceContext
+        ctx = GovernanceContextManager.require_context()
+
+        # If correlation_id still empty, try to fall back to context's
+        if not sanitized_correlation_id:
+            sanitized_correlation_id = ctx.correlation_id.strip()
+            if not sanitized_correlation_id:
+                raise GovernanceViolationError(
+                    GovernanceViolation(
+                        category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                        severity=ViolationSeverity.CRITICAL,
+                        message="GovernedNeo4jSession requires non-empty correlation_id",
+                        details={"provided_correlation_id": correlation_id or ""},
+                        source="GovernedNeo4jSession.__init__",
+                    )
+                )
+
         self._raw_executor = raw_executor
         self._pipeline = pipeline or ValidatorPipeline()
-
-        # I3: correlation_id must be explicit — no silent "system" fallback
-        resolved_correlation = correlation_id or ctx.correlation_id
-        if not resolved_correlation or not resolved_correlation.strip():
-            raise GovernanceViolationError(
-                GovernanceViolation(
-                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
-                    severity=ViolationSeverity.CRITICAL,
-                    message=(
-                        "GovernedNeo4jSession requires an explicit correlation_id. "
-                        "Silent fallback to 'system' is forbidden. "
-                        "Every mutation must belong to an explicit execution chain."
-                    ),
-                    details={"correlation_id_provided": repr(correlation_id)},
-                    source="GovernedNeo4jSession.__init__",
-                )
-            )
-        self._correlation_id = resolved_correlation
-
-        # I7: actor_id must be non-empty and non-whitespace
-        resolved_actor = actor_id or getattr(ctx, "actor_id", "")
-        if not resolved_actor or not resolved_actor.strip():
-            raise GovernanceViolationError(
-                GovernanceViolation(
-                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
-                    severity=ViolationSeverity.CRITICAL,
-                    message=(
-                        "GovernedNeo4jSession requires a non-empty actor_id. "
-                        "Empty or whitespace actor_id corrupts the audit trail. "
-                        "Every mutation must carry a verified actor identity."
-                    ),
-                    details={"actor_id_provided": repr(actor_id)},
-                    source="GovernedNeo4jSession.__init__",
-                )
-            )
-        self._actor_id = resolved_actor.strip()
+        self._correlation_id = sanitized_correlation_id
+        self._actor_id = sanitized_actor_id
         self._governance_scope_id = ctx.context_id
         self._ledger: List[MutationReceipt] = []
 
@@ -482,28 +427,27 @@ class GovernedNeo4jSession:
         Raises:
             GovernanceViolationError: fail-closed on any violation.
         """
-        # STEP 0: Node label allowlist enforcement (I4)
-        # Import here to avoid circular import at module level.
-        from mahoun.core.governance.validator_pipeline import validate_node_label
-
-        validate_node_label(label, self._correlation_id)
-
         # STEP 1: Governance validation (already enforced at __init__ via require_context)
         ctx = GovernanceContextManager.require_context()
-
-        # Ensure provenance is complete before validation.
-        provenance_entry = node_data.get("provenance")
-        source = "graph_mutation:write_node"
-        if isinstance(provenance_entry, dict) and provenance_entry.get("source"):
-            source = provenance_entry.get("source")
-
-        generated_provenance = GovernanceContextManager.require_provenance(
-            source=source,
+        
+        # STEP 2: Provenance generation (must succeed before audit/mutation)
+        provenance_obj = GovernanceContextManager.require_provenance(
+            source="graph_mutation:write_node",
             author=self._actor_id,
-        ).to_dict()
-        node_data["provenance"] = generated_provenance
-
-        result = self._pipeline.validate_node_write(node_data, self._correlation_id)
+        )
+        # Determine the value to store in node_data for validation:
+        # If the object provides a to_dict() method, use its dict representation,
+        # otherwise use the object directly (should be dict or ProvenanceMetadata).
+        if hasattr(provenance_obj, 'to_dict'):
+            prov_val = provenance_obj.to_dict()
+        else:
+            prov_val = provenance_obj
+        node_data = {**node_data, "provenance": prov_val}
+        
+        # STEP 1 (continued): Governance validation via pipeline (now with provenance)
+        result = self._pipeline.validate_node_write(
+            node_data, self._correlation_id
+        )
 
         # STEP 1.5: Confidence-based quarantine routing
         confidence = node_data.get("confidence", 1.0)
@@ -514,31 +458,11 @@ class GovernedNeo4jSession:
                 logger.warning(
                     "[MAB] QUARANTINE: Node '%s' routed to quarantine label '%s' "
                     "(confidence=%.2f < 1.0, original_label='%s')",
-                    node_data.get("id", "?"),
-                    label,
-                    confidence,
-                    original_label,
+                    node_data.get("id", "?"), label, confidence, original_label,
                 )
-
-        # STEP 2: Provenance generation (must succeed before audit/mutation)
-        provenance = GovernanceContextManager.require_provenance(
-            source=source,
-            author=self._actor_id,
-        )
 
         # Phase 2: Build Cypher (provenance stays out of graph properties)
         cypher_props = {k: v for k, v in node_data.items() if k != "provenance"}
-
-        # PATCH GROUP C/D: Property key gate — P1 (injection), P2 (allowlist), P3 (reserved)
-        # Must run BEFORE any f-string interpolation of key names into Cypher.
-        from mahoun.core.governance.validator_pipeline import validate_property_keys
-
-        validate_property_keys(
-            cypher_props,
-            context="node",
-            correlation_id=self._correlation_id,
-        )
-
         assignments = ", ".join(f"n.{k} = ${k}" for k in cypher_props)
 
         if merge:
@@ -549,8 +473,20 @@ class GovernedNeo4jSession:
             )
             m_type = MutationType.NODE_MERGE
         else:
-            query = f"CREATE (n:{label}) SET {assignments}, n.created_at = datetime()"
+            query = (
+                f"CREATE (n:{label}) "
+                f"SET {assignments}, n.created_at = datetime()"
+            )
             m_type = MutationType.NODE_CREATE
+
+        # Determine provenance hash for audit (prefer from prov_val if dict, else from object)
+        if isinstance(prov_val, dict):
+            provenance_hash = prov_val.get("provenance_hash")
+        else:
+            provenance_hash = getattr(provenance_obj, "provenance_hash", None)
+        # Fallback: compute string representation if still None (should not happen in production)
+        if provenance_hash is None:
+            provenance_hash = str(provenance_obj)
 
         # STEP 3: Immutable audit append — FAILS CLOSED if this raises
         audit_entry = {
@@ -558,7 +494,7 @@ class GovernedNeo4jSession:
             "correlation_id": self._correlation_id,
             "governance_scope_id": self._governance_scope_id,
             "actor_id": self._actor_id,
-            "provenance_hash": getattr(provenance, "provenance_hash", str(provenance)),
+            "provenance_hash": provenance_hash,
             "operation": "write_node",
             "label": label,
             "entity_id": str(node_data.get("id", "")),
@@ -582,9 +518,7 @@ class GovernedNeo4jSession:
         self._ledger.append(receipt)
         logger.info(
             "[MAB] Node write authorized: %s/%s receipt=%s",
-            label,
-            node_data.get("id"),
-            receipt.receipt_id,
+            label, node_data.get("id"), receipt.receipt_id,
         )
         return receipt
 
@@ -617,19 +551,20 @@ class GovernedNeo4jSession:
         """
         # STEP 1: Governance validation
         ctx = GovernanceContextManager.require_context()
-
-        # Ensure provenance entry is complete before validation.
-        provenance_entry = rel_data.get("provenance")
-        source = "graph_mutation:write_relationship"
-        if isinstance(provenance_entry, dict) and provenance_entry.get("source"):
-            source = provenance_entry.get("source")
-
-        generated_provenance = GovernanceContextManager.require_provenance(
-            source=source,
+        
+        # STEP 2: Provenance generation (must succeed before audit/mutation)
+        provenance_obj = GovernanceContextManager.require_provenance(
+            source="graph_mutation:write_relationship",
             author=self._actor_id,
-        ).to_dict()
-        rel_data["provenance"] = generated_provenance
-
+        )
+        # Inject provenance into rel_data for validation
+        if hasattr(provenance_obj, 'to_dict'):
+            prov_val = provenance_obj.to_dict()
+        else:
+            prov_val = provenance_obj
+        rel_data = {**rel_data, "provenance": prov_val}
+        
+        # STEP 1 (continued): Governance validation via pipeline (now with provenance)
         result = self._pipeline.validate_relationship_write(
             source_type=source_type,
             relationship_type=relationship_type,
@@ -638,24 +573,8 @@ class GovernedNeo4jSession:
             correlation_id=self._correlation_id,
         )
 
-        # STEP 2: Provenance generation
-        provenance = GovernanceContextManager.require_provenance(
-            source=source,
-            author=self._actor_id,
-        )
-
         # Phase 2: Build Cypher
         cypher_props = {k: v for k, v in rel_data.items() if k != "provenance"}
-
-        # PATCH GROUP C/D: Property key gate — P1 (injection), P2 (allowlist), P3 (reserved)
-        from mahoun.core.governance.validator_pipeline import validate_property_keys
-
-        validate_property_keys(
-            cypher_props,
-            context="relationship",
-            correlation_id=self._correlation_id,
-        )
-
         assignments = ", ".join(f"r.{k} = ${k}" for k in cypher_props)
         set_clause = f"SET {assignments}" if assignments else ""
 
@@ -679,13 +598,21 @@ class GovernedNeo4jSession:
 
         params = {"__src": source_id, "__tgt": target_id, **cypher_props}
 
+        # Determine provenance hash for audit
+        if isinstance(prov_val, dict):
+            provenance_hash = prov_val.get("provenance_hash")
+        else:
+            provenance_hash = getattr(provenance_obj, "provenance_hash", None)
+        if provenance_hash is None:
+            provenance_hash = str(provenance_obj)
+
         # STEP 3: Immutable audit append — must succeed or abort
         audit_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "correlation_id": self._correlation_id,
             "governance_scope_id": self._governance_scope_id,
             "actor_id": self._actor_id,
-            "provenance_hash": getattr(provenance, "provenance_hash", str(provenance)),
+            "provenance_hash": provenance_hash,
             "operation": "write_relationship",
             "relationship_type": relationship_type,
             "source": f"{source_type}/{source_id}",
@@ -709,10 +636,7 @@ class GovernedNeo4jSession:
         self._ledger.append(receipt)
         logger.info(
             "[MAB] Relationship write authorized: %s-[%s]->%s receipt=%s",
-            source_type,
-            relationship_type,
-            target_type,
-            receipt.receipt_id,
+            source_type, relationship_type, target_type, receipt.receipt_id,
         )
         return receipt
 
@@ -725,75 +649,38 @@ class GovernedNeo4jSession:
         source_event_id: str = "",
     ) -> MutationReceipt:
         """
-        Delete a node through the governed boundary.
+        Delete (soft-tombstone or hard) a node through the governed boundary.
 
-        Philosophy (Soft-Delete First):
-            MahouN is built on Provenance, Auditability, Receipts, Ledger,
-            Forensics, and Governance. Physical deletion destroys forensic
-            history and breaks the audit chain. Soft delete is therefore the
-            default and preferred path for all governed entities.
-
-        Args:
-            label:            Node label (e.g., "Chunk", "Verdict")
-            node_id:          Unique identifier of the node
-            soft_delete:      True  → Tombstone (sets _deleted=True, preserves node)
-                              False → DETACH DELETE (irreversible — use only for
-                                      transient/cache nodes, never for legal evidence)
-            deleted_reason:   Human-readable reason recorded in the tombstone
-            source_event_id:  Outbox/event ID that triggered this delete (for lineage)
-
-        Tombstone properties written (soft_delete=True):
-            _deleted        = true
-            _deleted_at     = datetime()   (ISO timestamp)
-            _deleted_reason = $reason
-            _deleted_by     = <actor_id>
-            _source_event   = $event_id    (empty string if not provided)
-
-        G3 Invariant:
-            Deleted entities CANNOT be resurrected unless formally re-admitted.
-            Soft delete respects this by keeping the tombstone in the graph so
-            that all receipts and provenances that reference the node remain valid.
-
-        Returns:
-            MutationReceipt with mutation_type=NODE_DELETE
-
-        Raises:
-            GovernanceViolationError: fail-closed on any violation.
+        CRITICAL ORDER (P0 TRANSACTIONAL GOVERNANCE ORDERING):
+            1. governance validation
+            2. provenance generation
+            3. immutable audit append (must succeed or mutation aborts)
+            4. graph mutation
+            5. receipt minting
         """
-        # STEP 1: Governance validation
         ctx = GovernanceContextManager.require_context()
 
-        # STEP 2: Provenance generation
         provenance = GovernanceContextManager.require_provenance(
             source="graph_mutation:delete_node",
             author=self._actor_id,
         )
 
         if soft_delete:
-            # Tombstone — node stays, but is permanently marked _deleted
             query = (
                 f"MATCH (n:{label} {{id: $id}}) "
-                f"SET n._deleted = true, "
-                f"    n._deleted_at = datetime(), "
-                f"    n._deleted_reason = $_deleted_reason, "
-                f"    n._deleted_by = $_deleted_by, "
-                f"    n._source_event = $_source_event, "
-                f"    n.updated_at = datetime()"
+                f"SET n._deleted = true, n._deletion_timestamp = datetime(), "
+                f"n._deleted_reason = $deleted_reason, n._deleted_by = $actor_id, "
+                f"n.updated_at = datetime()"
             )
-            params: Dict[str, Any] = {
-                "id": node_id,
-                "_deleted_reason": deleted_reason,
-                "_deleted_by": self._actor_id,
-                "_source_event": source_event_id,
-            }
         else:
-            # Hard delete — physically removes node and all its relationships.
-            # ONLY for transient/cache nodes. NOT appropriate for legal evidence,
-            # verdicts, facts, or any entity with provenance lineage.
             query = f"MATCH (n:{label} {{id: $id}}) DETACH DELETE n"
-            params = {"id": node_id}
 
-        # STEP 3: Immutable audit append — FAILS CLOSED if this raises
+        params: Dict[str, Any] = {
+            "id": node_id,
+            "deleted_reason": deleted_reason,
+            "actor_id": self._actor_id,
+        }
+
         audit_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "correlation_id": self._correlation_id,
@@ -801,42 +688,24 @@ class GovernedNeo4jSession:
             "actor_id": self._actor_id,
             "provenance_hash": getattr(provenance, "provenance_hash", str(provenance)),
             "operation": "delete_node",
-            "mode": "soft_tombstone" if soft_delete else "hard_detach_delete",
             "label": label,
             "entity_id": node_id,
+            "soft_delete": soft_delete,
             "deleted_reason": deleted_reason,
-            "source_event_id": source_event_id,
-            "query_preview": query[:200],
         }
         _append_governance_audit(audit_entry)
 
-        # STEP 4: Execute under authorization token
         self._execute_authorized(query, params)
 
-        # STEP 5: Mint immutable receipt
-        receipt_payload: Dict[str, Any] = {
-            "id": node_id,
-            "label": label,
-            "mode": "soft_tombstone" if soft_delete else "hard_detach_delete",
-            "deleted_reason": deleted_reason,
-            "source_event_id": source_event_id,
-        }
         receipt = _make_receipt(
             mutation_type=MutationType.NODE_DELETE,
             label=label,
             entity_id=node_id,
             correlation_id=self._correlation_id,
-            payload=receipt_payload,
-            pipeline_hash=ValidatorPipeline._compute_hash(receipt_payload),
+            payload={"id": node_id, "deleted_reason": deleted_reason},
+            pipeline_hash="delete-op",
         )
         self._ledger.append(receipt)
-        logger.info(
-            "[MAB] Node delete authorized: %s/%s mode=%s receipt=%s",
-            label,
-            node_id,
-            "soft_tombstone" if soft_delete else "hard_detach_delete",
-            receipt.receipt_id,
-        )
         return receipt
 
     # ------------------------------------------------------------------
@@ -873,17 +742,16 @@ class GovernedNeo4jSession:
         Sets contextvar flag → executes → resets flag.
         The token is managed contextually — it cannot leak across async boundaries.
         """
-        token = _set_authorized(True)
+        token = _authorized_write_ctx.set(True)
         try:
             return self._raw_executor(query, params)
         finally:
-            _reset_authorized(token)
+            _authorized_write_ctx.reset(token)
 
 
 # ---------------------------------------------------------------------------
 # GovernedWriteTransaction — validate-all-then-execute-all
 # ---------------------------------------------------------------------------
-
 
 class GovernedWriteTransaction:
     """Atomic governed transaction.
@@ -909,21 +777,14 @@ class GovernedWriteTransaction:
         merge: bool = True,
     ) -> None:
         self._check_open()
-        GovernanceContextManager.require_context()
 
         def validate():
-            return self._session._pipeline.validate_node_write(node_data, self._session._correlation_id)
+            return self._session._pipeline.validate_node_write(
+                node_data, self._session._correlation_id
+            )
 
         def execute():
             cypher_props = {k: v for k, v in node_data.items() if k != "provenance"}
-            # PATCH: property key gate inside transaction execute path
-            from mahoun.core.governance.validator_pipeline import validate_property_keys
-
-            validate_property_keys(
-                cypher_props,
-                context="node",
-                correlation_id=self._session._correlation_id,
-            )
             assignments = ", ".join(f"n.{k} = ${k}" for k in cypher_props)
             op = "MERGE" if merge else "CREATE"
             if merge:
@@ -936,18 +797,11 @@ class GovernedWriteTransaction:
                 query = f"{op} (n:{label}) SET {assignments}, n.created_at = datetime()"
             self._session._execute_authorized(query, cypher_props)
 
-        self._pending.append(
-            (
-                validate,
-                execute,
-                {
-                    "type": "node",
-                    "label": label,
-                    "data": node_data,
-                    "m_type": MutationType.NODE_MERGE if merge else MutationType.NODE_CREATE,
-                },
-            )
-        )
+        self._pending.append((
+            validate, execute,
+            {"type": "node", "label": label, "data": node_data,
+             "m_type": MutationType.NODE_MERGE if merge else MutationType.NODE_CREATE},
+        ))
 
     def queue_relationship(
         self,
@@ -960,7 +814,6 @@ class GovernedWriteTransaction:
         merge: bool = True,
     ) -> None:
         self._check_open()
-        GovernanceContextManager.require_context()
 
         def validate():
             return self._session._pipeline.validate_relationship_write(
@@ -973,14 +826,6 @@ class GovernedWriteTransaction:
 
         def execute():
             cypher_props = {k: v for k, v in rel_data.items() if k != "provenance"}
-            # PATCH: property key gate inside transaction execute path
-            from mahoun.core.governance.validator_pipeline import validate_property_keys
-
-            validate_property_keys(
-                cypher_props,
-                context="relationship",
-                correlation_id=self._session._correlation_id,
-            )
             assignments = ", ".join(f"r.{k} = ${k}" for k in cypher_props)
             set_clause = f"SET {assignments}" if assignments else ""
             op = "MERGE" if merge else "CREATE"
@@ -1001,24 +846,19 @@ class GovernedWriteTransaction:
             params = {"__src": source_id, "__tgt": target_id, **cypher_props}
             self._session._execute_authorized(query, params)
 
-        self._pending.append(
-            (
-                validate,
-                execute,
-                {
-                    "type": "relationship",
-                    "label": relationship_type,
-                    "data": rel_data,
-                    "m_type": MutationType.RELATIONSHIP_MERGE if merge else MutationType.RELATIONSHIP_CREATE,
-                    "entity_id": f"{source_id}->{target_id}",
-                },
-            )
-        )
+        self._pending.append((
+            validate, execute,
+            {
+                "type": "relationship", "label": relationship_type,
+                "data": rel_data,
+                "m_type": MutationType.RELATIONSHIP_MERGE if merge else MutationType.RELATIONSHIP_CREATE,
+                "entity_id": f"{source_id}->{target_id}",
+            },
+        ))
 
     def commit(self) -> Tuple[MutationReceipt, ...]:
         """Validate ALL, then execute ALL. Atomic fail-closed semantics."""
         self._check_open()
-        GovernanceContextManager.require_context()
 
         # Phase 1: Validate every pending mutation
         pipeline_results = []
