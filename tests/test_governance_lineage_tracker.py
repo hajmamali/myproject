@@ -25,6 +25,7 @@ from mahoun.governance.lineage_tracker import (
 class TestLineageRecord:
     """Test lineage record data structure."""
     
+    @pytest.mark.p3
     def test_record_creation(self):
         """Test creating a lineage record."""
         record = LineageRecord(
@@ -43,6 +44,7 @@ class TestLineageRecord:
         assert len(record.source_ids) == 2
         assert record.output_id == "out1"
     
+    @pytest.mark.p3
     def test_record_to_dict(self):
         """Test record serialization."""
         timestamp = datetime.now(timezone.utc)
@@ -78,6 +80,7 @@ class TestLineageTracker:
         """Create lineage tracker with temp storage."""
         return LineageTracker(storage_path=temp_storage)
     
+    @pytest.mark.p3
     def test_initialization(self, temp_storage):
         """Test tracker initialization."""
         tracker = LineageTracker(storage_path=temp_storage)
@@ -85,6 +88,7 @@ class TestLineageTracker:
         assert tracker.storage_path.exists()
         assert isinstance(tracker.index, dict)
     
+    @pytest.mark.p3
     def test_record_transformation(self, tracker):
         """Test recording a transformation."""
         record = tracker.record_transformation(
@@ -100,6 +104,7 @@ class TestLineageTracker:
         assert record.output_id == "clean1"
         assert len(record.source_ids) == 2
     
+    @pytest.mark.p3
     def test_record_persistence(self, tracker, temp_storage):
         """Test that records are persisted to disk."""
         record = tracker.record_transformation(
@@ -119,6 +124,7 @@ class TestLineageTracker:
             data = json.load(f)
             assert data["output_id"] == "chunk1"
     
+    @pytest.mark.p3
     def test_trace_back_single_level(self, tracker):
         """Test tracing back one level."""
         # Create chain: raw -> clean
@@ -144,6 +150,7 @@ class TestLineageTracker:
         assert lineage[0].output_id == "clean1"
         assert "raw1" in lineage[0].source_ids
     
+    @pytest.mark.p3
     def test_trace_back_multi_level(self, tracker):
         """Test tracing back multiple levels."""
         # Create chain: raw -> clean -> chunk -> embed
@@ -188,6 +195,7 @@ class TestLineageTracker:
         assert "clean1" in output_ids
         assert "raw1" in output_ids
     
+    @pytest.mark.p3
     def test_trace_back_max_depth(self, tracker):
         """Test max depth limit in trace_back."""
         # Create long chain
@@ -216,6 +224,7 @@ class TestLineageTracker:
         # Should stop at max_depth
         assert len(lineage) <= 5
     
+    @pytest.mark.p3
     def test_trace_forward(self, tracker):
         """Test tracing forward to derivatives."""
         # Create tree: raw1 -> clean1 -> chunk1, chunk2
@@ -259,6 +268,7 @@ class TestLineageTracker:
         assert "chunk1" in output_ids
         assert "chunk2" in output_ids
     
+    @pytest.mark.p3
     def test_get_source_documents(self, tracker):
         """Test getting source documents for training example."""
         # Create full pipeline
@@ -291,6 +301,7 @@ class TestLineageTracker:
         assert "doc1" in sources
         assert "doc2" in sources
     
+    @pytest.mark.p3
     def test_query_by_transformation(self, tracker):
         """Test querying by transformation name."""
         tracker.record_transformation(
@@ -322,6 +333,7 @@ class TestLineageTracker:
         assert len(results) == 2
         assert all(r.transformation == "remove_duplicates" for r in results)
     
+    @pytest.mark.p3
     def test_query_by_stage(self, tracker):
         """Test querying by stage."""
         tracker.record_transformation(
@@ -353,6 +365,7 @@ class TestLineageTracker:
         assert len(results) == 2
         assert all(r.stage == DataStage.CLEANED for r in results)
     
+    @pytest.mark.p3
     def test_get_statistics(self, tracker):
         """Test getting lineage statistics."""
         tracker.record_transformation(
@@ -387,6 +400,7 @@ class TestLineageTracker:
         assert "cleaned" in stats["stage_distribution"]
         assert "chunked" in stats["stage_distribution"]
     
+    @pytest.mark.p3
     def test_load_existing_records(self, temp_storage):
         """Test loading existing records on initialization."""
         # Create tracker and add records
@@ -405,6 +419,7 @@ class TestLineageTracker:
         # Should load existing records
         assert "raw1" in tracker2.index
     
+    @pytest.mark.p3
     def test_multiple_sources(self, tracker):
         """Test transformation with multiple sources."""
         tracker.record_transformation(
@@ -438,6 +453,7 @@ class TestLineageTracker:
         assert "raw1" in lineage[0].source_ids
         assert "raw2" in lineage[0].source_ids
     
+    @pytest.mark.p3
     def test_circular_reference_handling(self, tracker):
         """Test handling of circular references (shouldn't happen but test anyway)."""
         # This shouldn't happen in practice, but test robustness
@@ -465,6 +481,7 @@ class TestLineageTracker:
 class TestDataStage:
     """Test data stage enum."""
     
+    @pytest.mark.p3
     def test_enum_values(self):
         """Test enum values."""
         assert DataStage.RAW == "raw"
@@ -479,6 +496,7 @@ class TestDataStage:
 class TestLineageTrackerPerformance:
     """Performance tests for lineage tracker."""
     
+    @pytest.mark.p3
     def test_large_lineage_chain(self, tmp_path):
         """Test performance with large lineage chain."""
         tracker = LineageTracker(storage_path=tmp_path)

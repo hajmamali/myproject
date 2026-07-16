@@ -188,6 +188,7 @@ class TestNoHardcodedPaths:
         # Fallback
         return Path('mahoun')
     
+    @pytest.mark.p2
     def test_no_hardcoded_absolute_paths_regex(self, mahoun_directory: Path) -> None:
         """
         Test that no Python files contain hardcoded absolute paths (regex check).
@@ -214,6 +215,7 @@ class TestNoHardcodedPaths:
             
             pytest.fail(error_msg)
     
+    @pytest.mark.p2
     def test_no_hardcoded_absolute_paths_ast(self, mahoun_directory: Path) -> None:
         """
         Test that no Python files contain hardcoded absolute paths (AST check).
@@ -238,6 +240,7 @@ class TestNoHardcodedPaths:
             
             pytest.fail(error_msg)
     
+    @pytest.mark.p2
     def test_config_files_use_env_vars(self) -> None:
         """
         Test that config files use environment variables for paths.
@@ -266,6 +269,7 @@ class TestNoHardcodedPaths:
             
             pytest.fail(error_msg)
     
+    @pytest.mark.p2
     def test_paths_are_relative_or_configurable(self, mahoun_directory: Path) -> None:
         """
         Test that Path() calls use relative paths or config values.

@@ -23,6 +23,7 @@ class TestThreadSafety:
         """Create concurrent graph builder"""
         return ConcurrentGraphBuilder(mode=GraphMode.STRICT)
     
+    @pytest.mark.p3
     def test_concurrent_node_additions(self, builder):
         """Test adding nodes from multiple threads"""
         num_threads = 10
@@ -52,6 +53,7 @@ class TestThreadSafety:
         analytics = builder.get_analytics()
         assert analytics.num_nodes == num_threads * nodes_per_thread
     
+    @pytest.mark.p3
     def test_concurrent_edge_additions(self, builder):
         """Test adding edges from multiple threads"""
         # First add nodes
@@ -91,6 +93,7 @@ class TestThreadSafety:
         analytics = builder.get_analytics()
         assert analytics.num_edges == num_threads * edges_per_thread
     
+    @pytest.mark.p3
     def test_concurrent_read_write(self, builder):
         """Test concurrent reads and writes"""
         # Add initial nodes
@@ -149,6 +152,7 @@ class TestThreadSafety:
         assert min(results) >= 50
         assert max(results) == 100
     
+    @pytest.mark.p3
     def test_no_deadlock_on_nested_calls(self, builder):
         """Test that nested method calls don't deadlock"""
         # Add nodes
@@ -180,6 +184,7 @@ class TestContradictionDetection:
     def builder(self):
         return ConcurrentGraphBuilder(mode=GraphMode.STRICT)
     
+    @pytest.mark.p3
     def test_concurrent_contradiction_detection(self, builder):
         """Test detecting contradictions from multiple threads"""
         # Add contradictory nodes
@@ -224,6 +229,7 @@ class TestPerformance:
     def builder(self):
         return ConcurrentGraphBuilder(mode=GraphMode.STRICT)
     
+    @pytest.mark.p3
     def test_high_throughput_writes(self, builder):
         """Test high-throughput concurrent writes"""
         num_threads = 20
@@ -262,6 +268,7 @@ class TestPerformance:
         analytics = builder.get_analytics()
         assert analytics.num_nodes == total_nodes
     
+    @pytest.mark.p3
     def test_lock_contention_metrics(self, builder):
         """Test lock contention monitoring"""
         # Add nodes with contention
@@ -298,6 +305,7 @@ class TestEdgeCases:
     def builder(self):
         return ConcurrentGraphBuilder(mode=GraphMode.STRICT)
     
+    @pytest.mark.p3
     def test_add_duplicate_nodes(self, builder):
         """Test adding duplicate nodes from multiple threads"""
         node_id = "duplicate_node"
@@ -322,6 +330,7 @@ class TestEdgeCases:
         assert node is not None
         assert node.id == node_id
     
+    @pytest.mark.p3
     def test_add_edge_with_missing_nodes(self, builder):
         """Test adding edge when nodes don't exist"""
         def add_invalid_edge():
@@ -351,6 +360,7 @@ class TestEdgeCases:
 class TestStressTest:
     """Stress tests for extreme scenarios"""
     
+    @pytest.mark.p3
     def test_extreme_concurrency(self):
         """Test with extreme number of threads"""
         builder = ConcurrentGraphBuilder(mode=GraphMode.STRICT)

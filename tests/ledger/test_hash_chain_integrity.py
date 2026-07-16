@@ -39,6 +39,7 @@ from mahoun.ledger.blockchain import ImmutableLedger
 class TestTamperingDetection:
     """Test hash chain tampering detection (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_block_hash_tampering_detected(self):
         """
         Critical: Modified block hash must be detected
@@ -79,6 +80,7 @@ class TestTamperingDetection:
         assert not tampered_block.verify_integrity()
         assert tampered_block.hash != tampered_block.compute_hash()
     
+    @pytest.mark.p1
     def test_data_modification_changes_hash(self):
         """
         Critical: Any data modification must change block hash
@@ -116,6 +118,7 @@ class TestTamperingDetection:
         # Different data must produce different hashes
         assert block1.hash != block2.hash
     
+    @pytest.mark.p1
     def test_prev_hash_modification_detected(self):
         """
         Critical: Modified prev_hash must invalidate chain link
@@ -158,6 +161,7 @@ class TestTamperingDetection:
         # Wrong block breaks chain link
         assert block_wrong.prev_hash != genesis.hash
     
+    @pytest.mark.p1
     def test_timestamp_modification_changes_hash(self):
         """
         Critical: Timestamp tampering must be detectable
@@ -187,6 +191,7 @@ class TestTamperingDetection:
         # Different timestamps must produce different hashes
         assert block1.hash != block2.hash
     
+    @pytest.mark.p1
     def test_index_modification_changes_hash(self):
         """
         Critical: Index tampering must be detectable
@@ -215,6 +220,7 @@ class TestTamperingDetection:
         # Different indices must produce different hashes
         assert block_index1.hash != block_index2.hash
     
+    @pytest.mark.p1
     def test_ledger_entry_field_tampering_detected(self):
         """
         Critical: Any ledger entry field modification must change hash
@@ -252,6 +258,7 @@ class TestTamperingDetection:
         
         assert block1.hash != block2.hash
     
+    @pytest.mark.p1
     def test_serialization_deserialization_preserves_hash(self):
         """
         Critical: Serialize → deserialize must preserve hash
@@ -289,6 +296,7 @@ class TestTamperingDetection:
         assert original_block.hash == restored_block.hash
         assert restored_block.verify_integrity()
     
+    @pytest.mark.p1
     def test_ledger_multi_block_tampering_detected(self):
         """
         Critical: Tampering in middle of chain must be detected
@@ -345,6 +353,7 @@ class TestTamperingDetection:
 class TestChainVerification:
     """Test chain link verification (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_genesis_block_structure(self):
         """
         Critical: Genesis block must have deterministic structure
@@ -362,6 +371,7 @@ class TestChainVerification:
         assert genesis1.prev_hash == "0" * 64
         assert genesis1.verify_integrity()
     
+    @pytest.mark.p1
     def test_chain_link_integrity(self):
         """
         Critical: Each block must link to previous block
@@ -393,6 +403,7 @@ class TestChainVerification:
             # Current block must reference previous block hash
             assert current_block.prev_hash == prev_block.hash
     
+    @pytest.mark.p1
     def test_index_sequence_validation(self):
         """
         Critical: Block indices must be sequential
@@ -420,6 +431,7 @@ class TestChainVerification:
         for i, block in enumerate(ledger.chain):
             assert block.index == i
     
+    @pytest.mark.p1
     def test_empty_ledger_valid(self):
         """
         Critical: Empty ledger with only genesis block must be valid
@@ -433,6 +445,7 @@ class TestChainVerification:
         assert ledger.chain[0].index == 0
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_single_block_chain_valid(self):
         """
         Critical: Single data block + genesis must be valid
@@ -457,6 +470,7 @@ class TestChainVerification:
         assert len(ledger.chain) == 2
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_long_chain_integrity(self):
         """
         Critical: Long chains must remain valid
@@ -487,6 +501,7 @@ class TestChainVerification:
 class TestBlockValidation:
     """Test individual block validation (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_block_immutability(self):
         """
         Critical: Blocks must be frozen (immutable)
@@ -521,6 +536,7 @@ class TestBlockValidation:
         with pytest.raises((AttributeError, TypeError)):
             block.hash = "fake_hash"
     
+    @pytest.mark.p1
     def test_genesis_block_immutability(self):
         """
         Critical: Genesis block must be immutable
@@ -537,6 +553,7 @@ class TestBlockValidation:
         with pytest.raises((AttributeError, TypeError)):
             genesis.timestamp = datetime.now(UTC)
     
+    @pytest.mark.p1
     def test_block_hash_deterministic(self):
         """
         Critical: Same input must always produce same hash
@@ -573,6 +590,7 @@ class TestBlockValidation:
         # All hashes must be identical
         assert len(hashes) == 1
     
+    @pytest.mark.p1
     def test_block_equality_based_on_hash(self):
         """
         Critical: Block equality must be hash-based
@@ -606,6 +624,7 @@ class TestBlockValidation:
 class TestForkDetection:
     """Test fork attack prevention (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_fork_detection_different_prev_hash(self):
         """
         Critical: Fork with different prev_hash must be detectable
@@ -664,6 +683,7 @@ class TestForkDetection:
         assert block2a.prev_hash == correct_prev
         assert block2b.prev_hash != correct_prev
     
+    @pytest.mark.p1
     def test_index_gap_detection(self):
         """
         Critical: Missing blocks (index gaps) must be detected

@@ -17,6 +17,7 @@ from typing import Dict, Any
 class TestPartyInfo:
     """Tests for PartyInfo schema"""
     
+    @pytest.mark.p2
     def test_party_info_empty(self):
         from mahoun.schemas.legal_struct_schema import PartyInfo
         party = PartyInfo()
@@ -24,6 +25,7 @@ class TestPartyInfo:
         assert party.name is None
         assert party.father_name is None
     
+    @pytest.mark.p2
     def test_party_info_full(self):
         from mahoun.schemas.legal_struct_schema import PartyInfo
         party = PartyInfo(title="آقای", name="علی احمدی", father_name="محمد")
@@ -31,6 +33,7 @@ class TestPartyInfo:
         assert party.name == "علی احمدی"
         assert party.father_name == "محمد"
     
+    @pytest.mark.p2
     def test_party_info_extra_fields(self):
         from mahoun.schemas.legal_struct_schema import PartyInfo
         party = PartyInfo(name="Test", custom_field="extra")
@@ -41,12 +44,14 @@ class TestPartyInfo:
 class TestParties:
     """Tests for Parties schema"""
     
+    @pytest.mark.p2
     def test_parties_empty(self):
         from mahoun.schemas.legal_struct_schema import Parties, PartyInfo
         parties = Parties()
         assert parties.respondents == []
         assert parties.third_party_objector is None
     
+    @pytest.mark.p2
     def test_parties_with_respondents(self):
         from mahoun.schemas.legal_struct_schema import Parties, PartyInfo
         p1 = PartyInfo(name="شخص اول")
@@ -59,12 +64,14 @@ class TestParties:
 class TestCaseMeta:
     """Tests for CaseMeta schema"""
     
+    @pytest.mark.p2
     def test_case_meta_empty(self):
         from mahoun.schemas.legal_struct_schema import CaseMeta
         meta = CaseMeta()
         assert meta.court_level is None
         assert meta.is_final is None
     
+    @pytest.mark.p2
     def test_case_meta_full(self):
         from mahoun.schemas.legal_struct_schema import CaseMeta
         meta = CaseMeta(
@@ -86,12 +93,14 @@ class TestCaseMeta:
 class TestClaims:
     """Tests for Claims schema"""
     
+    @pytest.mark.p2
     def test_claims_empty(self):
         from mahoun.schemas.legal_struct_schema import Claims
         claims = Claims()
         assert claims.main == []
         assert claims.execution_files == []
     
+    @pytest.mark.p2
     def test_claims_with_data(self):
         from mahoun.schemas.legal_struct_schema import Claims
         claims = Claims(
@@ -105,6 +114,7 @@ class TestClaims:
 class TestLegalReferences:
     """Tests for LegalReferences schema"""
     
+    @pytest.mark.p2
     def test_legal_references_empty(self):
         from mahoun.schemas.legal_struct_schema import LegalReferences
         refs = LegalReferences()
@@ -112,6 +122,7 @@ class TestLegalReferences:
         assert refs.procedural_law == []
         assert refs.fiqh_principles == []
     
+    @pytest.mark.p2
     def test_legal_references_with_data(self):
         from mahoun.schemas.legal_struct_schema import LegalReferences
         refs = LegalReferences(
@@ -126,6 +137,7 @@ class TestLegalReferences:
 class TestPersonEntityInfo:
     """Tests for PersonEntityInfo NER schema"""
     
+    @pytest.mark.p2
     def test_person_entity_minimal(self):
         from mahoun.schemas.legal_struct_schema import PersonEntityInfo
         person = PersonEntityInfo(text="علی احمدی")
@@ -134,6 +146,7 @@ class TestPersonEntityInfo:
         assert person.start == 0
         assert person.end == 0
     
+    @pytest.mark.p2
     def test_person_entity_full(self):
         from mahoun.schemas.legal_struct_schema import PersonEntityInfo
         person = PersonEntityInfo(
@@ -151,6 +164,7 @@ class TestPersonEntityInfo:
         assert person.role == "خواهان"
         assert person.confidence == 0.95
     
+    @pytest.mark.p2
     def test_person_entity_confidence_bounds(self):
         from mahoun.schemas.legal_struct_schema import PersonEntityInfo
         # Test valid confidence
@@ -168,6 +182,7 @@ class TestPersonEntityInfo:
 class TestExtractedEntities:
     """Tests for ExtractedEntities container"""
     
+    @pytest.mark.p2
     def test_extracted_entities_empty(self):
         from mahoun.schemas.legal_struct_schema import ExtractedEntities
         entities = ExtractedEntities()
@@ -177,6 +192,7 @@ class TestExtractedEntities:
         assert entities.laws == []
         assert entities.topics == []
     
+    @pytest.mark.p2
     def test_extracted_entities_with_data(self):
         from mahoun.schemas.legal_struct_schema import (
             ExtractedEntities, PersonEntityInfo, LawEntityInfo
@@ -192,6 +208,7 @@ class TestExtractedEntities:
 class TestVerdictStruct:
     """Tests for the main VerdictStruct schema"""
     
+    @pytest.mark.p2
     def test_verdict_struct_empty(self):
         from mahoun.schemas.legal_struct_schema import VerdictStruct
         verdict = VerdictStruct()
@@ -200,6 +217,7 @@ class TestVerdictStruct:
         assert verdict.claims is not None
         assert verdict.system_tags == []
     
+    @pytest.mark.p2
     def test_verdict_struct_full(self):
         from mahoun.schemas.legal_struct_schema import (
             VerdictStruct, CaseMeta, Parties, PartyInfo, Claims,
@@ -234,6 +252,7 @@ class TestVerdictStruct:
 class TestLegalDocType:
     """Tests for LegalDocType enum"""
     
+    @pytest.mark.p2
     def test_legal_doc_types(self):
         from mahoun.core.models import LegalDocType
         assert LegalDocType.LAW == "law"
@@ -244,6 +263,7 @@ class TestLegalDocType:
         assert LegalDocType.OPINION == "opinion"
         assert LegalDocType.OTHER == "other"
     
+    @pytest.mark.p2
     def test_legal_doc_type_all_values(self):
         from mahoun.core.models import LegalDocType
         all_types = list(LegalDocType)
@@ -253,6 +273,7 @@ class TestLegalDocType:
 class TestLegalDocument:
     """Tests for LegalDocument model"""
     
+    @pytest.mark.p2
     def test_legal_document_minimal(self):
         from mahoun.core.models import LegalDocument
         doc = LegalDocument(id="doc-1", text="متن سند")
@@ -261,6 +282,7 @@ class TestLegalDocument:
         assert doc.metadata == {}
         assert doc.doc_type is None
     
+    @pytest.mark.p2
     def test_legal_document_full(self):
         from mahoun.core.models import LegalDocument, LegalDocType
         doc = LegalDocument(
@@ -280,6 +302,7 @@ class TestLegalDocument:
 class TestLegalEntity:
     """Tests for LegalEntity model"""
     
+    @pytest.mark.p2
     def test_legal_entity_minimal(self):
         from mahoun.core.models import LegalEntity
         entity = LegalEntity(name="علی احمدی", entity_type="person")
@@ -287,6 +310,7 @@ class TestLegalEntity:
         assert entity.entity_type == "person"
         assert entity.role is None
     
+    @pytest.mark.p2
     def test_legal_entity_full(self):
         from mahoun.core.models import LegalEntity
         entity = LegalEntity(
@@ -302,6 +326,7 @@ class TestLegalEntity:
 class TestReasoningStep:
     """Tests for ReasoningStep dataclass"""
     
+    @pytest.mark.p2
     def test_reasoning_step_minimal(self):
         from mahoun.core.models import ReasoningStep
         step = ReasoningStep(step="تحلیل", reasoning="بررسی مدارک")
@@ -310,6 +335,7 @@ class TestReasoningStep:
         assert step.confidence == 0.5
         assert step.evidence == []
     
+    @pytest.mark.p2
     def test_reasoning_step_full(self):
         from mahoun.core.models import ReasoningStep
         step = ReasoningStep(
@@ -325,6 +351,7 @@ class TestReasoningStep:
 class TestCausalRelation:
     """Tests for CausalRelation dataclass"""
     
+    @pytest.mark.p2
     def test_causal_relation(self):
         from mahoun.core.models import CausalRelation
         rel = CausalRelation(
@@ -341,6 +368,7 @@ class TestCausalRelation:
 class TestReasoningResult:
     """Tests for ReasoningResult dataclass"""
     
+    @pytest.mark.p2
     def test_reasoning_result_minimal(self):
         from mahoun.core.models import ReasoningResult, ReasoningStep, CausalRelation
         result = ReasoningResult(
@@ -359,6 +387,7 @@ class TestReasoningResult:
         assert result.final_answer == "بله"
         assert result.confidence == 0.8
     
+    @pytest.mark.p2
     def test_reasoning_result_to_trace_json(self):
         from mahoun.core.models import ReasoningResult, CausalRelation
         
@@ -398,6 +427,7 @@ class TestReasoningResult:
 class TestUncertaintyEstimate:
     """Tests for UncertaintyEstimate dataclass"""
     
+    @pytest.mark.p2
     def test_uncertainty_estimate_defaults(self):
         from mahoun.core.models import UncertaintyEstimate
         est = UncertaintyEstimate()
@@ -407,11 +437,13 @@ class TestUncertaintyEstimate:
         assert est.confidence == 1.0
         assert est.method == "ensemble"
     
+    @pytest.mark.p2
     def test_uncertainty_estimate_auto_total(self):
         from mahoun.core.models import UncertaintyEstimate
         est = UncertaintyEstimate(epistemic=0.3, aleatoric=0.2)
         assert est.total == 0.5  # auto-calculated in __post_init__
     
+    @pytest.mark.p2
     def test_uncertainty_estimate_manual_total(self):
         from mahoun.core.models import UncertaintyEstimate
         est = UncertaintyEstimate(epistemic=0.3, aleatoric=0.2, total=0.6)
@@ -425,6 +457,7 @@ class TestUncertaintyEstimate:
 class TestErrorContext:
     """Tests for ErrorContext dataclass"""
     
+    @pytest.mark.p2
     def test_error_context_minimal(self):
         from mahoun.core.error_handling import ErrorContext
         ctx = ErrorContext(
@@ -437,6 +470,7 @@ class TestErrorContext:
         assert ctx.module == "test_module"
         assert ctx.timestamp is not None  # auto-set in __post_init__
     
+    @pytest.mark.p2
     def test_error_context_full(self):
         from mahoun.core.error_handling import ErrorContext
         from datetime import datetime
@@ -459,6 +493,7 @@ class TestErrorContext:
 class TestErrorHandler:
     """Tests for ErrorHandler class"""
     
+    @pytest.mark.p2
     def test_handle_error_basic(self):
         from mahoun.core.error_handling import ErrorHandler
         
@@ -475,6 +510,7 @@ class TestErrorHandler:
         assert ctx.error_message == "test error"
         assert ctx.operation == "test_operation"
     
+    @pytest.mark.p2
     def test_handle_error_with_metadata(self):
         from mahoun.core.error_handling import ErrorHandler
         
@@ -491,6 +527,7 @@ class TestErrorHandler:
         assert ctx.metadata["filename"] == "test.txt"
         assert ctx.metadata["line"] == 42
     
+    @pytest.mark.p2
     def test_handle_error_reraise(self):
         from mahoun.core.error_handling import ErrorHandler
         
@@ -505,6 +542,7 @@ class TestErrorHandler:
                     reraise=True
                 )
     
+    @pytest.mark.p2
     def test_handle_specific_error_expected(self):
         from mahoun.core.error_handling import ErrorHandler
         
@@ -525,6 +563,7 @@ class TestErrorHandler:
         
         assert ctx.error_message == "فایل یافت نشد"
     
+    @pytest.mark.p2
     def test_handle_specific_error_unexpected(self):
         from mahoun.core.error_handling import ErrorHandler
         
@@ -548,6 +587,7 @@ class TestErrorHandler:
 class TestHandleErrorFunction:
     """Tests for handle_error convenience function"""
     
+    @pytest.mark.p2
     def test_handle_error_function(self):
         from mahoun.core.error_handling import handle_error
         
@@ -567,6 +607,7 @@ class TestHandleErrorFunction:
 class TestOrganizationEntityInfo:
     """Tests for OrganizationEntityInfo"""
     
+    @pytest.mark.p2
     def test_organization_entity(self):
         from mahoun.schemas.legal_struct_schema import OrganizationEntityInfo
         org = OrganizationEntityInfo(
@@ -583,6 +624,7 @@ class TestOrganizationEntityInfo:
 class TestCourtEntityInfo:
     """Tests for CourtEntityInfo"""
     
+    @pytest.mark.p2
     def test_court_entity(self):
         from mahoun.schemas.legal_struct_schema import CourtEntityInfo
         court = CourtEntityInfo(
@@ -600,6 +642,7 @@ class TestCourtEntityInfo:
 class TestLawEntityInfo:
     """Tests for LawEntityInfo"""
     
+    @pytest.mark.p2
     def test_law_entity(self):
         from mahoun.schemas.legal_struct_schema import LawEntityInfo
         law = LawEntityInfo(
@@ -615,6 +658,7 @@ class TestLawEntityInfo:
 class TestTopicEntityInfo:
     """Tests for TopicEntityInfo"""
     
+    @pytest.mark.p2
     def test_topic_entity(self):
         from mahoun.schemas.legal_struct_schema import TopicEntityInfo
         topic = TopicEntityInfo(
@@ -628,6 +672,7 @@ class TestTopicEntityInfo:
 class TestFinalDecision:
     """Tests for FinalDecision"""
     
+    @pytest.mark.p2
     def test_final_decision(self):
         from mahoun.schemas.legal_struct_schema import FinalDecision
         decision = FinalDecision(
@@ -642,6 +687,7 @@ class TestFinalDecision:
 class TestParsingQuality:
     """Tests for ParsingQuality"""
     
+    @pytest.mark.p2
     def test_parsing_quality(self):
         from mahoun.schemas.legal_struct_schema import ParsingQuality
         quality = ParsingQuality(
@@ -655,6 +701,7 @@ class TestParsingQuality:
 class TestSourceInfo:
     """Tests for SourceInfo"""
     
+    @pytest.mark.p2
     def test_source_info(self):
         from mahoun.schemas.legal_struct_schema import SourceInfo
         source = SourceInfo(
@@ -673,12 +720,14 @@ class TestSourceInfo:
 class TestEdgeCases:
     """Edge case tests for robustness"""
     
+    @pytest.mark.p2
     def test_empty_strings(self):
         from mahoun.schemas.legal_struct_schema import PartyInfo
         party = PartyInfo(name="", title="")
         assert party.name == ""
         assert party.title == ""
     
+    @pytest.mark.p2
     def test_unicode_persian_text(self):
         from mahoun.schemas.legal_struct_schema import PartyInfo
         party = PartyInfo(
@@ -687,11 +736,13 @@ class TestEdgeCases:
         )
         assert "احمدی" in party.name
     
+    @pytest.mark.p2
     def test_large_list(self):
         from mahoun.schemas.legal_struct_schema import Claims
         claims = Claims(main=["خواسته " + str(i) for i in range(100)])
         assert len(claims.main) == 100
     
+    @pytest.mark.p2
     def test_nested_structure(self):
         from mahoun.schemas.legal_struct_schema import (
             VerdictStruct, ExtractedEntities, PersonEntityInfo

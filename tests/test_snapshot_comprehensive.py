@@ -29,6 +29,7 @@ from mahoun.metrics.store import MetricsStore
 class TestMetricsSnapshotImmutability:
     """Ruthless immutability tests."""
     
+    @pytest.mark.p2
     def test_frozen_dataclass(self):
         """Snapshot attributes should be immutable."""
         store = MetricsStore()
@@ -43,6 +44,7 @@ class TestMetricsSnapshotImmutability:
         with pytest.raises(AttributeError):
             snapshot.content_hash = "modified"
     
+    @pytest.mark.p2
     def test_counters_immutability(self):
         """Counters dict should be immutable."""
         store = MetricsStore()
@@ -60,6 +62,7 @@ class TestMetricsSnapshotImmutability:
         with pytest.raises(TypeError):
             snapshot.counters["new_counter"] = {"value": 1}
     
+    @pytest.mark.p2
     def test_gauges_immutability(self):
         """Gauges dict should be immutable."""
         store = MetricsStore()
@@ -72,6 +75,7 @@ class TestMetricsSnapshotImmutability:
         with pytest.raises(TypeError):
             snapshot.gauges["test"] = {"value": 999.0}
     
+    @pytest.mark.p2
     def test_histograms_immutability(self):
         """Histograms dict should be immutable."""
         store = MetricsStore()
@@ -85,6 +89,7 @@ class TestMetricsSnapshotImmutability:
         with pytest.raises(TypeError):
             snapshot.histograms["test"] = {"count": 999}
     
+    @pytest.mark.p2
     def test_nested_data_independence(self):
         """Modifying nested data should not affect snapshot."""
         store = MetricsStore()
@@ -108,6 +113,7 @@ class TestMetricsSnapshotImmutability:
 class TestMetricsSnapshotIntegrity:
     """Test integrity verification."""
     
+    @pytest.mark.p2
     def test_content_hash_determinism(self):
         """Same data should produce same hash."""
         store = MetricsStore()
@@ -119,6 +125,7 @@ class TestMetricsSnapshotIntegrity:
         # Hashes should be identical (same data)
         assert snapshot1.content_hash == snapshot2.content_hash
     
+    @pytest.mark.p2
     def test_content_hash_sensitivity(self):
         """Different data should produce different hash."""
         store = MetricsStore()
@@ -133,6 +140,7 @@ class TestMetricsSnapshotIntegrity:
         # Hashes should be different
         assert snapshot1.content_hash != snapshot2.content_hash
     
+    @pytest.mark.p2
     def test_verify_integrity_valid(self):
         """Valid snapshot should pass integrity check."""
         store = MetricsStore()
@@ -142,6 +150,7 @@ class TestMetricsSnapshotIntegrity:
         
         assert snapshot.verify_integrity() is True
     
+    @pytest.mark.p2
     def test_verify_integrity_tampered(self):
         """Tampered snapshot should fail integrity check."""
         store = MetricsStore()
@@ -161,6 +170,7 @@ class TestMetricsSnapshotIntegrity:
         
         assert tampered.verify_integrity() is False
     
+    @pytest.mark.p2
     def test_content_hash_format(self):
         """Content hash should be valid SHA256."""
         store = MetricsStore()
@@ -176,6 +186,7 @@ class TestMetricsSnapshotIntegrity:
 class TestMetricsSnapshotAuditCompliance:
     """Test audit compliance features."""
     
+    @pytest.mark.p2
     def test_timestamp_format(self):
         """Timestamp should be ISO8601 UTC."""
         store = MetricsStore()
@@ -189,6 +200,7 @@ class TestMetricsSnapshotAuditCompliance:
         delta = (now - dt).total_seconds()
         assert abs(delta) < 2.0, f"Timestamp too old: {delta}s"
     
+    @pytest.mark.p2
     def test_schema_version_present(self):
         """Schema version should be present."""
         store = MetricsStore()
@@ -197,6 +209,7 @@ class TestMetricsSnapshotAuditCompliance:
         assert snapshot.schema_version == METRICS_SCHEMA_VERSION
         assert snapshot.schema_version == "1.0.0"
     
+    @pytest.mark.p2
     def test_metadata_completeness(self):
         """All audit metadata should be present."""
         store = MetricsStore()
@@ -212,6 +225,7 @@ class TestMetricsSnapshotAuditCompliance:
         assert snapshot.gauges is not None
         assert snapshot.histograms is not None
     
+    @pytest.mark.p2
     def test_to_dict_structure(self):
         """to_dict should have proper audit structure."""
         store = MetricsStore()
@@ -238,6 +252,7 @@ class TestMetricsSnapshotAuditCompliance:
 class TestMetricsSnapshotSerialization:
     """Test serialization and deserialization."""
     
+    @pytest.mark.p2
     def test_to_json_and_back(self):
         """Snapshot should survive JSON round-trip."""
         store = MetricsStore()
@@ -259,6 +274,7 @@ class TestMetricsSnapshotSerialization:
         assert dict(restored.counters) == dict(original.counters)
         assert dict(restored.gauges) == dict(original.gauges)
     
+    @pytest.mark.p2
     def test_to_json_pretty(self):
         """to_json with indent should be readable."""
         store = MetricsStore()
@@ -275,6 +291,7 @@ class TestMetricsSnapshotSerialization:
         # Should have newlines (pretty-printed)
         assert "\n" in json_str
     
+    @pytest.mark.p2
     def test_from_dict_validation(self):
         """from_dict should validate structure."""
         # Missing metadata
@@ -285,11 +302,13 @@ class TestMetricsSnapshotSerialization:
         with pytest.raises(ValueError, match="Invalid"):
             MetricsSnapshot.from_dict({"metadata": {}})
     
+    @pytest.mark.p2
     def test_from_json_invalid(self):
         """from_json should reject invalid JSON."""
         with pytest.raises(ValueError, match="Invalid JSON"):
             MetricsSnapshot.from_json("not json")
     
+    @pytest.mark.p2
     def test_serialization_determinism(self):
         """Same snapshot should serialize to same JSON."""
         store = MetricsStore()
@@ -306,6 +325,7 @@ class TestMetricsSnapshotSerialization:
 class TestMetricsSnapshotMetrics:
     """Test metric counting and statistics."""
     
+    @pytest.mark.p2
     def test_get_metric_count(self):
         """get_metric_count should be accurate."""
         store = MetricsStore()
@@ -320,6 +340,7 @@ class TestMetricsSnapshotMetrics:
         
         assert counts == {"counters": 2, "gauges": 1, "histograms": 1}
     
+    @pytest.mark.p2
     def test_get_total_metric_count(self):
         """get_total_metric_count should sum all types."""
         store = MetricsStore()
@@ -332,6 +353,7 @@ class TestMetricsSnapshotMetrics:
         
         assert snapshot.get_total_metric_count() == 3
     
+    @pytest.mark.p2
     def test_empty_snapshot_counts(self):
         """Empty snapshot should have zero counts."""
         store = MetricsStore()
@@ -346,6 +368,7 @@ class TestMetricsSnapshotMetrics:
 class TestMetricsSnapshotStringRepresentation:
     """Test string representations."""
     
+    @pytest.mark.p2
     def test_str(self):
         """__str__ should be human-readable."""
         store = MetricsStore()
@@ -358,6 +381,7 @@ class TestMetricsSnapshotStringRepresentation:
         assert "timestamp=" in str_repr
         assert "counters=1" in str_repr
     
+    @pytest.mark.p2
     def test_repr(self):
         """__repr__ should be detailed."""
         store = MetricsStore()
@@ -374,6 +398,7 @@ class TestMetricsSnapshotStringRepresentation:
 class TestCompareSnapshots:
     """Test snapshot comparison utility."""
     
+    @pytest.mark.p2
     def test_compare_identical_snapshots(self):
         """Identical snapshots should be detected."""
         store = MetricsStore()
@@ -388,6 +413,7 @@ class TestCompareSnapshots:
         assert comparison["content_hash_diff"] is False
         assert comparison["identical"] is True
     
+    @pytest.mark.p2
     def test_compare_different_snapshots(self):
         """Different snapshots should be detected."""
         store = MetricsStore()
@@ -408,6 +434,7 @@ class TestCompareSnapshots:
 class TestValidateSnapshotChain:
     """Test snapshot chain validation."""
     
+    @pytest.mark.p2
     def test_valid_chain(self):
         """Valid chain should pass validation."""
         store = MetricsStore()
@@ -425,6 +452,7 @@ class TestValidateSnapshotChain:
         assert len(result["issues"]) == 0
         assert result["snapshot_count"] == 5
     
+    @pytest.mark.p2
     def test_empty_chain(self):
         """Empty chain should be valid."""
         result = validate_snapshot_chain([])
@@ -432,6 +460,7 @@ class TestValidateSnapshotChain:
         assert result["valid"] is True
         assert result["issues"] == []
     
+    @pytest.mark.p2
     def test_single_snapshot_chain(self):
         """Single snapshot should be valid."""
         store = MetricsStore()
@@ -445,11 +474,13 @@ class TestValidateSnapshotChain:
 class TestMetricsSnapshotEdgeCases:
     """Edge cases and error conditions."""
     
+    @pytest.mark.p2
     def test_create_from_none_store(self):
         """Creating from None store should fail."""
         with pytest.raises(ValueError, match="cannot be None"):
             MetricsSnapshot.create(None)
     
+    @pytest.mark.p2
     def test_empty_store_snapshot(self):
         """Empty store should produce valid snapshot."""
         store = MetricsStore()
@@ -460,6 +491,7 @@ class TestMetricsSnapshotEdgeCases:
         assert len(snapshot.histograms) == 0
         assert snapshot.verify_integrity() is True
     
+    @pytest.mark.p2
     def test_large_snapshot(self):
         """Large snapshot should work."""
         store = MetricsStore()
@@ -473,6 +505,7 @@ class TestMetricsSnapshotEdgeCases:
         assert len(snapshot.counters) == 1000
         assert snapshot.verify_integrity() is True
     
+    @pytest.mark.p2
     def test_snapshot_with_unicode(self):
         """Snapshot with Unicode labels should work."""
         store = MetricsStore()
@@ -490,6 +523,7 @@ class TestMetricsSnapshotEdgeCases:
 class TestMetricsSnapshotPerformance:
     """Performance tests."""
     
+    @pytest.mark.p2
     def test_snapshot_creation_performance(self):
         """Snapshot creation should be fast."""
         store = MetricsStore()
@@ -510,6 +544,7 @@ class TestMetricsSnapshotPerformance:
         
         assert avg_time < 0.5, f"Too slow: {avg_time}s"
     
+    @pytest.mark.p2
     def test_integrity_verification_performance(self):
         """Integrity verification should be fast."""
         store = MetricsStore()

@@ -20,6 +20,7 @@ SRC_PATH = pathlib.Path(__file__).parent.parent / "mahoun" / "graph" / "gnn" / "
 class TestGNNGraphBuilderStaticProof:
     """P0.1 Static proof: source code analysis for governance patterns."""
 
+    @pytest.mark.p2
     def test_no_raw_driver_creation_patterns_in_source(self):
         """Source must not contain raw Neo4j driver creation patterns."""
         source = SRC_PATH.read_text()
@@ -36,6 +37,7 @@ class TestGNNGraphBuilderStaticProof:
             match = re.search(pattern, source)
             assert not match, f"Forbidden pattern found: {pattern}"
 
+    @pytest.mark.p2
     def test_governance_patterns_present_in_source(self):
         """Source must contain governance-required patterns."""
         source = SRC_PATH.read_text()
@@ -61,6 +63,7 @@ class TestGNNGraphBuilderGovernance:
         from mahoun.graph.gnn.gnn_graph_builder import GNNGraphBuilder
         return GNNGraphBuilder()
 
+    @pytest.mark.p2
     def test_no_raw_driver_creation_possible(self, builder):
         """The class must never create a raw neo4j driver after P0.1."""
         builder_with_uri = type(builder)(
@@ -70,6 +73,7 @@ class TestGNNGraphBuilderGovernance:
         )
         assert builder_with_uri.neo4j_driver is None
 
+    @pytest.mark.p2
     def test_save_to_neo4j_requires_governance_params(self, builder):
         """Must fail closed without correlation_id and actor_id."""
         dummy_data = MagicMock()
@@ -82,6 +86,7 @@ class TestGNNGraphBuilderGovernance:
         with pytest.raises(ValueError, match="correlation_id and actor_id are mandatory"):
             builder.save_to_neo4j(dummy_data, dummy_documents, "corr", "")
 
+    @pytest.mark.p2
     def test_governed_session_is_used(self, builder):
         """Must call get_connection().governed_session with correct provenance."""
         dummy_data = MagicMock()
@@ -111,6 +116,7 @@ class TestGNNGraphBuilderGovernance:
             )
             mock_gsession.begin_transaction.assert_called_once()
 
+    @pytest.mark.p2
     def test_destructive_wipe_gated(self, builder):
         """DETACH DELETE must only execute when allow_destructive=True."""
         dummy_data = MagicMock()

@@ -150,6 +150,7 @@ class MockAIRuntime(AIRuntimeProtocol):
 class TestTaskB11_GraphEnhancedReasoning:
     """Test Graph-Enhanced Reasoning implementation (Task B.1.1)"""
     
+    @pytest.mark.p2
     def test_reasoning_engine_initialization(self):
         """Reasoning engine should initialize with required services"""
         graph_service = MockGraphService()
@@ -166,6 +167,7 @@ class TestTaskB11_GraphEnhancedReasoning:
         assert engine.retrieval is not None
         assert engine.ai_runtime is not None
     
+    @pytest.mark.p2
     def test_process_query_returns_reasoning_response(self):
         """Process query should return complete reasoning response"""
         graph_service = MockGraphService()
@@ -190,6 +192,7 @@ class TestTaskB11_GraphEnhancedReasoning:
         assert len(response.evidence) > 0
         assert response.proof_tree is not None
     
+    @pytest.mark.p2
     def test_evidence_first_priority(self):
         """Evidence should be retrieved before AI reasoning"""
         graph_service = MockGraphService()
@@ -217,6 +220,7 @@ class TestTaskB11_GraphEnhancedReasoning:
 class TestTaskB12_EvidenceFirstReasoning:
     """Test Evidence-first reasoning chain (Task B.1.2)"""
     
+    @pytest.mark.p2
     def test_evidence_retrieval_from_graph(self):
         """Evidence should be retrieved from knowledge graph first"""
         graph_service = MockGraphService()
@@ -231,6 +235,7 @@ class TestTaskB12_EvidenceFirstReasoning:
         assert all(e.confidence >= 0.7 for e in evidence)
         assert all(isinstance(e, Evidence) for e in evidence)
     
+    @pytest.mark.p2
     def test_reasoning_context_creation(self):
         """Reasoning context should aggregate evidence and context"""
         evidence_items = [
@@ -260,6 +265,7 @@ class TestTaskB12_EvidenceFirstReasoning:
 class TestTaskB13_UltraGraphBuilderIntegration:
     """Test Integration with UltraGraphBuilder (Task B.1.3)"""
     
+    @pytest.mark.p2
     def test_graph_context_retrieval(self):
         """Graph context should be retrieved for evidence"""
         graph_service = MockGraphService()
@@ -284,6 +290,7 @@ class TestTaskB13_UltraGraphBuilderIntegration:
 class TestTaskB14_ProofTreeGeneration:
     """Test Proof tree generation for auditability (Task B.1.4)"""
     
+    @pytest.mark.p2
     def test_proof_tree_node_creation(self):
         """Proof tree nodes should be creatable"""
         node = ProofTreeNode(
@@ -299,6 +306,7 @@ class TestTaskB14_ProofTreeGeneration:
         assert node.node_type == "evidence"
         assert node.confidence == 0.85
     
+    @pytest.mark.p2
     def test_proof_tree_serialization(self):
         """Proof tree should be serializable to dict"""
         child_node = ProofTreeNode(
@@ -326,6 +334,7 @@ class TestTaskB14_ProofTreeGeneration:
         assert len(tree_dict["children"]) == 1
         assert tree_dict["children"][0]["node_id"] == "child-001"
     
+    @pytest.mark.p2
     def test_complete_reasoning_generates_proof_tree(self):
         """Complete reasoning should generate verifiable proof tree"""
         engine = GraphEnhancedReasoning(
@@ -360,6 +369,7 @@ class TestTaskB14_ProofTreeGeneration:
 class TestTaskB2_KnowledgeGraphPriority:
     """Test Knowledge Graph Priority Enhancement (Task B.2)"""
     
+    @pytest.mark.p2
     def test_graph_quality_over_model_size(self):
         """Graph evidence quality should outweigh model size"""
         engine = GraphEnhancedReasoning(
@@ -382,6 +392,7 @@ class TestTaskB2_KnowledgeGraphPriority:
         # AI inference time should be reasonable
         assert ai_inference_time > 0
     
+    @pytest.mark.p2
     def test_confidence_calculation_weights_evidence(self):
         """Confidence calculation should weight evidence > AI"""
         engine = GraphEnhancedReasoning(
@@ -404,6 +415,7 @@ class TestTaskB2_KnowledgeGraphPriority:
 class TestTaskB3_LocalModelTesting:
     """Test Local Model Integration Testing (Task B.3)"""
     
+    @pytest.mark.p2
     def test_gguf_adapter_mock_testing(self):
         """GGUF adapter should work with mock models"""
         # This would test with actual GGUF models in real scenario
@@ -416,6 +428,7 @@ class TestTaskB3_LocalModelTesting:
         health = ai_runtime.health_check()
         assert health.model_loaded is True
     
+    @pytest.mark.p2
     def test_embedding_service_initialization(self):
         """Embedding service should initialize correctly"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -433,6 +446,7 @@ class TestTaskB3_LocalModelTesting:
 class TestMemoryCentricIntelligence:
     """Test overall memory-centric intelligence strategy"""
     
+    @pytest.mark.p2
     def test_memory_over_parameters(self):
         """Memory quality should be prioritized over model parameters"""
         # Create reasoning engine
@@ -452,6 +466,7 @@ class TestMemoryCentricIntelligence:
         # Evidence should drive reasoning
         assert response.metadata["graph_evidence_count"] > 0
     
+    @pytest.mark.p2
     def test_reasoning_response_completeness(self):
         """Reasoning response should be complete and auditable"""
         engine = GraphEnhancedReasoning(

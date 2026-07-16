@@ -51,6 +51,7 @@ class TestLegalMonitoringBasics:
         )
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_track_legal_query(self, monitoring):
         """Test tracking a legal query"""
         await monitoring.track_legal_query(
@@ -71,6 +72,7 @@ class TestLegalMonitoringBasics:
         assert stats["avg_authority_score"] == 0.92
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_multiple_queries(self, monitoring):
         """Test tracking multiple queries"""
         for i in range(10):
@@ -90,6 +92,7 @@ class TestLegalMonitoringBasics:
         assert stats["cache_hit_rate"] == 0.5
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_error_tracking(self, monitoring):
         """Test error tracking"""
         # Track successful query
@@ -108,6 +111,7 @@ class TestLegalMonitoringBasics:
         assert stats["error_rate"] == 0.5
         assert "ValidationError" in stats["errors_by_type"]
 
+    @pytest.mark.p2
     def test_percentile_calculation(self, monitoring):
         """Test latency percentile calculation"""
         durations = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -152,6 +156,7 @@ class TestSLACompliance:
         return mon
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_sla_compliance_pass(self, monitoring):
         """Test SLA compliance when targets are met"""
         # Track queries with good performance AND proper cache/authority data
@@ -173,6 +178,7 @@ class TestSLACompliance:
         assert stats["sla_compliance_rate"] > 0.9
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_sla_violation_detection(self, monitoring):
         """Test SLA violation detection"""
         # Track queries with poor performance
@@ -190,6 +196,7 @@ class TestSLACompliance:
         violation = monitoring.sla_violations[0]
         assert "query_latency_p95" in violation["metric"]
 
+    @pytest.mark.p2
     def test_sla_target_configuration(self, monitoring):
         """Test SLA target configuration"""
         assert "test_metric" in monitoring.sla_targets
@@ -211,6 +218,7 @@ class TestPrometheusExport:
         return UltraProfessionalLegalMonitoring(enable_prometheus=True)
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_prometheus_export_format(self, monitoring):
         """Test Prometheus export format"""
         # Track some queries
@@ -233,6 +241,7 @@ class TestPrometheusExport:
         assert LegalMetricType.QUERY_LATENCY.value in metrics
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_prometheus_metric_values(self, monitoring):
         """Test Prometheus metric values"""
         # Track queries
@@ -247,6 +256,7 @@ class TestPrometheusExport:
         assert "legal_query_throughput_total 5" in metrics
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_prometheus_labels(self, monitoring):
         """Test Prometheus metric labels"""
         # Track queries with different court ranks
@@ -276,6 +286,7 @@ class TestHealthChecks:
         return UltraProfessionalLegalMonitoring()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_healthy_status(self, monitoring):
         """Test healthy status"""
         # Track some normal queries
@@ -290,6 +301,7 @@ class TestHealthChecks:
         assert "sla_compliance" in health
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_degraded_status_high_errors(self, monitoring):
         """Test degraded status with high error rate"""
         # Track queries with high error rate
@@ -306,6 +318,7 @@ class TestHealthChecks:
         assert health["components"]["error_rate"]["status"] == "unhealthy"
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_degraded_status_high_latency(self, monitoring):
         """Test degraded status with high latency"""
         # Track queries with high latency
@@ -332,6 +345,7 @@ class TestAlertCallbacks:
         return UltraProfessionalLegalMonitoring(enable_ultra_monitoring=True)
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_alert_callback_registration(self, monitoring):
         """Test alert callback registration"""
         alerts_received = []
@@ -368,6 +382,7 @@ class TestComprehensiveStats:
         return UltraProfessionalLegalMonitoring(enable_ultra_monitoring=True)
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_comprehensive_stats_structure(self, monitoring):
         """Test comprehensive stats structure"""
         # Track some queries
@@ -392,6 +407,7 @@ class TestComprehensiveStats:
         assert "recent_sla_violations" in stats
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_recent_queries_tracking(self, monitoring):
         """Test recent queries tracking"""
         # Track queries
@@ -419,6 +435,7 @@ class TestMetricSnapshot:
         return UltraProfessionalLegalMonitoring()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_snapshot_creation(self, monitoring):
         """Test snapshot creation"""
         # Track some queries
@@ -446,6 +463,7 @@ class TestReset:
         return UltraProfessionalLegalMonitoring()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_reset_clears_metrics(self, monitoring):
         """Test that reset clears all metrics"""
         # Track some queries
@@ -479,6 +497,7 @@ class TestCourtRankDistribution:
         return UltraProfessionalLegalMonitoring()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_court_rank_tracking(self, monitoring):
         """Test court rank distribution"""
         # Track queries with different court ranks
@@ -509,6 +528,7 @@ class TestLegalDomainDistribution:
         return UltraProfessionalLegalMonitoring()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_legal_domain_tracking(self, monitoring):
         """Test legal domain distribution"""
         # Track queries with different legal domains
@@ -537,6 +557,7 @@ class TestIntegration:
     """Integration tests for complete monitoring workflow"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_complete_monitoring_workflow(self):
         """Test a complete workflow representing realistic usage"""
         from mahoun.monitoring.legal_metrics import legal_monitoring

@@ -101,11 +101,13 @@ def governed_session(mock_raw_executor):
 class TestStrictSchemaValidationGate:
     """Verifies that the schema validation gate is strict and unbypassable."""
 
+    @pytest.mark.p2
     def test_schema_registration(self):
         """Test that schemas can be registered and retrieved correctly."""
         register_schema("Verdict", TestVerdictSchema)
         assert SCHEMA_REGISTRY["Verdict"] == TestVerdictSchema
 
+    @pytest.mark.p2
     def test_valid_node_passes_strict_gate(self):
         """Test that fully compliant data passes the strict validation gate."""
         register_schema("Verdict", TestVerdictSchema)
@@ -122,6 +124,7 @@ class TestStrictSchemaValidationGate:
         # Should not raise any exception
         strict_schema_validation_gate(valid_data, correlation_id="test-corr")
 
+    @pytest.mark.p2
     def test_extra_fields_raise_governance_violation(self):
         """Test that extra/hallucinated fields trigger immediate fail-closed violation."""
         register_schema("Verdict", TestVerdictSchema)
@@ -143,6 +146,7 @@ class TestStrictSchemaValidationGate:
         assert violation.category == ViolationCategory.SCHEMA_VIOLATION
         assert "Strict schema validation failed" in violation.message
 
+    @pytest.mark.p2
     def test_invalid_field_type_raises_governance_violation(self):
         """Test that mismatched data types trigger immediate fail-closed violation."""
         register_schema("Verdict", TestVerdictSchema)
@@ -170,6 +174,7 @@ class TestStrictSchemaValidationGate:
 class TestQuarantineRouting:
     """Verifies that nodes are routed to Quarantine based on confidence."""
 
+    @pytest.mark.p2
     def test_high_confidence_routes_to_master_graph(self, governed_session, mock_raw_executor):
         """Nodes with confidence == 1.0 are committed to Master Graph."""
         node_data = {
@@ -188,6 +193,7 @@ class TestQuarantineRouting:
         executed_query = args[0]
         assert "MERGE (n:Verdict {id: $id})" in executed_query
 
+    @pytest.mark.p2
     def test_low_confidence_routes_to_quarantine(self, governed_session, mock_raw_executor):
         """Nodes with confidence < 1.0 are routed to Quarantined label."""
         node_data = {
@@ -213,6 +219,7 @@ class TestQuarantineRouting:
 class TestGraduationManager:
     """Verifies lifecycle promotion and strict invariants of GraduationManager."""
 
+    @pytest.mark.p2
     def test_successful_graduation(self, governed_session, mock_raw_executor):
         """Test that promotion works perfectly when verified confidence is exactly 1.0."""
         manager = GraduationManager(governed_session)
@@ -236,6 +243,7 @@ class TestGraduationManager:
         executed_query = args[0]
         assert "MERGE (n:Verdict {id: $id})" in executed_query
 
+    @pytest.mark.p2
     def test_graduation_rejected_for_low_confidence(self, governed_session):
         """Test that promoting with confidence < 1.0 is strictly forbidden."""
         manager = GraduationManager(governed_session)
@@ -251,6 +259,7 @@ class TestGraduationManager:
             
         assert "confidence must be exactly 1.0" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_graduation_rejected_for_invalid_quarantined_label(self, governed_session):
         """Test that promoting non-quarantined nodes is forbidden."""
         manager = GraduationManager(governed_session)
@@ -274,6 +283,7 @@ class TestGraduationManager:
 class TestFacadeBackdoorSeal:
     """Verifies that all pipelines route writes through governed session only."""
 
+    @pytest.mark.p2
     def test_graph_builder_rejects_raw_adapter(self):
         """Test that UltraGraphBuilder throws exception if raw adapter is passed."""
         builder = UltraGraphBuilder()
@@ -285,6 +295,7 @@ class TestFacadeBackdoorSeal:
             
         assert "GOVERNANCE VIOLATION" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_graph_builder_export_via_governed_session(self, governed_session, mock_raw_executor):
         """Test that UltraGraphBuilder successfully exports via GovernedNeo4jSession."""
         builder = UltraGraphBuilder()
@@ -328,6 +339,7 @@ class TestParallelLLMRefinement:
     """Verifies that the concurrent LLM refinement performs safely and fast."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_parallel_refinement_performance(self):
         """Test that parallelized refinement runs under concurrency controls."""
         # Create pipeline instance

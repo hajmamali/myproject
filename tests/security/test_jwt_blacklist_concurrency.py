@@ -48,6 +48,7 @@ class TestConcurrentRevocation:
             refresh_token_expire_days=7
         )
     
+    @pytest.mark.p1
     def test_concurrent_token_revocation_same_token(self, jwt_auth):
         """
         Critical: Multiple threads revoking same token must not corrupt blacklist
@@ -90,6 +91,7 @@ class TestConcurrentRevocation:
         except ValueError as e:
             assert "revoked" in str(e).lower(), f"Expected 'revoked' error message, got {e}"
     
+    @pytest.mark.p1
     def test_concurrent_different_tokens(self, jwt_auth):
         """
         Critical: Multiple threads revoking different tokens must not interfere
@@ -131,6 +133,7 @@ class TestConcurrentRevocation:
             except ValueError:
                 pass  # Expected
     
+    @pytest.mark.p1
     def test_concurrent_revocation_and_verification(self, jwt_auth):
         """
         Critical: Revocation and verification happening concurrently
@@ -196,6 +199,7 @@ class TestRaceConditions:
             refresh_token_expire_days=7
         )
     
+    @pytest.mark.p1
     def test_blacklist_write_race_condition(self, jwt_auth):
         """
         Critical: Simultaneous writes to blacklist must not corrupt data
@@ -237,6 +241,7 @@ class TestRaceConditions:
             except ValueError:
                 pass  # Expected
     
+    @pytest.mark.p1
     def test_blacklist_read_race_condition(self, jwt_auth):
         """
         Critical: Concurrent reads during writes must not crash
@@ -301,6 +306,7 @@ class TestMemoryManagement:
             refresh_token_expire_days=7
         )
     
+    @pytest.mark.p1
     def test_blacklist_memory_leak_prevention(self, jwt_auth):
         """
         Critical: Blacklist should not grow unbounded

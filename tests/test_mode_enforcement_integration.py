@@ -20,6 +20,7 @@ class TestModeEnforcementIntegration:
     """Integration tests for mode enforcement"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_desktop_minimal_blocks_verdict_generation(self):
         """Test: DESKTOP_MINIMAL mode blocks verdict generation and records metrics"""
         # Set environment to DESKTOP_MINIMAL with graph disabled
@@ -57,6 +58,7 @@ class TestModeEnforcementIntegration:
             print("✓ Metrics recorded successfully")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_server_full_allows_verdict_generation(self):
         """Test: SERVER_FULL mode allows verdict generation"""
         # Set environment to SERVER_FULL with graph enabled
@@ -92,6 +94,7 @@ class TestModeEnforcementIntegration:
             print("✓ SERVER_FULL mode allowed verdict generation")
             print(f"✓ Generated verdict with {len(verdict.steps)} steps")
 
+    @pytest.mark.p2
     def test_config_validator_records_metrics_on_failure(self):
         """Test: Config validator records metrics on validation failure"""
         from mahoun.core.config_validator import validate_runtime_config, ConfigurationError
@@ -130,6 +133,7 @@ class TestModeEnforcementIntegration:
             print("✓ Metrics recorded on failure")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_mode_check_at_multiple_layers(self):
         """Test: Mode check enforced at multiple layers (defense in depth)"""
         # Set environment to DESKTOP_MINIMAL
@@ -165,6 +169,7 @@ class TestModeEnforcementIntegration:
             print("✓ Defense-in-depth: All layers enforce mode constraints")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_metrics_track_successful_verdict_generation(self):
         """Test: Metrics track successful verdict generation"""
         import time
@@ -211,6 +216,7 @@ class TestModeEnforcementIntegration:
             print(f"✓ Verdict generated in {duration:.2f}s")
             print("✓ Duration metric recorded")
 
+    @pytest.mark.p2
     def test_startup_metrics_initialization(self):
         """Test: Startup metrics are initialized correctly"""
         from mahoun.metrics import (
@@ -228,6 +234,7 @@ class TestModeEnforcementIntegration:
         print("✓ Startup metrics initialized successfully")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_concurrent_mode_checks(self):
         """Test: Concurrent mode checks are handled correctly"""
         import asyncio

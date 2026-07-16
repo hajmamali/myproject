@@ -29,6 +29,8 @@ def clean_env():
     clear_registry()
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_adversarial_evidence_injection(clean_env, tmp_path):
     """
     Test 3.A.1: Adversarial Evidence Injection (REAL SYSTEM)
@@ -97,6 +99,8 @@ async def test_adversarial_evidence_injection(clean_env, tmp_path):
     )
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_cyclic_contradiction_deadlock(clean_env, tmp_path):
     """
     Test 3.B.1: Cyclic Contradiction Deadlock Resolution (REAL SYSTEM)
@@ -151,6 +155,8 @@ async def test_cyclic_contradiction_deadlock(clean_env, tmp_path):
         f"Verdict: {verdict.final_verdict}"
     )
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_hidden_mutable_state_injection():
     """
     Test 3.C.1: Hidden Mutable State Injection
@@ -191,6 +197,8 @@ def test_hidden_mutable_state_injection():
     
     assert hash1 != hash3, "Serialization failed to detect structural byte changes!"
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_force_transition_critical_bypass():
     """
     Test 3.D.1: Force Transition Critical Bypass Attempt
@@ -208,6 +216,8 @@ def test_force_transition_critical_bypass():
     assert sm.state == LegalState.INGESTING, "State incorrectly mutated during forced invalid transition"
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_ambiguous_contradiction_surfacing(clean_env, tmp_path):
     """
     Test 3.E.1: Ambiguous Contradiction Surfacing (REAL SYSTEM)

@@ -21,6 +21,7 @@ class TestNeo4jVectorSchema(unittest.TestCase):
         self.mock_session = MagicMock()
         self.manager = SchemaManager(self.mock_session)
 
+    @pytest.mark.p2
     def test_create_vector_indexes(self):
         """Test creates correct vector indexes for Verdict and Article"""
         # Execute

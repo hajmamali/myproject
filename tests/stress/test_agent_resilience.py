@@ -30,6 +30,7 @@ class TestAgentRefactorResilience:
     - Core interfaces remain stable
     """
 
+    @pytest.mark.p0
     def test_kernel_api_stability_after_mock_refactor(self):
         """
         **Setup**: Import kernel, mock various "refactors"
@@ -65,6 +66,7 @@ class TestAgentRefactorResilience:
         token = set_governance_authority(True)
         assert token is not None
 
+    @pytest.mark.p0
     def test_governance_lock_cannot_be_disabled_by_agent(self):
         """
         **Setup**: Import governance_lock module
@@ -97,6 +99,7 @@ class TestAgentRefactorResilience:
             # If GovernanceLock doesn't exist, that's OK - test semantic
             pytest.skip("GovernanceLock not available")
 
+    @pytest.mark.p0
     def test_fortress_validator_contract_immutable(self):
         """
         **Setup**: Import fortress_validator
@@ -129,6 +132,7 @@ class TestGovernanceLockBypassPrevention:
     - Lock state is audited
     """
 
+    @pytest.mark.p0
     def test_governance_lock_state_protected(self):
         """
         **Setup**: Import governance_lock
@@ -157,6 +161,7 @@ class TestGovernanceLockBypassPrevention:
         except ImportError:
             pytest.skip("GovernanceLock module not available")
 
+    @pytest.mark.p0
     def test_lock_cannot_be_reentrant_bypassed(self):
         """
         **Setup**: Create nested lock acquisitions
@@ -185,6 +190,7 @@ class TestProvenanceChainImmutability:
     - Deleted entries cannot be resurrected
     """
 
+    @pytest.mark.p0
     def test_provenance_entries_immutable(self):
         """
         **Setup**: Import provenance tracking module
@@ -202,6 +208,7 @@ class TestProvenanceChainImmutability:
         else:
             pytest.skip("Provenance tracker module not found")
 
+    @pytest.mark.p0
     def test_provenance_chain_integrity_verification(self):
         """
         **Setup**: Create provenance chain with multiple entries
@@ -246,6 +253,7 @@ class TestRuntimeContractEnforcement:
         except Exception:
             pass
 
+    @pytest.mark.p0
     def test_mutation_boundary_contract_enforced(self):
         """
         **Setup**: Attempt unauthorized mutation
@@ -267,6 +275,7 @@ class TestRuntimeContractEnforcement:
         with pytest.raises(GovernanceViolationError):
             KernelMutationBoundary.inspect("MERGE (n:Node) RETURN n")
 
+    @pytest.mark.p0
     def test_query_classification_contract(self):
         """
         **Setup**: Various Cypher queries
@@ -295,6 +304,7 @@ class TestRuntimeContractEnforcement:
             )
             assert result is not None
 
+    @pytest.mark.p0
     def test_authorization_context_contract(self):
         """
         **Setup**: Set and reset authorization context
@@ -336,6 +346,7 @@ class TestAgentModificationDetection:
     - Audit trail shows all changes
     """
 
+    @pytest.mark.p0
     def test_governance_violations_logged(self):
         """
         **Setup**: Trigger governance violation
@@ -364,6 +375,7 @@ class TestAgentModificationDetection:
             assert violation.message is not None
             assert violation.details is not None
 
+    @pytest.mark.p0
     def test_violation_details_comprehensive(self):
         """
         **Setup**: Trigger violation with different query types
@@ -400,6 +412,7 @@ class TestAgentCodeInjectionPrevention:
     - Monkey patching is detected
     """
 
+    @pytest.mark.p0
     def test_no_unsafe_eval_in_core(self):
         """
         **Setup**: Scan core files for eval/exec
@@ -424,6 +437,7 @@ class TestAgentCodeInjectionPrevention:
                     # Found unsafe pattern in code
                     pytest.fail(f"Unsafe pattern '{pattern}' found in {core_file}:{i}")
 
+    @pytest.mark.p0
     def test_monkeypatch_detection(self):
         """
         **Setup**: Attempt to monkeypatch kernel function

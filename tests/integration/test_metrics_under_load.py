@@ -27,6 +27,7 @@ class TestMetricsUnderLoad:
         reset_global_collector()
         gc.collect()
     
+    @pytest.mark.p3
     def test_high_concurrency_counter(self):
         """
         تست با concurrency بالا:
@@ -77,6 +78,7 @@ class TestMetricsUnderLoad:
         # Should be reasonably fast
         assert ops_per_second > 10000, f"Too slow: {ops_per_second:,.0f} ops/sec"
     
+    @pytest.mark.p3
     def test_mixed_operations_under_load(self):
         """
         تست عملیات مختلف همزمان:
@@ -182,6 +184,7 @@ class TestMetricsUnderLoad:
         print(f"   - {expected_histogram:,} histogram observations")
         print(f"   - {len(snapshots_created)} snapshots created")
     
+    @pytest.mark.p3
     def test_sustained_load(self):
         """
         تست بار پایدار:
@@ -248,6 +251,7 @@ class TestMetricsUnderLoad:
             f"Excessive memory growth: {memory_growth_percent:.1f}%"
         )
     
+    @pytest.mark.p3
     def test_burst_load(self):
         """
         تست بار ناگهانی (burst):
@@ -289,6 +293,7 @@ class TestMetricsUnderLoad:
         print(f"   - {expected:,} total operations")
         print(f"   - Completed in {elapsed:.2f}s")
     
+    @pytest.mark.p3
     def test_reset_under_load(self):
         """
         تست reset در حین بار:
@@ -349,6 +354,7 @@ class TestMetricsUnderLoad:
         print(f"   - Resets performed: {reset_count[0]}")
         print(f"   - No crashes or deadlocks")
     
+    @pytest.mark.p3
     def test_large_number_of_metrics(self):
         """
         تست با تعداد زیاد metrics:
@@ -393,6 +399,7 @@ class TestMetricsUnderLoad:
         print(f"   - Rate: {num_metrics/elapsed:,.0f} metrics/sec")
     
     @pytest.mark.slow
+    @pytest.mark.p3
     def test_memory_leak_detection(self):
         """
         تست memory leak:

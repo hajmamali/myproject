@@ -1,0 +1,619 @@
+{
+  "tier_distribution": {
+    "p2": 84,
+    "p1": 5,
+    "p0": 14,
+    "p3": 0
+  },
+  "test_distribution": {
+    "p2": 459,
+    "p1": 52,
+    "p0": 143,
+    "p3": 0
+  },
+  "total_files": 103,
+  "total_tests": 654,
+  "markers_added": 0,
+  "classifications": [
+    {
+      "path": "tests/ai_runtime/test_monitoring_integration_d33.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/constitutional/test_easy_surface_truth.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/constitutional/test_hard_governance_runtime.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/constitutional/test_medium_policy_and_graph_contracts.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/constitutional/test_very_hard_runtime_trace.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/contracts/test_constitutional_stabilization.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/contracts/test_contract_ownership.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/contracts/test_first_governance_contract.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/core/test_policy_deployment.py",
+      "tier": "p1",
+      "test_count": 24,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_formal_verification_spec.py",
+      "tier": "p0",
+      "test_count": 8,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_fortress_integration_legacy.py",
+      "tier": "p0",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_governance_consolidation.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_isolation_hardening.py",
+      "tier": "p0",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_ontology_strict_mode.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_outbox_refactor.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_schema_governance.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_unified_governance_controller.py",
+      "tier": "p0",
+      "test_count": 27,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/governance/test_unified_governance_p0_critical.py",
+      "tier": "p0",
+      "test_count": 22,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/graph/test_operations_coverage_boost.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/infrastructure/test_singleton_pattern.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/infrastructure/test_singleton_runtime.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/integration/test_fortress_integration.py",
+      "tier": "p0",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/integration/test_real_health_gate.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/integration/test_unified_observability.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/integration/test_verdict_engine_audit.py",
+      "tier": "p0",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_advanced_features_integration.py",
+      "tier": "p0",
+      "test_count": 14,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_layer2_governance_hardening.py",
+      "tier": "p1",
+      "test_count": 15,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_rag_provenance_integration.py",
+      "tier": "p1",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_reasoning_recorder_integration.py",
+      "tier": "p1",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_reasoning_recorder_p1_2.py",
+      "tier": "p1",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/reasoning/test_verdict_engine_adapter_reasoning_response.py",
+      "tier": "p0",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_adversarial_detector.py",
+      "tier": "p2",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_agent_factory.py",
+      "tier": "p2",
+      "test_count": 12,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_agents.py",
+      "tier": "p2",
+      "test_count": 9,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_api_endpoints.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_authorization_state_adversarial.py",
+      "tier": "p0",
+      "test_count": 15,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_authorization_state_singleton.py",
+      "tier": "p0",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_bootstrap_wiring.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_compose_contract.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_core_models.py",
+      "tier": "p2",
+      "test_count": 14,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_critic_agent.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_deadlock_audit.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_design_rule_no_feature_only_proof.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_devops_edge_cases.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_devops_essentials_properties.py",
+      "tier": "p2",
+      "test_count": 21,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_document_extraction.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_domain_engines.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_e2e_mahoun.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_e2e_manual.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_e2e_scenario.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_environment_normalization.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_fact_hash_fix.py",
+      "tier": "p2",
+      "test_count": 8,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_finetuning_manual.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_finetuning_simple.py",
+      "tier": "p2",
+      "test_count": 10,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_fol_basic.py",
+      "tier": "p2",
+      "test_count": 10,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_fortress_validator.py",
+      "tier": "p0",
+      "test_count": 25,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_golden_path.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_golden_path_failure.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_governance_kernel.py",
+      "tier": "p0",
+      "test_count": 9,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_graph_ambiguity.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_graph_to_fol_standalone.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_health_checker.py",
+      "tier": "p2",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_health_checker_gating.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_input_validation_properties.py",
+      "tier": "p2",
+      "test_count": 21,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_input_validation_unit.py",
+      "tier": "p2",
+      "test_count": 32,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_integration_comprehensive.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_invariant_properties.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_invariants.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_knowledge_graph_properties.py",
+      "tier": "p2",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_ledger_hash_chain.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_ledger_properties.py",
+      "tier": "p2",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_legal_priority_conflicts.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_llm_router_properties_complete.py",
+      "tier": "p2",
+      "test_count": 11,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_llm_router_simple.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_mcp_integration.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_metrics.py",
+      "tier": "p2",
+      "test_count": 17,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_model_registry.py",
+      "tier": "p2",
+      "test_count": 14,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_monitoring_unification_strict.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_neo4j_connection.py",
+      "tier": "p2",
+      "test_count": 7,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_neo4j_schema.py",
+      "tier": "p2",
+      "test_count": 14,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_neo4j_thread_safety.py",
+      "tier": "p2",
+      "test_count": 8,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_observability_output_correctness.py",
+      "tier": "p2",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_ocr_hardened.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_offline_auth.py",
+      "tier": "p2",
+      "test_count": 11,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_output_generators.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_rag_components.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_reasoning_api.py",
+      "tier": "p2",
+      "test_count": 8,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_reasoning_edge_cases.py",
+      "tier": "p2",
+      "test_count": 6,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_repo_hygiene.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_repo_hygiene_docker_state.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_robustness.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_security_settings.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_serialization_properties.py",
+      "tier": "p2",
+      "test_count": 5,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_simple_governance.py",
+      "tier": "p0",
+      "test_count": 1,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_static_no_bare_except.py",
+      "tier": "p2",
+      "test_count": 4,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_symbolic_reasoning_standalone.py",
+      "tier": "p2",
+      "test_count": 8,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_ultra_graph_builder_api.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/test_ultra_hybrid_search.py",
+      "tier": "p2",
+      "test_count": 3,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/verification/test_category_1_easy.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    },
+    {
+      "path": "tests/verification/test_category_2_medium.py",
+      "tier": "p2",
+      "test_count": 2,
+      "markers_added": 0
+    }
+  ]
+}

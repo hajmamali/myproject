@@ -50,6 +50,7 @@ class TestAgreementScoreBoundary:
         (0.99, True),    # Very high
         (1.00, True),    # Perfect
     ])
+    @pytest.mark.p0
     async def test_agreement_score_boundaries(self, strict_validator, score, should_pass):
         """Test boundary conditions: 0.84, 0.85, 0.86."""
         response = ReasoningResponse(
@@ -72,6 +73,7 @@ class TestAgreementScoreBoundary:
         assert result.passed == should_pass, f"Score {score}: expected {should_pass}, got {result.passed}"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_score_precision_floating_point(self, strict_validator):
         """Test floating-point precision near boundary."""
         # Floating-point arithmetic can introduce rounding errors
@@ -106,6 +108,7 @@ class TestSymbolicNeuralMismatch:
     """Test detection of symbolic/neural disagreement."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_high_symbolic_low_neural_disagreement(self, strict_validator):
         """P0: Detect when symbolic is high but neural is low."""
         response = ReasoningResponse(
@@ -129,6 +132,7 @@ class TestSymbolicNeuralMismatch:
         assert not result.passed, "Disagreement must be detected"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_low_symbolic_high_neural_disagreement(self, strict_validator):
         """P0: Detect when neural is high but symbolic is low."""
         response = ReasoningResponse(
@@ -151,6 +155,7 @@ class TestSymbolicNeuralMismatch:
         assert not result.passed, "Disagreement must be detected"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_both_low_agreement_fails(self, strict_validator):
         """P0: Both low = instant fail."""
         response = ReasoningResponse(
@@ -173,6 +178,7 @@ class TestSymbolicNeuralMismatch:
         assert not result.passed, "Both low agreement fails"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_both_high_agreement_passes(self, strict_validator):
         """P0: Both high = high agreement."""
         response = ReasoningResponse(
@@ -199,6 +205,7 @@ class TestAgreementCalculationCorrectness:
     """Test that agreement score is calculated correctly."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_score_is_average_or_minimum(self, strict_validator):
         """Agreement should be calculated as min or average of symbolic/neural."""
         test_cases = [
@@ -240,6 +247,7 @@ class TestZeroAndNegativeAgreement:
     """Test edge cases with zero and negative agreement."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_zero_agreement_rejected(self, strict_validator):
         """P0: Zero agreement must be rejected."""
         response = ReasoningResponse(
@@ -260,6 +268,7 @@ class TestZeroAndNegativeAgreement:
         assert not result.passed, "Zero agreement fails"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_negative_agreement_rejected(self, strict_validator):
         """P0: Negative agreement must be rejected."""
         response = ReasoningResponse(
@@ -280,6 +289,7 @@ class TestZeroAndNegativeAgreement:
             await validate_reasoning_response(response, strict_mode=False)
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_above_one_agreement_rejected(self, strict_validator):
         """P0: Agreement > 1.0 is impossible."""
         response = ReasoningResponse(
@@ -304,6 +314,7 @@ class TestAgreementWithProofTree:
     """Test agreement validation WITH proof tree requirements."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_high_but_no_proof_tree_fails(self, strict_validator):
         """P0: High agreement but missing proof tree = FAIL."""
         response = ReasoningResponse(
@@ -324,6 +335,7 @@ class TestAgreementWithProofTree:
         assert not result.passed, "Missing proof tree causes failure"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_low_with_good_proof_tree_fails(self, strict_validator):
         """P0: Low agreement even with good proof tree = FAIL."""
         response = ReasoningResponse(
@@ -344,6 +356,7 @@ class TestAgreementWithProofTree:
         assert not result.passed, "Low agreement fails regardless of tree quality"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_both_requirements_met(self, strict_validator):
         """P0: Both agreement >= 0.85 AND proof tree = PASS."""
         response = ReasoningResponse(
@@ -368,6 +381,7 @@ class TestAgreementScorePersistence:
     """Test that agreement score is consistently enforced."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_checked_on_every_response(self, strict_validator):
         """P0: Agreement must be checked for EVERY response."""
         responses = [
@@ -397,6 +411,7 @@ class TestAgreementScorePersistence:
             assert results[i].is_valid, f"Response {i} (score {responses[i].metadata['agreement_score']}) should pass"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_agreement_not_bypassed_by_context(self, strict_validator):
         """P0: Agreement check cannot be bypassed by context or metadata."""
         # Even with additional metadata, agreement must be checked

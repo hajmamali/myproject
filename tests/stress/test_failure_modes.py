@@ -39,6 +39,7 @@ class TestGracefulDegradation:
         os.environ["MAHOUN_GRAPH_BACKEND"] = "disabled_fallback"
         yield
 
+    @pytest.mark.p2
     def test_graph_disabled_no_crash(self):
         """
         **Setup**: Set graph backend to disabled_fallback
@@ -58,6 +59,7 @@ class TestGracefulDegradation:
         assert settings is not None
         assert settings.graph_backend == "disabled_fallback"
 
+    @pytest.mark.p2
     def test_neo4j_unavailability_handled(self):
         """
         **Setup**: Neo4j connection fails
@@ -84,6 +86,7 @@ class TestGracefulDegradation:
 
             assert settings_ok, "Runtime settings should load without Neo4j"
 
+    @pytest.mark.p2
     def test_lora_training_disabled_no_crash(self):
         """
         **Setup**: LoRA training disabled
@@ -99,6 +102,7 @@ class TestGracefulDegradation:
         assert settings.lora_training_enabled is False
         # System should continue functioning
 
+    @pytest.mark.p2
     def test_missing_embedding_model_fallback(self):
         """
         **Setup**: Embedding model file doesn't exist
@@ -127,6 +131,7 @@ class TestErrorRecovery:
     - No resource leaks on retry
     """
 
+    @pytest.mark.p2
     def test_kernel_recovery_after_violation(self):
         """
         **Setup**: Trigger kernel violation
@@ -167,6 +172,7 @@ class TestErrorRecovery:
         result = KernelMutationBoundary.classify_query("MATCH (n) RETURN n")
         assert result.value == "READ"
 
+    @pytest.mark.p2
     def test_context_authority_cleanup_on_error(self):
         """
         **Setup**: Set authority in try block
@@ -207,6 +213,7 @@ class TestNeo4jUnavailability:
     - System detects unavailability and logs appropriately
     """
 
+    @pytest.mark.p2
     def test_kernel_works_without_neo4j(self):
         """
         **Setup**: Mock Neo4j module to raise ImportError
@@ -224,6 +231,7 @@ class TestNeo4jUnavailability:
         query_type = KernelMutationBoundary.classify_query("CREATE (n:Node)")
         assert query_type.value == "WRITE"
 
+    @pytest.mark.p2
     def test_runtime_settings_without_graph_module(self):
         """
         **Setup**: Disable graph module
@@ -237,6 +245,7 @@ class TestNeo4jUnavailability:
         settings = get_runtime_settings()
         assert settings is not None
 
+    @pytest.mark.p2
     def test_governance_lock_without_neo4j(self):
         """
         **Setup**: Neo4j unavailable
@@ -264,6 +273,7 @@ class TestResourceConstraints:
     - No unnecessary allocations
     """
 
+    @pytest.mark.p2
     def test_minimal_mode_configuration_lightweight(self):
         """
         **Setup**: desktop_minimal mode
@@ -296,6 +306,7 @@ class TestResourceConstraints:
         assert elapsed < 1.0, f"Settings loading took {elapsed}s (too slow)"
         assert new_modules < 50, f"Settings loaded {new_modules} new modules (too many)"
 
+    @pytest.mark.p2
     def test_kernel_import_minimal_overhead(self):
         """
         **Setup**: Fresh Python interpreter state
@@ -312,6 +323,7 @@ class TestResourceConstraints:
 
         assert new_modules < 20, f"Kernel import loaded {new_modules} new modules"
 
+    @pytest.mark.p2
     def test_frozen_dataclasses_memory_efficient(self):
         """
         **Setup**: Import runtime settings (frozen dataclass)
@@ -339,6 +351,7 @@ class TestLoggingAndDiagnostics:
     - Diagnostics help troubleshooting
     """
 
+    @pytest.mark.p2
     def test_governance_violation_logging(self):
         """
         **Setup**: Enable logging, trigger violation
@@ -365,6 +378,7 @@ class TestLoggingAndDiagnostics:
             except GovernanceViolationError:
                 pass
 
+    @pytest.mark.p2
     def test_violation_error_message_informative(self):
         """
         **Setup**: Trigger violation
@@ -400,6 +414,7 @@ class TestCascadingFailurePrevention:
     - Error boundaries are clear
     """
 
+    @pytest.mark.p2
     def test_reasoning_failure_doesnt_crash_kernel(self):
         """
         **Setup**: Mock reasoning module to fail
@@ -416,6 +431,7 @@ class TestCascadingFailurePrevention:
         result = KernelMutationBoundary.classify_query("MATCH (n) RETURN n")
         assert result.value == "READ"
 
+    @pytest.mark.p2
     def test_governance_error_isolation(self):
         """
         **Setup**: Trigger governance error
@@ -456,6 +472,7 @@ class TestPartialFailureHandling:
     - System continues with degraded functionality
     """
 
+    @pytest.mark.p2
     def test_one_backend_unavailable_system_continues(self):
         """
         **Setup**: Graph backend unavailable

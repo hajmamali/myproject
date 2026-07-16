@@ -46,6 +46,7 @@ class TestSameInput100x(DeterminismTestBase):
     """Test determinism with 100 identical executions"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_symbolic_reasoning_100x_determinism(self):
         """
         Test 1.1: Symbolic reasoning must be 100% deterministic
@@ -111,6 +112,7 @@ class TestSameInput100x(DeterminismTestBase):
               f"(±{metrics.std_dev_execution_time_ms:.2f}ms)")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_hybrid_reasoning_100x_determinism(self):
         """
         Test 1.2: Hybrid reasoning determinism (if neural disabled)
@@ -145,6 +147,7 @@ class TestSameInput100x(DeterminismTestBase):
         print(f"✅ HYBRID DETERMINISM VERIFIED: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_proof_tree_hash_stability_100x(self):
         """
         Test 1.3: Proof tree hash must be cryptographically stable
@@ -190,6 +193,7 @@ class TestSameInput100x(DeterminismTestBase):
         print(f"✅ PROOF HASH STABILITY VERIFIED: 100/100 identical hashes")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_derived_facts_ordering_100x(self):
         """
         Test 1.4: Derived facts ordering must be deterministic
@@ -230,6 +234,7 @@ class TestSameInput100x(DeterminismTestBase):
         print(f"✅ DERIVED FACTS ORDERING VERIFIED: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_confidence_score_stability_100x(self):
         """
         Test 1.5: Confidence scores must be numerically stable
@@ -263,6 +268,7 @@ class TestSameInput100x(DeterminismTestBase):
         print(f"✅ CONFIDENCE STABILITY VERIFIED: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validation_determinism_100x(self):
         """
         Test 1.6: FortressValidator must produce deterministic audit hashes

@@ -52,6 +52,7 @@ class TestMinimalModeConfiguration:
             if key in os.environ:
                 del os.environ[key]
 
+    @pytest.mark.p2
     def test_minimal_mode_disables_graph(self):
         """
         **Setup**: Set MAHOUN_MODE=desktop_minimal, MAHOUN_GRAPH_ENABLED=false
@@ -72,6 +73,7 @@ class TestMinimalModeConfiguration:
                 f"Graph backend should be disabled in minimal mode, got {settings.graph_backend}"
             )
 
+    @pytest.mark.p2
     def test_minimal_mode_disables_lora_training(self):
         """
         **Setup**: Set MAHOUN_LORA_TRAINING_ENABLED=false
@@ -89,6 +91,7 @@ class TestMinimalModeConfiguration:
                 "LoRA training should be disabled in minimal mode"
             )
 
+    @pytest.mark.p2
     def test_minimal_mode_uses_lightweight_backends(self):
         """
         **Setup**: desktop_minimal mode
@@ -117,6 +120,7 @@ class TestMinimalModeConfiguration:
                 f"LLM backend {settings.llm_backend} may be too heavy for minimal mode"
             )
 
+    @pytest.mark.p2
     def test_minimal_mode_respects_environment_overrides(self):
         """
         **Setup**: Set specific backend via environment variable
@@ -145,6 +149,7 @@ class TestConfigurationConsistency:
     - No module-local configuration overrides
     """
 
+    @pytest.mark.p2
     def test_runtime_settings_immutability(self):
         """
         **Setup**: Get runtime settings (frozen dataclass)
@@ -163,6 +168,7 @@ class TestConfigurationConsistency:
         with pytest.raises((TypeError, AttributeError)):
             settings.graph_enabled = True
 
+    @pytest.mark.p2
     def test_configuration_caching(self):
         """
         **Setup**: Get runtime settings multiple times
@@ -181,6 +187,7 @@ class TestConfigurationConsistency:
         # Should be same object due to lru_cache
         assert settings1 is settings2, "Settings should be cached"
 
+    @pytest.mark.p2
     def test_all_backends_configured(self):
         """
         **Setup**: Load runtime settings
@@ -207,6 +214,7 @@ class TestConfigurationConsistency:
                 f"Backend field {field} has invalid value: {value}"
             )
 
+    @pytest.mark.p2
     def test_neo4j_uri_configured(self):
         """
         **Setup**: Load runtime settings
@@ -235,6 +243,7 @@ class TestBackendFallback:
     - No cascading failures
     """
 
+    @pytest.mark.p2
     def test_graph_fallback_when_disabled(self):
         """
         **Setup**: Graph backend set to disabled_fallback
@@ -253,6 +262,7 @@ class TestBackendFallback:
         assert settings.graph_backend == "disabled_fallback"
         # In real scenario, graph operations would check this and fallback
 
+    @pytest.mark.p2
     def test_lora_disabled_doesnt_crash(self):
         """
         **Setup**: LoRA training disabled
@@ -278,6 +288,7 @@ class TestEnvironmentVariableParsing:
     - String values are preserved
     """
 
+    @pytest.mark.p2
     def test_boolean_env_var_parsing(self):
         """
         **Setup**: Set various boolean env vars
@@ -306,6 +317,7 @@ class TestEnvironmentVariableParsing:
                 f"MAHOUN_GRAPH_ENABLED={env_value} should parse to {expected_bool}"
             )
 
+    @pytest.mark.p2
     def test_string_env_var_preservation(self):
         """
         **Setup**: Set string env vars (backend names)
@@ -330,6 +342,7 @@ class TestEnvironmentVariableParsing:
                 f"Backend {env_value} not preserved correctly"
             )
 
+    @pytest.mark.p2
     def test_missing_env_vars_use_defaults(self):
         """
         **Setup**: Unset critical env vars
@@ -359,6 +372,7 @@ class TestRuntimeConfigIsolation:
     - No mutable global state in config module
     """
 
+    @pytest.mark.p2
     def test_config_determinism(self):
         """
         **Setup**: Set reproducible environment
@@ -379,6 +393,7 @@ class TestRuntimeConfigIsolation:
         assert settings1.mode == settings2.mode
         assert settings1.graph_enabled == settings2.graph_enabled
 
+    @pytest.mark.p2
     def test_config_no_side_effects(self):
         """
         **Setup**: Verify loading config has no side effects

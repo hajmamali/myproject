@@ -23,6 +23,7 @@ from mahoun.governance.bias_analysis import (
 class TestFairnessMetrics:
     """Test fairness metrics calculations."""
     
+    @pytest.mark.p3
     def test_demographic_parity_perfect(self):
         """Test demographic parity with perfect parity."""
         predictions = np.array([1, 1, 0, 0, 1, 1, 0, 0])
@@ -33,6 +34,7 @@ class TestFairnessMetrics:
         # Both groups have 50% positive rate
         assert score == 1.0
     
+    @pytest.mark.p3
     def test_demographic_parity_disparity(self):
         """Test demographic parity with disparity."""
         predictions = np.array([1, 1, 1, 1, 0, 0, 0, 0])
@@ -43,6 +45,7 @@ class TestFairnessMetrics:
         # Group 0: 100%, Group 1: 0% -> disparity = 1.0
         assert score == 0.0
     
+    @pytest.mark.p3
     def test_demographic_parity_single_group(self):
         """Test demographic parity with single group."""
         predictions = np.array([1, 0, 1, 0])
@@ -53,6 +56,7 @@ class TestFairnessMetrics:
         # No disparity with single group
         assert score == 1.0
     
+    @pytest.mark.p3
     def test_equalized_odds_perfect(self):
         """Test equalized odds with perfect equality."""
         predictions = np.array([1, 1, 0, 0, 1, 1, 0, 0])
@@ -64,6 +68,7 @@ class TestFairnessMetrics:
         # Perfect predictions -> TPR=1, FPR=0 for both groups
         assert score == 1.0
     
+    @pytest.mark.p3
     def test_equalized_odds_disparity(self):
         """Test equalized odds with disparity."""
         # Group 0: perfect predictions
@@ -77,6 +82,7 @@ class TestFairnessMetrics:
         # Should have low score due to disparity
         assert score < 0.5
     
+    @pytest.mark.p3
     def test_disparate_impact_no_bias(self):
         """Test disparate impact with no bias."""
         predictions = np.array([1, 1, 0, 0, 1, 1, 0, 0])
@@ -87,6 +93,7 @@ class TestFairnessMetrics:
         # Both groups have 50% positive rate -> ratio = 1.0
         assert ratio == 1.0
     
+    @pytest.mark.p3
     def test_disparate_impact_bias(self):
         """Test disparate impact with bias."""
         predictions = np.array([1, 1, 1, 1, 0, 0, 1, 1])
@@ -97,6 +104,7 @@ class TestFairnessMetrics:
         # Privileged: 100%, Unprivileged: 50% -> ratio = 0.5
         assert ratio == 0.5
     
+    @pytest.mark.p3
     def test_disparate_impact_edge_cases(self):
         """Test disparate impact edge cases."""
         # All zeros
@@ -113,6 +121,7 @@ class TestFairnessMetrics:
         ratio = FairnessMetrics.disparate_impact(predictions, protected_attr, privileged_group=0)
         assert ratio == 1.0
     
+    @pytest.mark.p3
     def test_equal_opportunity_perfect(self):
         """Test equal opportunity with perfect equality."""
         predictions = np.array([1, 1, 0, 0, 1, 1, 0, 0])
@@ -124,6 +133,7 @@ class TestFairnessMetrics:
         # Both groups have TPR = 1.0
         assert score == 1.0
     
+    @pytest.mark.p3
     def test_equal_opportunity_disparity(self):
         """Test equal opportunity with disparity."""
         predictions = np.array([1, 1, 0, 0, 0, 0, 0, 0])
@@ -162,6 +172,7 @@ class TestBiasAnalyzer:
         np.random.seed(42)
         return np.random.randint(0, 2, 80)
     
+    @pytest.mark.p3
     def test_analyze_dataset_basic(self, sample_data, sample_predictions, sample_labels):
         """Test basic dataset analysis."""
         analyzer = BiasAnalyzer(fairness_threshold=0.8)
@@ -181,6 +192,7 @@ class TestBiasAnalyzer:
         assert "gender_demographic_parity" in report.fairness_scores
         assert "gender_equalized_odds" in report.fairness_scores
     
+    @pytest.mark.p3
     def test_analyze_dataset_no_predictions(self, sample_data):
         """Test analysis without predictions."""
         analyzer = BiasAnalyzer()
@@ -194,6 +206,7 @@ class TestBiasAnalyzer:
         assert isinstance(report, BiasReport)
         assert len(report.fairness_scores) == 0  # No metrics without predictions
     
+    @pytest.mark.p3
     def test_small_group_detection(self):
         """Test detection of small groups."""
         analyzer = BiasAnalyzer(min_group_size=10)
@@ -215,6 +228,7 @@ class TestBiasAnalyzer:
         ]
         assert len(small_group_violations) > 0
     
+    @pytest.mark.p3
     def test_fairness_violation_detection(self):
         """Test detection of fairness violations."""
         analyzer = BiasAnalyzer(fairness_threshold=0.8)
@@ -238,6 +252,7 @@ class TestBiasAnalyzer:
         assert len(report.violations) > 0
         assert report.severity in ["high", "critical"]
     
+    @pytest.mark.p3
     def test_severity_calculation(self):
         """Test severity level calculation."""
         analyzer = BiasAnalyzer(fairness_threshold=0.8)
@@ -262,6 +277,7 @@ class TestBiasAnalyzer:
         severity = analyzer._calculate_severity(violations, {})
         assert severity == "critical"
     
+    @pytest.mark.p3
     def test_detect_protected_attributes(self):
         """Test automatic detection of protected attributes."""
         analyzer = BiasAnalyzer()
@@ -280,6 +296,7 @@ class TestBiasAnalyzer:
         assert "ethnicity_code" in detected
         assert "feature_x" not in detected
     
+    @pytest.mark.p3
     def test_generate_mitigation_strategy(self):
         """Test mitigation strategy generation."""
         analyzer = BiasAnalyzer()
@@ -316,6 +333,7 @@ class TestBiasAnalyzer:
         assert "reweighting" in methods or "resampling" in methods
         assert "data_collection" in methods
     
+    @pytest.mark.p3
     def test_multiple_protected_attributes(self, sample_data, sample_predictions, sample_labels):
         """Test analysis with multiple protected attributes."""
         analyzer = BiasAnalyzer()
@@ -331,6 +349,7 @@ class TestBiasAnalyzer:
         assert "gender_demographic_parity" in report.fairness_scores
         assert "age_demographic_parity" in report.fairness_scores
     
+    @pytest.mark.p3
     def test_missing_protected_attribute(self, sample_data, sample_predictions):
         """Test handling of missing protected attribute."""
         analyzer = BiasAnalyzer()
@@ -345,6 +364,7 @@ class TestBiasAnalyzer:
         # Should not crash, just skip missing attribute
         assert isinstance(report, BiasReport)
     
+    @pytest.mark.p3
     def test_report_to_dict(self):
         """Test report serialization."""
         report = BiasReport(
@@ -367,6 +387,7 @@ class TestBiasAnalyzer:
 class TestProtectedAttribute:
     """Test protected attribute enum."""
     
+    @pytest.mark.p3
     def test_enum_values(self):
         """Test enum values."""
         assert ProtectedAttribute.GENDER == "gender"
@@ -378,6 +399,7 @@ class TestProtectedAttribute:
 class TestFairnessMetric:
     """Test fairness metric enum."""
     
+    @pytest.mark.p3
     def test_enum_values(self):
         """Test enum values."""
         assert FairnessMetric.DEMOGRAPHIC_PARITY == "demographic_parity"
@@ -389,6 +411,7 @@ class TestFairnessMetric:
 class TestBiasAnalysisPerformance:
     """Performance tests for bias analysis."""
     
+    @pytest.mark.p3
     def test_large_dataset_analysis(self):
         """Test analysis on large dataset."""
         np.random.seed(42)

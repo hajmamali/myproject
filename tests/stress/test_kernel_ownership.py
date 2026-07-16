@@ -31,6 +31,7 @@ class TestKernelIsolation:
     - No cascading failures from reasoning layer
     """
 
+    @pytest.mark.p2
     def test_kernel_query_classification_without_reasoning(self):
         """
         **Setup**: Import kernel directly without reasoning module
@@ -55,6 +56,7 @@ class TestKernelIsolation:
             result = KernelMutationBoundary.classify_query(query)
             assert result == expected_type, f"Query '{query}' classified as {result}, expected {expected_type}"
 
+    @pytest.mark.p2
     def test_kernel_context_authority_isolation(self):
         """
         **Setup**: Create isolated context with authority set
@@ -96,6 +98,7 @@ class TestKernelIsolation:
         reset_governance_authority(token1)
         assert not is_governance_authorized()
 
+    @pytest.mark.p2
     def test_kernel_mutation_boundary_enforcement(self):
         """
         **Setup**: Kernel with authority disabled (default state)
@@ -134,6 +137,7 @@ class TestKernelIsolation:
             assert violation.severity == ViolationSeverity.CRITICAL
             assert "Mutation" in violation.message
 
+    @pytest.mark.p2
     def test_kernel_forbidden_procedure_detection(self):
         """
         **Setup**: Queries with forbidden procedures
@@ -155,6 +159,7 @@ class TestKernelIsolation:
             result = KernelMutationBoundary.classify_query(query)
             assert result == QueryType.FORBIDDEN, f"Query '{query}' should be FORBIDDEN"
 
+    @pytest.mark.p2
     def test_kernel_standalone_import(self):
         """
         **Setup**: Import kernel module in isolation
@@ -185,6 +190,7 @@ class TestKernelIsolation:
                     f"Kernel import loaded forbidden module: {module}"
                 )
 
+    @pytest.mark.p2
     def test_kernel_violation_immutability(self):
         """
         **Setup**: Create GovernanceViolation instance
@@ -219,6 +225,7 @@ class TestKernelContractPreservation:
     - ViolationSeverity boundaries enforced
     """
 
+    @pytest.mark.p2
     def test_query_type_enum_immutability(self):
         """
         **Setup**: Import QueryType enum
@@ -239,6 +246,7 @@ class TestKernelContractPreservation:
         assert QueryType.WRITE.value == "WRITE"
         assert QueryType.FORBIDDEN.value == "FORBIDDEN"
 
+    @pytest.mark.p2
     def test_violation_category_contract(self):
         """
         **Setup**: Import ViolationCategory
@@ -259,6 +267,7 @@ class TestKernelContractPreservation:
         for category in expected_categories:
             assert hasattr(ViolationCategory, category), f"Missing category: {category}"
 
+    @pytest.mark.p2
     def test_kernel_api_signatures_preserved(self):
         """
         **Setup**: Import all kernel APIs
@@ -299,6 +308,7 @@ class TestKernelZeroDependency:
     - No vendored or external dependencies
     """
 
+    @pytest.mark.p2
     def test_kernel_imports_stdlib_only(self):
         """
         **Setup**: Read kernel.py source

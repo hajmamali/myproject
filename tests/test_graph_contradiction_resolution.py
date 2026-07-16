@@ -19,6 +19,7 @@ sys.path.insert(0, str(project_root))
 class TestGraphContradictionDetection:
     """تست شناسایی Contradiction در گراف"""
     
+    @pytest.mark.p2
     def test_contradiction_detector_exists(self):
         """تست اینکه ContradictionDetector وجود دارد"""
         try:
@@ -28,6 +29,7 @@ class TestGraphContradictionDetection:
         except ImportError:
             pytest.skip("ContradictionDetector not available")
     
+    @pytest.mark.p2
     def test_contradiction_detector_can_be_created(self):
         """تست اینکه می‌توان ContradictionDetector را ساخت"""
         try:
@@ -40,6 +42,7 @@ class TestGraphContradictionDetection:
         except ImportError:
             pytest.skip("ContradictionDetector not available")
     
+    @pytest.mark.p2
     def test_can_detect_contradiction_in_graph_nodes(self):
         """تست اینکه می‌توان contradiction در graph nodes را detect کرد"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -90,6 +93,7 @@ class TestGraphContradictionDetection:
         assert len(contradiction_edges) > 0, "باید contradiction edge در گراف باشد"
         print(f"✓ Detected {len(contradiction_edges)} contradiction relationships in graph")
     
+    @pytest.mark.p2
     def test_can_detect_semantic_contradiction(self):
         """تست اینکه می‌توان semantic contradiction را detect کرد"""
         try:
@@ -118,6 +122,7 @@ class TestGraphContradictionDetection:
 class TestGraphContradictionInReasoning:
     """تست Contradiction در Reasoning با گراف"""
     
+    @pytest.mark.p2
     def test_reasoning_service_detects_contradictions(self):
         """تست اینکه Reasoning Service contradictions را detect می‌کند"""
         try:
@@ -150,6 +155,7 @@ class TestGraphContradictionInReasoning:
         except ImportError:
             pytest.skip("UltraReasoningService not available")
     
+    @pytest.mark.p2
     def test_contradiction_in_graph_based_reasoning(self):
         """تست contradiction در graph-based reasoning"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -194,6 +200,7 @@ class TestGraphContradictionInReasoning:
 class TestGraphContradictionResolution:
     """تست Resolution کردن Contradictions در گراف"""
     
+    @pytest.mark.p2
     def test_can_identify_contradictory_nodes(self):
         """تست اینکه می‌توان nodes متناقض را شناسایی کرد"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -235,6 +242,7 @@ class TestGraphContradictionResolution:
         assert len(contradictory_pairs) > 0, "باید contradictory pairs پیدا شوند"
         print(f"✓ Identified {len(contradictory_pairs)} contradictory node pairs")
     
+    @pytest.mark.p2
     def test_can_resolve_contradiction_by_confidence(self):
         """تست اینکه می‌توان contradiction را با confidence resolve کرد"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -287,6 +295,7 @@ class TestGraphContradictionResolution:
         assert resolved_rule.id == "rule_high_conf", "باید rule با confidence بالاتر انتخاب شود"
         print("✓ Resolved contradiction by selecting higher confidence rule")
     
+    @pytest.mark.p2
     def test_can_resolve_contradiction_by_source_credibility(self):
         """تست اینکه می‌توان contradiction را با source credibility resolve کرد"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -340,6 +349,7 @@ class TestGraphContradictionResolution:
         assert resolved_source.id == "source_credible", "باید source با credibility بالاتر انتخاب شود"
         print("✓ Resolved contradiction by selecting higher credibility source")
     
+    @pytest.mark.p2
     def test_can_resolve_contradiction_by_temporal_precedence(self):
         """تست اینکه می‌توان contradiction را با temporal precedence resolve کرد"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -398,6 +408,7 @@ class TestGraphContradictionResolution:
 class TestGraphContradictionInComplexScenarios:
     """تست Contradiction Resolution در سناریوهای پیچیده"""
     
+    @pytest.mark.p2
     def test_multiple_contradictions_in_graph(self):
         """تست multiple contradictions در یک گراف"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -425,6 +436,7 @@ class TestGraphContradictionInComplexScenarios:
         assert len(contradictions) == 2, "باید 2 contradiction پیدا شود"
         print(f"✓ Detected {len(contradictions)} contradictions in graph")
     
+    @pytest.mark.p2
     def test_contradiction_chain_in_graph(self):
         """تست chain of contradictions در گراف"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -459,6 +471,7 @@ class TestGraphContradictionInComplexScenarios:
         assert a_to_b and b_to_c, "باید contradiction chain درست باشد"
         print("✓ Detected contradiction chain in graph")
     
+    @pytest.mark.p2
     def test_contradiction_resolution_with_graph_analytics(self):
         """تست contradiction resolution با استفاده از graph analytics"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder

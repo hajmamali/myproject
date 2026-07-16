@@ -115,6 +115,7 @@ def sample_graph(sample_nodes):
 class TestFOLNormalizer:
     """Test FOL normalizer"""
     
+    @pytest.mark.p2
     def test_basic_normalization(self):
         """Test basic text normalization"""
         normalizer = FOLNormalizer()
@@ -123,6 +124,7 @@ class TestFOLNormalizer:
         assert normalizer.normalize("ماده 10") == "ماده_10"
         assert normalizer.normalize("Case #123") == "case_hash_123"
 
+    @pytest.mark.p2
     def test_special_characters(self):
         """Test special character handling"""
         normalizer = FOLNormalizer()
@@ -131,6 +133,7 @@ class TestFOLNormalizer:
         assert normalizer.normalize("a-b-c") == "a_b_c"
         assert normalizer.normalize("___test___") == "test"
     
+    @pytest.mark.p2
     def test_starts_with_digit(self):
         """Test handling of identifiers starting with digit"""
         normalizer = FOLNormalizer()
@@ -139,6 +142,7 @@ class TestFOLNormalizer:
         assert result.startswith("n_")
         assert "123abc" in result
     
+    @pytest.mark.p2
     def test_caching(self):
         """Test normalization caching"""
         normalizer = FOLNormalizer(enable_caching=True)
@@ -153,6 +157,7 @@ class TestFOLNormalizer:
         
         assert stats2["cache_size"] >= stats1["cache_size"]
     
+    @pytest.mark.p2
     def test_collision_handling(self):
         """Test collision handling with context"""
         normalizer = FOLNormalizer()
@@ -167,6 +172,7 @@ class TestFOLNormalizer:
         # Results should be different due to context disambiguation
         assert result1 != result2
     
+    @pytest.mark.p2
     def test_denormalization(self):
         """Test reverse normalization"""
         normalizer = FOLNormalizer(enable_caching=True)
@@ -185,6 +191,7 @@ class TestFOLNormalizer:
 class TestBasicConversion:
     """Test basic conversion functionality"""
     
+    @pytest.mark.p2
     def test_convert_single_node(self, sample_nodes):
         """Test converting a single node"""
         converter = GraphToFOLConverter()
@@ -199,6 +206,7 @@ class TestBasicConversion:
         type_facts = [f for f in result.facts if f.predicate == "person"]
         assert len(type_facts) == 1
     
+    @pytest.mark.p2
     def test_convert_multiple_nodes(self, sample_nodes):
         """Test converting multiple nodes"""
         converter = GraphToFOLConverter()
@@ -209,6 +217,7 @@ class TestBasicConversion:
         assert result.nodes_converted == len(sample_nodes)
         assert len(result.facts) > len(sample_nodes)  # Should have property facts too
     
+    @pytest.mark.p2
     def test_property_conversion(self, sample_nodes):
         """Test property conversion"""
         converter = GraphToFOLConverter(
@@ -222,6 +231,7 @@ class TestBasicConversion:
         assert len(property_facts) > 0
         assert result.properties_converted > 0
 
+    @pytest.mark.p2
     def test_exclude_properties(self, sample_nodes):
         """Test excluding properties"""
         converter = GraphToFOLConverter(
@@ -234,6 +244,7 @@ class TestBasicConversion:
         property_facts = [f for f in result.facts if f.predicate.startswith("has_")]
         assert len(property_facts) == 0
     
+    @pytest.mark.p2
     def test_persian_text_handling(self, sample_nodes):
         """Test Persian text handling"""
         converter = GraphToFOLConverter()
@@ -255,6 +266,7 @@ class TestBasicConversion:
 class TestErrorHandling:
     """Test error handling"""
     
+    @pytest.mark.p2
     def test_empty_node_list(self):
         """Test handling of empty node list"""
         converter = GraphToFOLConverter(
@@ -264,6 +276,7 @@ class TestErrorHandling:
         with pytest.raises(Exception):
             converter.convert_nodes_to_facts([])
     
+    @pytest.mark.p2
     def test_invalid_node_strict_mode(self):
         """Test invalid node in strict mode"""
         converter = GraphToFOLConverter(
@@ -279,6 +292,7 @@ class TestErrorHandling:
         with pytest.raises(InvalidNodeError):
             converter.convert_nodes_to_facts([invalid_node])
     
+    @pytest.mark.p2
     def test_invalid_node_permissive_mode(self):
         """Test invalid node in permissive mode"""
         converter = GraphToFOLConverter(
@@ -297,6 +311,7 @@ class TestErrorHandling:
         assert not result.success
         assert len(result.errors) > 0
     
+    @pytest.mark.p2
     def test_duplicate_nodes(self, sample_nodes):
         """Test handling of duplicate nodes"""
         converter = GraphToFOLConverter(
@@ -318,6 +333,7 @@ class TestErrorHandling:
 class TestIntegrityVerification:
     """Test integrity verification"""
     
+    @pytest.mark.p2
     def test_integrity_hash_generation(self, sample_nodes):
         """Test integrity hash generation"""
         converter = GraphToFOLConverter(enable_validation=True)
@@ -328,6 +344,7 @@ class TestIntegrityVerification:
         assert len(result.integrity_hash) == 64  # SHA-256
         assert result.verified
     
+    @pytest.mark.p2
     def test_integrity_verification_success(self, sample_nodes):
         """Test successful integrity verification"""
         converter = GraphToFOLConverter(enable_validation=True)
@@ -338,6 +355,7 @@ class TestIntegrityVerification:
         is_valid = converter.verify_conversion_integrity(result)
         assert is_valid
     
+    @pytest.mark.p2
     def test_integrity_verification_failure(self, sample_nodes):
         """Test integrity verification failure"""
         converter = GraphToFOLConverter(enable_validation=True)
@@ -359,6 +377,7 @@ class TestIntegrityVerification:
 class TestPerformance:
     """Test performance characteristics"""
     
+    @pytest.mark.p2
     def test_large_graph_conversion(self):
         """Test conversion of large graph"""
         # Create large graph
@@ -385,6 +404,7 @@ class TestPerformance:
         print(f"\n⏱️  Converted 1000 nodes in {elapsed:.2f}s")
         print(f"   Throughput: {1000/elapsed:.0f} nodes/sec")
     
+    @pytest.mark.p2
     def test_caching_performance(self, sample_nodes):
         """Test caching performance improvement"""
         converter = GraphToFOLConverter(enable_caching=True)
@@ -416,6 +436,7 @@ class TestPerformance:
 class TestThreadSafety:
     """Test thread safety"""
     
+    @pytest.mark.p2
     def test_concurrent_conversion(self, sample_nodes):
         """Test concurrent conversions"""
         results = []
@@ -458,6 +479,7 @@ class TestThreadSafety:
 class TestAuditTrail:
     """Test audit trail functionality"""
     
+    @pytest.mark.p2
     def test_audit_trail_generation(self, sample_nodes):
         """Test audit trail generation"""
         converter = GraphToFOLConverter(enable_audit_trail=True)
@@ -482,6 +504,7 @@ class TestAuditTrail:
 class TestConvenienceFunctions:
     """Test convenience functions"""
     
+    @pytest.mark.p2
     def test_convert_graph_to_facts(self, sample_graph):
         """Test convert_graph_to_facts convenience function"""
         result = convert_graph_to_facts(sample_graph)

@@ -17,12 +17,14 @@ from unittest.mock import patch
 class TestStartupValidationMandatory:
     """Test that startup validation is now mandatory, not optional"""
     
+    @pytest.mark.p1
     def test_startup_fails_without_valid_config(self):
         """Startup must fail if configuration validation fails"""
         # This would require a subprocess test since we can't easily 
         # test app startup failure in the same process
         pass  # TODO: Implement subprocess test
     
+    @pytest.mark.p1
     def test_startup_validation_not_wrapped_in_try_catch(self):
         """Verify that startup validation is not wrapped in try-catch"""
         from api.main import lifespan
@@ -52,6 +54,7 @@ class TestStartupValidationMandatory:
 class TestNeo4jImportPrevention:
     """Test that direct Neo4j imports are prevented in production"""
     
+    @pytest.mark.p1
     def test_import_firewall_can_be_installed(self):
         """Test that import firewall can be installed without errors"""
         from mahoun.core.import_firewall import MahounImportHook
@@ -59,6 +62,7 @@ class TestNeo4jImportPrevention:
         # Just test that it can be created
         assert hook is not None
     
+    @pytest.mark.p1
     def test_direct_neo4j_import_blocked_in_production(self):
         """Neo4j import should be blocked in production mode"""
         from mahoun.core.import_firewall import check_import_allowed
@@ -68,6 +72,7 @@ class TestNeo4jImportPrevention:
             with pytest.raises(ImportError, match="FORBIDDEN IMPORT BLOCKED"):
                 check_import_allowed("neo4j", "test_context")
     
+    @pytest.mark.p1
     def test_neo4j_import_allowed_in_development(self):
         """Neo4j import should be allowed in development with warning"""
         with patch.dict(os.environ, {'MAHOUN_ENV': 'development'}):
@@ -83,6 +88,7 @@ class TestNeo4jImportPrevention:
 class TestSeededDataGovernance:
     """Test that test seeding has proper governance gates"""
     
+    @pytest.mark.p1
     def test_seeding_blocked_without_environment(self):
         """Seeding must be blocked if MAHOUN_ENV is not test/dev"""
         from tests.fixtures.seed_data import seed_test_knowledge_graph
@@ -91,6 +97,7 @@ class TestSeededDataGovernance:
             with pytest.raises(RuntimeError, match="GOVERNANCE VIOLATION.*BLOCKED.*environment.*production"):
                 seed_test_knowledge_graph()
     
+    @pytest.mark.p1
     def test_seeding_blocked_without_explicit_opt_in(self):
         """Seeding must be blocked without explicit opt-in flag"""
         from tests.fixtures.seed_data import seed_test_knowledge_graph
@@ -104,6 +111,7 @@ class TestSeededDataGovernance:
             with pytest.raises(RuntimeError, match="requires EXPLICIT opt-in"):
                 seed_test_knowledge_graph()
     
+    @pytest.mark.p1
     def test_seeding_blocked_with_production_hostname(self):
         """Seeding must be blocked if production indicators detected"""
         from tests.fixtures.seed_data import seed_test_knowledge_graph
@@ -122,6 +130,7 @@ class TestSeededDataGovernance:
 class TestReasoningResponseValidation:
     """Test that reasoning responses enforce proof-carrying contract"""
     
+    @pytest.mark.p1
     def test_successful_response_requires_fortress_validation(self):
         """Successful responses must have fortress_validated=True"""
         from mahoun.reasoning.unified_reasoning_service import ReasoningResponse, ReasoningMode
@@ -138,6 +147,7 @@ class TestReasoningResponseValidation:
                 metadata={"audit_hash": "test_hash"}  # Add required metadata
             )
     
+    @pytest.mark.p1
     def test_successful_response_requires_proof_tree(self):
         """Successful responses must have proof_tree"""
         from mahoun.reasoning.unified_reasoning_service import ReasoningResponse, ReasoningMode
@@ -159,6 +169,7 @@ class TestReasoningResponseValidation:
 class TestCoreDependencyPurity:
     """Test that core modules maintain dependency purity"""
     
+    @pytest.mark.p1
     def test_core_dependency_validation_works(self):
         """Core dependency validator should detect violations"""
         from mahoun.core.dependency_validator import validate_core_dependencies

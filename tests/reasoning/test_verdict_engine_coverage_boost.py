@@ -113,6 +113,7 @@ def verdict_engine(mock_graph_builder, mock_knowledge_graph, mock_ledger_writer)
 class TestVerdictDraftCoverage:
     """Test VerdictDraft → finalization flow (P0-3)"""
     
+    @pytest.mark.p1
     def test_verdict_draft_creation(self):
         """Test VerdictDraft instantiation"""
         draft = VerdictDraft(
@@ -126,6 +127,7 @@ class TestVerdictDraftCoverage:
         assert draft.final_verdict_text == "Test verdict"
         assert draft.verdict_id == "v001"
     
+    @pytest.mark.p1
     def test_verdict_draft_finalize_success(self):
         """Test draft finalization with valid ledger hash"""
         draft = VerdictDraft(
@@ -144,6 +146,7 @@ class TestVerdictDraftCoverage:
         assert final_verdict.final_verdict == "Finalized"
 
     
+    @pytest.mark.p1
     def test_verdict_draft_finalize_invalid_hash(self):
         """Test finalization fails with invalid hash"""
         draft = VerdictDraft(
@@ -169,12 +172,14 @@ class TestVerdictDraftCoverage:
 class TestEngineInitialization:
     """Test engine initialization"""
     
+    @pytest.mark.p1
     def test_engine_init_success(self, verdict_engine):
         """Test engine initializes correctly"""
         assert verdict_engine.graph_builder is not None
         assert verdict_engine.knowledge_graph is not None
         assert verdict_engine.ledger_writer is not None
     
+    @pytest.mark.p1
     def test_engine_has_ledger_write_gate(self, verdict_engine):
         """Test P0-4 write gate is initialized"""
         assert verdict_engine._ledger_write_gate is not None
@@ -189,6 +194,7 @@ class TestEngineInitialization:
 class TestModeConstraints:
     """Test dual-mode resource checks"""
     
+    @pytest.mark.p1
     async def test_desktop_minimal_with_graph_disabled_blocks_verdict(self, verdict_engine):
         """Test verdict blocked in DESKTOP_MINIMAL with no graph"""
         with patch("mahoun.core.runtime_config.is_desktop_minimal", return_value=True):
@@ -209,6 +215,7 @@ class TestModeConstraints:
 class TestPrivacyAndActiveView:
     """Test EL-I7 and EL-I8 enforcement"""
     
+    @pytest.mark.p1
     async def test_el_i1_no_facts_raises_error(self, verdict_engine):
         """Test EL-I1: Cannot generate verdict without evidence"""
         with pytest.raises(RuntimeError, match="EL-I1/EL-I3 violation"):
@@ -217,6 +224,7 @@ class TestPrivacyAndActiveView:
                 facts=[]  # No facts
             )
     
+    @pytest.mark.p1
     async def test_el_i8_tombstoned_dict_fact_rejected(self, verdict_engine):
         """Test EL-I8: Tombstoned dict facts rejected"""
         with pytest.raises(RuntimeError, match="EL-I8 violation"):
@@ -225,6 +233,7 @@ class TestPrivacyAndActiveView:
                 facts=[{"id": "f1", "_deleted": True}]
             )
     
+    @pytest.mark.p1
     async def test_el_i8_tombstoned_object_fact_rejected(self, verdict_engine):
         """Test EL-I8: Tombstoned object facts rejected"""
         class FakeFact:
@@ -248,6 +257,7 @@ class TestResolveProvenance:
     
     @patch("mahoun.reasoning.evidence_linked_verdict.get_current_environment")
     @patch("mahoun.reasoning.evidence_linked_verdict.GovernanceContextManager")
+    @pytest.mark.p1
     def test_provenance_in_production_requires_context(self, mock_gcm, mock_env):
         """Test provenance fails in production without context"""
         mock_env.return_value.is_production.return_value = True
@@ -258,6 +268,7 @@ class TestResolveProvenance:
     
     @patch("mahoun.reasoning.evidence_linked_verdict.get_current_environment")  
     @patch("mahoun.reasoning.evidence_linked_verdict.GovernanceContextManager")
+    @pytest.mark.p1
     def test_provenance_in_production_with_context(self, mock_gcm, mock_env):
         """Test provenance succeeds with active context"""
         mock_env.return_value.is_production.return_value = True
@@ -274,6 +285,7 @@ class TestResolveProvenance:
         assert prov.correlation_id == "corr_123"
     
     @patch("mahoun.reasoning.evidence_linked_verdict.get_current_environment")
+    @pytest.mark.p1
     def test_provenance_in_development_allows_synthetic(self, mock_env):
         """Test synthetic provenance allowed in development"""
         mock_env.return_value.is_production.return_value = False
@@ -294,6 +306,7 @@ class TestResolveProvenance:
 class TestEndToEndMinimal:
     """Minimal end-to-end test to increase coverage"""
     
+    @pytest.mark.p1
     async def test_generate_verdict_minimal_path(self, verdict_engine):
         """Test minimal verdict generation path"""
         # Mock all external dependencies
@@ -331,6 +344,7 @@ class TestEndToEndMinimal:
 class TestBuildCaseGraph:
     """Test _build_case_graph with all code paths"""
     
+    @pytest.mark.p1
     def test_build_case_graph_with_string_facts(self, verdict_engine):
         """Test graph building with string facts"""
         facts = ["fact 1", "fact 2", "fact 3"]
@@ -347,6 +361,7 @@ class TestBuildCaseGraph:
         assert len(nodes) == 3
         assert all(n.node_type == "Fact" for n in nodes.values())
     
+    @pytest.mark.p1
     def test_build_case_graph_with_dict_facts(self, verdict_engine):
         """Test graph building with dict facts"""
         facts = [
@@ -365,6 +380,7 @@ class TestBuildCaseGraph:
         assert len(nodes) == 2
         assert "f1" in nodes or any("f1" in str(n.id) for n in nodes.values())
     
+    @pytest.mark.p1
     def test_build_case_graph_with_object_facts(self, verdict_engine):
         """Test graph building with object facts having __dict__"""
         class Fact:
@@ -384,6 +400,7 @@ class TestBuildCaseGraph:
         
         assert len(nodes) == 2
     
+    @pytest.mark.p1
     def test_build_case_graph_creates_sequential_edges(self, verdict_engine):
         """Test that sequential edges are created between facts"""
         facts = ["fact 1", "fact 2", "fact 3"]
@@ -421,6 +438,7 @@ class TestBuildCaseGraph:
 class TestRuleAndPrecedentCreation:
     """Test _create_rule_nodes and _create_precedent_nodes"""
     
+    @pytest.mark.p1
     def test_create_rule_nodes_empty_rules(self, verdict_engine):
         """Test with no applicable rules"""
         verdict_engine.knowledge_graph.find_applicable_rules = Mock(return_value=[])
@@ -430,6 +448,7 @@ class TestRuleAndPrecedentCreation:
         assert len(nodes) == 0
         assert len(edges) == 0
 
+    @pytest.mark.p1
     def test_create_rule_nodes_with_rules(self, verdict_engine):
         """Test with applicable rules"""
         from mahoun.reasoning.knowledge_graph import LegalRule
@@ -460,6 +479,7 @@ class TestRuleAndPrecedentCreation:
         assert isinstance(nodes, dict)
         assert isinstance(edges, list)
 
+    @pytest.mark.p1
     def test_create_precedent_nodes_empty(self, verdict_engine):
         """Test with no precedents"""
         verdict_engine.knowledge_graph.find_similar_precedents = Mock(return_value=[])
@@ -468,6 +488,7 @@ class TestRuleAndPrecedentCreation:
 
         assert len(nodes) == 0
 
+    @pytest.mark.p1
     def test_create_precedent_nodes_with_precedents(self, verdict_engine):
         """Test with similar precedents"""
         from mahoun.reasoning.knowledge_graph import LegalPrecedent
@@ -501,12 +522,14 @@ class TestRuleAndPrecedentCreation:
 class TestContradictionDetection:
     """Test _detect_contradictions logic"""
     
+    @pytest.mark.p1
     def test_detect_contradictions_no_nodes(self, verdict_engine):
         """Test with empty node dict"""
         contradictions = verdict_engine._detect_contradictions({}, {}, [])
         
         assert contradictions == []
     
+    @pytest.mark.p1
     def test_detect_contradictions_single_node(self, verdict_engine):
         """Test with single node (no pairs to check)"""
         nodes = {
@@ -517,6 +540,7 @@ class TestContradictionDetection:
         
         assert contradictions == []
     
+    @pytest.mark.p1
     def test_detect_contradictions_two_rules_contradictory(self, verdict_engine):
         """Test detecting contradictory rules"""
         nodes = {
@@ -538,6 +562,7 @@ class TestContradictionDetection:
         
         assert len(contradictions) > 0
     
+    @pytest.mark.p1
     def test_detect_contradictions_mixed_types(self, verdict_engine):
         """Test with mixed node types (rules + precedents)"""
         nodes = {
@@ -563,6 +588,7 @@ class TestContradictionDetection:
 class TestContradictionResolution:
     """Test deterministic contradiction resolution"""
     
+    @pytest.mark.p1
     def test_resolve_contradiction_by_confidence(self, verdict_engine):
         """Test resolution by confidence score"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.9}, label="Rule", provenance=mock_provenance())
@@ -573,6 +599,7 @@ class TestContradictionResolution:
         assert result.winner_id == "n1"
         assert result.resolution_method == "confidence"
     
+    @pytest.mark.p1
     def test_resolve_contradiction_by_credibility(self, verdict_engine):
         """Test resolution by credibility when confidence equal"""
         node1 = GraphNode(id="n1", node_type="Precedent", properties={
@@ -591,6 +618,7 @@ class TestContradictionResolution:
         
         assert result.winner_id == "n2"
     
+    @pytest.mark.p1
     def test_resolve_contradiction_by_temporal(self, verdict_engine):
         """Test resolution by temporal precedence"""
         node1 = GraphNode(id="n1", node_type="Precedent", properties={
@@ -610,6 +638,7 @@ class TestContradictionResolution:
         
         assert result.winner_id == "n2"
     
+    @pytest.mark.p1
     def test_resolve_contradiction_by_graph_analytics(self, verdict_engine):
         """Test resolution by graph analytics as last resort"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
@@ -625,6 +654,7 @@ class TestContradictionResolution:
         assert result.winner_id == "n1"
         assert result.resolution_method == "graph_analytics"
     
+    @pytest.mark.p1
     def test_resolve_contradiction_fallback_to_first(self, verdict_engine):
         """Test fallback to first node when all methods fail"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
@@ -649,6 +679,7 @@ class TestContradictionResolution:
 class TestResolutionStrategies:
     """Test individual resolution strategy methods"""
     
+    @pytest.mark.p1
     def test_resolve_by_confidence_clear_winner(self, verdict_engine):
         """Test confidence resolution with clear winner"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95}, label="Rule", provenance=mock_provenance())
@@ -658,6 +689,7 @@ class TestResolutionStrategies:
         
         assert winner.id == "n1"
     
+    @pytest.mark.p1
     def test_resolve_by_confidence_tie(self, verdict_engine):
         """Test confidence resolution returns None on tie"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.85}, label="Rule", provenance=mock_provenance())
@@ -667,6 +699,7 @@ class TestResolutionStrategies:
         
         assert winner is None
     
+    @pytest.mark.p1
     def test_resolve_by_credibility_with_scores(self, verdict_engine):
         """Test credibility resolution"""
         node1 = GraphNode(id="n1", node_type="Precedent", properties={"credibility_score": 0.6}, label="Precedent", provenance=mock_provenance())
@@ -676,6 +709,7 @@ class TestResolutionStrategies:
         
         assert winner.id == "n2"
     
+    @pytest.mark.p1
     def test_resolve_by_credibility_missing_scores(self, verdict_engine):
         """Test credibility resolution with missing scores"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
@@ -685,6 +719,7 @@ class TestResolutionStrategies:
         
         assert winner is None
     
+    @pytest.mark.p1
     def test_resolve_by_temporal_recent_wins(self, verdict_engine):
         """Test temporal resolution - more recent wins"""
         node1 = GraphNode(id="n1", node_type="Precedent", properties={"date": "2020-01-01"}, label="Precedent", provenance=mock_provenance())
@@ -694,6 +729,7 @@ class TestResolutionStrategies:
         
         assert winner.id == "n2"
     
+    @pytest.mark.p1
     def test_resolve_by_temporal_no_dates(self, verdict_engine):
         """Test temporal resolution with missing dates"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={}, label="Rule", provenance=mock_provenance())
@@ -703,6 +739,7 @@ class TestResolutionStrategies:
         
         assert winner is None
     
+    @pytest.mark.p1
     def test_resolve_by_graph_analytics_higher_score_wins(self, verdict_engine):
         """Test graph analytics resolution"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
@@ -720,6 +757,7 @@ class TestResolutionStrategies:
         
         assert winner.id == "n2"
     
+    @pytest.mark.p1
     def test_calculate_node_score_with_multiple_properties(self, verdict_engine):
         """Test node score calculation considers all properties"""
         node = GraphNode(id="n1", node_type="Rule", properties={
@@ -743,6 +781,7 @@ class TestResolutionStrategies:
 class TestAsyncContradictionResolution:
     """Test async contradiction resolution path"""
     
+    @pytest.mark.p1
     async def test_resolve_contradictions_async_empty(self, verdict_engine):
         """Test async resolution with no contradictions"""
         resolved_nodes, unresolved = await verdict_engine._resolve_contradictions_async(
@@ -752,6 +791,7 @@ class TestAsyncContradictionResolution:
         assert len(resolved_nodes) == 0
         assert len(unresolved) == 0
 
+    @pytest.mark.p1
     async def test_resolve_contradictions_async_with_pairs(self, verdict_engine):
         """Test async resolution with contradiction pairs"""
         rule_nodes = {
@@ -777,6 +817,7 @@ class TestAsyncContradictionResolution:
 class TestBuildVerdictSteps:
     """Test _build_verdict_steps comprehensive coverage"""
     
+    @pytest.mark.p1
     def test_build_steps_empty_nodes(self, verdict_engine):
         """Test with no nodes"""
         steps = verdict_engine._build_verdict_steps(
@@ -791,6 +832,7 @@ class TestBuildVerdictSteps:
         
         assert isinstance(steps, list)
     
+    @pytest.mark.p1
     def test_build_steps_with_fact_nodes(self, verdict_engine):
         """Test step building with fact nodes"""
         nodes = {
@@ -810,6 +852,7 @@ class TestBuildVerdictSteps:
         
         assert len(steps) >= 0  # May have steps depending on implementation
     
+    @pytest.mark.p1
     def test_build_steps_with_rule_nodes(self, verdict_engine):
         """Test step building with rule nodes"""
         nodes = {
@@ -832,6 +875,7 @@ class TestBuildVerdictSteps:
         
         assert isinstance(steps, list)
     
+    @pytest.mark.p1
     def test_build_steps_with_precedent_nodes(self, verdict_engine):
         """Test step building with precedent nodes"""
         nodes = {
@@ -854,6 +898,7 @@ class TestBuildVerdictSteps:
         
         assert isinstance(steps, list)
     
+    @pytest.mark.p1
     def test_build_steps_with_resolutions(self, verdict_engine):
         """Test step building includes resolution steps"""
         nodes = {
@@ -889,6 +934,7 @@ class TestBuildVerdictSteps:
 class TestSynthesizeFinalVerdict:
     """Test _synthesize_final_verdict"""
     
+    @pytest.mark.p1
     def test_synthesize_verdict_with_steps(self, verdict_engine):
         """Test verdict synthesis with reasoning steps"""
         steps = [
@@ -913,6 +959,7 @@ class TestSynthesizeFinalVerdict:
         assert isinstance(verdict, str)
         assert len(verdict) > 0
     
+    @pytest.mark.p1
     def test_synthesize_verdict_no_steps(self, verdict_engine):
         """Test verdict synthesis with no steps (edge case)"""
         verdict = verdict_engine._synthesize_final_verdict(
@@ -932,12 +979,14 @@ class TestSynthesizeFinalVerdict:
 class TestCalculateConfidenceScore:
     """Test _calculate_confidence_score"""
     
+    @pytest.mark.p1
     def test_confidence_score_no_steps(self, verdict_engine):
         """Test confidence with no steps"""
         score = verdict_engine._calculate_confidence_score([])
         
         assert 0.0 <= score <= 1.0
     
+    @pytest.mark.p1
     def test_confidence_score_with_steps(self, verdict_engine):
         """Test confidence calculation with steps"""
         steps = [
@@ -967,6 +1016,7 @@ class TestCalculateConfidenceScore:
 class TestGenerateVerdictSync:
     """Test generate_verdict_sync wrapper"""
     
+    @pytest.mark.p1
     def test_sync_wrapper_calls_async(self, verdict_engine):
         """Test sync wrapper delegates to async method"""
         with patch.object(verdict_engine, 'generate_verdict', new=AsyncMock(
@@ -990,6 +1040,7 @@ class TestGenerateVerdictSync:
 class TestRAGContainerIntegration:
     """Test RAG augmentation with container"""
     
+    @pytest.mark.p1
     async def test_generate_verdict_with_rag_container(self, verdict_engine):
         """Test verdict generation with RAG augmentation"""
         # Create mock container with RAG service
@@ -1040,6 +1091,7 @@ class TestRAGContainerIntegration:
 class TestLedgerWriteIntegration:
     """Test ledger write paths with P0-3/P0-4 enforcement"""
     
+    @pytest.mark.p1
     async def test_ledger_write_success_through_gate(self, verdict_engine):
         """Test successful ledger write through write gate"""
         from mahoun.ledger.write_gate import WriteGateResult
@@ -1070,6 +1122,7 @@ class TestLedgerWriteIntegration:
         assert result_hash == "ledger_hash_abc"
         verdict_engine._ledger_write_gate.write_verdict.assert_called_once()
     
+    @pytest.mark.p1
     async def test_ledger_write_failure_gate_rejects(self, verdict_engine):
         """Test ledger write fails when gate rejects"""
         from mahoun.ledger.write_gate import WriteGateResult
@@ -1098,6 +1151,7 @@ class TestLedgerWriteIntegration:
             with patch("mahoun.ledger.guards.validate_entry"):
                 await verdict_engine._write_ledger_entry_async(entry)
     
+    @pytest.mark.p1
     async def test_ledger_write_direct_fallback(self, verdict_engine):
         """Test direct ledger write when gate unavailable"""
         # Remove write gate
@@ -1132,6 +1186,7 @@ class TestLedgerWriteIntegration:
 class TestErrorHandling:
     """Test error scenarios and edge cases"""
     
+    @pytest.mark.p1
     async def test_generate_verdict_graph_builder_fails(self, verdict_engine):
         """Test handling of graph builder failures"""
         verdict_engine.graph_builder.create_node = Mock(
@@ -1144,6 +1199,7 @@ class TestErrorHandling:
                 facts=["fact1"]
             )
     
+    @pytest.mark.p1
     async def test_generate_verdict_knowledge_graph_fails(self, verdict_engine):
         """Test handling of knowledge graph failures"""
         verdict_engine.knowledge_graph.find_applicable_rules = Mock(
@@ -1157,6 +1213,7 @@ class TestErrorHandling:
                     facts=["fact1"]
                 )
     
+    @pytest.mark.p1
     async def test_generate_verdict_with_very_long_facts_list(self, verdict_engine):
         """Test handling of large facts list (resource limit check)"""
         large_facts = [f"fact_{i}" for i in range(1000)]
@@ -1181,6 +1238,7 @@ class TestErrorHandling:
                                                 
                                                 assert result is not None
     
+    @pytest.mark.p1
     async def test_generate_verdict_empty_question(self, verdict_engine):
         """Test with empty question string"""
         with pytest.raises(RuntimeError, match="EL-I1/EL-I3 violation"):
@@ -1189,6 +1247,7 @@ class TestErrorHandling:
                 facts=[]
             )
     
+    @pytest.mark.p1
     async def test_generate_verdict_none_question(self, verdict_engine):
         """Test with None question"""
         with pytest.raises((RuntimeError, TypeError, AttributeError)):
@@ -1206,6 +1265,7 @@ class TestErrorHandling:
 class TestContradictionSeverity:
     """Test _calculate_contradiction_severity"""
     
+    @pytest.mark.p1
     def test_severity_with_confidence_scores(self, verdict_engine):
         """Test severity calculation considers confidence"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.95}, label="Rule", provenance=mock_provenance())
@@ -1215,6 +1275,7 @@ class TestContradictionSeverity:
         
         assert 0.0 <= severity <= 1.0
     
+    @pytest.mark.p1
     def test_severity_with_missing_confidence(self, verdict_engine):
         """Test severity with missing confidence scores"""
         node1 = GraphNode(id="n1", node_type="Fact", properties={}, label="Fact", provenance=mock_provenance())
@@ -1225,6 +1286,7 @@ class TestContradictionSeverity:
         # Should return some default severity
         assert 0.0 <= severity <= 1.0
     
+    @pytest.mark.p1
     def test_severity_same_type_nodes(self, verdict_engine):
         """Test severity for same node types"""
         node1 = GraphNode(id="n1", node_type="Rule", properties={"confidence": 0.8}, label="Rule", provenance=mock_provenance())
@@ -1243,6 +1305,7 @@ class TestContradictionSeverity:
 class TestContradictoryChecks:
     """Test _are_rules_contradictory and _are_precedents_contradictory"""
     
+    @pytest.mark.p1
     def test_rules_contradictory_opposite_conclusions(self, verdict_engine):
         """Test detecting contradictory rule conclusions"""
         rule1 = GraphNode(id="r1", node_type="Rule", properties={
@@ -1257,6 +1320,7 @@ class TestContradictoryChecks:
         
         assert isinstance(is_contra, bool)
     
+    @pytest.mark.p1
     def test_rules_not_contradictory(self, verdict_engine):
         """Test non-contradictory rules"""
         rule1 = GraphNode(id="r1", node_type="Rule", properties={
@@ -1271,6 +1335,7 @@ class TestContradictoryChecks:
         # Likely not contradictory (unless NLI says otherwise)
         assert isinstance(is_contra, bool)
     
+    @pytest.mark.p1
     def test_precedents_contradictory(self, verdict_engine):
         """Test detecting contradictory precedents"""
         prec1 = GraphNode(id="p1", node_type="Precedent", properties={
@@ -1284,6 +1349,7 @@ class TestContradictoryChecks:
         
         assert isinstance(is_contra, bool)
     
+    @pytest.mark.p1
     def test_precedents_not_contradictory(self, verdict_engine):
         """Test non-contradictory precedents"""
         prec1 = GraphNode(id="p1", node_type="Precedent", properties={
@@ -1307,6 +1373,7 @@ class TestContradictoryChecks:
 class TestFullPipelineIntegration:
     """Full end-to-end pipeline integration tests"""
     
+    @pytest.mark.p1
     async def test_full_pipeline_simple_case(self, verdict_engine):
         """Test complete pipeline with simple case"""
         question = "Is the contract valid?"

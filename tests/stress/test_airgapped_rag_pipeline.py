@@ -202,6 +202,7 @@ class TestEmbeddingModelOfflineLoading:
     - No network calls attempted
     """
     
+    @pytest.mark.p2
     def test_embedding_model_loads_from_local(
         self,
         airgap_env,
@@ -233,6 +234,7 @@ class TestEmbeddingModelOfflineLoading:
             
             print(f"✅ Embedding model loaded from local cache: {model.model_name}")
     
+    @pytest.mark.p2
     def test_embedding_generation_works_offline(
         self,
         airgap_env,
@@ -278,6 +280,7 @@ class TestChromaDBOfflineOperation:
     - Queries return results
     """
     
+    @pytest.mark.p2
     def test_chromadb_client_initializes_offline(
         self,
         airgap_env,
@@ -300,6 +303,7 @@ class TestChromaDBOfflineOperation:
         
         print("✅ ChromaDB client initialized offline")
     
+    @pytest.mark.p2
     def test_document_indexing_offline(
         self,
         airgap_env,
@@ -352,6 +356,7 @@ class TestRAGPipelineOffline:
     - Search quality acceptable (precision@5 > 0.7)
     """
     
+    @pytest.mark.p2
     def test_full_rag_pipeline_offline(
         self,
         airgap_env,
@@ -413,6 +418,7 @@ class TestRAGPipelineOffline:
         print(f"✅ RAG pipeline complete: {len(results['ids'][0])} results")
         print(f"   Memory delta: {memory_delta:.1f} MB")
     
+    @pytest.mark.p2
     def test_search_quality_offline(
         self,
         airgap_env,
@@ -480,6 +486,7 @@ class TestIndexRebuildOffline:
     - Process completes in reasonable time
     """
     
+    @pytest.mark.p2
     def test_index_rebuild_offline(
         self,
         airgap_env,
@@ -546,6 +553,7 @@ class TestRAGMemoryAndPerformance:
     - No memory leaks
     """
     
+    @pytest.mark.p2
     def test_large_batch_indexing_memory(
         self,
         airgap_env,
@@ -593,6 +601,7 @@ class TestRAGMemoryAndPerformance:
         
         print(f"✅ Indexed 100 docs, memory delta: {memory_delta:.1f} MB")
     
+    @pytest.mark.p2
     def test_search_latency(
         self,
         airgap_env,
@@ -652,6 +661,7 @@ class TestRAGFailureScenarios:
     - Insufficient memory for indexing
     """
     
+    @pytest.mark.p2
     def test_missing_embedding_model_clear_error(self, airgap_env):
         """
         **Setup**: Embedding model NOT in cache
@@ -677,6 +687,7 @@ class TestRAGFailureScenarios:
             
             print("✅ Clear error when embedding model not cached")
     
+    @pytest.mark.p2
     def test_chromadb_offline_mode_enforced(self, airgap_env):
         """
         **Setup**: Airgap environment

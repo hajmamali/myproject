@@ -16,12 +16,14 @@ sys.path.insert(0, str(project_root))
 class TestEvidenceLinkedVerdictEngine:
     """Test Evidence-Linked Verdict Engine"""
     
+    @pytest.mark.p2
     def test_engine_exists(self):
         """Test that EvidenceLinkedVerdictEngine exists"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         assert EvidenceLinkedVerdictEngine is not None
         print("✓ EvidenceLinkedVerdictEngine exists")
     
+    @pytest.mark.p2
     def test_engine_can_be_created(self):
         """Test that engine can be instantiated"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -38,6 +40,7 @@ class TestEvidenceLinkedVerdictEngine:
         assert hasattr(engine, 'generate_verdict')
         print("✓ EvidenceLinkedVerdictEngine can be instantiated")
     
+    @pytest.mark.p2
     def test_data_structures_exist(self):
         """Test that required data structures exist"""
         from mahoun.reasoning.evidence_linked_verdict import (
@@ -55,6 +58,7 @@ class TestEvidenceLinkedVerdictEngine:
 class TestEvidenceLinking:
     """Test that evidence is properly linked"""
     
+    @pytest.mark.p2
     def test_verdict_links_to_graph_nodes(self):
         """Test that verdict steps reference graph nodes"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -93,6 +97,7 @@ class TestEvidenceLinking:
         
         print(f"✓ Verdict has {len(verdict.steps)} steps, all with evidence links")
     
+    @pytest.mark.p2
     def test_removing_node_invalidates_verdict(self):
         """Test that removing a referenced node invalidates the verdict"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -149,6 +154,7 @@ class TestEvidenceLinking:
         
         print(f"✓ Removing node invalidates verdict ({len(missing_nodes)} nodes missing)")
     
+    @pytest.mark.p2
     def test_contradictory_rules_in_unresolved_conflicts(self):
         """Test that contradictory rules appear in unresolved_conflicts"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -198,6 +204,7 @@ class TestEvidenceLinking:
             assert len(verdict.unresolved_conflicts) > 0, "باید contradiction در unresolved_conflicts باشد"
             print(f"✓ Contradiction in unresolved_conflicts: {verdict.unresolved_conflicts}")
     
+    @pytest.mark.p2
     def test_confidence_score_from_evidence(self):
         """Test that confidence_score is computed from evidence confidence"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -241,6 +248,7 @@ class TestEvidenceLinking:
 class TestDeterministicOutput:
     """Test that output is deterministic"""
     
+    @pytest.mark.p2
     def test_same_input_same_output(self):
         """Test that same input produces same output"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -273,6 +281,7 @@ class TestDeterministicOutput:
 class TestNoLLMCalls:
     """Test that engine works without LLM calls"""
     
+    @pytest.mark.p2
     def test_engine_works_without_llm(self):
         """Test that engine generates verdict without LLM"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -306,6 +315,7 @@ class TestNoLLMCalls:
 class TestEvidenceRequirements:
     """Test evidence requirements"""
     
+    @pytest.mark.p2
     def test_each_step_has_evidence(self):
         """Test that each VerdictStep has at least one evidence reference"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -338,6 +348,7 @@ class TestEvidenceRequirements:
         
         print(f"✓ All {len(verdict.steps)} steps have evidence references")
     
+    @pytest.mark.p2
     def test_evidence_justification_exists(self):
         """Test that evidence has justification"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -370,6 +381,7 @@ class TestEvidenceLedger:
     """Test Evidence Ledger functionality"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_ledger_write_failure_blocks_verdict(self):
         """Test that ledger write failure blocks verdict generation"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -397,6 +409,7 @@ class TestEvidenceLedger:
         
         print("✓ Ledger write failure blocks verdict generation")
     
+    @pytest.mark.p2
     def test_ledger_entry_validation_no_evidence(self):
         """Test that LedgerEntry with no evidence is rejected"""
         from mahoun.ledger.models import LedgerEntry
@@ -419,6 +432,7 @@ class TestEvidenceLedger:
         
         print("✓ LedgerEntry with no evidence rejected")
     
+    @pytest.mark.p2
     def test_ledger_entry_immutable(self):
         """Test that LedgerEntry is immutable"""
         from mahoun.ledger.models import LedgerEntry
@@ -441,6 +455,7 @@ class TestEvidenceLedger:
         print("✓ LedgerEntry is immutable")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_verdict_without_ledger_is_forbidden(self):
         """Test that verdict generation fails if ledger write fails (EL-I3: Verdict Blocking)"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
@@ -470,6 +485,7 @@ class TestEvidenceLedger:
         print("✓ Verdict generation blocked by ledger failure")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_sensitive_fact_value_is_not_written_to_ledger(self):
         """Test that sensitive fact values are not stored in ledger (EL-I7: Privacy Preservation)"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine

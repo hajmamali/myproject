@@ -43,6 +43,7 @@ class TestDocumentNormalizer:
         """
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_normalize_text(self, normalizer, sample_text):
         """Test text normalization"""
         result = await normalizer.normalize_text(text=sample_text, doc_type="contract")
@@ -55,6 +56,7 @@ class TestDocumentNormalizer:
         assert "content" in result.__dict__
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_normalize_text_detection(self, normalizer):
         """Test document type detection"""
         contract_text = "قرارداد بین طرف اول و طرف دوم..."
@@ -65,6 +67,7 @@ class TestDocumentNormalizer:
         assert result.type == "contract"
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_normalize_file_txt(self, normalizer):
         """Test TXT file normalization"""
         # Create temporary TXT file
@@ -84,6 +87,7 @@ class TestDocumentNormalizer:
         finally:
             os.unlink(temp_path)
 
+    @pytest.mark.p2
     def test_to_dict(self, normalizer, sample_text):
         """Test conversion to dictionary"""
 
@@ -129,6 +133,7 @@ class TestMetadataExtractor:
         """
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_extract_metadata(self, extractor, sample_contract_text):
         """Test metadata extraction"""
         metadata = await extractor.extract(
@@ -141,6 +146,7 @@ class TestMetadataExtractor:
         assert "extracted_at" in metadata
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_extract_dates(self, extractor):
         """Test date extraction"""
         text = "تاریخ: 1403/01/15\nتاریخ دریافت: 1403/01/20"
@@ -151,6 +157,7 @@ class TestMetadataExtractor:
         assert len(metadata["dates_found"]) > 0
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_extract_document_number(self, extractor):
         """Test document number extraction"""
         text = "شماره: 12345/1403"
@@ -160,6 +167,7 @@ class TestMetadataExtractor:
         assert metadata["document_number"] is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_extract_subject(self, extractor):
         """Test subject extraction"""
         text = "موضوع: قرارداد پیمانکاری"
@@ -169,6 +177,7 @@ class TestMetadataExtractor:
         assert "قرارداد" in metadata["subject"] or metadata["subject"] is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_extract_parties(self, extractor):
         """Test parties extraction"""
         text = "طرف اول: شرکت الف\nطرف دوم: شرکت ب"
@@ -186,6 +195,7 @@ class TestOCRHandler:
         """Create OCR Handler instance"""
         return type(switchboard.get_module("ocr_handler"))()
 
+    @pytest.mark.p2
     def test_ocr_availability(self, ocr_handler):
         """Test OCR handler availability"""
         # Just check if handler can be created
@@ -193,6 +203,7 @@ class TestOCRHandler:
         # Availability depends on dependencies
         assert isinstance(ocr_handler.available, bool)
 
+    @pytest.mark.p2
     def test_supports_file(self, ocr_handler):
         """Test file type support"""
         assert ocr_handler.supports_file("test.jpg")
@@ -210,11 +221,13 @@ class TestDocumentHandlers:
         """Create Document Handler Factory"""
         return type(switchboard.get_module("document_handler_factory"))()
 
+    @pytest.mark.p2
     def test_handler_factory_initialization(self, handler_factory):
         """Test factory initialization"""
         assert handler_factory is not None
         assert len(handler_factory.handlers) > 0
 
+    @pytest.mark.p2
     def test_txt_handler(self):
         """Test TXT handler"""
         from mahoun.pipelines.ingestion.document_handlers import TxtHandler
@@ -241,6 +254,7 @@ class TestIntegration:
     """Integration Tests"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_full_pipeline(self):
         """Test full document intake pipeline"""
         # Step 1: Normalize document
@@ -259,6 +273,7 @@ class TestIntegration:
         assert normalized.metadata.get("doc_type") == "contract"
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_helper_functions(self):
         """Test helper functions"""
         sample_text = "Test document\nتاریخ: 1403/01/15"
@@ -279,6 +294,7 @@ class TestWiring:
     """Test Wiring with Existing Components"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_integration_with_ingestion_pipeline(self):
         """Test integration with existing IngestionPipeline"""
         try:
@@ -312,6 +328,7 @@ class TestWiring:
             pytest.skip(f"IngestionPipeline integration test skipped: {e}")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_metadata_extractor_with_ner(self):
         """Test Metadata Extractor with NER integration"""
         try:

@@ -32,6 +32,7 @@ from mahoun.ledger.models import LedgerEntry
 class TestBlockchainCreation:
     """Test blockchain ledger creation"""
     
+    @pytest.mark.p1
     def test_create_ledger_with_genesis_block(self, tmp_path):
         """Test ledger creation includes genesis block"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -39,6 +40,7 @@ class TestBlockchainCreation:
         # Should have genesis block
         assert len(ledger) == 1
     
+    @pytest.mark.p1
     def test_create_ledger_in_memory(self):
         """Test ledger creation without persistence"""
         ledger = ImmutableLedger(storage_path=None)
@@ -50,6 +52,7 @@ class TestBlockchainCreation:
 class TestLedgerAppend:
     """Test appending entries to ledger"""
     
+    @pytest.mark.p1
     def test_append_entry_success(self, tmp_path):
         """Test successful entry append"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -70,6 +73,7 @@ class TestLedgerAppend:
         assert block is not None
         assert len(ledger) == 2  # Genesis + new block
     
+    @pytest.mark.p1
     def test_append_multiple_entries(self, tmp_path):
         """Test appending multiple entries"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -93,6 +97,7 @@ class TestLedgerAppend:
 class TestHashChainIntegrity:
     """Test hash chain integrity"""
 
+    @pytest.mark.p1
     def test_hash_chain_links_blocks(self, tmp_path):
         """Test that blocks are linked via hash chain"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -125,6 +130,7 @@ class TestHashChainIntegrity:
         # Verify integrity
         assert ledger.verify_integrity() is True
     
+    @pytest.mark.p1
     def test_verify_integrity_detects_tampering(self, tmp_path):
         """Test that integrity verification detects tampering"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -154,6 +160,7 @@ class TestHashChainIntegrity:
 class TestEntryRetrieval:
     """Test entry retrieval operations"""
     
+    @pytest.mark.p1
     def test_get_entry_by_verdict_id(self, tmp_path):
         """Test retrieving entry by verdict ID"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))
@@ -175,6 +182,7 @@ class TestEntryRetrieval:
         assert retrieved is not None
         assert retrieved.verdict_id == "v1"
     
+    @pytest.mark.p1
     def test_get_entries_by_case(self, tmp_path):
         """Test retrieving entries by case ID"""
         ledger = ImmutableLedger(storage_path=str(tmp_path / "ledger.jsonl"))

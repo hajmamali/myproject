@@ -51,6 +51,7 @@ pytestmark = pytest.mark.skipif(
 class TestExtremeConcurrency:
     """Test ledger under extreme concurrent load (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_1000_concurrent_writers_integrity(self):
         """
         EXTREME: 1000 concurrent threads writing simultaneously
@@ -135,6 +136,7 @@ class TestExtremeConcurrency:
         
         print("✅ EXTREME TEST PASSED: 1000 concurrent writers")
     
+    @pytest.mark.p1
     def test_concurrent_read_write_hammer(self):
         """
         EXTREME: 100 writers + 500 readers hammering simultaneously
@@ -227,6 +229,7 @@ class TestExtremeConcurrency:
 class TestAdversarialAttacks:
     """Test ledger against adversarial attack attempts (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_hash_collision_attack_attempt(self):
         """
         EXTREME: Attempt to create blocks with colliding hashes
@@ -269,6 +272,7 @@ class TestAdversarialAttacks:
         print(f"✅ No collisions detected")
         print("✅ EXTREME TEST PASSED: Hash collision resistance")
     
+    @pytest.mark.p1
     def test_timing_attack_on_concurrent_writes(self):
         """
         EXTREME: Timing attack attempting to exploit race conditions
@@ -342,6 +346,7 @@ class TestAdversarialAttacks:
         
         print("✅ EXTREME TEST PASSED: Timing attack resistance")
     
+    @pytest.mark.p1
     def test_byzantine_fault_injection(self):
         """
         EXTREME: Inject Byzantine faults (arbitrary failures)
@@ -408,6 +413,7 @@ class TestAdversarialAttacks:
 class TestResourceExhaustion:
     """Test ledger under resource pressure (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_memory_pressure_large_chain(self):
         """
         EXTREME: Build very large chain to test memory handling
@@ -452,6 +458,7 @@ class TestResourceExhaustion:
         
         print("✅ EXTREME TEST PASSED: Large chain handling")
     
+    @pytest.mark.p1
     def test_rapid_fire_writes_cpu_stress(self):
         """
         EXTREME: Maximum throughput writes (no delays)
@@ -505,6 +512,7 @@ class TestResourceExhaustion:
 class TestCryptographicSecurity:
     """Test cryptographic properties under adversarial conditions (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_hash_avalanche_effect(self):
         """
         EXTREME: Verify hash avalanche effect (1-bit change → 50% hash change)
@@ -574,6 +582,7 @@ class TestCryptographicSecurity:
         print(f"✅ Strong avalanche effect confirmed")
         print("✅ EXTREME TEST PASSED: Cryptographic avalanche")
     
+    @pytest.mark.p1
     def test_hash_preimage_resistance(self):
         """
         EXTREME: Verify hash preimage resistance (cannot reverse hash)

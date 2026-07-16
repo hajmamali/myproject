@@ -30,6 +30,7 @@ from api.models.proof_carrying import (
 class TestReasoningResponseContract:
     """Test proof-carrying contract enforcement in ReasoningResponse"""
     
+    @pytest.mark.p0
     def test_successful_response_requires_proof_carrying_fields(self):
         """Test that successful response requires all proof-carrying fields"""
         
@@ -54,6 +55,7 @@ class TestReasoningResponseContract:
         assert exc.violation_type == ViolationType.AUDIT_TRAIL_INCOMPLETE
         assert "Proof-carrying contract violated" in exc.message
     
+    @pytest.mark.p0
     def test_successful_response_with_all_fields_passes(self):
         """Test that successful response with all fields passes"""
         
@@ -78,6 +80,7 @@ class TestReasoningResponseContract:
         assert response.validation_timestamp is not None
         assert response.correlation_id is not None
     
+    @pytest.mark.p0
     def test_failed_response_does_not_require_proof_carrying(self):
         """Test that failed responses don't require proof-carrying fields"""
         
@@ -99,6 +102,7 @@ class TestReasoningResponseContract:
         assert response.success is False
         assert response.error is not None
     
+    @pytest.mark.p0
     def test_contract_can_be_disabled_via_env_var(self, monkeypatch):
         """Test that contract enforcement can be disabled"""
         
@@ -131,6 +135,7 @@ class TestFortressValidatorInjection:
     """Test that FortressValidator injects proof-carrying metadata"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_validator_injects_metadata_on_pass(self):
         """Test that validator injects metadata when validation passes"""
         
@@ -183,6 +188,7 @@ class TestFortressValidatorInjection:
         del os.environ["MAHOUN_ENFORCE_PROOF_CARRYING_CONTRACT"]
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_validator_does_not_inject_on_fail(self):
         """Test that validator does NOT inject metadata when validation fails"""
         
@@ -227,6 +233,7 @@ class TestFortressValidatorInjection:
 class TestProofCarryingAPIModels:
     """Test API response models with proof-carrying contracts"""
     
+    @pytest.mark.p0
     def test_proof_carrying_response_requires_all_fields(self):
         """Test that ProofCarryingResponse requires all fields"""
         
@@ -237,6 +244,7 @@ class TestProofCarryingAPIModels:
                 # Missing other fields
             )
     
+    @pytest.mark.p0
     def test_proof_carrying_response_with_all_fields(self):
         """Test that ProofCarryingResponse works with all fields"""
         
@@ -250,6 +258,7 @@ class TestProofCarryingAPIModels:
         assert response.fortress_validated is True
         assert response.audit_hash == "abc123def456"
     
+    @pytest.mark.p0
     def test_proof_carrying_response_rejects_false_validation(self):
         """Test that fortress_validated=False is rejected"""
         
@@ -261,6 +270,7 @@ class TestProofCarryingAPIModels:
                 correlation_id="req-001"
             )
     
+    @pytest.mark.p0
     def test_optional_proof_carrying_allows_none(self):
         """Test that OptionalProofCarryingResponse allows None"""
         
@@ -273,6 +283,7 @@ class TestProofCarryingAPIModels:
         
         assert response.fortress_validated is None
     
+    @pytest.mark.p0
     def test_optional_proof_carrying_requires_all_if_validated(self):
         """Test that if fortress_validated=True, all fields required"""
         
@@ -292,6 +303,7 @@ class TestProofCarryingAPIModels:
 class TestSerializationHelpers:
     """Test serialization helper functions"""
     
+    @pytest.mark.p0
     def test_inject_proof_carrying_metadata(self):
         """Test metadata injection helper"""
         
@@ -310,6 +322,7 @@ class TestSerializationHelpers:
         assert response["validation_timestamp"] == "2026-05-14T04:30:00Z"
         assert response["correlation_id"] == "req-001"
     
+    @pytest.mark.p0
     def test_validate_proof_carrying_metadata_valid(self):
         """Test validation helper with valid metadata"""
         
@@ -323,6 +336,7 @@ class TestSerializationHelpers:
         
         assert validate_proof_carrying_metadata(response) is True
     
+    @pytest.mark.p0
     def test_validate_proof_carrying_metadata_missing_field(self):
         """Test validation helper with missing field"""
         
@@ -335,6 +349,7 @@ class TestSerializationHelpers:
         
         assert validate_proof_carrying_metadata(response) is False
     
+    @pytest.mark.p0
     def test_validate_proof_carrying_metadata_false_validation(self):
         """Test validation helper with fortress_validated=False"""
         
@@ -356,6 +371,7 @@ class TestProofCarryingIntegration:
     """Integration tests for proof-carrying contracts"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_end_to_end_proof_carrying_flow(self):
         """Test complete flow from validation to API response"""
         

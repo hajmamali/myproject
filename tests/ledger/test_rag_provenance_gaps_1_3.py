@@ -26,6 +26,7 @@ from mahoun.reasoning.rag_evidence import RAGEvidenceNode, RAGSource, SourceAuth
 class TestEvidencePackageSchema:
     """Tests for EvidencePackage schema extension (Gap 1)"""
     
+    @pytest.mark.p1
     def test_retrieval_provenance_field_exists(self):
         """EvidencePackage should have retrieval_provenance field"""
         package = EvidencePackage(
@@ -39,6 +40,7 @@ class TestEvidencePackageSchema:
         assert hasattr(package, "retrieval_provenance")
         assert package.retrieval_provenance == []
     
+    @pytest.mark.p1
     def test_schema_version_field_exists(self):
         """EvidencePackage should have schema_version field"""
         package = EvidencePackage(
@@ -51,6 +53,7 @@ class TestEvidencePackageSchema:
         assert hasattr(package, "schema_version")
         assert package.schema_version == "2.0"
     
+    @pytest.mark.p1
     def test_retrieval_provenance_can_be_provided(self):
         """EvidencePackage should accept retrieval_provenance"""
         rag_provenance = [
@@ -74,6 +77,7 @@ class TestEvidencePackageSchema:
         
         assert package.retrieval_provenance == rag_provenance
     
+    @pytest.mark.p1
     def test_backward_compatibility_old_code_works(self):
         """Old code without retrieval_provenance should still work"""
         # Simulate old code that doesn't know about new field
@@ -94,6 +98,7 @@ class TestEvidencePackageSchema:
 class TestEvidencePackageValidation:
     """Tests for retrieval_provenance validation logic"""
     
+    @pytest.mark.p1
     def test_valid_retrieval_provenance_accepted(self):
         """Valid retrieval_provenance should pass validation"""
         rag_provenance = [
@@ -120,6 +125,7 @@ class TestEvidencePackageValidation:
         assert valid is True
         assert error is None
     
+    @pytest.mark.p1
     def test_missing_required_field_rejected(self):
         """Retrieval provenance missing required field should be rejected"""
         rag_provenance = [
@@ -144,6 +150,7 @@ class TestEvidencePackageValidation:
         assert "missing required fields" in error
         assert "correlation_id" in error or "content_hash" in error
     
+    @pytest.mark.p1
     def test_empty_retrieval_provenance_accepted(self):
         """Empty retrieval_provenance list should be valid"""
         package = EvidencePackage(
@@ -157,6 +164,7 @@ class TestEvidencePackageValidation:
         valid, error = package.validate()
         assert valid is True
     
+    @pytest.mark.p1
     def test_multiple_provenance_entries_validated(self):
         """All entries in retrieval_provenance should be validated"""
         rag_provenance = [
@@ -195,6 +203,7 @@ class TestEvidencePackageValidation:
 class TestLedgerStorageIntegration:
     """Tests for ledger storage of RAG provenance (Gap 3)"""
     
+    @pytest.mark.p1
     def test_ledger_entry_has_retrieval_provenance_field(self):
         """LedgerEntry should have retrieval_provenance field"""
         entry = LedgerEntry(
@@ -211,6 +220,7 @@ class TestLedgerStorageIntegration:
         
         assert hasattr(entry, "retrieval_provenance")
     
+    @pytest.mark.p1
     def test_ledger_entry_stores_retrieval_provenance(self):
         """LedgerEntry should store retrieval_provenance correctly"""
         rag_provenance = [
@@ -239,6 +249,7 @@ class TestLedgerStorageIntegration:
         
         assert entry.retrieval_provenance == rag_provenance
     
+    @pytest.mark.p1
     def test_ledger_entry_backward_compatible(self):
         """LedgerEntry should work without retrieval_provenance (old code)"""
         # Simulate old code that doesn't provide retrieval_provenance
@@ -266,6 +277,7 @@ class TestLedgerStorageIntegration:
 class TestRAGProvenanceE2EGaps1to3:
     """End-to-end test for RAG provenance flow (Gaps 1-3)"""
     
+    @pytest.mark.p1
     def test_rag_evidence_node_to_evidence_package_to_ledger(self):
         """Test full flow: RAGEvidenceNode → EvidencePackage → LedgerEntry"""
         

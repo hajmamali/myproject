@@ -53,52 +53,108 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # IMMUTABLE GOVERNANCE AUDIT LOG (P0 requirement)
 # ============================================================================
+#
+# The audit sink is INJECTED via set_audit_sink(...). The kernel never
+# knows the medium (filesystem, remote ledger, in-memory). The default sink
+# is a NullAuditSink so the kernel is hermetic under no wiring. Production
+# wires `FilesystemAuditSink` at the application composition root.
+#
+# This preserves all existing call-site behaviour: the function name
+# (``_append_governance_audit``), signature, and fail-closed semantics
+# (raises GovernanceViolationError(AUDIT_FAILURE) on persistence failure).
+from typing import TYPE_CHECKING
 
-import os
+if TYPE_CHECKING:  # pragma: no cover
+    from mahoun.core.governance.protocols import AuditSinkProtocol
 
-_GOVERNANCE_AUDIT_PATH = "logs/governance.audit"
-_REMOTE_LEDGER_MOCK_PATH = "logs/remote_immutable.ledger"
+# Module-global audit sink reference (injected; defaults to NullAuditSink).
+_AUDIT_SINK: "AuditSinkProtocol | None" = None
+"""
+Module-global handle for the audit sink.
+
+The kernel boundary sets this at composition time:
+    - Tests that ``patch(_append_governance_audit, ...)`` need nothing
+      wired (the patch replaces the function entirely).
+    - Production code calls ``set_audit_sink(FilesystemAuditSink(...))``
+      from ``mahoun/infrastructure/audit/wiring.py`` at bootstrap.
+
+The default of ``None`` indicates "no sink wired". Any attempt to append
+an audit entry without a wired sink raises GovernanceViolationError
+(AUDIT_FAILURE). This enforces fail-closed semantics at the boundary:
+no mutation may succeed without audit persistence.
+"""
+
+
+def set_audit_sink(sink: "AuditSinkProtocol") -> None:
+    """
+    Inject the audit sink used by the kernel boundary.
+
+    Production callers should invoke this once at startup. Tests that
+    ``patch(_append_governance_audit, ...)`` do not need to set a sink —
+    the patch function replaces the boundary call entirely.
+    """
+    global _AUDIT_SINK
+    _AUDIT_SINK = sink
+
+
+def get_audit_sink() -> "AuditSinkProtocol | None":
+    """Return the currently wired audit sink (or None for unwired)."""
+    return _AUDIT_SINK
+
+
+def unset_audit_sink() -> None:
+    """Detach the audit sink (kernel reverts to unwired default)."""
+    global _AUDIT_SINK
+    _AUDIT_SINK = None
 
 
 def _append_governance_audit(entry: dict[str, Any]) -> None:
     """
-    Append an immutable, fsynced entry to the governance audit log.
-    
-    HARDENING V2: Dual-write strategy. 
-    1. Local log (logs/governance.audit)
-    2. Simulated Remote Immutable Ledger (logs/remote_immutable.ledger)
+    Append an immutable entry to the governance audit log.
 
-    This MUST succeed BEFORE any graph mutation is committed.
-    Failure here causes the mutation to be rejected (fail-closed).
+    P0 CONSTITUTIONAL INVARIANT: FAIL-CLOSED
+    =========================================
+    Audit persistence MUST succeed before any mutation is committed.
+
+    - If sink is None (not wired): raises GovernanceViolationError.
+      Production deployments MUST call set_audit_sink() at bootstrap.
+      Use validate_governance_runtime() at startup to catch this early.
+    - If sink.append() raises: raises GovernanceViolationError.
+    - Only on success: caller may proceed to execute mutation.
+
+    Tests may either:
+      (a) wire a NullAuditSink via set_audit_sink(), or
+      (b) patch _append_governance_audit directly.
+    Patching is preferred for unit tests that don't exercise the sink.
     """
+    sink = _AUDIT_SINK
+    if sink is None:
+        raise GovernanceViolationError(
+            GovernanceViolation(
+                category=ViolationCategory.AUDIT_FAILURE,
+                severity=ViolationSeverity.CRITICAL,
+                message=(
+                    "AUDIT SINK NOT WIRED — mutation blocked. "
+                    "Call set_audit_sink() at bootstrap before any mutation. "
+                    "Run validate_governance_runtime() at startup to detect this early."
+                ),
+                details={
+                    "hint": "mahoun.bootstrap.runtime.validate_governance_runtime()",
+                    "fix": "from mahoun.core.governance.mutation_boundary import set_audit_sink",
+                },
+                source="_append_governance_audit",
+            )
+        )
     try:
-        os.makedirs(os.path.dirname(_GOVERNANCE_AUDIT_PATH) or ".", exist_ok=True)
-        line = json.dumps(entry, default=str, sort_keys=True) + "\n"
-        
-        # 1. Write to local audit
-        with open(_GOVERNANCE_AUDIT_PATH, "a", encoding="utf-8") as f:
-            f.write(line)
-            f.flush()
-            os.fsync(f.fileno())
-            
-        # 2. Write to REMOTE IMMUTABLE LEDGER (Simulated)
-        # In production, this would be an API call to a tamper-proof service
-        with open(_REMOTE_LEDGER_MOCK_PATH, "a", encoding="utf-8") as f:
-            # Entry is signed with a simulated HSM key in real production
-            entry_with_sig = {**entry, "hsm_signature": hashlib.sha256(line.encode()).hexdigest()}
-            f.write(json.dumps(entry_with_sig, default=str, sort_keys=True) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
-            
+        sink.append(entry)
     except Exception as exc:
-        # Fail-closed: audit append failure MUST block mutation
         raise GovernanceViolationError(
             GovernanceViolation(
                 category=ViolationCategory.AUDIT_FAILURE,
                 severity=ViolationSeverity.CRITICAL,
                 message="GOVERNANCE AUDIT APPEND FAILED — mutation aborted",
-                details={"error": str(exc), "audit_path": _GOVERNANCE_AUDIT_PATH},
-                source="GovernedNeo4jSession._append_governance_audit",
+                details={"error": str(exc), "sink_type": type(sink).__name__},
+                source="_append_governance_audit",
             )
         ) from exc
 

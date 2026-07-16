@@ -88,9 +88,14 @@ def unfreeze_dataclass():
 @pytest.fixture(autouse=True)
 def reset_governance_lock():
     """Reset governance lock before each test"""
+    from mahoun.core.governance.governance_context import GovernanceContextManager
     GovernanceLock._reset()
+    GovernanceContextManager._default_instance = None
+    GovernanceContextManager._governance_stack.set(())
     yield
     GovernanceLock._reset()
+    GovernanceContextManager._default_instance = None
+    GovernanceContextManager._governance_stack.set(())
 
 
 @pytest.fixture

@@ -27,6 +27,7 @@ from mahoun.governance.dataset_versioning import (
 class TestDatasetVersion:
     """Test dataset version model."""
     
+    @pytest.mark.p3
     def test_version_creation(self):
         """Test creating a dataset version."""
         version = DatasetVersion(
@@ -46,6 +47,7 @@ class TestDatasetVersion:
         assert version.hash == "abc123"
         assert version.metrics["accuracy"] == 0.95
     
+    @pytest.mark.p3
     def test_version_immutability(self):
         """Test that version is immutable."""
         version = DatasetVersion(
@@ -57,6 +59,7 @@ class TestDatasetVersion:
         with pytest.raises(Exception):  # Pydantic frozen model
             version.version = "v2.0.0"
     
+    @pytest.mark.p3
     def test_version_defaults(self):
         """Test default values."""
         version = DatasetVersion(
@@ -102,6 +105,7 @@ class TestDatasetVersionManager:
         """Create version manager."""
         return DatasetVersionManager(versions_dir=temp_dir / "versions")
     
+    @pytest.mark.p3
     def test_initialization(self, temp_dir):
         """Test manager initialization."""
         manager = DatasetVersionManager(versions_dir=temp_dir / "versions")
@@ -109,6 +113,7 @@ class TestDatasetVersionManager:
         assert manager.versions_dir.exists()
         assert isinstance(manager.dvc_enabled, bool)
     
+    @pytest.mark.p3
     def test_compute_dataset_hash(self, manager, temp_dataset):
         """Test SHA256 hash computation."""
         hash1 = manager.compute_dataset_hash(temp_dataset)
@@ -120,12 +125,14 @@ class TestDatasetVersionManager:
         hash2 = manager.compute_dataset_hash(temp_dataset)
         assert hash1 == hash2
     
+    @pytest.mark.p3
     def test_hash_deterministic(self, manager, temp_dataset):
         """Test that hash is deterministic."""
         hashes = [manager.compute_dataset_hash(temp_dataset) for _ in range(5)]
         
         assert all(h == hashes[0] for h in hashes)
     
+    @pytest.mark.p3
     def test_hash_changes_with_content(self, manager, temp_dataset):
         """Test that hash changes when content changes."""
         hash1 = manager.compute_dataset_hash(temp_dataset)
@@ -137,6 +144,7 @@ class TestDatasetVersionManager:
         
         assert hash1 != hash2
     
+    @pytest.mark.p3
     def test_hash_changes_with_new_file(self, manager, temp_dataset):
         """Test that hash changes when files are added."""
         hash1 = manager.compute_dataset_hash(temp_dataset)
@@ -148,11 +156,13 @@ class TestDatasetVersionManager:
         
         assert hash1 != hash2
     
+    @pytest.mark.p3
     def test_hash_nonexistent_path(self, manager, temp_dir):
         """Test hash computation with nonexistent path."""
         with pytest.raises(FileNotFoundError):
             manager.compute_dataset_hash(temp_dir / "nonexistent")
     
+    @pytest.mark.p3
     def test_create_version(self, manager, temp_dataset):
         """Test creating a version."""
         version = manager.create_version(
@@ -170,6 +180,7 @@ class TestDatasetVersionManager:
         assert version.file_count == 3
         assert version.total_size_bytes > 0
     
+    @pytest.mark.p3
     def test_version_metadata_saved(self, manager, temp_dataset):
         """Test that version metadata is saved to disk."""
         version = manager.create_version(
@@ -188,6 +199,7 @@ class TestDatasetVersionManager:
             assert data["version"] == "v1.0.0"
             assert data["dataset_name"] == "test_dataset"
     
+    @pytest.mark.p3
     def test_list_versions(self, manager, temp_dataset):
         """Test listing versions."""
         # Create multiple versions
@@ -203,6 +215,7 @@ class TestDatasetVersionManager:
         # Should be sorted by timestamp (newest first)
         assert versions[0].version == "v2.0.0"
     
+    @pytest.mark.p3
     def test_get_version(self, manager, temp_dataset):
         """Test getting specific version."""
         manager.create_version(temp_dataset, "test_dataset", "v1.0.0")
@@ -212,12 +225,14 @@ class TestDatasetVersionManager:
         assert version is not None
         assert version.version == "v1.0.0"
     
+    @pytest.mark.p3
     def test_get_nonexistent_version(self, manager):
         """Test getting nonexistent version."""
         version = manager.get_version("test_dataset", "v99.0.0")
         
         assert version is None
     
+    @pytest.mark.p3
     def test_verify_dataset(self, manager, temp_dataset):
         """Test dataset verification."""
         expected_hash = manager.compute_dataset_hash(temp_dataset)
@@ -228,6 +243,7 @@ class TestDatasetVersionManager:
         # Should fail with wrong hash
         assert manager.verify_dataset(temp_dataset, "wrong_hash") == False
     
+    @pytest.mark.p3
     def test_compare_versions(self, manager, temp_dataset):
         """Test version comparison."""
         # Create first version
@@ -256,11 +272,13 @@ class TestDatasetVersionManager:
         assert comparison["size_diff_bytes"] > 0
         assert comparison["metrics_diff"]["accuracy"] == 0.05
     
+    @pytest.mark.p3
     def test_compare_nonexistent_versions(self, manager):
         """Test comparing nonexistent versions."""
         with pytest.raises(ValueError):
             manager.compare_versions("test_dataset", "v1.0.0", "v2.0.0")
     
+    @pytest.mark.p3
     def test_source_datasets_tracking(self, manager, temp_dataset):
         """Test tracking of source datasets."""
         version = manager.create_version(
@@ -293,6 +311,7 @@ class TestDVCIntegration:
         return dataset_dir
     
     @patch('subprocess.run')
+    @pytest.mark.p3
     def test_dvc_add_called(self, mock_run, temp_dir, temp_dataset):
         """Test that DVC add is called when enabled."""
         mock_run.return_value = Mock(returncode=0)
@@ -307,6 +326,7 @@ class TestDVCIntegration:
         assert any("dvc" in str(call) for call in calls)
     
     @patch('subprocess.run')
+    @pytest.mark.p3
     def test_dvc_not_called_when_disabled(self, mock_run, temp_dir, temp_dataset):
         """Test that DVC is not called when disabled."""
         manager = DatasetVersionManager(versions_dir=temp_dir / "versions")
@@ -318,6 +338,7 @@ class TestDVCIntegration:
         assert not any("dvc" in str(call) for call in mock_run.call_args_list)
     
     @patch('subprocess.run')
+    @pytest.mark.p3
     def test_rollback_with_dvc(self, mock_run, temp_dir, temp_dataset):
         """Test rollback with DVC."""
         mock_run.return_value = Mock(returncode=0)
@@ -333,6 +354,7 @@ class TestDVCIntegration:
         
         assert result == True
     
+    @pytest.mark.p3
     def test_rollback_without_dvc(self, temp_dir, temp_dataset):
         """Test rollback fails without DVC."""
         manager = DatasetVersionManager(versions_dir=temp_dir / "versions")
@@ -344,6 +366,7 @@ class TestDVCIntegration:
         
         assert result == False
     
+    @pytest.mark.p3
     def test_rollback_nonexistent_version(self, temp_dir, temp_dataset):
         """Test rollback with nonexistent version."""
         manager = DatasetVersionManager(versions_dir=temp_dir / "versions")
@@ -364,6 +387,7 @@ class TestEdgeCases:
         yield Path(temp)
         shutil.rmtree(temp)
     
+    @pytest.mark.p3
     def test_empty_dataset(self, temp_dir):
         """Test with empty dataset."""
         dataset_dir = temp_dir / "empty_dataset"
@@ -376,6 +400,7 @@ class TestEdgeCases:
         assert version.file_count == 0
         assert version.total_size_bytes == 0
     
+    @pytest.mark.p3
     def test_large_file_count(self, temp_dir):
         """Test with many files."""
         dataset_dir = temp_dir / "large_dataset"
@@ -391,6 +416,7 @@ class TestEdgeCases:
         
         assert version.file_count == 1000
     
+    @pytest.mark.p3
     def test_nested_directories(self, temp_dir):
         """Test with deeply nested directories."""
         dataset_dir = temp_dir / "nested"
@@ -408,6 +434,7 @@ class TestEdgeCases:
         
         assert version.file_count == 10
     
+    @pytest.mark.p3
     def test_special_characters_in_filenames(self, temp_dir):
         """Test with special characters in filenames."""
         dataset_dir = temp_dir / "special"
@@ -428,6 +455,7 @@ class TestEdgeCases:
 class TestVersioningPerformance:
     """Performance tests for versioning."""
     
+    @pytest.mark.p3
     def test_hash_large_dataset(self, tmp_path):
         """Test hashing performance on large dataset."""
         dataset_dir = tmp_path / "large_dataset"
@@ -449,6 +477,7 @@ class TestVersioningPerformance:
         assert isinstance(hash_value, str)
         assert elapsed < 5.0, f"Hashing too slow: {elapsed}s"
     
+    @pytest.mark.p3
     def test_many_versions(self, tmp_path):
         """Test performance with many versions."""
         dataset_dir = tmp_path / "dataset"

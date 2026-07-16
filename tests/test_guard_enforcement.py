@@ -60,6 +60,7 @@ class TestG1_EvidenceStepHasEvidence:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_g1_passes_with_evidence(self):
         """G1 should pass when step has evidence"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -79,6 +80,7 @@ class TestG1_EvidenceStepHasEvidence:
         # Should not raise
         G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_g1_fails_without_evidence_strict_mode(self):
         """G1 should raise InvariantViolation in STRICT mode when no evidence"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -95,6 +97,7 @@ class TestG1_EvidenceStepHasEvidence:
         assert "evidence_count" in exc_info.value.details
         assert exc_info.value.details["evidence_count"] == 0
     
+    @pytest.mark.p2
     def test_g1_warns_without_evidence_warn_mode(self):
         """G1 should only warn in WARN mode when no evidence"""
         os.environ['MAHOUN_GUARD_MODE'] = 'WARN'
@@ -107,6 +110,7 @@ class TestG1_EvidenceStepHasEvidence:
         # Should not raise, only warn
         G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_g1_silent_in_off_mode(self):
         """G1 should be silent in OFF mode"""
         os.environ['MAHOUN_GUARD_MODE'] = 'OFF'
@@ -119,6 +123,7 @@ class TestG1_EvidenceStepHasEvidence:
         # Should not raise or warn
         G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_g1_multiple_evidence_passes(self):
         """G1 should pass with multiple evidence references"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -152,6 +157,7 @@ class TestG2_EvidenceReferencesResolve:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_g2_passes_when_node_exists(self):
         """G2 should pass when referenced node exists in registry"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -177,6 +183,7 @@ class TestG2_EvidenceReferencesResolve:
         # Should not raise
         G2_EvidenceReferencesResolve(evidence, registry)
     
+    @pytest.mark.p2
     def test_g2_fails_when_node_missing_strict_mode(self):
         """G2 should raise InvariantViolation when node doesn't exist"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -197,6 +204,7 @@ class TestG2_EvidenceReferencesResolve:
         assert "node_id" in exc_info.value.details
         assert exc_info.value.details["node_id"] == "nonexistent_node"
     
+    @pytest.mark.p2
     def test_g2_multiple_nodes_all_exist(self):
         """G2 should pass when all referenced nodes exist"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -224,6 +232,7 @@ class TestG2_EvidenceReferencesResolve:
             # Should not raise
             G2_EvidenceReferencesResolve(evidence, registry)
     
+    @pytest.mark.p2
     def test_g2_fails_with_empty_node_id(self):
         """G2 should fail when node_id is empty"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -257,6 +266,7 @@ class TestG3_NonResurrection:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_g3_passes_when_no_resurrection(self):
         """G3 should pass when excluded nodes don't appear"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -281,6 +291,7 @@ class TestG3_NonResurrection:
         # Should not raise
         G3_NonResurrection(excluded_nodes, resolved_nodes, verdict_steps)
     
+    @pytest.mark.p2
     def test_g3_fails_when_excluded_in_resolved_nodes(self):
         """G3 should fail when excluded node appears in resolved_nodes"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -301,6 +312,7 @@ class TestG3_NonResurrection:
         assert "excluded_in_resolved" in exc_info.value.details
         assert "excluded_1" in exc_info.value.details["excluded_in_resolved"]
     
+    @pytest.mark.p2
     def test_g3_fails_when_excluded_in_verdict_steps(self):
         """G3 should fail when excluded node appears in verdict steps"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -328,6 +340,7 @@ class TestG3_NonResurrection:
         assert "excluded_in_steps" in exc_info.value.details
         assert "excluded_1" in exc_info.value.details["excluded_in_steps"]
     
+    @pytest.mark.p2
     def test_g3_fails_when_excluded_in_both(self):
         """G3 should fail when excluded node appears in both places"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -368,6 +381,7 @@ class TestG4_ContradictionVisibility:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_g4_passes_with_no_conflicts(self):
         """G4 should pass when no unresolved conflicts"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -378,6 +392,7 @@ class TestG4_ContradictionVisibility:
         # Should not raise
         G4_ContradictionVisibility(unresolved_conflicts, final_verdict)
     
+    @pytest.mark.p2
     def test_g4_passes_with_conflicts_and_undetermined(self):
         """G4 should pass when conflicts exist and verdict is UNDETERMINED"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -388,6 +403,7 @@ class TestG4_ContradictionVisibility:
         # Should not raise
         G4_ContradictionVisibility(unresolved_conflicts, final_verdict)
     
+    @pytest.mark.p2
     def test_g4_passes_with_conflicts_and_none_verdict(self):
         """G4 should pass when conflicts exist and verdict is None"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -398,6 +414,7 @@ class TestG4_ContradictionVisibility:
         # Should not raise
         G4_ContradictionVisibility(unresolved_conflicts, final_verdict)
     
+    @pytest.mark.p2
     def test_g4_fails_with_conflicts_and_determined_verdict(self):
         """G4 should fail when conflicts exist but verdict is determined"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -412,6 +429,7 @@ class TestG4_ContradictionVisibility:
         assert "unresolved_conflicts_count" in exc_info.value.details
         assert exc_info.value.details["unresolved_conflicts_count"] == 2
     
+    @pytest.mark.p2
     def test_g4_case_insensitive_undetermined(self):
         """G4 should accept case-insensitive UNDETERMINED"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -439,6 +457,7 @@ class TestG5_ResolutionOrder:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_g5_passes_when_all_nodes_resolved(self):
         """G5 should pass when all step nodes are in resolved_nodes"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -466,6 +485,7 @@ class TestG5_ResolutionOrder:
         # Should not raise
         G5_ResolutionOrder(verdict_steps, resolved_nodes, case_nodes)
     
+    @pytest.mark.p2
     def test_g5_fails_when_node_not_in_resolved(self):
         """G5 should fail when step references unresolved node"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -493,6 +513,7 @@ class TestG5_ResolutionOrder:
         assert "missing_in_resolved" in exc_info.value.details
         assert "unresolved_node" in exc_info.value.details["missing_in_resolved"]
     
+    @pytest.mark.p2
     def test_g5_accepts_case_nodes(self):
         """G5 should accept nodes from case_nodes (facts)"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -534,6 +555,7 @@ class TestGuardModes:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_strict_mode_raises_exceptions(self):
         """STRICT mode should raise InvariantViolation"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -543,6 +565,7 @@ class TestGuardModes:
         with pytest.raises(InvariantViolation):
             G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_audit_mode_raises_exceptions(self):
         """AUDIT mode should raise InvariantViolation (with extra logging)"""
         os.environ['MAHOUN_GUARD_MODE'] = 'AUDIT'
@@ -552,6 +575,7 @@ class TestGuardModes:
         with pytest.raises(InvariantViolation):
             G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_warn_mode_no_exception(self):
         """WARN mode should not raise exception"""
         os.environ['MAHOUN_GUARD_MODE'] = 'WARN'
@@ -561,6 +585,7 @@ class TestGuardModes:
         # Should not raise
         G1_EvidenceStepHasEvidence(step, 0)
     
+    @pytest.mark.p2
     def test_off_mode_no_exception(self):
         """OFF mode should not raise exception"""
         os.environ['MAHOUN_GUARD_MODE'] = 'OFF'
@@ -587,6 +612,7 @@ class TestNonBypassableEnforcement:
         elif 'MAHOUN_GUARD_MODE' in os.environ:
             del os.environ['MAHOUN_GUARD_MODE']
     
+    @pytest.mark.p2
     def test_critical_guards_enforced_in_strict(self):
         """Critical guards must be enforced in STRICT mode"""
         os.environ['MAHOUN_GUARD_MODE'] = 'STRICT'
@@ -597,6 +623,7 @@ class TestNonBypassableEnforcement:
         with pytest.raises(InvariantViolation):
             G1_EvidenceStepHasEvidence(step_no_evidence, 0)
     
+    @pytest.mark.p2
     def test_guard_decorator_prevents_bypass(self):
         """@guard decorator should prevent bypassing critical guards"""
         # This test verifies the decorator is applied

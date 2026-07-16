@@ -39,6 +39,7 @@ class TestLabelInjectionProtection:
       - Unicode normalization variants
     """
 
+    @pytest.mark.p2
     def test_cypher_injection_via_parenthesis_escape(self):
         """
         Attack: Label = "Document`) SET n.admin=true//"
@@ -53,6 +54,7 @@ class TestLabelInjectionProtection:
         
         assert "strict label character rules" in str(exc_info.value) or "ONTOLOGY_VIOLATION" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_cypher_injection_via_semicolon(self):
         """
         Attack: Label = "Document; DROP CONSTRAINT"
@@ -67,6 +69,7 @@ class TestLabelInjectionProtection:
         
         assert "ONTOLOGY_VIOLATION" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_cypher_injection_via_single_quote(self):
         """
         Attack: Label = "Document' OR 1=1--"
@@ -81,6 +84,7 @@ class TestLabelInjectionProtection:
         
         assert "ONTOLOGY_VIOLATION" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_cypher_injection_via_backtick(self):
         """
         Attack: Label = "Document`id`"
@@ -95,6 +99,7 @@ class TestLabelInjectionProtection:
         
         assert "ONTOLOGY_VIOLATION" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_unicode_homoglyph_attack(self):
         """
         Attack: Label = "Dοcument" (Greek omicron ο instead of Latin o)
@@ -110,6 +115,7 @@ class TestLabelInjectionProtection:
         
         assert "non-ASCII" in str(exc_info.value) or "homoglyph" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_fullwidth_character_injection(self):
         """
         Attack: Label = "ＤＯＣument" (fullwidth Latin characters)
@@ -124,6 +130,7 @@ class TestLabelInjectionProtection:
         
         assert "compatibility" in str(exc_info.value).lower() or "homoglyph" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_empty_label_rejected(self):
         """
         Attack: Label = "" (empty string)
@@ -134,6 +141,7 @@ class TestLabelInjectionProtection:
         
         assert "non-empty" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_whitespace_only_label_rejected(self):
         """
         Attack: Label = "   " (whitespace only)
@@ -144,6 +152,7 @@ class TestLabelInjectionProtection:
         
         assert "non-empty" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_valid_label_passes(self):
         """
         Sanity check: Valid labels pass validation.
@@ -154,6 +163,7 @@ class TestLabelInjectionProtection:
             # Should not raise
             validate_node_label(label, correlation_id=f"test-valid-{label}")
 
+    @pytest.mark.p2
     def test_valid_label_with_numbers_and_underscore(self):
         """
         Valid labels may contain numbers and underscores (but not leading).
@@ -209,6 +219,7 @@ class TestTemporalOrderingValidation:
             pipeline_hash="test-pipeline",
         )
 
+    @pytest.mark.p2
     def test_delete_before_create_rejected(self):
         """
         Attack: [DELETE(id=X), CREATE(id=X)]
@@ -234,6 +245,7 @@ class TestTemporalOrderingValidation:
         assert "NODE_DELETE" in str(exc_info.value)
         assert entity_id in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_duplicate_create_rejected(self):
         """
         Attack: [CREATE(id=X), CREATE(id=X)]
@@ -259,6 +271,7 @@ class TestTemporalOrderingValidation:
         assert "NODE_CREATE" in str(exc_info.value)
         assert "already exists" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_create_after_merge_without_delete_rejected(self):
         """
         Attack: [MERGE(id=X), CREATE(id=X)]
@@ -284,6 +297,7 @@ class TestTemporalOrderingValidation:
         assert "NODE_CREATE" in str(exc_info.value)
         assert "already exists" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_valid_create_delete_create_sequence_passes(self):
         """
         Valid lifecycle: CREATE → DELETE → CREATE
@@ -306,6 +320,7 @@ class TestTemporalOrderingValidation:
         assert result.applied_count == 3
         assert result.skipped_count == 0
 
+    @pytest.mark.p2
     def test_merge_is_idempotent_always_allowed(self):
         """
         MERGE is idempotent — always allowed regardless of state.
@@ -326,6 +341,7 @@ class TestTemporalOrderingValidation:
         assert result.applied_count == 3
         assert result.skipped_count == 0
 
+    @pytest.mark.p2
     def test_create_merge_sequence_valid(self):
         """
         Valid sequence: CREATE → MERGE
@@ -345,6 +361,7 @@ class TestTemporalOrderingValidation:
         assert result.applied_count == 2
         assert result.skipped_count == 0
 
+    @pytest.mark.p2
     def test_delete_nonexistent_with_empty_history_rejected(self):
         """
         Attack: First operation is DELETE on entity that never existed.

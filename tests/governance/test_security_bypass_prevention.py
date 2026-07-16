@@ -43,6 +43,7 @@ from mahoun.core.governance_lock import (
 class TestEnvironmentVariableBypass:
     """Tests that environment variables cannot bypass governance"""
 
+    @pytest.mark.p0
     def test_env_var_cannot_disable_governance(self, reset_governance_lock):
         """Test that setting env var cannot disable governance"""
         # Initialize governance in STRICT mode
@@ -58,6 +59,7 @@ class TestEnvironmentVariableBypass:
         # Clean up
         del os.environ["MAHOUN_GUARD_MODE"]
 
+    @pytest.mark.p0
     def test_env_var_cannot_change_mode(self, reset_governance_lock):
         """Test that env var cannot change governance mode"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -71,6 +73,7 @@ class TestEnvironmentVariableBypass:
         # Clean up
         del os.environ["GOVERNANCE_MODE"]
 
+    @pytest.mark.p0
     def test_env_var_set_before_init_ignored(self, reset_governance_lock):
         """Test that env var set before init is ignored"""
         # Set env var before initialization
@@ -94,6 +97,7 @@ class TestEnvironmentVariableBypass:
 class TestRuntimeModeChangeBypass:
     """Tests that runtime mode changes are prevented"""
 
+    @pytest.mark.p0
     def test_cannot_change_mode_after_init(self, reset_governance_lock):
         """Test that mode cannot be changed after initialization"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -104,6 +108,7 @@ class TestRuntimeModeChangeBypass:
         assert "already initialized" in str(exc_info.value).lower()
         assert GovernanceLock.get_mode() == GovernanceMode.STRICT
 
+    @pytest.mark.p0
     def test_cannot_reset_and_reinit(self, reset_governance_lock):
         """Test that reset and reinit is tracked"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -119,6 +124,7 @@ class TestRuntimeModeChangeBypass:
         # So this test should verify that the mode changed (which is the security concern)
         assert GovernanceLock.get_mode() == GovernanceMode.AUDIT
 
+    @pytest.mark.p0
     def test_multiple_change_attempts_tracked(self, reset_governance_lock):
         """Test that multiple change attempts are tracked"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -143,6 +149,7 @@ class TestRuntimeModeChangeBypass:
 class TestDirectServiceInstantiation:
     """Tests that direct service instantiation without validation is prevented"""
 
+    @pytest.mark.p0
     def test_fortress_validator_requires_governance_lock(self, reset_governance_lock):
         """Test that FortressValidator requires GovernanceLock to be initialized"""
         # Reset governance lock
@@ -158,6 +165,7 @@ class TestDirectServiceInstantiation:
         assert GovernanceLock.get_mode() == GovernanceMode.STRICT
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reasoning_requires_governance_context(self, reset_governance_lock):
         """Test that reasoning operations require active governance context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -167,6 +175,7 @@ class TestDirectServiceInstantiation:
             GovernanceContextManager.require_context()
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_provenance_requires_governance_context(self, reset_governance_lock):
         """Test that provenance creation requires active governance context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -184,6 +193,7 @@ class TestDirectServiceInstantiation:
 class TestDeserializationAttackPrevention:
     """Tests that deserialization attacks are prevented"""
 
+    @pytest.mark.p0
     def test_cannot_deserialize_governance_lock(self, reset_governance_lock):
         """Test that GovernanceLock cannot be deserialized"""
         import pickle
@@ -201,6 +211,7 @@ class TestDeserializationAttackPrevention:
             # Expected: GovernanceLock should not be picklable
             pass
 
+    @pytest.mark.p0
     def test_cannot_modify_class_attributes(self, reset_governance_lock):
         """Test that class attributes can be modified but should not be in production"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -229,6 +240,7 @@ class TestThresholdLoweringPrevention:
     """Tests that validation thresholds cannot be lowered"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_cannot_lower_agreement_threshold(self, reset_governance_lock):
         """Test that agreement score threshold cannot be lowered"""
         from mahoun.core.fortress_validator import ReasoningResponse
@@ -253,6 +265,7 @@ class TestThresholdLoweringPrevention:
         with pytest.raises(SecurityBreachException):
             await validator.validate(response, correlation_id="test-001")
 
+    @pytest.mark.p0
     def test_cannot_modify_validator_config(self, reset_governance_lock):
         """Test that validator config can be modified (known limitation)"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -282,6 +295,7 @@ class TestGovernanceContextBypass:
     """Tests that governance context cannot be bypassed"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_cannot_execute_without_context(self, reset_governance_lock):
         """Test that operations cannot execute without active context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -294,6 +308,7 @@ class TestGovernanceContextBypass:
             GovernanceContextManager.require_context()
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_cannot_create_provenance_without_context(self, reset_governance_lock):
         """Test that provenance cannot be created without context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -306,6 +321,7 @@ class TestGovernanceContextBypass:
             GovernanceContextManager.require_provenance(source="test", author="system")
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_context_cleanup_on_exception(self, reset_governance_lock):
         """Test that context is cleaned up on exception"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -327,6 +343,7 @@ class TestProvenanceTamperingPrevention:
     """Tests that provenance cannot be tampered with"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_provenance_is_immutable(self, reset_governance_lock):
         """Test that provenance metadata is immutable"""
         from mahoun.core.governance.provenance_attestation import ProvenanceAttestation
@@ -345,6 +362,7 @@ class TestProvenanceTamperingPrevention:
             attestation.provenance_hash = "tampered_hash"
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_provenance_integrity_verification(self, reset_governance_lock):
         """Test that provenance integrity can be verified"""
         from mahoun.core.governance.provenance_attestation import ProvenanceAttestation
@@ -362,6 +380,7 @@ class TestProvenanceTamperingPrevention:
         assert attestation.verify_integrity() is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_broken_lineage_detected(self, reset_governance_lock):
         """Test that broken provenance lineage is detected"""
         import dataclasses
@@ -408,6 +427,7 @@ class TestAPIBypassPrevention:
     """Tests that API endpoints cannot bypass governance"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_api_requires_fortress_protection(self, reset_governance_lock):
         """Test that API endpoints require FortressProtectedReasoningService"""
         from mahoun.reasoning.fortress_integration import FortressProtectedReasoningService
@@ -442,6 +462,7 @@ class TestAPIBypassPrevention:
             )
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_api_validates_all_responses(self, reset_governance_lock):
         """Test that API validates all responses"""
         from mahoun.reasoning.fortress_integration import FortressProtectedReasoningService
@@ -485,6 +506,7 @@ class TestAPIBypassPrevention:
 class TestComprehensiveBypassPrevention:
     """Comprehensive tests for all bypass vectors"""
 
+    @pytest.mark.p0
     def test_all_bypass_vectors_blocked(self, reset_governance_lock):
         """Test that all known bypass vectors are blocked or detected"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -512,6 +534,7 @@ class TestComprehensiveBypassPrevention:
         assert metadata["change_attempts"] >= 1
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fail_closed_on_all_errors(self, reset_governance_lock):
         """Test that system fails closed on all error conditions"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)

@@ -23,6 +23,8 @@ def clean_env():
     clear_registry()
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_concurrent_verdict_generation_isolation(clean_env, tmp_path):
     """
     Test 2.1: Concurrent State Isolation Check (REAL SYSTEM)
@@ -115,6 +117,8 @@ async def test_concurrent_verdict_generation_isolation(clean_env, tmp_path):
     finally:
         runtime_config.is_desktop_minimal = original_desktop_minimal
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_ledger_commit_failure_rollback():
     """
     Test 2.2: Ledger Commit Failure Rollback

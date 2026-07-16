@@ -39,6 +39,8 @@ from mahoun.reasoning.adapters import ReasoningDependencyContainer
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_container_services_lazy_initialization():
     """
     ✅ Test 1: Verify all services initialize lazily without errors.
@@ -72,6 +74,8 @@ def test_container_services_lazy_initialization():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_protocol_compliance_uncertainty():
     """
     ✅ Test 2a: UncertaintyEstimate satisfies protocol contract.
@@ -99,6 +103,8 @@ def test_protocol_compliance_uncertainty():
     assert estimate.is_low_uncertainty(threshold=0.2)
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_protocol_compliance_ontology():
     """
     ✅ Test 2b: OntologyValidationResult satisfies protocol contract.
@@ -126,6 +132,8 @@ def test_protocol_compliance_ontology():
     assert len(result_invalid.violations) > 0
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_protocol_compliance_ultra_rag():
     """
     ✅ Test 2c: UltraRAGResult satisfies protocol contract.
@@ -159,6 +167,8 @@ def test_protocol_compliance_ultra_rag():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_container_with_mock_uncertainty():
     """
     ✅ Test 3a: Container can be injected with mock uncertainty service.
@@ -188,6 +198,8 @@ def test_container_with_mock_uncertainty():
     assert result.confidence == 0.85
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_container_with_mock_ontology():
     """
     ✅ Test 3b: Container can be injected with mock ontology gate.
@@ -217,6 +229,8 @@ def test_container_with_mock_ontology():
     assert result.is_valid
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_container_with_mock_ultra_rag():
     """
     ✅ Test 3c: Container can be injected with mock Ultra RAG.
@@ -253,6 +267,8 @@ def test_container_with_mock_ultra_rag():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_reasoning_response_with_uncertainty():
     """
     ✅ Test 4a: ReasoningResponse accepts uncertainty field.
@@ -282,6 +298,8 @@ def test_reasoning_response_with_uncertainty():
     assert response.uncertainty.confidence == 0.85
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_reasoning_response_with_ontology_flag():
     """
     ✅ Test 4b: ReasoningResponse accepts ontology_validated field.
@@ -300,6 +318,8 @@ def test_reasoning_response_with_ontology_flag():
     assert response.ontology_validated is True
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_reasoning_response_with_retrieval_mode():
     """
     ✅ Test 4c: ReasoningResponse accepts retrieval_mode field.
@@ -323,6 +343,8 @@ def test_reasoning_response_with_retrieval_mode():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_container_graceful_degradation_when_modules_missing():
     """
     ✅ Test 5: Container handles missing optional modules gracefully.
@@ -348,12 +370,14 @@ def test_container_graceful_degradation_when_modules_missing():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_ontology_gate_adapter_wraps_enforcer():
     """
     ✅ Test 6: OntologyGateAdapter correctly wraps OntologyEnforcer.
     """
     from mahoun.core.governance.ontology_enforcer import OntologyEnforcer
-    from mahoun.core.governance.ontology_gate_adapter import OntologyGateAdapter
+    from mahoun.infrastructure.adapters.ontology_gate_adapter import OntologyGateAdapter
     
     enforcer = OntologyEnforcer()
     adapter = OntologyGateAdapter(enforcer)
@@ -368,12 +392,14 @@ def test_ontology_gate_adapter_wraps_enforcer():
     assert result.validated_relationships == 0
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_ontology_gate_adapter_validates_relationships():
     """
     ✅ Test 6b: OntologyGateAdapter validates relationships correctly.
     """
     from mahoun.core.governance.ontology_enforcer import OntologyEnforcer
-    from mahoun.core.governance.ontology_gate_adapter import OntologyGateAdapter
+    from mahoun.infrastructure.adapters.ontology_gate_adapter import OntologyGateAdapter
     
     enforcer = OntologyEnforcer()
     adapter = OntologyGateAdapter(enforcer)
@@ -418,6 +444,8 @@ def test_ontology_gate_adapter_validates_relationships():
 # ============================================================================
 
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_integration_summary():
     """
     ✅ SUMMARY: All advanced features integrated successfully.

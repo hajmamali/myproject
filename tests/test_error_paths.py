@@ -28,6 +28,7 @@ class TestReasoningWithoutGraph:
     These tests ensure the system fails safely.
     """
     
+    @pytest.mark.p2
     def test_evidence_linked_verdict_requires_graph_builder(self):
         """EvidenceLinkedVerdictEngine MUST reject None graph_builder
         
@@ -45,6 +46,7 @@ class TestReasoningWithoutGraph:
                 ledger_writer=ledger
             )
     
+    @pytest.mark.p2
     def test_evidence_linked_verdict_requires_knowledge_graph(self):
         """EvidenceLinkedVerdictEngine MUST reject None knowledge_graph
         
@@ -62,6 +64,7 @@ class TestReasoningWithoutGraph:
                 ledger_writer=ledger
             )
     
+    @pytest.mark.p2
     def test_evidence_linked_verdict_requires_ledger_writer(self):
         """EvidenceLinkedVerdictEngine MUST reject None ledger_writer
         
@@ -79,6 +82,7 @@ class TestReasoningWithoutGraph:
                 ledger_writer=None  # type: ignore
             )
     
+    @pytest.mark.p2
     def test_chain_of_thought_requires_knowledge_graph(self):
         """ChainOfThoughtReasoner MUST reject None knowledge_graph
         
@@ -89,6 +93,7 @@ class TestReasoningWithoutGraph:
         with pytest.raises(TypeError):
             ChainOfThoughtReasoner(knowledge_graph=None)  # type: ignore
     
+    @pytest.mark.p2
     def test_deep_reasoning_engine_initializes_own_graph(self):
         """DeepLegalReasoningEngine MUST initialize its own graph infrastructure
         
@@ -114,6 +119,7 @@ class TestReasoningWithoutGraph:
         assert hasattr(engine, 'causal_engine')
         assert engine.causal_engine is not None
     
+    @pytest.mark.p2
     def test_reasoning_with_empty_knowledge_graph(self):
         """Reasoning MUST handle empty knowledge graph gracefully
         
@@ -159,6 +165,7 @@ class TestReasoningWithoutGraph:
         for step in verdict.steps:
             assert len(step.evidence) > 0
     
+    @pytest.mark.p2
     def test_reasoning_with_no_facts(self):
         """Reasoning MUST handle empty facts list gracefully
         
@@ -192,6 +199,7 @@ class TestReasoningWithoutGraph:
         # VERIFY: At least one step exists (placeholder)
         assert len(verdict.steps) > 0
     
+    @pytest.mark.p2
     def test_reasoning_with_invalid_fact_types(self):
         """Reasoning MUST handle invalid fact types gracefully
         
@@ -222,6 +230,7 @@ class TestReasoningWithoutGraph:
                 facts="not a list"  # type: ignore
             ))
     
+    @pytest.mark.p2
     def test_deep_reasoning_without_facts(self):
         """DeepLegalReasoningEngine MUST extract facts from context if not provided
         
@@ -244,6 +253,7 @@ class TestReasoningWithoutGraph:
         # VERIFY: Reasoning chain exists
         assert len(result.reasoning_chain) > 0
     
+    @pytest.mark.p2
     def test_deep_reasoning_with_empty_context(self):
         """DeepLegalReasoningEngine MUST handle empty context gracefully
         

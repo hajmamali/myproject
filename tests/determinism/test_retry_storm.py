@@ -38,6 +38,7 @@ class TestRetryStorm(DeterminismTestBase):
     """Test determinism under retry storm conditions"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_1000_rapid_retries(self):
         """
         Test 3.1: 1000 rapid retries (minimal delay)
@@ -81,6 +82,7 @@ class TestRetryStorm(DeterminismTestBase):
               f"({1000/duration_ms*1000:.0f} req/s)")
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_retry_with_backoff(self):
         """
         Test 3.2: Retries with exponential backoff
@@ -115,6 +117,7 @@ class TestRetryStorm(DeterminismTestBase):
         print(f"✅ BACKOFF RETRY VERIFIED: {len(delays)} retries")
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_memory_stability_under_retries(self):
         """
         Test 3.3: Memory stability under 1000 retries
@@ -162,6 +165,7 @@ class TestRetryPerformance:
     """Performance benchmarks for retry scenarios"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_throughput_benchmark(self):
         """Measure maximum throughput"""
         service = UnifiedReasoningService(enable_neural=False)

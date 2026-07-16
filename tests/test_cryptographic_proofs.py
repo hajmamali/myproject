@@ -51,6 +51,7 @@ class TestProofGeneration:
         self.Step = namedtuple('Step', ['statement'])
         self.Evidence = namedtuple('Evidence', ['node_id'])
     
+    @pytest.mark.p2
     def test_generate_proof_success(self):
         """Test successful proof generation"""
         graph_nodes = {
@@ -93,6 +94,7 @@ class TestProofGeneration:
         assert proof.signature
         assert proof.timestamp
     
+    @pytest.mark.p2
     def test_generate_proof_fails_empty_graph(self):
         """Test proof generation fails with empty graph"""
         with pytest.raises(ValueError, match="graph_nodes cannot be empty"):
@@ -107,6 +109,7 @@ class TestProofGeneration:
                 private_key=self.private_key
             )
     
+    @pytest.mark.p2
     def test_generate_proof_fails_empty_reasoning(self):
         """Test proof generation fails with empty reasoning steps"""
         with pytest.raises(ValueError, match="reasoning_steps cannot be empty"):
@@ -121,6 +124,7 @@ class TestProofGeneration:
                 private_key=self.private_key
             )
     
+    @pytest.mark.p2
     def test_generate_proof_fails_invalid_confidence(self):
         """Test proof generation fails with invalid confidence"""
         with pytest.raises(ValueError, match="confidence must be in"):
@@ -146,6 +150,7 @@ class TestProofVerification:
         self.Step = namedtuple('Step', ['statement'])
         self.Evidence = namedtuple('Evidence', ['node_id'])
     
+    @pytest.mark.p2
     def test_verify_valid_proof(self):
         """Test verification of valid proof"""
         proof = generate_proof(
@@ -162,6 +167,7 @@ class TestProofVerification:
         # Should verify successfully
         assert proof.verify(self.public_key) is True
     
+    @pytest.mark.p2
     def test_verify_fails_tampered_confidence(self):
         """Test verification fails when confidence is tampered"""
         proof = generate_proof(
@@ -191,6 +197,7 @@ class TestDeterministicHashing:
         self.Edge = namedtuple('Edge', ['source_id', 'target_id', 'relationship_type'])
         self.Step = namedtuple('Step', ['statement'])
     
+    @pytest.mark.p2
     def test_graph_hash_deterministic(self):
         """Test that graph hashing is deterministic"""
         nodes = {

@@ -118,6 +118,7 @@ class TestReasoningExecution:
     """Tests for reasoning execution"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_with_valid_response(self):
         """Test reasoning with valid response"""
         mock_service = MockReasoningService(valid_response=True)
@@ -137,6 +138,7 @@ class TestReasoningExecution:
             assert GovernanceLock.get_mode() == GovernanceMode.STRICT
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_with_invalid_response(self):
         """Test reasoning with invalid response"""
         mock_service = MockReasoningService(valid_response=False)
@@ -152,6 +154,7 @@ class TestReasoningExecution:
             assert GovernanceLock.is_enforcement_enabled() is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_creates_governance_context(self):
         """Test that reasoning creates governance context"""
         mock_service = MockReasoningService(valid_response=True)
@@ -167,6 +170,7 @@ class TestReasoningExecution:
             assert GovernanceContextManager.get_current_context() is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_without_governance_context(self):
         """Test that reasoning requires governance context"""
         mock_service = MockReasoningService(valid_response=True)
@@ -188,6 +192,7 @@ class TestBatchReasoning:
     """Tests for batch reasoning"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_batch(self):
         """Test batch reasoning"""
         mock_service = MockReasoningService(valid_response=True)
@@ -205,6 +210,7 @@ class TestBatchReasoning:
                 assert response.success is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_batch_with_invalid(self):
         """Test batch reasoning with some invalid responses"""
         mock_service = MockReasoningService(valid_response=False)
@@ -227,6 +233,7 @@ class TestStatisticsTracking:
     """Tests for statistics tracking"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_get_stats(self):
         """Test getting service statistics"""
         mock_service = MockReasoningService(valid_response=True)
@@ -248,6 +255,7 @@ class TestStatisticsTracking:
             assert stats["validator"]["total_validations"] == 5
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_get_stats_with_failures(self):
         """Test getting statistics with validation failures"""
         mock_service = MockReasoningService(valid_response=False)
@@ -280,6 +288,7 @@ class TestHealthChecks:
     """Tests for health checks"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_health_check(self):
         """Test health check"""
         mock_service = MockReasoningService(valid_response=True)
@@ -295,6 +304,7 @@ class TestHealthChecks:
         assert health["fortress_validator"]["strict_mode"] is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_health_check_with_non_strict(self):
         """Test health check with non-strict mode"""
         mock_service = MockReasoningService(valid_response=True)
@@ -318,6 +328,7 @@ class TestDecoratorFunctionality:
     """Tests for decorator functionality"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validated_decorator(self):
         """Test fortress_validated decorator"""
 
@@ -347,6 +358,7 @@ class TestDecoratorFunctionality:
             assert response.success is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validated_decorator_with_invalid(self):
         """Test fortress_validated decorator with invalid response"""
 
@@ -380,6 +392,7 @@ class TestDecoratorFunctionality:
 class TestConvenienceFunctions:
     """Tests for convenience functions"""
 
+    @pytest.mark.p0
     def test_create_fortress_protected_service(self):
         """Test create_fortress_protected_service function"""
         mock_service = MockReasoningService(valid_response=True)
@@ -390,6 +403,7 @@ class TestConvenienceFunctions:
         assert protected_service.reasoning_service == mock_service
         assert protected_service.strict_mode is True
 
+    @pytest.mark.p0
     def test_create_fortress_protected_service_with_validator(self):
         """Test create_fortress_protected_service with custom validator"""
         mock_service = MockReasoningService(valid_response=True)
@@ -414,6 +428,7 @@ class TestPerformance:
     """Tests for FortressProtectedReasoningService performance"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_performance(self):
         """Test reasoning performance"""
         import time
@@ -433,6 +448,7 @@ class TestPerformance:
             assert elapsed < 10.0  # < 10s for 100 requests
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_batch_performance(self):
         """Test batch reasoning performance"""
         import time
@@ -461,6 +477,7 @@ class TestGovernanceIntegration:
     """Tests for governance integration"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_lock_enforced_strict_mode(self):
         """Test that governance lock is enforced in strict mode"""
         mock_service = MockReasoningService(valid_response=True)
@@ -482,6 +499,7 @@ class TestGovernanceIntegration:
             assert GovernanceLock.is_enforcement_enabled() is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_lock_fails_closed(self):
         """Test that system fails closed when governance lock is compromised"""
         mock_service = MockReasoningService(valid_response=True)
@@ -510,6 +528,7 @@ class TestGovernanceIntegration:
             assert response.success is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_security_bypass_prevention(self):
         """Test that security bypass attempts are prevented"""
         mock_service = MockReasoningService(valid_response=False)  # Invalid response
@@ -532,6 +551,7 @@ class TestGovernanceIntegration:
             assert metadata["mode"] == GovernanceMode.STRICT.value
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_context_enforcement(self):
         """Test that governance context is enforced"""
         mock_service = MockReasoningService(valid_response=True)
@@ -561,6 +581,7 @@ class TestEdgeCases:
     """Tests for edge cases"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_with_none_correlation_id(self):
         """Test reasoning with None correlation_id"""
         mock_service = MockReasoningService(valid_response=True)
@@ -575,6 +596,7 @@ class TestEdgeCases:
             assert response is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_with_empty_request(self):
         """Test reasoning with empty request"""
         mock_service = MockReasoningService(valid_response=True)
@@ -587,6 +609,7 @@ class TestEdgeCases:
             assert response is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_reason_with_large_request(self):
         """Test reasoning with large request"""
         mock_service = MockReasoningService(valid_response=True)

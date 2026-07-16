@@ -48,6 +48,7 @@ class MockValidator(DomainValidator):
 class TestOrchestratorBasic:
     """Basic orchestrator functionality"""
     
+    @pytest.mark.p2
     def test_orchestrator_creates_successfully(self, tmp_path):
         """Test orchestrator instantiation"""
         from mahoun.preproduction.models import ValidationManifest
@@ -66,6 +67,7 @@ class TestOrchestratorBasic:
         assert orchestrator.manifest.version == "1.0"
         assert orchestrator.workspace_root == tmp_path
     
+    @pytest.mark.p2
     def test_validator_registration(self, tmp_path):
         """Test validator registration and graph building"""
         from mahoun.preproduction.models import ValidationManifest
@@ -85,6 +87,7 @@ class TestOrchestratorBasic:
         assert "test_validator" in orchestrator.validators
         assert "test_validator" in orchestrator.graph.nodes
     
+    @pytest.mark.p2
     def test_single_validator_execution(self, tmp_path):
         """Test running a single validator"""
         from mahoun.preproduction.models import ValidationManifest
@@ -107,6 +110,7 @@ class TestOrchestratorBasic:
         assert len(result.results) == 1
         assert result.results[0].validator_id == "test_validator"
     
+    @pytest.mark.p2
     def test_failing_validator(self, tmp_path):
         """Test validator that reports P0 failure"""
         from mahoun.preproduction.models import ValidationManifest
@@ -134,6 +138,7 @@ class TestOrchestratorBasic:
 class TestDependencyGraph:
     """Dependency graph and execution order tests"""
     
+    @pytest.mark.p2
     def test_topological_sort_no_dependencies(self):
         """Test topological sort with independent validators"""
         from mahoun.preproduction.orchestrator import ValidationGraph
@@ -149,6 +154,7 @@ class TestDependencyGraph:
         assert set(order) == {"A", "B", "C"}
         assert len(order) == 3
     
+    @pytest.mark.p2
     def test_topological_sort_with_dependencies(self):
         """Test topological sort respects dependencies"""
         from mahoun.preproduction.orchestrator import ValidationGraph
@@ -163,6 +169,7 @@ class TestDependencyGraph:
         assert order.index("A") < order.index("B")
         assert order.index("A") < order.index("C")
     
+    @pytest.mark.p2
     def test_circular_dependency_detection(self):
         """Test circular dependency raises error"""
         from mahoun.preproduction.orchestrator import ValidationGraph
@@ -175,6 +182,7 @@ class TestDependencyGraph:
         with pytest.raises(ValueError, match="Circular dependency"):
             graph.topological_sort()
     
+    @pytest.mark.p2
     def test_execution_groups(self):
         """Test parallel execution groups"""
         from mahoun.preproduction.orchestrator import ValidationGraph
@@ -197,6 +205,7 @@ class TestDependencyGraph:
 class TestComplianceScoring:
     """Compliance score calculation tests"""
     
+    @pytest.mark.p2
     def test_perfect_score(self, tmp_path):
         """Test 100% compliance (no findings)"""
         from mahoun.preproduction.models import ValidationManifest
@@ -218,6 +227,7 @@ class TestComplianceScoring:
         assert result.compliance_score == 1.0
         assert result.is_production_ready
     
+    @pytest.mark.p2
     def test_score_with_p0_blocker(self, tmp_path):
         """Test compliance score drops with P0 findings"""
         from mahoun.preproduction.models import ValidationManifest
@@ -244,6 +254,7 @@ class TestComplianceScoring:
 class TestReportGeneration:
     """Report generation tests"""
     
+    @pytest.mark.p2
     def test_markdown_report_generation(self, tmp_path):
         """Test report contains expected sections"""
         from mahoun.preproduction.models import ValidationManifest

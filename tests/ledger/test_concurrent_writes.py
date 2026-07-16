@@ -43,6 +43,7 @@ from mahoun.ledger.models import LedgerEntry
 class TestRaceConditionHandling:
     """Test concurrent write race condition prevention (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_concurrent_block_additions_thread_safe(self):
         """
         Critical: Multiple threads adding blocks must be serialized
@@ -86,6 +87,7 @@ class TestRaceConditionHandling:
         for i, block in enumerate(ledger.chain):
             assert block.index == i
     
+    @pytest.mark.p1
     def test_concurrent_writes_preserve_order(self):
         """
         Critical: Concurrent writes must maintain happened-before order
@@ -131,6 +133,7 @@ class TestRaceConditionHandling:
         # Chain must be valid
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_lock_contention_doesnt_corrupt_chain(self):
         """
         Critical: High lock contention must not corrupt chain
@@ -170,6 +173,7 @@ class TestRaceConditionHandling:
         # Chain must remain valid
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_concurrent_read_write_safety(self):
         """
         Critical: Concurrent reads during writes must see consistent state
@@ -218,6 +222,7 @@ class TestRaceConditionHandling:
         assert all(verification_results), "Chain verification failed during concurrent reads"
         assert len(verification_results) > 0
     
+    @pytest.mark.p1
     def test_interleaved_writes_maintain_integrity(self):
         """
         Critical: Interleaved writes from different sources must be serialized
@@ -258,6 +263,7 @@ class TestRaceConditionHandling:
         for i in range(1, len(ledger.chain)):
             assert ledger.chain[i].prev_hash == ledger.chain[i-1].hash
     
+    @pytest.mark.p1
     def test_writer_failure_doesnt_corrupt_chain(self):
         """
         Critical: Writer thread crash must not corrupt chain
@@ -309,6 +315,7 @@ class TestRaceConditionHandling:
 class TestWriteOrderingGuarantees:
     """Test write ordering guarantees (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_fifo_ordering_guarantee(self):
         """
         Critical: Writes must be processed in FIFO order
@@ -355,6 +362,7 @@ class TestWriteOrderingGuarantees:
         for i in range(len(results) - 1):
             assert results[i][2] <= results[i+1][1], "Writes overlapped incorrectly"
     
+    @pytest.mark.p1
     def test_block_indices_strictly_increasing(self):
         """
         Critical: Block indices must be strictly increasing
@@ -387,6 +395,7 @@ class TestWriteOrderingGuarantees:
         indices = [block.index for block in ledger.chain]
         assert indices == list(range(51))  # 0, 1, 2, ..., 50
     
+    @pytest.mark.p1
     def test_prev_hash_links_form_valid_chain(self):
         """
         Critical: All prev_hash links must form valid chain
@@ -415,6 +424,7 @@ class TestWriteOrderingGuarantees:
         for i in range(1, len(ledger.chain)):
             assert ledger.chain[i].prev_hash == ledger.chain[i-1].hash
     
+    @pytest.mark.p1
     def test_timestamp_ordering_consistent(self):
         """
         Critical: Block timestamps should be monotonically increasing
@@ -447,6 +457,7 @@ class TestWriteOrderingGuarantees:
 class TestConflictResolution:
     """Test concurrent write conflict resolution (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_no_duplicate_blocks_added(self):
         """
         Critical: Duplicate blocks must not be added
@@ -482,6 +493,7 @@ class TestConflictResolution:
         assert len(ledger.chain) >= 2  # At least genesis + 1
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_conflicting_writes_resolved_deterministically(self):
         """
         Critical: Write conflicts must be resolved deterministically
@@ -528,6 +540,7 @@ class TestConflictResolution:
         assert len(ledger.chain) == 3  # genesis + 2
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_retry_on_lock_contention(self):
         """
         Critical: Lock contention must be handled gracefully
@@ -575,6 +588,7 @@ class TestConflictResolution:
 class TestAtomicityVerification:
     """Test write atomicity guarantees (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_block_addition_atomic(self):
         """
         Critical: Block addition must be atomic (all or nothing)
@@ -606,6 +620,7 @@ class TestAtomicityVerification:
         # Chain must remain valid
         assert ledger.verify_integrity()
     
+    @pytest.mark.p1
     def test_concurrent_atomicity_guarantee(self):
         """
         Critical: Concurrent writes must each be atomic

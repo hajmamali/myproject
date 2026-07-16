@@ -23,6 +23,7 @@ from mahoun.finetuning.feedback_pipeline import (
 class TestFeedbackPipelineIntegration:
     """Integration tests for feedback pipeline"""
     
+    @pytest.mark.p2
     def test_complete_pipeline_flow(self):
         """Test complete flow from feedback to dataset"""
         # Create pipeline
@@ -96,6 +97,7 @@ class TestFeedbackPipelineIntegration:
         assert len(dataset.train_examples) > 0
         assert dataset.avg_quality_score >= 0.7
     
+    @pytest.mark.p2
     def test_dataset_saving(self):
         """Test dataset saving to disk"""
         pipeline = FeedbackPipeline()
@@ -163,6 +165,7 @@ class TestFeedbackPipelineIntegration:
                 assert metadata["dataset_id"] == dataset.dataset_id
                 assert metadata["total_examples"] == dataset.total_examples
     
+    @pytest.mark.p2
     def test_quality_scoring(self):
         """Test quality score calculation"""
         pipeline = FeedbackPipeline()
@@ -197,6 +200,7 @@ class TestFeedbackPipelineIntegration:
         score_lq = pipeline._calculate_quality_score(low_quality)
         assert score_lq <= 0.7  # Should be low or at threshold
     
+    @pytest.mark.p2
     def test_date_filtering(self):
         """Test filtering feedback by date"""
         pipeline = FeedbackPipeline()
@@ -233,6 +237,7 @@ class TestFeedbackPipelineIntegration:
         assert len(collected) == 1
         assert collected[0].feedback_id == "fb_new"
     
+    @pytest.mark.p2
     def test_preference_feedback(self):
         """Test preference-based feedback"""
         pipeline = FeedbackPipeline()
@@ -256,6 +261,7 @@ class TestFeedbackPipelineIntegration:
         assert examples[0].target_text == feedback.preferred_response
         assert examples[0].source == "preference"
     
+    @pytest.mark.p2
     def test_empty_feedback(self):
         """Test handling of empty feedback"""
         pipeline = FeedbackPipeline()
@@ -266,6 +272,7 @@ class TestFeedbackPipelineIntegration:
         examples = pipeline.convert_to_training_examples(collected)
         assert len(examples) == 0
     
+    @pytest.mark.p2
     def test_dataset_splits(self):
         """Test dataset split ratios"""
         pipeline = FeedbackPipeline(
@@ -309,6 +316,7 @@ class TestFinetuningAPIIntegration:
     """Integration tests for fine-tuning API"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_feedback_to_dataset_endpoint(self):
         """Test creating dataset from feedback via API"""
         from fastapi.testclient import TestClient
@@ -340,6 +348,7 @@ class TestFinetuningAPIIntegration:
         stats = response.json()
         assert stats["total_feedback"] >= 0
     
+    @pytest.mark.p2
     def test_create_finetuning_job(self):
         """Test creating a fine-tuning job"""
         from fastapi.testclient import TestClient
@@ -370,6 +379,7 @@ class TestFinetuningAPIIntegration:
         assert job["status"] in ["pending", "preparing"]
         assert "job_id" in job
     
+    @pytest.mark.p2
     def test_list_finetuning_jobs(self):
         """Test listing fine-tuning jobs"""
         from fastapi.testclient import TestClient

@@ -48,6 +48,7 @@ def persian_legal_texts():
 class TestBasicFunctionality:
     """Test basic semantic search functionality"""
     
+    @pytest.mark.p2
     def test_initialization(self):
         """Test searcher initialization"""
         searcher = PersianSemanticSearch()
@@ -56,6 +57,7 @@ class TestBasicFunctionality:
         assert searcher.cache_size == 10000
         assert searcher.batch_size == 32
     
+    @pytest.mark.p2
     def test_custom_model(self):
         """Test initialization with custom model"""
         searcher = PersianSemanticSearch(
@@ -66,6 +68,7 @@ class TestBasicFunctionality:
         assert "distiluse" in searcher.model_name
         assert searcher.cache_size == 500
     
+    @pytest.mark.p2
     def test_lazy_loading(self):
         """Test that model is loaded lazily"""
         searcher = PersianSemanticSearch()
@@ -78,6 +81,7 @@ class TestBasicFunctionality:
         assert model is not None
         assert searcher._model is not None
     
+    @pytest.mark.p2
     def test_embedding_dimension(self, searcher):
         """Test embedding dimension"""
         dim = searcher.embedding_dimension
@@ -89,6 +93,7 @@ class TestBasicFunctionality:
 class TestEmbedding:
     """Test text embedding functionality"""
     
+    @pytest.mark.p2
     def test_embed_single_text(self, searcher):
         """Test embedding single text"""
         text = "قرارداد فسخ شد"
@@ -98,6 +103,7 @@ class TestEmbedding:
         assert embedding.shape == (768,)
         assert embedding.dtype == np.float32
     
+    @pytest.mark.p2
     def test_embed_empty_text(self, searcher):
         """Test embedding empty text"""
         embedding = searcher.embed_text("")
@@ -106,6 +112,7 @@ class TestEmbedding:
         assert isinstance(embedding, np.ndarray)
         assert np.allclose(embedding, 0.0)
     
+    @pytest.mark.p2
     def test_embed_persian_text(self, searcher):
         """Test embedding Persian text"""
         persian_text = "دادگاه حکم به پرداخت خسارت داد"
@@ -116,6 +123,7 @@ class TestEmbedding:
         norm = np.linalg.norm(embedding)
         assert 0.99 <= norm <= 1.01
     
+    @pytest.mark.p2
     def test_embed_batch(self, searcher, persian_legal_texts):
         """Test batch embedding"""
         embeddings = searcher.embed_batch(persian_legal_texts)
@@ -127,6 +135,7 @@ class TestEmbedding:
         norms = np.linalg.norm(embeddings, axis=1)
         assert np.all((norms >= 0.99) & (norms <= 1.01))
     
+    @pytest.mark.p2
     def test_embed_batch_empty_list(self, searcher):
         """Test batch embedding with empty list"""
         embeddings = searcher.embed_batch([])
@@ -137,6 +146,7 @@ class TestEmbedding:
 class TestCaching:
     """Test embedding caching behavior"""
     
+    @pytest.mark.p2
     def test_cache_hit(self, searcher):
         """Test cache hit on repeated embedding"""
         text = "قرارداد فسخ شد"
@@ -155,6 +165,7 @@ class TestCaching:
         # Cache hits should increase
         assert stats2["cache_hits"] > stats1["cache_hits"]
     
+    @pytest.mark.p2
     def test_cache_disabled(self, searcher):
         """Test embedding without cache"""
         text = "قرارداد فسخ شد"
@@ -169,6 +180,7 @@ class TestCaching:
         stats = searcher.get_cache_stats()
         assert stats["cache_hits"] == 0
     
+    @pytest.mark.p2
     def test_cache_eviction(self):
         """Test cache eviction when full"""
         # Small cache for testing
@@ -184,6 +196,7 @@ class TestCaching:
         stats = searcher.get_cache_stats()
         assert stats["cache_size"] == 3
     
+    @pytest.mark.p2
     def test_clear_cache(self, searcher):
         """Test cache clearing"""
         searcher.embed_text("test text")
@@ -201,6 +214,7 @@ class TestCaching:
 class TestSemanticSimilarity:
     """Test semantic similarity search"""
     
+    @pytest.mark.p2
     def test_basic_similarity(self, searcher, persian_legal_texts):
         """Test basic similarity search"""
         query = "فسخ قرارداد"
@@ -218,6 +232,7 @@ class TestSemanticSimilarity:
         scores = [r.score for r in results]
         assert scores == sorted(scores, reverse=True)
     
+    @pytest.mark.p2
     def test_similarity_threshold(self, searcher, persian_legal_texts):
         """Test similarity threshold filtering"""
         query = "فسخ قرارداد"
@@ -242,6 +257,7 @@ class TestSemanticSimilarity:
         assert all(r.score >= 0.8 for r in results_high)
         assert all(r.score >= 0.3 for r in results_low)
     
+    @pytest.mark.p2
     def test_similarity_with_metadata(self, searcher, persian_legal_texts):
         """Test similarity search with metadata"""
         query = "فسخ قرارداد"
@@ -258,6 +274,7 @@ class TestSemanticSimilarity:
         assert all("id" in r.metadata for r in results)
         assert all(r.metadata["type"] == "legal" for r in results)
     
+    @pytest.mark.p2
     def test_similarity_empty_candidates(self, searcher):
         """Test similarity with empty candidates"""
         results = searcher.semantic_similarity(
@@ -268,6 +285,7 @@ class TestSemanticSimilarity:
         
         assert results == []
     
+    @pytest.mark.p2
     def test_similarity_ranks(self, searcher, persian_legal_texts):
         """Test that results have correct ranks"""
         query = "فسخ قرارداد"
@@ -286,6 +304,7 @@ class TestSemanticSimilarity:
 class TestBatchSimilarity:
     """Test batch similarity search"""
     
+    @pytest.mark.p2
     def test_batch_similarity(self, searcher, persian_legal_texts):
         """Test batch similarity search"""
         queries = [
@@ -303,6 +322,7 @@ class TestBatchSimilarity:
         assert len(all_results) == len(queries)
         assert all(len(results) <= 2 for results in all_results)
     
+    @pytest.mark.p2
     def test_batch_similarity_empty_queries(self, searcher, persian_legal_texts):
         """Test batch similarity with empty queries"""
         all_results = searcher.batch_similarity(
@@ -313,6 +333,7 @@ class TestBatchSimilarity:
         
         assert all_results == []
     
+    @pytest.mark.p2
     def test_batch_similarity_empty_candidates(self, searcher):
         """Test batch similarity with empty candidates"""
         queries = ["query1", "query2"]
@@ -331,6 +352,7 @@ class TestBatchSimilarity:
 class TestPersianLanguage:
     """Test Persian language specific features"""
     
+    @pytest.mark.p2
     def test_persian_similarity(self, searcher):
         """Test similarity between Persian texts"""
         query = "قرارداد فسخ شد"
@@ -352,6 +374,7 @@ class TestPersianLanguage:
         # Scores should reflect semantic similarity
         assert results[0].score > results[1].score
     
+    @pytest.mark.p2
     def test_persian_arabic_similarity(self, searcher):
         """Test similarity between Persian and Arabic variants"""
         # Persian 'ی' vs Arabic 'ي'
@@ -370,6 +393,7 @@ class TestPersianLanguage:
         # Both should have high similarity
         assert all(r.score > 0.9 for r in results)
     
+    @pytest.mark.p2
     def test_multilingual_support(self, searcher):
         """Test multilingual support (Persian + English)"""
         query = "contract termination"
@@ -392,6 +416,7 @@ class TestPersianLanguage:
 class TestEdgeCases:
     """Test edge cases and error handling"""
     
+    @pytest.mark.p2
     def test_very_long_text(self, searcher):
         """Test embedding very long text"""
         # 1000 words
@@ -401,6 +426,7 @@ class TestEdgeCases:
         
         assert embedding.shape == (768,)
     
+    @pytest.mark.p2
     def test_special_characters(self, searcher):
         """Test text with special characters"""
         text = "قرارداد #123 @ شرکت ABC (فسخ شد) - 2024"
@@ -409,6 +435,7 @@ class TestEdgeCases:
         
         assert embedding.shape == (768,)
     
+    @pytest.mark.p2
     def test_numbers_only(self, searcher):
         """Test text with only numbers"""
         text = "123 456 789"
@@ -417,6 +444,7 @@ class TestEdgeCases:
         
         assert embedding.shape == (768,)
     
+    @pytest.mark.p2
     def test_mixed_scripts(self, searcher):
         """Test text with mixed scripts"""
         text = "قرارداد Contract 合同 Vertrag"
@@ -429,6 +457,7 @@ class TestEdgeCases:
 class TestPerformance:
     """Test performance characteristics"""
     
+    @pytest.mark.p2
     def test_batch_faster_than_sequential(self, searcher):
         """Test that batch embedding is faster than sequential"""
         import time
@@ -452,6 +481,7 @@ class TestPerformance:
         # Batch should be faster (at least 2x)
         assert batch_time < sequential_time / 2
     
+    @pytest.mark.p2
     def test_cache_improves_performance(self, searcher):
         """Test that cache improves performance"""
         import time
@@ -476,6 +506,7 @@ class TestPerformance:
 class TestStatistics:
     """Test statistics and monitoring"""
     
+    @pytest.mark.p2
     def test_cache_stats(self, searcher):
         """Test cache statistics"""
         # Embed some texts
@@ -495,6 +526,7 @@ class TestStatistics:
         assert stats["cache_misses"] >= 2
         assert 0 <= stats["hit_rate"] <= 1
     
+    @pytest.mark.p2
     def test_repr(self, searcher):
         """Test string representation"""
         repr_str = repr(searcher)
@@ -511,6 +543,7 @@ class TestStatistics:
 class TestIntegration:
     """Integration tests with real models"""
     
+    @pytest.mark.p2
     def test_end_to_end_legal_search(self, searcher):
         """Test end-to-end legal document search"""
         # Legal query

@@ -12,6 +12,8 @@ authorization state can diverge — which is a governance violation.
 import pytest
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_single_authorization_contextvar():
     """A is B is C — all three references point to the same object."""
     from mahoun.core.governance.authorization_state import _authorized_write_ctx as canonical
@@ -32,6 +34,8 @@ def test_single_authorization_contextvar():
     )
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_authorization_state_roundtrip_kernel_to_boundary():
     """Set via kernel helpers, read via mutation_boundary — must agree."""
     from mahoun.core.governance_kernel.kernel import (
@@ -53,6 +57,8 @@ def test_authorization_state_roundtrip_kernel_to_boundary():
     assert not _is_authorized(), "After reset: should be False"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_authorization_state_roundtrip_boundary_to_kernel():
     """Set via authorization_state directly, read via kernel — must agree."""
     from mahoun.core.governance.authorization_state import set_authorized, reset_authorized
@@ -71,6 +77,8 @@ def test_authorization_state_roundtrip_boundary_to_kernel():
     assert not is_governance_authorized(), "After reset: should be False"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_mutation_without_authorization():
     """MutationAuthorizationBoundary.inspect blocks mutation when unauthorized."""
     from mahoun.core.governance.mutation_boundary import MutationAuthorizationBoundary
@@ -80,6 +88,8 @@ def test_no_mutation_without_authorization():
         MutationAuthorizationBoundary.inspect("MERGE (n:Test {id: $id})")
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_mutation_passes_when_authorized():
     """MutationAuthorizationBoundary.inspect allows mutation when ctx_B is set."""
     from mahoun.core.governance.mutation_boundary import MutationAuthorizationBoundary

@@ -25,6 +25,7 @@ from mahoun.reasoning.evidence_linked_verdict import (
 class TestVerdictDraftFinalization:
     """Test VerdictDraft → EvidenceLinkedVerdict conversion"""
     
+    @pytest.mark.p1
     def test_finalize_with_valid_hash(self):
         """VerdictDraft.finalize() creates EvidenceLinkedVerdict with valid hash"""
         draft = VerdictDraft(
@@ -42,6 +43,7 @@ class TestVerdictDraftFinalization:
         assert verdict.ledger_hash == "a" * 64
         assert verdict.verdict_id == "v001"
     
+    @pytest.mark.p1
     def test_finalize_rejects_empty_hash(self):
         """VerdictDraft.finalize() rejects empty ledger hash"""
         draft = VerdictDraft(
@@ -55,6 +57,7 @@ class TestVerdictDraftFinalization:
         with pytest.raises(ValueError, match="Invalid ledger_hash"):
             draft.finalize(ledger_hash="")
     
+    @pytest.mark.p1
     def test_finalize_rejects_short_hash(self):
         """VerdictDraft.finalize() rejects hash shorter than 16 chars"""
         draft = VerdictDraft(
@@ -72,6 +75,7 @@ class TestVerdictDraftFinalization:
 class TestConfidenceScoreCalculation:
     """Test confidence score calculation from verdict steps"""
     
+    @pytest.mark.p1
     def test_confidence_no_steps_returns_zero(self):
         """_calculate_confidence_score([]) returns 0.0"""
         from unittest.mock import MagicMock
@@ -91,6 +95,7 @@ class TestConfidenceScoreCalculation:
         score = engine._calculate_confidence_score([])
         assert score == 0.0
     
+    @pytest.mark.p1
     def test_confidence_with_one_step(self):
         """_calculate_confidence_score([step]) > 0"""
         from unittest.mock import MagicMock
@@ -117,6 +122,7 @@ class TestConfidenceScoreCalculation:
         score = engine._calculate_confidence_score(steps)
         assert 0.0 < score <= 1.0
     
+    @pytest.mark.p1
     def test_confidence_with_multiple_steps(self):
         """_calculate_confidence_score([step1, step2]) averages evidence confidence"""
         from unittest.mock import MagicMock
@@ -152,6 +158,7 @@ class TestConfidenceScoreCalculation:
 class TestConflictResolutionResult:
     """Test ConflictResolutionResult data structure"""
     
+    @pytest.mark.p1
     def test_resolution_with_resolved_node(self):
         """ConflictResolutionResult with resolved node"""
         result = ConflictResolutionResult(
@@ -164,6 +171,7 @@ class TestConflictResolutionResult:
         assert result.is_ambiguous is False
         assert "confidence" in result.reason.lower()
     
+    @pytest.mark.p1
     def test_resolution_ambiguous(self):
         """ConflictResolutionResult for ambiguous conflicts"""
         result = ConflictResolutionResult(
@@ -179,6 +187,7 @@ class TestConflictResolutionResult:
 class TestResolveProvenance:
     """Test _resolve_provenance() helper function"""
     
+    @pytest.mark.p1
     def test_resolve_provenance_in_development(self):
         """_resolve_provenance() allows synthetic in development"""
         import os
@@ -190,6 +199,7 @@ class TestResolveProvenance:
         assert "synthetic" in prov.source
         assert "dev" in prov.governance_scope_id or "synthetic" in prov.governance_scope_id
     
+    @pytest.mark.p1
     def test_resolve_provenance_creates_metadata(self):
         """_resolve_provenance() creates ProvenanceMetadata"""
         import os
@@ -207,6 +217,7 @@ class TestResolveProvenance:
 class TestEvidenceReference:
     """Test EvidenceReference data structure"""
     
+    @pytest.mark.p1
     def test_evidence_reference_creation(self):
         """EvidenceReference can be created with required fields"""
         ref = EvidenceReference(
@@ -221,6 +232,7 @@ class TestEvidenceReference:
         assert ref.node_type == "Fact"
         assert ref.confidence == 0.95
     
+    @pytest.mark.p1
     def test_evidence_reference_with_edge(self):
         """EvidenceReference can include edge_id"""
         ref = EvidenceReference(

@@ -330,6 +330,7 @@ def complex_case_graph():
 class TestComplexLegalReasoningScenario:
     """Complex end-to-end scenario test"""
     
+    @pytest.mark.p1
     def test_complete_contract_dispute_reasoning(self, complex_case_graph):
         """
         🎯 MAIN SCENARIO TEST: Complete contract dispute reasoning
@@ -599,6 +600,7 @@ class TestComplexLegalReasoningScenario:
 class TestReasoningEdgeCases:
     """Test edge cases in legal reasoning"""
     
+    @pytest.mark.p1
     def test_conflicting_precedents_resolution(self, complex_case_graph):
         """
         Test: حل تعارض بین رویه‌های قضایی
@@ -641,6 +643,7 @@ class TestReasoningEdgeCases:
         assert overrule_found, "Failed to detect precedent conflict!"
         print("✓ Conflicting precedents detected and resolved")
     
+    @pytest.mark.p1
     def test_insufficient_evidence_rejection(self):
         """
         Test: رد رأی به دلیل عدم کفایت شواهد
@@ -679,6 +682,7 @@ class TestReasoningEdgeCases:
         assert len(ledger.chain) == 1  # Only genesis
         print("✓ Insufficient evidence correctly rejected")
     
+    @pytest.mark.p1
     def test_confidence_threshold_enforcement(self):
         """
         Test: اعمال آستانه اطمینان
@@ -721,6 +725,7 @@ class TestReasoningEdgeCases:
 class TestSystemIntegrity:
     """Test system-wide integrity constraints"""
     
+    @pytest.mark.p1
     def test_end_to_end_determinism(self, complex_case_graph):
         """
         Test: تعیین‌پذیری end-to-end

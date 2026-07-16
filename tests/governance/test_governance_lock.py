@@ -34,6 +34,7 @@ from mahoun.core.governance_lock import (
 class TestModeImmutability:
     """Tests that governance mode cannot be changed after initialization"""
 
+    @pytest.mark.p2
     def test_initialization_sets_mode(self, reset_governance_lock):
         """Initialization should set the governance mode"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -41,6 +42,7 @@ class TestModeImmutability:
         assert GovernanceLock.get_mode() == GovernanceMode.STRICT
         assert GovernanceLock._initialized is True
 
+    @pytest.mark.p2
     def test_second_initialization_raises_error(self, reset_governance_lock):
         """Second initialization attempt should raise RuntimeError"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -54,6 +56,7 @@ class TestModeImmutability:
         assert "AUDIT" in error_msg
         assert "change attempts" in error_msg.lower()
 
+    @pytest.mark.p2
     def test_change_attempts_counter_increments(self, reset_governance_lock):
         """Change attempts counter should increment on each bypass attempt"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -70,6 +73,7 @@ class TestModeImmutability:
 
         assert GovernanceLock._change_attempts == 2
 
+    @pytest.mark.p2
     def test_mode_cannot_be_changed_to_disabled(self, reset_governance_lock):
         """Mode cannot be changed to DISABLED after initialization"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -79,6 +83,7 @@ class TestModeImmutability:
 
         assert "already initialized" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_mode_cannot_be_changed_to_audit(self, reset_governance_lock):
         """Mode cannot be changed to AUDIT after initialization"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -97,6 +102,7 @@ class TestModeImmutability:
 class TestForensicLogging:
     """Tests that bypass attempts are logged with full forensic context"""
 
+    @pytest.mark.p2
     def test_bypass_attempt_logs_mode_change(self, reset_governance_lock, capsys):
         """Bypass attempt should log current and requested modes"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -112,6 +118,7 @@ class TestForensicLogging:
         assert "STRICT" in log_output
         assert "AUDIT" in log_output
 
+    @pytest.mark.p2
     def test_bypass_attempt_logs_timestamp(self, reset_governance_lock, capsys):
         """Bypass attempt should log timestamp"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -125,6 +132,7 @@ class TestForensicLogging:
         assert "T" in log_output  # ISO 8601 date-time separator
         assert ":" in log_output  # Time separator
 
+    @pytest.mark.p2
     def test_audit_metadata_contains_bypass_attempts(self, reset_governance_lock):
         """Audit metadata should contain detailed bypass attempt information"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -155,6 +163,7 @@ class TestForensicLogging:
 class TestFailClosed:
     """Tests that system fails-closed when governance is not initialized"""
 
+    @pytest.mark.p2
     def test_uninitialized_default_to_strict(self, reset_governance_lock):
         """Uninitialized lock should default to STRICT mode"""
         GovernanceLock._reset()
@@ -163,6 +172,7 @@ class TestFailClosed:
 
         assert mode == GovernanceMode.STRICT
 
+    @pytest.mark.p2
     def test_uninitialized_enforcement_enabled(self, reset_governance_lock):
         """Uninitialized lock should have enforcement enabled (fail-closed)"""
         GovernanceLock._reset()
@@ -171,6 +181,7 @@ class TestFailClosed:
 
         assert enforcement_enabled is True
 
+    @pytest.mark.p2
     def test_check_governance_integrity_uninitialized(self, reset_governance_lock):
         """Integrity check on uninitialized lock should indicate issue"""
         GovernanceLock._reset()
@@ -190,6 +201,7 @@ class TestFailClosed:
 class TestDisabledModeAuthorization:
     """Tests that DISABLED mode requires cryptographic authorization"""
 
+    @pytest.mark.p2
     def test_disabled_mode_without_token_raises_error(self, reset_governance_lock):
         """DISABLED mode without token should raise SecurityError"""
         GovernanceLock._reset()
@@ -199,6 +211,7 @@ class TestDisabledModeAuthorization:
 
         assert "authorization" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_disabled_mode_with_valid_token_succeeds(self, reset_governance_lock):
         """DISABLED mode with valid token should succeed"""
         GovernanceLock._reset()
@@ -214,6 +227,7 @@ class TestDisabledModeAuthorization:
 
         assert GovernanceLock.get_mode() == GovernanceMode.DISABLED
 
+    @pytest.mark.p2
     def test_disabled_mode_with_invalid_token_raises_error(self, reset_governance_lock):
         """DISABLED mode with invalid token should raise SecurityError"""
         GovernanceLock._reset()
@@ -232,12 +246,14 @@ class TestDisabledModeAuthorization:
 class TestImmutabilityVerification:
     """Tests for verify_immutable method"""
 
+    @pytest.mark.p2
     def test_verify_immutable_on_valid_lock(self, reset_governance_lock):
         """verify_immutable should return True on valid lock"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
         assert GovernanceLock.verify_immutable() is True
 
+    @pytest.mark.p2
     def test_verify_immutable_after_bypass_attempt(self, reset_governance_lock):
         """verify_immutable should return False after bypass attempt"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -248,6 +264,7 @@ class TestImmutabilityVerification:
 
         assert GovernanceLock.verify_immutable() is False
 
+    @pytest.mark.p2
     def test_verify_immutable_after_reset(self, reset_governance_lock):
         """verify_immutable should return False after reset"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -264,6 +281,7 @@ class TestImmutabilityVerification:
 class TestIntegration:
     """Tests for integration with existing code"""
 
+    @pytest.mark.p2
     def test_check_governance_integrity_with_bypass_attempts(self, reset_governance_lock):
         """check_governance_integrity should include bypass attempts in alert"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -278,6 +296,7 @@ class TestIntegration:
         assert "bypass attempts" in metadata.get("alert", "").lower()
         assert "bypass_attempts" in metadata
 
+    @pytest.mark.p2
     def test_should_enforce_proof_carrying_contract_fails_closed(self, reset_governance_lock):
         """should_enforce_proof_carrying_contract should fail-closed"""
         # Reset to uninitialized state
@@ -306,6 +325,7 @@ class TestIntegration:
 class TestPerformance:
     """Tests for GovernanceLock performance"""
 
+    @pytest.mark.p2
     def test_initialization_performance(self, reset_governance_lock):
         """Initialization should complete quickly"""
         import time
@@ -316,6 +336,7 @@ class TestPerformance:
 
         assert elapsed < 0.01  # < 10ms
 
+    @pytest.mark.p2
     def test_mode_check_performance(self, reset_governance_lock):
         """Mode check should complete quickly"""
         import time
@@ -338,6 +359,7 @@ class TestPerformance:
 class TestEdgeCases:
     """Tests for edge cases"""
 
+    @pytest.mark.p2
     def test_same_mode_reinitialization_raises_error(self, reset_governance_lock):
         """Reinitialization with same mode should still raise error"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -345,6 +367,7 @@ class TestEdgeCases:
         with pytest.raises(RuntimeError):
             GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
+    @pytest.mark.p2
     def test_multiple_concurrent_initialization_attempts(self, reset_governance_lock):
         """Multiple concurrent initialization attempts should all fail"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)

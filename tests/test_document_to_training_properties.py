@@ -85,6 +85,7 @@ class TestGroundednessVerifierProperties:
     
     @given(qa_pair_strategy())
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_groundedness_score_range(self, qa_pair):
         """Property: Groundedness score must be in [0, 1]"""
         verifier = GroundednessVerifier(min_overlap=0.5)
@@ -95,6 +96,7 @@ class TestGroundednessVerifierProperties:
     
     @given(qa_pair_strategy())
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_perfect_overlap_is_grounded(self, qa_pair):
         """Property: If answer is substring of source, should be grounded"""
         # Force perfect overlap with meaningful words (not just stop words)
@@ -111,6 +113,7 @@ class TestGroundednessVerifierProperties:
     
     @given(qa_pair_strategy())
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_no_overlap_not_grounded(self, qa_pair):
         """Property: If answer has no overlap with source, not grounded"""
         # Force no overlap
@@ -133,6 +136,7 @@ class TestDifficultyClassifierProperties:
     
     @given(qa_pair_strategy())
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_difficulty_is_valid_level(self, qa_pair):
         """Property: Difficulty must be one of the valid levels"""
         classifier = DifficultyClassifier(model="heuristic")
@@ -142,6 +146,7 @@ class TestDifficultyClassifierProperties:
     
     @given(qa_pair_strategy())
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_longer_questions_harder(self, qa_pair):
         """Property: Very long questions tend to be harder"""
         # Create very long question
@@ -165,6 +170,7 @@ class TestQualityFilterProperties:
     
     @given(st.lists(qa_pair_strategy(), min_size=1, max_size=20))
     @settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_filter_reduces_or_maintains_size(self, qa_pairs):
         """Property: Filtering never increases the number of pairs"""
         filter = QualityFilter(min_quality_score=0.7, enable_adaptive=False)
@@ -174,6 +180,7 @@ class TestQualityFilterProperties:
     
     @given(st.lists(qa_pair_strategy(), min_size=5, max_size=20))
     @settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_adaptive_threshold_keeps_some(self, qa_pairs):
         """Property: Adaptive filtering keeps at least some pairs"""
         assume(len(qa_pairs) >= 10)  # Need enough for adaptive
@@ -190,6 +197,7 @@ class TestQualityFilterProperties:
     
     @given(st.lists(qa_pair_strategy(), min_size=1, max_size=20))
     @settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_high_confidence_pairs_pass(self, qa_pairs):
         """Property: High confidence pairs should pass filter"""
         # Set all to high confidence
@@ -214,6 +222,7 @@ class TestDocumentChunkingProperties:
     
     @given(document_strategy())
     @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow], deadline=2000)
+    @pytest.mark.p2
     def test_chunks_cover_document(self, document):
         """Property: Chunks should cover the entire document"""
         assume(len(document) >= 100)
@@ -232,6 +241,7 @@ class TestDocumentChunkingProperties:
     
     @given(document_strategy())
     @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow], deadline=2000)
+    @pytest.mark.p2
     def test_chunk_size_bounded(self, document):
         """Property: Chunks should respect size limits"""
         assume(len(document) >= 100)
@@ -256,6 +266,7 @@ class TestPipelineProperties:
     @pytest.mark.asyncio
     @given(document_strategy())
     @settings(max_examples=3, suppress_health_check=[HealthCheck.too_slow], deadline=5000)
+    @pytest.mark.p2
     async def test_pipeline_produces_valid_result(self, document):
         """Property: Pipeline always produces a valid ProcessingResult"""
         assume(len(document) >= 200)  # Need minimum length
@@ -290,6 +301,7 @@ class TestPipelineProperties:
     @pytest.mark.asyncio
     @given(st.text(min_size=10, max_size=50))
     @settings(max_examples=5, suppress_health_check=[HealthCheck.too_slow], deadline=3000)
+    @pytest.mark.p2
     async def test_short_documents_handled_gracefully(self, short_text):
         """Property: Short documents should be handled without crashing"""
         pipeline = DocumentToTrainingPipeline()
@@ -315,6 +327,7 @@ class TestTrainingExampleProperties:
     
     @given(st.lists(qa_pair_strategy(), min_size=1, max_size=10))
     @settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_conversion_preserves_count(self, qa_pairs):
         """Property: Converting Q&A pairs preserves count"""
         pipeline = DocumentToTrainingPipeline()
@@ -324,6 +337,7 @@ class TestTrainingExampleProperties:
     
     @given(st.lists(qa_pair_strategy(), min_size=1, max_size=10))
     @settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+    @pytest.mark.p2
     def test_quality_scores_in_range(self, qa_pairs):
         """Property: Quality scores must be in [0, 1]"""
         pipeline = DocumentToTrainingPipeline()
@@ -341,6 +355,7 @@ class TestTrainingExampleProperties:
 class TestInvariants:
     """Test system invariants"""
     
+    @pytest.mark.p2
     def test_groundedness_verifier_deterministic(self):
         """Invariant: Same input produces same output"""
         qa_pair = QAPair(
@@ -361,6 +376,7 @@ class TestInvariants:
         
         assert result1 == result2, "Verifier must be deterministic"
     
+    @pytest.mark.p2
     def test_difficulty_classifier_deterministic(self):
         """Invariant: Same input produces same output"""
         qa_pair = QAPair(

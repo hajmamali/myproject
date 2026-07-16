@@ -32,6 +32,7 @@ from mahoun.config import ObservabilityConfig
 class TestMetricsCollectorExplicitLifecycle:
     """Test explicit lifecycle management - NO hidden side effects."""
     
+    @pytest.mark.p2
     def test_snapshot_is_pure(self):
         """snapshot() should NOT auto-collect system metrics."""
         collector = MetricsCollector()
@@ -51,6 +52,7 @@ class TestMetricsCollectorExplicitLifecycle:
         snapshot2 = collector.snapshot()
         assert snapshot1 == snapshot2
     
+    @pytest.mark.p2
     def test_get_all_metrics_is_pure(self):
         """get_all_metrics() should NOT auto-collect system metrics."""
         collector = MetricsCollector()
@@ -66,6 +68,7 @@ class TestMetricsCollectorExplicitLifecycle:
         metrics2 = collector.get_all_metrics()
         assert metrics1 == metrics2
     
+    @pytest.mark.p2
     def test_to_prometheus_is_pure(self):
         """to_prometheus() should NOT auto-collect system metrics."""
         collector = MetricsCollector()
@@ -82,6 +85,7 @@ class TestMetricsCollectorExplicitLifecycle:
         prom2 = collector.to_prometheus()
         assert prom1 == prom2
     
+    @pytest.mark.p2
     def test_explicit_system_metrics_collection(self):
         """System metrics must be collected EXPLICITLY."""
         collector = MetricsCollector()
@@ -100,6 +104,7 @@ class TestMetricsCollectorExplicitLifecycle:
         # But the point is it required explicit call
         assert snapshot1 != snapshot2 or not collector._system_provider.is_available()
     
+    @pytest.mark.p2
     def test_reset_is_deterministic(self):
         """reset() should produce deterministic empty state."""
         collector = MetricsCollector()
@@ -131,6 +136,7 @@ class TestMetricsCollectorExplicitLifecycle:
 class TestMetricsCollectorDependencyInjection:
     """Test dependency injection for testability."""
     
+    @pytest.mark.p2
     def test_custom_config(self):
         """Should accept custom config."""
         config = ObservabilityConfig(metrics_enabled=False)
@@ -139,6 +145,7 @@ class TestMetricsCollectorDependencyInjection:
         info = collector.get_collector_info()
         assert info["metrics_enabled"] is False
     
+    @pytest.mark.p2
     def test_custom_store(self):
         """Should accept custom store."""
         store = MetricsStore()
@@ -150,6 +157,7 @@ class TestMetricsCollectorDependencyInjection:
         snapshot = collector.snapshot()
         assert snapshot["counters"]["pre_existing"]["value"] == 42
     
+    @pytest.mark.p2
     def test_custom_system_provider(self):
         """Should accept custom system provider."""
         mock_provider = Mock(spec=SystemMetricsProvider)
@@ -168,6 +176,7 @@ class TestMetricsCollectorDependencyInjection:
         assert "mock_metric" in snapshot["gauges"]
         assert snapshot["gauges"]["mock_metric"]["value"] == 123.0
     
+    @pytest.mark.p2
     def test_none_system_provider(self):
         """Should handle None system provider gracefully."""
         collector = MetricsCollector(system_provider=None)
@@ -182,6 +191,7 @@ class TestMetricsCollectorDependencyInjection:
 class TestMetricsCollectorBackwardCompatibility:
     """Test backward compatibility with old API."""
     
+    @pytest.mark.p2
     def test_register_counter_api(self):
         """register_counter should work as before."""
         collector = MetricsCollector()
@@ -191,6 +201,7 @@ class TestMetricsCollectorBackwardCompatibility:
         
         assert collector.get_counter("test").value == 10
     
+    @pytest.mark.p2
     def test_register_gauge_api(self):
         """register_gauge should work as before."""
         collector = MetricsCollector()
@@ -200,6 +211,7 @@ class TestMetricsCollectorBackwardCompatibility:
         
         assert collector.get_gauge("test").value == 42.0
     
+    @pytest.mark.p2
     def test_register_histogram_api(self):
         """register_histogram should work as before."""
         collector = MetricsCollector()
@@ -209,6 +221,7 @@ class TestMetricsCollectorBackwardCompatibility:
         
         assert collector.get_histogram("test") is not None
     
+    @pytest.mark.p2
     def test_get_counter_api(self):
         """get_counter should work as before."""
         collector = MetricsCollector()
@@ -222,6 +235,7 @@ class TestMetricsCollectorBackwardCompatibility:
         # Non-existent should return None
         assert collector.get_counter("nonexistent") is None
     
+    @pytest.mark.p2
     def test_get_all_metrics_api(self):
         """get_all_metrics should work as before."""
         collector = MetricsCollector()
@@ -237,6 +251,7 @@ class TestMetricsCollectorBackwardCompatibility:
         assert metrics["counters"]["c1"]["value"] == 10
         assert metrics["gauges"]["g1"]["value"] == 20.0
     
+    @pytest.mark.p2
     def test_update_system_metrics_deprecated(self):
         """update_system_metrics should still work but warn."""
         collector = MetricsCollector()
@@ -248,6 +263,7 @@ class TestMetricsCollectorBackwardCompatibility:
 class TestMetricsCollectorGlobalSingleton:
     """Test global singleton pattern."""
     
+    @pytest.mark.p2
     def test_get_metrics_collector_singleton(self):
         """get_metrics_collector should return singleton."""
         reset_global_collector()  # Clean slate
@@ -258,6 +274,7 @@ class TestMetricsCollectorGlobalSingleton:
         # Should be same instance
         assert collector1 is collector2
     
+    @pytest.mark.p2
     def test_global_collector_state_persistence(self):
         """Global collector should persist state."""
         reset_global_collector()
@@ -270,6 +287,7 @@ class TestMetricsCollectorGlobalSingleton:
         # Should see the same counter
         assert collector2.get_counter("test").value == 10
     
+    @pytest.mark.p2
     def test_reset_global_collector(self):
         """reset_global_collector should create new instance."""
         reset_global_collector()
@@ -287,6 +305,7 @@ class TestMetricsCollectorGlobalSingleton:
         # Should not have old metrics
         assert collector2.get_counter("test") is None
     
+    @pytest.mark.p2
     def test_convenience_functions(self):
         """Module-level convenience functions should work."""
         reset_global_collector()
@@ -309,6 +328,7 @@ class TestMetricsCollectorGlobalSingleton:
 class TestMetricsCollectorThreadSafety:
     """Test thread safety."""
     
+    @pytest.mark.p2
     def test_concurrent_registration(self):
         """Concurrent registration should be safe."""
         collector = MetricsCollector()
@@ -336,6 +356,7 @@ class TestMetricsCollectorThreadSafety:
             counter = collector.get_counter(f"counter_{i}")
             assert counter.value == 100
     
+    @pytest.mark.p2
     def test_concurrent_snapshot(self):
         """Concurrent snapshots should be safe."""
         collector = MetricsCollector()
@@ -369,6 +390,7 @@ class TestMetricsCollectorThreadSafety:
 class TestMetricsCollectorPrometheusExport:
     """Test Prometheus export functionality."""
     
+    @pytest.mark.p2
     def test_prometheus_format_basic(self):
         """Prometheus export should have correct format."""
         collector = MetricsCollector()
@@ -383,6 +405,7 @@ class TestMetricsCollectorPrometheusExport:
         assert "10" in prom
         assert "42" in prom or "42.0" in prom
     
+    @pytest.mark.p2
     def test_prometheus_with_labels(self):
         """Prometheus export should handle labels."""
         collector = MetricsCollector()
@@ -397,6 +420,7 @@ class TestMetricsCollectorPrometheusExport:
         assert "status" in prom
         assert "200" in prom
     
+    @pytest.mark.p2
     def test_prometheus_disabled_metrics(self):
         """Prometheus export when metrics disabled."""
         config = ObservabilityConfig(metrics_enabled=False)
@@ -410,6 +434,7 @@ class TestMetricsCollectorPrometheusExport:
 class TestMetricsCollectorImmutableSnapshot:
     """Test immutable snapshot creation."""
     
+    @pytest.mark.p2
     def test_create_immutable_snapshot(self):
         """Should create MetricsSnapshot with audit metadata."""
         collector = MetricsCollector()
@@ -434,6 +459,7 @@ class TestMetricsCollectorImmutableSnapshot:
 class TestMetricsCollectorIntrospection:
     """Test introspection methods."""
     
+    @pytest.mark.p2
     def test_get_collector_info(self):
         """get_collector_info should return complete info."""
         collector = MetricsCollector()
@@ -449,6 +475,7 @@ class TestMetricsCollectorIntrospection:
         assert isinstance(info["metrics_enabled"], bool)
         assert isinstance(info["metric_counts"], dict)
     
+    @pytest.mark.p2
     def test_repr(self):
         """__repr__ should be informative."""
         collector = MetricsCollector()
@@ -463,6 +490,7 @@ class TestMetricsCollectorIntrospection:
 class TestMetricsCollectorEdgeCases:
     """Edge cases and error conditions."""
     
+    @pytest.mark.p2
     def test_metrics_disabled(self):
         """Operations should handle disabled metrics gracefully."""
         config = ObservabilityConfig(metrics_enabled=False)
@@ -475,6 +503,7 @@ class TestMetricsCollectorEdgeCases:
         prom = collector.to_prometheus()
         assert "disabled" in prom.lower()
     
+    @pytest.mark.p2
     def test_system_provider_unavailable(self):
         """Should handle unavailable system provider."""
         mock_provider = Mock(spec=SystemMetricsProvider)
@@ -490,6 +519,7 @@ class TestMetricsCollectorEdgeCases:
         # Should not have system metrics
         assert "mahoun_system_cpu_percent" not in snapshot["gauges"]
     
+    @pytest.mark.p2
     def test_system_provider_error(self):
         """Should handle system provider errors gracefully."""
         mock_provider = Mock(spec=SystemMetricsProvider)
@@ -509,6 +539,7 @@ class TestMetricsCollectorEdgeCases:
 class TestMetricsCollectorPerformance:
     """Performance tests."""
     
+    @pytest.mark.p2
     def test_registration_performance(self):
         """Registration should be fast."""
         collector = MetricsCollector()
@@ -524,6 +555,7 @@ class TestMetricsCollectorPerformance:
         
         assert elapsed < 2.0, f"Too slow: {elapsed}s"
     
+    @pytest.mark.p2
     def test_snapshot_performance(self):
         """Snapshot should be fast."""
         collector = MetricsCollector()

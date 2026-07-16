@@ -66,6 +66,7 @@ class TestQualityScoreProperties:
     
     @given(user_feedback_strategy())
     @settings(max_examples=100, deadline=None)
+    @pytest.mark.p2
     def test_quality_score_bounded(self, feedback: UserFeedback):
         """Quality score must always be between 0 and 1"""
         pipeline = FeedbackPipeline()
@@ -78,6 +79,7 @@ class TestQualityScoreProperties:
         confidence=confidence_strategy,
     )
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_higher_rating_higher_score(self, rating: float, confidence: float):
         """Higher rating should generally lead to higher score"""
         pipeline = FeedbackPipeline()
@@ -109,6 +111,7 @@ class TestQualityScoreProperties:
     
     @given(confidence=confidence_strategy)
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_correction_bonus(self, confidence: float):
         """Correction feedback should get bonus over rating feedback"""
         pipeline = FeedbackPipeline()
@@ -144,6 +147,7 @@ class TestFeedbackCollectionProperties:
     
     @given(st.lists(user_feedback_strategy(), min_size=0, max_size=20))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_collect_returns_subset(self, feedbacks: list):
         """Collected feedback should be subset of stored feedback"""
         pipeline = FeedbackPipeline()
@@ -160,6 +164,7 @@ class TestFeedbackCollectionProperties:
         min_rating=st.floats(min_value=1.0, max_value=5.0, allow_nan=False),
     )
     @settings(max_examples=30, deadline=None)
+    @pytest.mark.p2
     def test_rating_filter_works(self, min_rating: float):
         """Rating filter should only return feedback >= min_rating"""
         pipeline = FeedbackPipeline()
@@ -189,6 +194,7 @@ class TestTrainingExampleProperties:
     
     @given(st.lists(user_feedback_strategy(), min_size=1, max_size=10))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_examples_have_required_fields(self, feedbacks: list):
         """All training examples must have required fields"""
         pipeline = FeedbackPipeline(min_quality_score=0.0)  # Accept all
@@ -208,6 +214,7 @@ class TestTrainingExampleProperties:
     
     @given(st.lists(user_feedback_strategy(), min_size=0, max_size=10))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_examples_count_bounded(self, feedbacks: list):
         """Number of examples should not exceed number of feedbacks"""
         pipeline = FeedbackPipeline(min_quality_score=0.0)
@@ -230,6 +237,7 @@ class TestDatasetProperties:
         eval_ratio=st.floats(min_value=0.05, max_value=0.3, allow_nan=False),
     )
     @settings(max_examples=30, deadline=None)
+    @pytest.mark.p2
     def test_split_ratios_respected(self, train_ratio: float, eval_ratio: float):
         """Dataset splits should approximately match ratios"""
         # Ensure ratios sum to <= 1
@@ -271,6 +279,7 @@ class TestDatasetProperties:
     
     @given(st.lists(user_feedback_strategy(), min_size=5, max_size=20))
     @settings(max_examples=30, deadline=None)
+    @pytest.mark.p2
     def test_dataset_preserves_examples(self, feedbacks: list):
         """Dataset should preserve all examples"""
         pipeline = FeedbackPipeline(min_quality_score=0.0)
@@ -302,6 +311,7 @@ class TestPipelineInvariants:
     
     @given(user_feedback_strategy())
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_add_feedback_increases_count(self, feedback: UserFeedback):
         """Adding feedback should increase store count by 1"""
         pipeline = FeedbackPipeline()
@@ -314,6 +324,7 @@ class TestPipelineInvariants:
     
     @given(st.lists(user_feedback_strategy(), min_size=0, max_size=10))
     @settings(max_examples=30, deadline=None)
+    @pytest.mark.p2
     def test_pipeline_idempotent_collection(self, feedbacks: list):
         """Multiple collections should return same result"""
         pipeline = FeedbackPipeline()
@@ -326,6 +337,7 @@ class TestPipelineInvariants:
         
         assert len(collected1) == len(collected2)
     
+    @pytest.mark.p2
     def test_empty_pipeline_returns_empty(self):
         """Empty pipeline should return empty results"""
         pipeline = FeedbackPipeline()

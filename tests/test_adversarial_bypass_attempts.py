@@ -67,12 +67,14 @@ class TestMutationBoundaryChokepoint:
     """Verify that MutationAuthorizationBoundary blocks all mutations outside
     an authorized context (fail-closed by design)."""
 
+    @pytest.mark.p2
     def test_read_query_always_passes(self):
         """READ-only Cypher must never raise."""
         MutationAuthorizationBoundary.inspect("MATCH (n) RETURN n")
         MutationAuthorizationBoundary.inspect("RETURN 1 AS num")
         MutationAuthorizationBoundary.inspect("CALL db.labels()")
 
+    @pytest.mark.p2
     def test_mutation_outside_context_raises(self):
         """Any mutation Cypher outside GovernedNeo4jSession MUST raise."""
         assert not _authorized_write_ctx.get(), "Pre-condition: no auth token active"
@@ -81,16 +83,19 @@ class TestMutationBoundaryChokepoint:
             MutationAuthorizationBoundary.inspect("MERGE (n:Verdict {id: 'x'})")
         assert "GovernedNeo4jSession" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_create_outside_context_raises(self):
         with pytest.raises(GovernanceViolationError):
             MutationAuthorizationBoundary.inspect("CREATE (n:Fact {id: 'x'})")
 
+    @pytest.mark.p2
     def test_delete_outside_context_raises(self):
         with pytest.raises(GovernanceViolationError):
             MutationAuthorizationBoundary.inspect(
                 "MATCH (n:Chunk {id: 'x'}) DETACH DELETE n"
             )
 
+    @pytest.mark.p2
     def test_set_outside_context_raises(self):
         with pytest.raises(GovernanceViolationError):
             MutationAuthorizationBoundary.inspect("MATCH (n) SET n.foo = 'bar'")
@@ -104,6 +109,7 @@ class TestContextForgeryRejected:
     """Verify that a manually constructed GovernanceContext is detected and
     rejected by require_context() HMAC signature check."""
 
+    @pytest.mark.p2
     def test_forged_context_signature_fails(self):
         """A context constructed outside GovernanceContextManager.create_context()
         will have an empty (or wrong) signature and MUST be rejected."""
@@ -137,6 +143,7 @@ class TestContextForgeryRejected:
         finally:
             GovernanceContextManager._reset_for_test()
 
+    @pytest.mark.p2
     def test_no_context_raises(self):
         """require_context() without any active context MUST raise."""
         GovernanceContextManager._reset_for_test()
@@ -152,6 +159,7 @@ class TestUnicodeObfuscationBlocked:
     """MahouN's CypherLexer normalizes Unicode (NFKC) before tokenizing.
     Full-width and lookalike characters must be detected as mutations."""
 
+    @pytest.mark.p2
     def test_fullwidth_merge_detected(self):
         """Full-width ＭＥＲＧＥ must be classified as a mutation."""
         # U+FF2D U+FF25 U+FF32 U+FF27 U+FF25 = ＭＥＲＧＥ
@@ -160,21 +168,25 @@ class TestUnicodeObfuscationBlocked:
             "Full-width MERGE not detected as mutation — Unicode bypass possible!"
         )
 
+    @pytest.mark.p2
     def test_fullwidth_set_detected(self):
         """Full-width ＳＥＴ must be detected."""
         fullwidth_set = "MATCH (n) ＳＥＴ n.foo = 'bar'"
         assert classify_cypher(fullwidth_set)
 
+    @pytest.mark.p2
     def test_comment_hidden_mutation_detected(self):
         """Mutation hidden after comment must be detected."""
         obfuscated = "/* harmless */ MERGE (n:Fact {id: 'y'})"
         assert classify_cypher(obfuscated)
 
+    @pytest.mark.p2
     def test_newline_split_mutation_detected(self):
         """Mutation split across newlines must be detected."""
         multiline = "\nMERGE\n(n:Chunk {id: 'z'})\n"
         assert classify_cypher(multiline)
 
+    @pytest.mark.p2
     def test_comment_only_is_not_mutation(self):
         """A query that is all comment should not trigger mutation classification."""
         comment_only = "/* MERGE CREATE DELETE */"
@@ -189,6 +201,7 @@ class TestUnicodeObfuscationBlocked:
 class TestDeleteNodeSoftTombstone:
     """Tests for GovernedNeo4jSession.delete_node() — soft delete path."""
 
+    @pytest.mark.p2
     async def test_soft_delete_executes_set_not_detach_delete(self):
         """Soft delete must write tombstone properties — NOT DETACH DELETE."""
         executor = MagicMock(return_value=[])
@@ -216,6 +229,7 @@ class TestDeleteNodeSoftTombstone:
         assert "_deleted_at" in query_used or "datetime()" in query_used
         assert "_deleted_reason" in query_used
 
+    @pytest.mark.p2
     async def test_soft_delete_produces_node_delete_receipt(self):
         """delete_node() must produce a MutationReceipt with NODE_DELETE type."""
         executor = MagicMock(return_value=[])
@@ -236,6 +250,7 @@ class TestDeleteNodeSoftTombstone:
         assert receipt.entity_id == "chunk-002"
         assert receipt.receipt_id  # Non-empty
 
+    @pytest.mark.p2
     async def test_soft_delete_appears_in_session_ledger(self):
         """delete_node receipt must be recorded in the session ledger."""
         executor = MagicMock(return_value=[])
@@ -250,6 +265,7 @@ class TestDeleteNodeSoftTombstone:
         assert session.mutation_count == 1
         assert session.ledger[0].mutation_type == MutationType.NODE_DELETE
 
+    @pytest.mark.p2
     async def test_soft_delete_passes_source_event_id_to_executor(self):
         """source_event_id must be forwarded to the Cypher executor."""
         executor = MagicMock(return_value=[])
@@ -269,6 +285,7 @@ class TestDeleteNodeSoftTombstone:
         params = executor.call_args[0][1]
         assert params.get("_source_event") == "outbox-event-999"
 
+    @pytest.mark.p2
     async def test_delete_requires_active_governance_context(self):
         """delete_node() without GovernanceContext must fail-closed."""
         GovernanceContextManager._reset_for_test()
@@ -288,6 +305,7 @@ class TestDeleteNodeHardDelete:
     """Hard delete (soft_delete=False) is the escape hatch for transient nodes.
     It must still go through the governance boundary."""
 
+    @pytest.mark.p2
     async def test_hard_delete_uses_detach_delete_cypher(self):
         """Hard delete (soft_delete=False) must execute DETACH DELETE."""
         executor = MagicMock(return_value=[])
@@ -308,6 +326,7 @@ class TestDeleteNodeHardDelete:
         assert "DETACH DELETE" in query_used
         assert receipt.mutation_type == MutationType.NODE_DELETE
 
+    @pytest.mark.p2
     async def test_hard_delete_still_produces_receipt(self):
         """Hard delete must still produce an immutable MutationReceipt."""
         executor = MagicMock(return_value=[])
@@ -336,6 +355,7 @@ class TestOutboxWorkerDeleteFix:
     """Regression tests: outbox_worker.py DELETE path no longer raises
     AttributeError ('GovernedNeo4jSession' has no attribute 'run')."""
 
+    @pytest.mark.p2
     async def test_process_chunk_delete_event_does_not_raise_attribute_error(self):
         """The P0 runtime bug must be fixed: session.run() call is gone."""
         # Simulate an outbox DELETE event
@@ -357,12 +377,13 @@ class TestOutboxWorkerDeleteFix:
             session = _make_governed_session(executor)
 
             # This must NOT raise AttributeError
-            from mahoun.core.governance.outbox_worker import OutboxWorker
+            from mahoun.infrastructure.workers.outbox_worker import OutboxWorker
             worker = OutboxWorker.__new__(OutboxWorker)  # bypass __init__
             result = worker._process_chunk_event(session, event)
 
         assert result is True
 
+    @pytest.mark.p2
     async def test_chunk_delete_calls_delete_node_not_run(self):
         """session.run() must not be called on DELETE events; delete_node() is."""
         event = {
@@ -392,7 +413,7 @@ class TestOutboxWorkerDeleteFix:
 
             session.delete_node = spy_delete  # type: ignore[method-assign]
 
-            from mahoun.core.governance.outbox_worker import OutboxWorker
+            from mahoun.infrastructure.workers.outbox_worker import OutboxWorker
             worker = OutboxWorker.__new__(OutboxWorker)
             worker._process_chunk_event(session, event)
 
@@ -402,6 +423,7 @@ class TestOutboxWorkerDeleteFix:
             "outbox_worker must use soft_delete=True (tombstone)"
         )
 
+    @pytest.mark.p2
     async def test_chunk_delete_tombstone_preserves_forensic_lineage(self):
         """The soft tombstone must include source_event_id for lineage tracing."""
         event_id = "evt-003"
@@ -422,7 +444,7 @@ class TestOutboxWorkerDeleteFix:
         ):
             session = _make_governed_session(executor)
 
-            from mahoun.core.governance.outbox_worker import OutboxWorker
+            from mahoun.infrastructure.workers.outbox_worker import OutboxWorker
             worker = OutboxWorker.__new__(OutboxWorker)
             worker._process_chunk_event(session, event)
 

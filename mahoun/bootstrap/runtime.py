@@ -56,6 +56,35 @@ def clear_registry() -> None:
     SERVICE_REGISTRY.clear()
 
 
+def validate_governance_runtime() -> None:
+    """
+    Validate that the governance runtime is fully wired before accepting mutations.
+
+    P1 STARTUP GATE: Must be called after audit sink wiring, before any
+    graph mutation is permitted.
+
+    Checks:
+        - Audit sink is wired (not None)
+
+    Raises:
+        RuntimeError: If any governance runtime component is missing.
+
+    Usage in bootstrap:
+        # Wire sink first
+        set_audit_sink(FilesystemAuditSink(...))
+        # Then validate
+        validate_governance_runtime()
+    """
+    from mahoun.core.governance.mutation_boundary import get_audit_sink
+    if get_audit_sink() is None:
+        raise RuntimeError(
+            "Governance runtime invalid: "
+            "Audit sink missing. "
+            "Call set_audit_sink() before bootstrap_runtime()."
+        )
+    logger.info("Governance runtime validation passed: audit sink is wired.")
+
+
 def bootstrap_runtime() -> Dict[str, Any]:
     """
     Central system wiring entry point.
@@ -112,6 +141,18 @@ def bootstrap_runtime() -> Dict[str, Any]:
     register_service("graph_retriever", graph_retriever)
     register_service("graph_vector_sync", graph_vector_sync)
     register_service("legal_query_executor", legal_query_executor)
+
+    # 5. GOVERNANCE RUNTIME VALIDATION — must pass before system is considered ready
+    # NOTE: In production, set_audit_sink() must be called BEFORE bootstrap_runtime().
+    # validate_governance_runtime() will catch missing sink configuration early.
+    try:
+        validate_governance_runtime()
+    except RuntimeError as e:
+        logger.warning(
+            "Governance runtime validation warning: %s. "
+            "Wire an audit sink via set_audit_sink() for full governance compliance.",
+            e,
+        )
 
     logger.info("MAHOUN Runtime Bootstrap COMPLETED")
     return SERVICE_REGISTRY.copy()

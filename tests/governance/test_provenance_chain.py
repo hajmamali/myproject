@@ -29,6 +29,7 @@ from mahoun.core.governance.violations import GovernanceViolationError
 class TestChainCreation:
     """Tests for ProvenanceChain creation"""
 
+    @pytest.mark.p2
     def test_create_chain(self):
         """Test creating a provenance chain"""
         chain = ProvenanceChain()
@@ -38,6 +39,7 @@ class TestChainCreation:
         assert chain._current_lineage_parent is None
         assert len(chain._chain) == 0
 
+    @pytest.mark.p2
     def test_create_provenance_first_entry(self):
         """Test creating first entry in chain"""
         chain = ProvenanceChain()
@@ -54,6 +56,7 @@ class TestChainCreation:
         assert provenance.attestation.lineage_parent is None
         assert len(chain._chain) == 1
 
+    @pytest.mark.p2
     def test_create_provenance_with_inference(self):
         """Test creating provenance with inference"""
         chain = ProvenanceChain()
@@ -87,6 +90,7 @@ class TestChainCreation:
 class TestLineageTracking:
     """Tests for lineage tracking"""
 
+    @pytest.mark.p2
     def test_lineage_parent_auto_set(self):
         """Test that lineage_parent is automatically set"""
         chain = ProvenanceChain()
@@ -120,6 +124,7 @@ class TestLineageTracking:
         assert provenance2.attestation.lineage_parent == provenance1.attestation.provenance_hash
         assert provenance3.attestation.lineage_parent == provenance2.attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_lineage_chain_length(self):
         """Test that lineage chain grows correctly"""
         chain = ProvenanceChain()
@@ -140,6 +145,7 @@ class TestLineageTracking:
         for i in range(1, 10):
             assert chain_list[i].attestation.lineage_parent == chain_list[i - 1].attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_lineage_with_custom_parent(self):
         """Test creating provenance with custom lineage parent"""
         chain = ProvenanceChain()
@@ -173,6 +179,7 @@ class TestLineageTracking:
 class TestChainVerification:
     """Tests for chain verification"""
 
+    @pytest.mark.p2
     def test_verify_chain_valid(self):
         """Test verifying valid chain"""
         chain = ProvenanceChain()
@@ -197,6 +204,7 @@ class TestChainVerification:
 
         assert result is True
 
+    @pytest.mark.p2
     def test_verify_chain_broken_lineage(self):
         """Test verifying chain with broken lineage"""
         chain = ProvenanceChain()
@@ -232,6 +240,7 @@ class TestChainVerification:
 
         assert "lineage break" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_verify_chain_empty(self):
         """Test verifying empty chain"""
         chain = ProvenanceChain()
@@ -240,6 +249,7 @@ class TestChainVerification:
 
         assert result is True  # Empty chain is valid
 
+    @pytest.mark.p2
     def test_verify_chain_single_entry(self):
         """Test verifying single entry chain"""
         chain = ProvenanceChain()
@@ -265,6 +275,7 @@ class TestChainVerification:
 class TestChainRetrieval:
     """Tests for chain retrieval"""
 
+    @pytest.mark.p2
     def test_get_chain(self):
         """Test getting full chain"""
         chain = ProvenanceChain()
@@ -291,6 +302,7 @@ class TestChainRetrieval:
         assert chain_list[0].attestation.lineage_parent is None
         assert chain_list[1].attestation.lineage_parent == chain_list[0].attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_get_chain_is_copy(self):
         """Test that get_chain returns a copy"""
         chain = ProvenanceChain()
@@ -313,6 +325,7 @@ class TestChainRetrieval:
         assert len(chain_list1) == len(chain_list2)
         assert chain_list1[0].attestation.provenance_hash == chain_list2[0].attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_get_chain_empty(self):
         """Test getting empty chain"""
         chain = ProvenanceChain()
@@ -330,6 +343,7 @@ class TestChainRetrieval:
 class TestPerformance:
     """Tests for ProvenanceChain performance"""
 
+    @pytest.mark.p2
     def test_chain_creation_performance(self):
         """Test chain creation performance"""
         import time
@@ -349,6 +363,7 @@ class TestPerformance:
 
         assert elapsed < 2.0  # < 2s for 1000 entries
 
+    @pytest.mark.p2
     def test_chain_verification_performance(self):
         """Test chain verification performance"""
         import time
@@ -369,6 +384,7 @@ class TestPerformance:
 
         assert elapsed < 1.0  # < 1s for 1000 entry chain verification
 
+    @pytest.mark.p2
     def test_large_chain_verification(self):
         """Test verification of large chain"""
         chain = ProvenanceChain()
@@ -395,6 +411,7 @@ class TestPerformance:
 class TestEdgeCases:
     """Tests for edge cases"""
 
+    @pytest.mark.p2
     def test_single_entry_chain_verification(self):
         """Test verification of single entry chain"""
         chain = ProvenanceChain()
@@ -410,6 +427,7 @@ class TestEdgeCases:
         result = chain.verify_chain_integrity()
         assert result is True
 
+    @pytest.mark.p2
     def test_chain_with_inference(self):
         """Test chain with inference provenance"""
         chain = ProvenanceChain()
@@ -435,6 +453,7 @@ class TestEdgeCases:
         assert chain_list[0].inference is not None
         assert chain_list[0].inference == inference
 
+    @pytest.mark.p2
     def test_chain_with_document_id(self):
         """Test chain with document_id"""
         chain = ProvenanceChain()
@@ -453,6 +472,7 @@ class TestEdgeCases:
         assert chain_list[0].metadata["document_id"] == "doc-001"
         assert chain_list[0].metadata["pipeline_version"] == "1.0.0"
 
+    @pytest.mark.p2
     def test_chain_lineage_continuity(self):
         """Test that lineage is continuous"""
         chain = ProvenanceChain()

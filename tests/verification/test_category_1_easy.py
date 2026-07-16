@@ -31,6 +31,8 @@ def clean_env():
         del os.environ["MAHOUN_DETERMINISTIC_TESTING"]
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_baseline_deterministic_reasoning_flow(clean_env, tmp_path):
     """
     Test 1.1: Deterministic Reasoning Flow Validation (REAL SYSTEM)
@@ -165,6 +167,8 @@ async def test_baseline_deterministic_reasoning_flow(clean_env, tmp_path):
         runtime_config.is_desktop_minimal = original_desktop_minimal
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_empty_evidence_rejection(clean_env, tmp_path):
     """
     Test 1.2: Empty Evidence Rejection Validation (REAL SYSTEM)

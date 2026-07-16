@@ -48,6 +48,7 @@ if not _INTEGRATION_ENABLED:
 class TestNeo4jConnectionPing:
     """Test suite for Neo4jConnection.ping() method (Task 2)"""
     
+    @pytest.mark.p2
     def test_ping_method_exists(self):
         """Verify ping() method exists on Neo4jConnection"""
         from mahoun.graph.neo4j.connection import Neo4jConnection
@@ -55,6 +56,7 @@ class TestNeo4jConnectionPing:
         assert hasattr(Neo4jConnection, 'ping'), "ping() method must exist"
         assert callable(getattr(Neo4jConnection, 'ping')), "ping() must be callable"
     
+    @pytest.mark.p2
     def test_ping_returns_bool(self):
         """Verify ping() returns boolean"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -64,6 +66,7 @@ class TestNeo4jConnectionPing:
         
         assert isinstance(result, bool), "ping() must return bool"
     
+    @pytest.mark.p2
     def test_ping_uses_existing_driver(self):
         """Verify ping() does NOT create new driver"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -76,6 +79,7 @@ class TestNeo4jConnectionPing:
         driver_after = conn.driver
         assert driver_before is driver_after, "ping() must reuse existing driver, not create new one"
     
+    @pytest.mark.p2
     def test_ping_performance(self):
         """Verify ping() completes in < 100ms (performance requirement)"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -88,6 +92,7 @@ class TestNeo4jConnectionPing:
         
         assert elapsed_ms < 100, f"ping() took {elapsed_ms:.2f}ms, must be < 100ms"
     
+    @pytest.mark.p2
     def test_ping_with_healthy_connection(self):
         """Verify ping() returns True when Neo4j is healthy"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -97,6 +102,7 @@ class TestNeo4jConnectionPing:
         
         assert result is True, "ping() must return True for healthy connection"
     
+    @pytest.mark.p2
     def test_ping_handles_connection_failure_gracefully(self):
         """Verify ping() returns False on connection failure (no exceptions)"""
         from mahoun.graph.neo4j.connection import Neo4jConnection
@@ -113,6 +119,7 @@ class TestNeo4jConnectionPing:
         
         assert result is False, "ping() must return False on connection failure, not raise exception"
     
+    @pytest.mark.p2
     def test_ping_docstring_exists(self):
         """Verify ping() has proper documentation"""
         from mahoun.graph.neo4j.connection import Neo4jConnection
@@ -129,6 +136,7 @@ class TestNeo4jConnectionPing:
 class TestGraphEnhancedRetrieverDI:
     """Test suite for GraphEnhancedRetriever DI refactor (Task 3)"""
     
+    @pytest.mark.p2
     def test_accepts_neo4j_connection_parameter(self):
         """Verify GraphEnhancedRetriever accepts Neo4jConnection instance"""
         from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
@@ -142,6 +150,7 @@ class TestGraphEnhancedRetrieverDI:
         assert retriever is not None
         assert hasattr(retriever, 'connection'), "Must store connection as instance variable"
     
+    @pytest.mark.p2
     def test_no_raw_driver_parameter(self):
         """Verify GraphEnhancedRetriever does NOT accept raw driver"""
         from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
@@ -154,6 +163,7 @@ class TestGraphEnhancedRetrieverDI:
         assert 'driver' not in params, "Must NOT accept driver parameter (old API)"
         assert 'connection' in params, "Must accept connection parameter (new API)"
     
+    @pytest.mark.p2
     def test_uses_governed_session_not_raw_session(self):
         """Verify GraphEnhancedRetriever uses governed_session(), not driver.session()"""
         from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
@@ -168,6 +178,7 @@ class TestGraphEnhancedRetrieverDI:
         # Must contain governed_session calls
         assert 'governed_session' in source, "Must use governed_session() for all Neo4j access"
     
+    @pytest.mark.p2
     def test_governed_session_includes_actor_id(self):
         """Verify governed_session() calls include actor_id for audit trail"""
         from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
@@ -178,6 +189,7 @@ class TestGraphEnhancedRetrieverDI:
         # Check for actor_id in governed_session calls
         assert 'actor_id=' in source, "governed_session() calls must include actor_id parameter"
     
+    @pytest.mark.p2
     def test_no_direct_driver_creation(self):
         """Verify GraphEnhancedRetriever does NOT create drivers internally"""
         from mahoun.retrieval.graph_enhanced import GraphEnhancedRetriever
@@ -196,6 +208,7 @@ class TestGraphEnhancedRetrieverDI:
 class TestGraphVectorSyncDI:
     """Test suite for GraphVectorSync DI refactor (Task 4)"""
     
+    @pytest.mark.p2
     def test_accepts_neo4j_connection_parameter(self):
         """Verify GraphVectorSync accepts Neo4jConnection instance"""
         from mahoun.pipelines.sync.graph_vector_sync import GraphVectorSync
@@ -209,6 +222,7 @@ class TestGraphVectorSyncDI:
         assert sync is not None
         assert hasattr(sync, 'connection'), "Must store connection as instance variable"
     
+    @pytest.mark.p2
     def test_no_raw_driver_parameter(self):
         """Verify GraphVectorSync does NOT accept raw driver"""
         from mahoun.pipelines.sync.graph_vector_sync import GraphVectorSync
@@ -221,6 +235,7 @@ class TestGraphVectorSyncDI:
         assert 'driver' not in params, "Must NOT accept driver parameter"
         assert 'connection' in params, "Must accept connection parameter"
     
+    @pytest.mark.p2
     def test_uses_governed_session_not_raw_session(self):
         """Verify GraphVectorSync uses governed_session(), not driver.session()"""
         from mahoun.pipelines.sync.graph_vector_sync import GraphVectorSync
@@ -235,6 +250,7 @@ class TestGraphVectorSyncDI:
         # Must contain governed_session calls
         assert 'governed_session' in source, "Must use governed_session()"
     
+    @pytest.mark.p2
     def test_governed_session_in_inject_neo4j_embedding(self):
         """Verify _inject_neo4j_embedding uses governed_session()"""
         from mahoun.pipelines.sync.graph_vector_sync import GraphVectorSync
@@ -245,6 +261,7 @@ class TestGraphVectorSyncDI:
         assert 'governed_session' in source, "_inject_neo4j_embedding must use governed_session()"
         assert '.session()' not in source or 'governed_session' in source, "Must not use raw .session()"
     
+    @pytest.mark.p2
     def test_governed_session_in_backfill_graph_vectors(self):
         """Verify backfill_graph_vectors uses governed_session()"""
         from mahoun.pipelines.sync.graph_vector_sync import GraphVectorSync
@@ -263,6 +280,7 @@ class TestGraphVectorSyncDI:
 class TestLegalQueryExecutorDI:
     """Test suite for LegalQueryExecutor DI refactor (Task 5)"""
     
+    @pytest.mark.p2
     def test_accepts_neo4j_connection_parameter(self):
         """Verify LegalQueryExecutor accepts Neo4jConnection instance"""
         from mahoun.graph.legal_cypher_queries import LegalQueryExecutor
@@ -276,6 +294,7 @@ class TestLegalQueryExecutorDI:
         assert executor is not None
         assert hasattr(executor, 'connection'), "Must store connection as instance variable"
     
+    @pytest.mark.p2
     def test_no_raw_driver_parameter(self):
         """Verify LegalQueryExecutor does NOT accept raw driver"""
         from mahoun.graph.legal_cypher_queries import LegalQueryExecutor
@@ -288,6 +307,7 @@ class TestLegalQueryExecutorDI:
         assert 'driver' not in params, "Must NOT accept driver parameter"
         assert 'connection' in params, "Must accept connection parameter"
     
+    @pytest.mark.p2
     def test_uses_governed_session_for_mutations(self):
         """Verify LegalQueryExecutor uses governed_session() for mutation queries"""
         from mahoun.graph.legal_cypher_queries import LegalQueryExecutor
@@ -301,6 +321,7 @@ class TestLegalQueryExecutorDI:
         # Must contain governed_session calls
         assert 'governed_session' in source, "Must use governed_session() for mutations"
     
+    @pytest.mark.p2
     def test_uses_execute_query_for_reads(self):
         """Verify LegalQueryExecutor uses execute_query() for read-only queries"""
         from mahoun.graph.legal_cypher_queries import LegalQueryExecutor
@@ -311,6 +332,7 @@ class TestLegalQueryExecutorDI:
         # Should use execute_query for read operations
         assert 'execute_query' in source, "Should use execute_query() for read-only queries"
     
+    @pytest.mark.p2
     def test_no_direct_driver_creation(self):
         """Verify LegalQueryExecutor does NOT create drivers internally"""
         from mahoun.graph.legal_cypher_queries import LegalQueryExecutor
@@ -329,6 +351,7 @@ class TestLegalQueryExecutorDI:
 class TestIntegrityProbeDI:
     """Test suite for IntegrityProbe DI refactor (Task 6)"""
     
+    @pytest.mark.p2
     def test_no_graphdatabase_import(self):
         """Verify integrity_probe.py does NOT import GraphDatabase"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -338,6 +361,7 @@ class TestIntegrityProbeDI:
         assert 'import neo4j' not in source or 'from mahoun.graph.neo4j.connection' in source, \
             "Must NOT import neo4j directly (except via connection module)"
     
+    @pytest.mark.p2
     def test_no_driver_creation_in_check_neo4j(self):
         """Verify check_neo4j() does NOT create driver"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -345,6 +369,7 @@ class TestIntegrityProbeDI:
         
         assert 'GraphDatabase.driver(' not in source, "Must NOT create GraphDatabase.driver"
     
+    @pytest.mark.p2
     def test_uses_get_connection_and_ping(self):
         """Verify check_neo4j() uses get_connection().ping()"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -353,6 +378,7 @@ class TestIntegrityProbeDI:
         assert 'get_connection' in source, "Must use get_connection()"
         assert 'ping()' in source, "Must use ping() method"
     
+    @pytest.mark.p2
     def test_check_neo4j_handles_import_error(self):
         """Verify check_neo4j() handles ImportError gracefully"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -361,6 +387,7 @@ class TestIntegrityProbeDI:
         # Check for ImportError handling
         assert 'except ImportError' in source, "Must handle ImportError"
     
+    @pytest.mark.p2
     def test_check_neo4j_handles_general_exception(self):
         """Verify check_neo4j() handles general exceptions gracefully"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -369,6 +396,7 @@ class TestIntegrityProbeDI:
         # Check for general exception handling
         assert 'except Exception' in source, "Must handle general exceptions"
     
+    @pytest.mark.p2
     def test_check_neo4j_returns_bool(self):
         """Verify check_neo4j() returns boolean"""
         # Import and test the actual function
@@ -379,6 +407,7 @@ class TestIntegrityProbeDI:
         
         assert isinstance(result, bool), "check_neo4j() must return bool"
     
+    @pytest.mark.p2
     def test_check_neo4j_logs_appropriately(self):
         """Verify check_neo4j() logs success/failure"""
         probe_path = Path(__file__).parent.parent / "mahoun" / "infrastructure" / "health" / "integrity_probe.py"
@@ -395,6 +424,7 @@ class TestIntegrityProbeDI:
 class TestDIRefactorIntegration:
     """Integration tests across all refactored modules"""
     
+    @pytest.mark.p2
     def test_all_modules_use_same_connection_singleton(self):
         """Verify all modules use the same Neo4jConnection singleton"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -416,6 +446,7 @@ class TestDIRefactorIntegration:
         assert sync.connection is conn1
         assert executor.connection is conn1
     
+    @pytest.mark.p2
     def test_no_driver_creation_outside_allowlist(self):
         """Verify NO driver creation outside the three-file allowlist"""
         allowlist = [
@@ -444,6 +475,7 @@ class TestDIRefactorIntegration:
                 assert 'AsyncGraphDatabase.driver(' not in source, \
                     f"{file_path} must NOT create AsyncGraphDatabase.driver (outside allowlist)"
     
+    @pytest.mark.p2
     def test_performance_no_eager_heavy_loads(self):
         """Verify no eager loading of heavy infrastructure during import"""
         import sys
@@ -473,6 +505,7 @@ class TestDIRefactorIntegration:
 class TestGovernanceInvariants:
     """Test governance invariants are preserved"""
     
+    @pytest.mark.p2
     def test_governed_session_requires_correlation_id(self):
         """Verify governed_session() calls include correlation_id"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -484,6 +517,7 @@ class TestGovernanceInvariants:
         
         assert 'correlation_id' in params, "governed_session() must accept correlation_id"
     
+    @pytest.mark.p2
     def test_governed_session_requires_actor_id(self):
         """Verify governed_session() calls include actor_id"""
         from mahoun.graph.neo4j.connection import get_connection
@@ -495,6 +529,7 @@ class TestGovernanceInvariants:
         
         assert 'actor_id' in params, "governed_session() must accept actor_id"
     
+    @pytest.mark.p2
     def test_all_refactored_modules_import_cleanly(self):
         """Verify all refactored modules import without errors"""
         try:

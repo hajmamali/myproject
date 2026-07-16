@@ -9,6 +9,7 @@ from mahoun.ledger.models import LedgerEntry
 
 
 class TestHardening(unittest.TestCase):
+    @pytest.mark.p1
     def test_query_builder_tenant_isolation(self):
         builder = CypherQueryBuilder(tenant_id="tenant_123")
         query = builder.match("LegalDoc", {"id": "doc1"}).build()
@@ -18,6 +19,7 @@ class TestHardening(unittest.TestCase):
         self.assertIn("tenant_id: $_tenant_id", query)
         self.assertIn("MATCH (n:LegalDoc", query)
 
+    @pytest.mark.p1
     def test_query_builder_parameterization(self):
         builder = CypherQueryBuilder()
         builder.where_exact("n", "status", "active")
@@ -31,6 +33,7 @@ class TestHardening(unittest.TestCase):
         ][0]
         self.assertEqual(builder.parameters[param_key], "active")
 
+    @pytest.mark.p1
     def test_ledger_thread_safety(self):
         # Test basic append with locking (local)
         ledger = ImmutableLedger()  # In-memory genesis only

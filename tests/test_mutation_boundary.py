@@ -55,6 +55,7 @@ class TestCypherClassifier:
         "MATCH (n) REMOVE n.x",
         "  merge (n:Case {id: $id}) ON CREATE SET n.x = 1",
     ])
+    @pytest.mark.p2
     def test_mutation_queries_classified(self, query: str):
         assert classify_cypher(query) is True
 
@@ -65,6 +66,7 @@ class TestCypherClassifier:
         "MATCH (n) RETURN count(n)",
         "MATCH (a)-[r]->(b) RETURN r",
     ])
+    @pytest.mark.p2
     def test_read_queries_not_classified(self, query: str):
         assert classify_cypher(query) is False
 
@@ -74,6 +76,7 @@ class TestCypherClassifier:
 # ======================================================================
 
 class TestMutationAuthorizationBoundary:
+    @pytest.mark.p2
     def test_read_query_passes_unconditionally(self):
         # Must not raise — no authorization context needed
         MutationAuthorizationBoundary.inspect("MATCH (n) RETURN n")
@@ -85,12 +88,14 @@ class TestMutationAuthorizationBoundary:
         "MATCH (n) DELETE n",
         "MATCH (n) SET n.x = 1",
     ])
+    @pytest.mark.p2
     def test_mutation_outside_context_raises(self, mutation_cypher: str):
         # Ensure no stale auth context
         _authorized_write_ctx.set(False)
         with pytest.raises(GovernanceViolationError, match="ARCHITECTURAL VIOLATION"):
             MutationAuthorizationBoundary.inspect(mutation_cypher)
 
+    @pytest.mark.p2
     def test_mutation_inside_auth_context_passes(self):
         token = _authorized_write_ctx.set(True)
         try:
@@ -99,6 +104,7 @@ class TestMutationAuthorizationBoundary:
         finally:
             _authorized_write_ctx.set(False)
 
+    @pytest.mark.p2
     def test_auth_token_is_not_set_globally(self):
         """Token starts False — cannot be globally pre-set."""
         _authorized_write_ctx.set(False)
@@ -110,6 +116,7 @@ class TestMutationAuthorizationBoundary:
 # ======================================================================
 
 class TestGovernedNeo4jSession:
+    @pytest.mark.p2
     def test_valid_node_write_produces_receipt(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -123,6 +130,7 @@ class TestGovernedNeo4jSession:
         assert receipt.entity_id == "d1"
         assert executor.called  # DB was actually called
 
+    @pytest.mark.p2
     def test_node_write_without_provenance_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -132,6 +140,7 @@ class TestGovernedNeo4jSession:
 
         assert not executor.called  # Zero DB writes
 
+    @pytest.mark.p2
     def test_node_write_without_id_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -141,6 +150,7 @@ class TestGovernedNeo4jSession:
 
         assert not executor.called
 
+    @pytest.mark.p2
     def test_relationship_ontology_violation_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -152,6 +162,7 @@ class TestGovernedNeo4jSession:
             )
         assert not executor.called
 
+    @pytest.mark.p2
     def test_relationship_without_provenance_blocked(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -162,6 +173,7 @@ class TestGovernedNeo4jSession:
             )
         assert not executor.called
 
+    @pytest.mark.p2
     def test_valid_relationship_produces_receipt(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -174,6 +186,7 @@ class TestGovernedNeo4jSession:
         assert receipt.entity_id == "c1->l1"
         assert executor.called
 
+    @pytest.mark.p2
     def test_provenance_never_reaches_executor(self):
         """Provenance must not appear in the Cypher query or params."""
         captured_calls = []
@@ -193,6 +206,7 @@ class TestGovernedNeo4jSession:
         assert "provenance" not in query.lower()
         assert "provenance" not in params
 
+    @pytest.mark.p2
     def test_auth_token_cleared_after_write(self):
         """Authorization token must be cleared even on executor failure."""
         def failing_executor(query, params):
@@ -208,6 +222,7 @@ class TestGovernedNeo4jSession:
         # Token must be cleared — it cannot leak
         assert not _authorized_write_ctx.get()
 
+    @pytest.mark.p2
     def test_ledger_grows_with_receipts(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -218,6 +233,7 @@ class TestGovernedNeo4jSession:
         assert session.mutation_count == 2
         assert isinstance(session.ledger, tuple)
 
+    @pytest.mark.p2
     def test_receipt_is_frozen(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -232,6 +248,7 @@ class TestGovernedNeo4jSession:
 # ======================================================================
 
 class TestGovernedWriteTransaction:
+    @pytest.mark.p2
     def test_valid_batch_commits(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -248,6 +265,7 @@ class TestGovernedWriteTransaction:
         assert executor.call_count == 3
         assert session.mutation_count == 3
 
+    @pytest.mark.p2
     def test_single_invalid_mutation_blocks_entire_batch(self):
         """If mutation N fails validation, mutations 1..N-1 are NOT executed."""
         executor = _mock_executor()
@@ -269,6 +287,7 @@ class TestGovernedWriteTransaction:
         assert executor.call_count == 0
         assert session.mutation_count == 0
 
+    @pytest.mark.p2
     def test_committed_transaction_rejects_further_writes(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -279,6 +298,7 @@ class TestGovernedWriteTransaction:
         with pytest.raises(RuntimeError, match="already committed"):
             tx.queue_node("Law", {"id": "l2", "provenance": _prov()})
 
+    @pytest.mark.p2
     def test_abort_prevents_execution(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -289,6 +309,7 @@ class TestGovernedWriteTransaction:
         assert not tx.is_open
         assert executor.call_count == 0
 
+    @pytest.mark.p2
     def test_aborted_transaction_rejects_commit(self):
         executor = _mock_executor()
         session = GovernedNeo4jSession(raw_executor=executor)
@@ -304,6 +325,7 @@ class TestGovernedWriteTransaction:
 # ======================================================================
 
 class TestExecuteWriteAbolished:
+    @pytest.mark.p2
     def test_execute_write_raises_governance_error(self):
         """
         execute_write() must be constitutionally abolished.

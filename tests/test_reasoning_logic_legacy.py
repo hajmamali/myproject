@@ -206,6 +206,7 @@ class TestLogicalReasoningScenario:
         
         return rules
     
+    @pytest.mark.p2
     def test_graph_to_fol_conversion(self, synthetic_legal_graph):
         """
         Test 1: Verify graph-to-FOL conversion works correctly
@@ -251,6 +252,7 @@ class TestLogicalReasoningScenario:
         
         logger.info("\n✅ TEST 1 PASSED: Graph-to-FOL conversion works correctly\n")
     
+    @pytest.mark.p2
     def test_forward_chaining_basic(self, legal_rules):
         """
         Test 2: Verify forward chaining can derive new facts
@@ -295,6 +297,7 @@ class TestLogicalReasoningScenario:
         
         logger.info("\n✅ TEST 2 PASSED: Forward chaining derives correct facts\n")
     
+    @pytest.mark.p2
     def test_backward_chaining_goal_proof(self, legal_rules):
         """
         Test 3: Verify backward chaining can prove goals
@@ -343,6 +346,7 @@ class TestLogicalReasoningScenario:
         
         logger.info("\n✅ TEST 3 PASSED: Backward chaining proves goal correctly\n")
     
+    @pytest.mark.p2
     def test_multi_hop_reasoning(self, legal_rules):
         """
         Test 4: Verify multi-hop reasoning (MEDIUM DIFFICULTY)
@@ -398,6 +402,7 @@ class TestLogicalReasoningScenario:
         
         logger.info("\n✅ TEST 4 PASSED: Multi-hop reasoning works correctly\n")
     
+    @pytest.mark.p2
     def test_legal_hierarchy_reasoning(self, legal_rules):
         """
         Test 5: Verify legal hierarchy reasoning (HARD DIFFICULTY)
@@ -452,6 +457,7 @@ class TestLogicalReasoningScenario:
         
         logger.info("\n✅ TEST 5 PASSED: Legal hierarchy reasoning works correctly\n")
     
+    @pytest.mark.p2
     def test_complete_scenario_integration(self, synthetic_legal_graph, legal_rules):
         """
         Test 6: Complete Scenario Integration (VERY HARD)

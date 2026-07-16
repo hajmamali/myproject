@@ -28,6 +28,7 @@ from mahoun.llm.local_driver import (
 class TestLocalLLMDriver:
     """Test suite for LocalLLMDriver"""
     
+    @pytest.mark.p2
     def test_initialization(self, tmp_path):
         """Test driver initialization"""
         driver = LocalLLMDriver(
@@ -43,6 +44,7 @@ class TestLocalLLMDriver:
         assert driver.tokenizer is None
         assert isinstance(driver.metrics, ModelMetrics)
     
+    @pytest.mark.p2
     def test_initialization_creates_model_dir(self, tmp_path):
         """Test that model directory is created if it doesn't exist"""
         model_dir = tmp_path / "nonexistent"
@@ -50,6 +52,7 @@ class TestLocalLLMDriver:
         
         assert model_dir.exists()
     
+    @pytest.mark.p2
     def test_load_model_not_found(self, tmp_path):
         """Test loading non-existent model raises error"""
         driver = LocalLLMDriver(model_dir=str(tmp_path))
@@ -61,6 +64,7 @@ class TestLocalLLMDriver:
     
     @patch('mahoun.llm.local_driver.AutoTokenizer')
     @patch('mahoun.llm.local_driver.AutoModelForCausalLM')
+    @pytest.mark.p2
     def test_load_model_success(self, mock_model_class, mock_tokenizer_class, tmp_path):
         """Test successful model loading"""
         # Create fake model directory
@@ -93,6 +97,7 @@ class TestLocalLLMDriver:
     
     @patch('mahoun.llm.local_driver.AutoTokenizer')
     @patch('mahoun.llm.local_driver.AutoModelForCausalLM')
+    @pytest.mark.p2
     def test_generate_without_loading(self, mock_model_class, mock_tokenizer_class, tmp_path):
         """Test generation without loading model raises error"""
         driver = LocalLLMDriver(model_dir=str(tmp_path))
@@ -105,6 +110,7 @@ class TestLocalLLMDriver:
     @patch('mahoun.llm.local_driver.AutoTokenizer')
     @patch('mahoun.llm.local_driver.AutoModelForCausalLM')
     @patch('mahoun.llm.local_driver.torch')
+    @pytest.mark.p2
     def test_generate_success(self, mock_torch, mock_model_class, mock_tokenizer_class, tmp_path):
         """Test successful text generation"""
         # Setup
@@ -154,6 +160,7 @@ class TestLocalLLMDriver:
     @patch('mahoun.llm.local_driver.AutoTokenizer')
     @patch('mahoun.llm.local_driver.AutoModelForCausalLM')
     @patch('mahoun.llm.local_driver.torch')
+    @pytest.mark.p2
     def test_generate_with_metrics(self, mock_torch, mock_model_class, mock_tokenizer_class, tmp_path):
         """Test generation with metrics return"""
         # Setup (similar to above)
@@ -193,6 +200,7 @@ class TestLocalLLMDriver:
         assert "tokens_generated" in result["metrics"]
         assert "tokens_per_second" in result["metrics"]
     
+    @pytest.mark.p2
     def test_generation_config_defaults(self):
         """Test GenerationConfig default values"""
         config = GenerationConfig()
@@ -203,6 +211,7 @@ class TestLocalLLMDriver:
         assert config.top_k == 50
         assert config.do_sample is True
     
+    @pytest.mark.p2
     def test_list_available_models(self, tmp_path):
         """Test listing available models"""
         # Create some model directories
@@ -222,6 +231,7 @@ class TestLocalLLMDriver:
     @patch('mahoun.llm.local_driver.AutoTokenizer')
     @patch('mahoun.llm.local_driver.AutoModelForCausalLM')
     @patch('mahoun.llm.local_driver.torch')
+    @pytest.mark.p2
     def test_unload_model(self, mock_torch, mock_model_class, mock_tokenizer_class, tmp_path):
         """Test model unloading and memory cleanup"""
         model_dir = tmp_path / "test-model"
@@ -248,6 +258,7 @@ class TestLocalLLMDriver:
         assert driver.model is None
         assert driver.tokenizer is None
     
+    @pytest.mark.p2
     def test_get_metrics(self, tmp_path):
         """Test metrics retrieval"""
         driver = LocalLLMDriver(model_dir=str(tmp_path))
@@ -261,6 +272,7 @@ class TestLocalLLMDriver:
         assert metrics["load_time_seconds"] == 5.0
         assert metrics["total_generations"] == 10
     
+    @pytest.mark.p2
     def test_repr(self, tmp_path):
         """Test string representation"""
         driver = LocalLLMDriver(model_dir=str(tmp_path))
@@ -282,6 +294,7 @@ class TestLocalLLMDriverIntegration:
     """Integration tests (require actual model)"""
     
     @pytest.mark.skip(reason="Requires actual model download")
+    @pytest.mark.p2
     def test_real_model_loading(self):
         """Test with real model (manual test)"""
         driver = LocalLLMDriver(

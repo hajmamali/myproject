@@ -32,7 +32,6 @@ from mahoun.core.governance.violations import (
 from mahoun.core.governance.policies import (
     GovernancePolicy,
     PolicyRegistry,
-    load_redlines_policies,
 )
 from mahoun.core.governance.validator_pipeline import ValidatorPipeline
 from mahoun.core.governance.provenance_tracker import (
@@ -63,7 +62,6 @@ __all__ = [
     # Policies
     "GovernancePolicy",
     "PolicyRegistry",
-    "load_redlines_policies",
     # Runtime Governance
     "ValidatorPipeline",
     "ProvenanceTracker",

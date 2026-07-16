@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 class TestRealFastAPIApp:
     """تست واقعی FastAPI Application"""
     
+    @pytest.mark.p2
     def test_app_creation(self):
         """تست اینکه app واقعاً ساخته می‌شود"""
         from api.main import app
@@ -32,6 +33,7 @@ class TestRealFastAPIApp:
         assert any('/api/v1/mahoun' in r for r in route_paths)
         assert any('/v1/search' in r for r in route_paths)
     
+    @pytest.mark.p2
     def test_health_endpoint_exists(self):
         """تست اینکه health endpoint وجود دارد"""
         from api.main import app
@@ -41,6 +43,7 @@ class TestRealFastAPIApp:
         
         assert len(health_routes) > 0, "Health endpoint باید وجود داشته باشد"
     
+    @pytest.mark.p2
     def test_all_routers_registered(self):
         """تست اینکه همه router ها register شده‌اند"""
         from api.main import app
@@ -72,6 +75,7 @@ class TestRealDatabaseConnections:
     """تست واقعی Database Connections"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_database_functions_exist(self):
         """تست اینکه database functions وجود دارند"""
         from api.database import (
@@ -91,6 +95,7 @@ class TestRealDatabaseConnections:
         assert callable(close_redis)
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_database_init_doesnt_crash(self):
         """تست اینکه init_db crash نمی‌کند (حتی اگر DB در دسترس نباشد)"""
         from api.database import init_db, close_db
@@ -112,6 +117,7 @@ class TestRealDatabaseConnections:
 class TestRealAgentSystem:
     """تست واقعی Agent System"""
     
+    @pytest.mark.p2
     def test_agent_factory_exists(self):
         """تست اینکه AgentFactory واقعاً وجود دارد"""
         from mahoun.agents import AgentFactory
@@ -119,6 +125,7 @@ class TestRealAgentSystem:
         assert AgentFactory is not None
         assert hasattr(AgentFactory, 'create_agent')
     
+    @pytest.mark.p2
     def test_agent_classes_exist(self):
         """تست اینکه agent classes واقعاً وجود دارند"""
         from mahoun.agents import (
@@ -132,6 +139,7 @@ class TestRealAgentSystem:
         assert BaseAgent is not None
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_contract_agent_can_be_created(self):
         """تست اینکه می‌توان ContractAgent را ساخت"""
         from mahoun.agents import ContractAgent
@@ -145,6 +153,7 @@ class TestRealAgentSystem:
             pytest.fail(f"نمی‌توان ContractAgent را ساخت: {e}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_orchestrator_can_be_created(self):
         """تست اینکه می‌توان Orchestrator را ساخت"""
         from mahoun.agents import Orchestrator
@@ -161,6 +170,7 @@ class TestRealAgentSystem:
 class TestRealRAGService:
     """تست واقعی RAG Service"""
     
+    @pytest.mark.p2
     def test_rag_service_class_exists(self):
         """تست اینکه HybridRAGService class وجود دارد"""
         from mahoun.rag.hybrid_rag_service import HybridRAGService
@@ -168,6 +178,7 @@ class TestRealRAGService:
         assert HybridRAGService is not None
         assert hasattr(HybridRAGService, '__init__')
     
+    @pytest.mark.p2
     def test_rag_service_can_be_imported(self):
         """تست اینکه می‌توان RAG service را import کرد"""
         try:
@@ -181,6 +192,7 @@ class TestRealRAGService:
 class TestRealIngestionPipeline:
     """تست واقعی Ingestion Pipeline"""
     
+    @pytest.mark.p2
     def test_ingestion_pipeline_exists(self):
         """تست اینکه IngestionPipeline وجود دارد"""
         from mahoun.pipelines.ingestion import IngestionPipeline
@@ -188,6 +200,7 @@ class TestRealIngestionPipeline:
         assert IngestionPipeline is not None
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_ingestion_pipeline_can_be_initialized(self):
         """تست اینکه می‌توان pipeline را initialize کرد"""
         from mahoun.pipelines.ingestion import IngestionPipeline
@@ -206,6 +219,7 @@ class TestRealIngestionPipeline:
 class TestRealConfiguration:
     """تست واقعی Configuration"""
     
+    @pytest.mark.p2
     def test_settings_can_be_loaded(self):
         """تست اینکه settings واقعاً load می‌شود"""
         from api.config import get_settings
@@ -217,6 +231,7 @@ class TestRealConfiguration:
         assert hasattr(settings, 'models')
         print(f"✓ Settings loaded: {settings.environment}")
     
+    @pytest.mark.p2
     def test_database_settings_exist(self):
         """تست اینکه database settings وجود دارد"""
         from api.config import get_settings
@@ -235,6 +250,7 @@ class TestRealConfiguration:
 class TestRealDependencies:
     """تست واقعی Dependencies"""
     
+    @pytest.mark.p2
     def test_critical_dependencies_installed(self):
         """تست اینکه dependencies مهم نصب شده‌اند"""
         critical_deps = {
@@ -255,6 +271,7 @@ class TestRealDependencies:
         if missing:
             pytest.fail(f"Dependencies مهم نصب نیستند: {', '.join(missing)}")
     
+    @pytest.mark.p2
     def test_optional_dependencies_status(self):
         """بررسی وضعیت optional dependencies"""
         optional_deps = {
@@ -282,6 +299,7 @@ class TestRealIntegration:
     """تست واقعی Integration Points"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_main_components_can_work_together(self):
         """تست اینکه کامپوننت‌های اصلی می‌توانند با هم کار کنند"""
         # 1. App
@@ -304,6 +322,7 @@ class TestRealIntegration:
         
         print("✓ All main components can work together")
     
+    @pytest.mark.p2
     def test_no_circular_imports(self):
         """تست اینکه circular import وجود ندارد"""
         import sys
@@ -335,6 +354,7 @@ class TestRealIntegration:
 class TestRealErrorHandling:
     """تست واقعی Error Handling"""
     
+    @pytest.mark.p2
     def test_global_exception_handler_exists(self):
         """تست اینکه global exception handler وجود دارد"""
         from api.main import app
@@ -345,6 +365,7 @@ class TestRealErrorHandling:
         print("✓ Exception handlers configured")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_graceful_degradation(self):
         """تست اینکه سیستم gracefully degrade می‌کند"""
         # تست اینکه اگر یک dependency نباشد، سیستم crash نمی‌کند

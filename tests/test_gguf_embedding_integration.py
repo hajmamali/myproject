@@ -45,12 +45,14 @@ class TestGGUFEmbeddingService:
 
         return GGUFEmbeddingService(model_path=model_path)
 
+    @pytest.mark.p2
     def test_initialization(self, gguf_service):
         """Test GGUF service initializes correctly"""
         assert gguf_service is not None
         assert gguf_service.embedding_dimension is not None
         assert gguf_service.embedding_dimension > 0
 
+    @pytest.mark.p2
     def test_embedding_dimensions(self, gguf_service):
         """Test embeddings have correct dimensions"""
         texts = ["test query", "another document"]
@@ -64,6 +66,7 @@ class TestGGUFEmbeddingService:
             f"Unexpected dimension: {embeddings.shape[1]}"
         )
 
+    @pytest.mark.p2
     def test_embedding_normalization(self, gguf_service):
         """Test embeddings are normalized to unit length"""
         texts = ["normalized test"]
@@ -73,6 +76,7 @@ class TestGGUFEmbeddingService:
         norm = np.linalg.norm(embeddings[0])
         assert np.isclose(norm, 1.0, atol=1e-5), f"Norm is {norm}, expected 1.0"
 
+    @pytest.mark.p2
     def test_batch_processing(self, gguf_service):
         """Test batch processing works correctly"""
         texts = [f"text {i}" for i in range(50)]
@@ -80,6 +84,7 @@ class TestGGUFEmbeddingService:
 
         assert embeddings.shape[0] == len(texts)
 
+    @pytest.mark.p2
     def test_persian_text(self, gguf_service):
         """Test embeddings work with Persian text"""
         persian_texts = [
@@ -98,6 +103,7 @@ class TestGGUFEmbeddingService:
 class TestEnhancedEmbeddingBackendSelection:
     """Test backend selection logic in EnhancedEmbeddingService"""
 
+    @pytest.mark.p2
     def test_auto_backend_selection(self):
         """Test auto backend tries GGUF first"""
         service = EnhancedEmbeddingService(backend="auto")
@@ -114,6 +120,7 @@ class TestEnhancedEmbeddingBackendSelection:
         assert info["backend_requested"] == "auto"
         assert info["current_backend"] in ["gguf", "huggingface"]
 
+    @pytest.mark.p2
     def test_force_huggingface_backend(self):
         """Test forcing HuggingFace backend"""
         service = EnhancedEmbeddingService(backend="huggingface")
@@ -128,6 +135,7 @@ class TestEnhancedEmbeddingBackendSelection:
         assert info["backend_requested"] == "huggingface"
 
     @pytest.mark.skipif(not HAS_LLAMA_CPP, reason="llama-cpp-python not installed")
+    @pytest.mark.p2
     def test_force_gguf_backend(self):
         """Test forcing GGUF backend"""
         # Skip if model doesn't exist
@@ -157,6 +165,7 @@ class TestGGUFChromaDBIntegration:
             pytest.skip(f"GGUF model not found: {model_path}")
         return GGUFEmbeddingService(model_path=model_path)
 
+    @pytest.mark.p2
     def test_chromadb_storage_retrieval(self, gguf_service):
         """Test storing and retrieving GGUF embeddings in ChromaDB"""
         try:
@@ -193,6 +202,7 @@ class TestGGUFChromaDBIntegration:
 class TestSemanticQuality:
     """Compare GGUF vs HuggingFace semantic quality"""
 
+    @pytest.mark.p2
     def test_embedding_similarity(self):
         """Test GGUF embeddings capture semantic similarity"""
         model_path = "models/paraphrase-multilingual-mpnet-base-277M-v2-Q8_0.gguf"

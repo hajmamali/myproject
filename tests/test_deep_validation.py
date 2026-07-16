@@ -32,6 +32,7 @@ from mahoun.graph.ultra_graph_builder import UltraGraphBuilder, GraphNode
 class TestBasicValidation:
     """Test basic ledger entry validation"""
     
+    @pytest.mark.p2
     def test_validate_entry_with_ltm_nodes(self):
         """Test validation passes with LTM nodes"""
         entry = LedgerEntry(
@@ -48,6 +49,7 @@ class TestBasicValidation:
         # Should not raise
         validate_entry(entry)
     
+    @pytest.mark.p2
     def test_validate_entry_with_facts(self):
         """Test validation passes with facts"""
         entry = LedgerEntry(
@@ -64,6 +66,7 @@ class TestBasicValidation:
         # Should not raise
         validate_entry(entry)
     
+    @pytest.mark.p2
     def test_validate_entry_fails_no_references(self):
         """Test validation fails with no references"""
         entry = LedgerEntry(
@@ -80,6 +83,7 @@ class TestBasicValidation:
         with pytest.raises(ValueError, match="at least one referenced"):
             validate_entry(entry)
     
+    @pytest.mark.p2
     def test_validate_entry_fails_invalid_confidence(self):
         """Test validation fails with invalid confidence"""
         entry = LedgerEntry(
@@ -96,6 +100,7 @@ class TestBasicValidation:
         with pytest.raises(ValueError, match="Confidence must be between"):
             validate_entry(entry)
     
+    @pytest.mark.p2
     def test_validate_entry_fails_empty_ids(self):
         """Test validation fails with empty verdict/case IDs"""
         entry = LedgerEntry(
@@ -116,6 +121,7 @@ class TestBasicValidation:
 class TestDeepValidation:
     """Test deep validation with graph builder"""
     
+    @pytest.mark.p2
     def test_deep_validation_with_graph_builder(self):
         """Test deep validation checks node existence in graph"""
         builder = UltraGraphBuilder()
@@ -160,6 +166,7 @@ class TestDeepValidation:
         # Should not raise (node exists in graph)
         validate_entry(entry, graph_builder=builder)
     
+    @pytest.mark.p2
     def test_deep_validation_without_graph_builder(self):
         """Test validation works without graph builder (basic validation only)"""
         entry = LedgerEntry(
@@ -180,6 +187,7 @@ class TestDeepValidation:
 class TestValidationErrorReporting:
     """Test validation error reporting"""
     
+    @pytest.mark.p2
     def test_error_message_includes_details(self):
         """Test that error messages include helpful details"""
         entry = LedgerEntry(
@@ -200,6 +208,7 @@ class TestValidationErrorReporting:
             # Error message should be informative
             assert "at least one" in str(e).lower()
     
+    @pytest.mark.p2
     def test_confidence_error_includes_value(self):
         """Test that confidence error includes actual value"""
         entry = LedgerEntry(

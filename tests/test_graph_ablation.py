@@ -26,6 +26,7 @@ def _build_entities():
 class TestGraphAblation:
     """Comparison of reasoning with and without graph edges"""
     
+    @pytest.mark.p2
     def test_answer_differs_when_graph_removed(self):
         kg = LegalKnowledgeGraph()
         kg.add_legal_rule("r1", "A", "B", 0.9)
@@ -51,6 +52,7 @@ class TestGraphAblation:
         assert result_empty["graph_edges_used"] == []
         assert result_empty["limitations"] == "graph_missing_or_empty"
     
+    @pytest.mark.p2
     def test_removing_edge_changes_reasoning_chain(self):
         kg = LegalKnowledgeGraph()
         kg.add_legal_rule("r1", "X", "Y", 0.9)
@@ -138,6 +140,7 @@ class _MockResolver:
 
 
 class TestSemanticGraphLinking:
+    @pytest.mark.p2
     def test_deterministic_linking(self):
         resolver = _MockResolver()
         linker = GraphLinker(resolver)
@@ -155,6 +158,7 @@ class TestSemanticGraphLinking:
         assert first.resolved_node_id == second.resolved_node_id
         assert resolver.create_calls == 1
 
+    @pytest.mark.p2
     def test_no_uncontrolled_creation(self):
         resolver = _MockResolver()
         linker = GraphLinker(resolver)
@@ -170,6 +174,7 @@ class TestSemanticGraphLinking:
         assert result.action == "UNRESOLVED"
         assert resolver.create_calls == 0
 
+    @pytest.mark.p2
     def test_dedup_unification_ruling(self):
         resolver = _MockResolver()
         linker = GraphLinker(resolver)

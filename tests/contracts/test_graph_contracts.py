@@ -49,6 +49,7 @@ from mahoun.schemas.contracts.graph_contracts import (
 class TestEntityContract:
     """Test EntityContract validation."""
     
+    @pytest.mark.p2
     def test_valid_entity_with_id(self):
         """Valid entity with ID should pass."""
         entity = EntityContract(
@@ -60,6 +61,7 @@ class TestEntityContract:
         assert entity.id == "entity_1"
         assert entity.confidence == 0.95
     
+    @pytest.mark.p2
     def test_valid_entity_with_text_only(self):
         """Valid entity with text but no ID should pass."""
         entity = EntityContract(
@@ -70,6 +72,7 @@ class TestEntityContract:
         assert entity.text == "Contract breach occurred"
         assert entity.id is None
     
+    @pytest.mark.p2
     def test_entity_without_id_or_text_fails(self):
         """Entity without both id and text should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -79,6 +82,7 @@ class TestEntityContract:
             )
         assert "id" in str(exc_info.value).lower() or "text" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_confidence_out_of_range_fails(self):
         """Confidence outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -88,6 +92,7 @@ class TestEntityContract:
                 confidence=1.5
             )
     
+    @pytest.mark.p2
     def test_extra_fields_forbidden(self):
         """Extra fields should be rejected."""
         with pytest.raises(ValidationError):
@@ -105,6 +110,7 @@ class TestEntityContract:
 class TestRelationshipContract:
     """Test RelationshipContract validation."""
     
+    @pytest.mark.p2
     def test_valid_relationship(self):
         """Valid relationship should pass."""
         rel = RelationshipContract(
@@ -117,6 +123,7 @@ class TestRelationshipContract:
         assert rel.source_id == "entity_1"
         assert rel.weight == 0.85
     
+    @pytest.mark.p2
     def test_minimal_relationship(self):
         """Minimal relationship with defaults should pass."""
         rel = RelationshipContract(
@@ -127,6 +134,7 @@ class TestRelationshipContract:
         assert rel.weight == 1.0
         assert rel.confidence == 1.0
     
+    @pytest.mark.p2
     def test_empty_source_id_fails(self):
         """Empty source_id should fail."""
         with pytest.raises(ValidationError):
@@ -135,6 +143,7 @@ class TestRelationshipContract:
                 target_id="entity_2"
             )
     
+    @pytest.mark.p2
     def test_negative_weight_fails(self):
         """Negative weight should fail."""
         with pytest.raises(ValidationError):
@@ -152,6 +161,7 @@ class TestRelationshipContract:
 class TestBuildGraphInput:
     """Test BuildGraphInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = BuildGraphInput(
@@ -167,6 +177,7 @@ class TestBuildGraphInput:
         assert len(inp.entities) == 2
         assert len(inp.relationships) == 1
     
+    @pytest.mark.p2
     def test_input_without_relationships(self):
         """Input without relationships should pass."""
         inp = BuildGraphInput(
@@ -174,11 +185,13 @@ class TestBuildGraphInput:
         )
         assert len(inp.relationships) == 0
     
+    @pytest.mark.p2
     def test_empty_entities_fails(self):
         """Empty entities list should fail."""
         with pytest.raises(ValidationError):
             BuildGraphInput(entities=[])
     
+    @pytest.mark.p2
     def test_too_many_entities_fails(self):
         """More than 100000 entities should fail."""
         with pytest.raises(ValidationError):
@@ -194,6 +207,7 @@ class TestBuildGraphInput:
 class TestGraphMetricsContract:
     """Test GraphMetricsContract validation."""
     
+    @pytest.mark.p2
     def test_valid_metrics(self):
         """Valid metrics should pass."""
         metrics = GraphMetricsContract(
@@ -207,6 +221,7 @@ class TestGraphMetricsContract:
         assert metrics.total_nodes == 100
         assert metrics.density == 0.05
     
+    @pytest.mark.p2
     def test_default_metrics(self):
         """Default metrics should pass."""
         metrics = GraphMetricsContract()
@@ -214,11 +229,13 @@ class TestGraphMetricsContract:
         assert metrics.total_edges == 0
         assert metrics.avg_degree == 0.0
     
+    @pytest.mark.p2
     def test_negative_nodes_fails(self):
         """Negative node count should fail."""
         with pytest.raises(ValidationError):
             GraphMetricsContract(total_nodes=-1)
     
+    @pytest.mark.p2
     def test_density_out_of_range_fails(self):
         """Density outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -232,6 +249,7 @@ class TestGraphMetricsContract:
 class TestGraphNodeContract:
     """Test GraphNodeContract validation."""
     
+    @pytest.mark.p2
     def test_valid_node(self):
         """Valid node should pass."""
         node = GraphNodeContract(
@@ -245,6 +263,7 @@ class TestGraphNodeContract:
         assert node.id == "node_1"
         assert node.validation_status == "validated"
     
+    @pytest.mark.p2
     def test_invalid_validation_status_fails(self):
         """Invalid validation status should fail."""
         with pytest.raises(ValidationError):
@@ -255,6 +274,7 @@ class TestGraphNodeContract:
                 validation_status="invalid_status"
             )
     
+    @pytest.mark.p2
     def test_quality_score_out_of_range_fails(self):
         """Quality score outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -273,6 +293,7 @@ class TestGraphNodeContract:
 class TestGraphEdgeContract:
     """Test GraphEdgeContract validation."""
     
+    @pytest.mark.p2
     def test_valid_edge(self):
         """Valid edge should pass."""
         edge = GraphEdgeContract(
@@ -287,6 +308,7 @@ class TestGraphEdgeContract:
         assert edge.source_id == "node_1"
         assert edge.weight == 0.85
     
+    @pytest.mark.p2
     def test_edge_with_evidence(self):
         """Edge with evidence should pass."""
         edge = GraphEdgeContract(
@@ -305,6 +327,7 @@ class TestGraphEdgeContract:
 class TestBuildGraphOutput:
     """Test BuildGraphOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = BuildGraphOutput(
@@ -332,6 +355,7 @@ class TestBuildGraphOutput:
         assert output.status == "success"
         assert len(output.nodes) == 1
     
+    @pytest.mark.p2
     def test_empty_graph_output(self):
         """Empty graph output should pass."""
         output = BuildGraphOutput(
@@ -343,6 +367,7 @@ class TestBuildGraphOutput:
         assert len(output.nodes) == 0
         assert output.status == "success"
     
+    @pytest.mark.p2
     def test_invalid_status_fails(self):
         """Invalid status should fail."""
         with pytest.raises(ValidationError):
@@ -352,6 +377,7 @@ class TestBuildGraphOutput:
                 status="invalid_status"
             )
     
+    @pytest.mark.p2
     def test_negative_build_time_fails(self):
         """Negative build time should fail."""
         with pytest.raises(ValidationError):
@@ -368,6 +394,7 @@ class TestBuildGraphOutput:
 class TestBuildGraphError:
     """Test BuildGraphError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = BuildGraphError(
@@ -376,6 +403,7 @@ class TestBuildGraphError:
         )
         assert error.error_type == "empty_entities"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -391,6 +419,7 @@ class TestBuildGraphError:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError):
@@ -407,6 +436,7 @@ class TestBuildGraphError:
 class TestQueryNeighborsInput:
     """Test QueryNeighborsInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = QueryNeighborsInput(
@@ -416,11 +446,13 @@ class TestQueryNeighborsInput:
         assert inp.node_id == "node_1"
         assert inp.max_depth == 2
     
+    @pytest.mark.p2
     def test_default_max_depth(self):
         """Default max_depth should be 1."""
         inp = QueryNeighborsInput(node_id="node_1")
         assert inp.max_depth == 1
     
+    @pytest.mark.p2
     def test_max_depth_too_large_fails(self):
         """max_depth > 10 should fail."""
         with pytest.raises(ValidationError):
@@ -429,6 +461,7 @@ class TestQueryNeighborsInput:
                 max_depth=11
             )
     
+    @pytest.mark.p2
     def test_max_depth_zero_fails(self):
         """max_depth = 0 should fail."""
         with pytest.raises(ValidationError):
@@ -445,6 +478,7 @@ class TestQueryNeighborsInput:
 class TestQueryNeighborsOutput:
     """Test QueryNeighborsOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = QueryNeighborsOutput(
@@ -459,6 +493,7 @@ class TestQueryNeighborsOutput:
         )
         assert output.total_neighbors == 1
     
+    @pytest.mark.p2
     def test_empty_neighbors(self):
         """Empty neighbors list should pass."""
         output = QueryNeighborsOutput(
@@ -475,6 +510,7 @@ class TestQueryNeighborsOutput:
 class TestFindPathInput:
     """Test FindPathInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = FindPathInput(
@@ -485,6 +521,7 @@ class TestFindPathInput:
         assert inp.source_id == "node_1"
         assert inp.max_depth == 10
     
+    @pytest.mark.p2
     def test_default_max_depth(self):
         """Default max_depth should be 5."""
         inp = FindPathInput(
@@ -493,6 +530,7 @@ class TestFindPathInput:
         )
         assert inp.max_depth == 5
     
+    @pytest.mark.p2
     def test_max_depth_too_large_fails(self):
         """max_depth > 20 should fail."""
         with pytest.raises(ValidationError):
@@ -510,6 +548,7 @@ class TestFindPathInput:
 class TestFindPathOutput:
     """Test FindPathOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_path_found(self):
         """Valid path found should pass."""
         output = FindPathOutput(
@@ -520,6 +559,7 @@ class TestFindPathOutput:
         assert output.path_length == 3
         assert output.path_exists is True
     
+    @pytest.mark.p2
     def test_no_path_found(self):
         """No path found should pass."""
         output = FindPathOutput(
@@ -530,6 +570,7 @@ class TestFindPathOutput:
         assert output.path is None
         assert output.path_exists is False
     
+    @pytest.mark.p2
     def test_inconsistent_path_length_fails(self):
         """Inconsistent path_length should fail."""
         with pytest.raises(ValidationError):
@@ -539,6 +580,7 @@ class TestFindPathOutput:
                 path_exists=True
             )
     
+    @pytest.mark.p2
     def test_path_none_but_exists_true_fails(self):
         """path=None but path_exists=True should fail."""
         with pytest.raises(ValidationError):
@@ -548,6 +590,7 @@ class TestFindPathOutput:
                 path_exists=True  # Inconsistent
             )
     
+    @pytest.mark.p2
     def test_path_exists_but_path_none_fails(self):
         """path exists but path=None should fail."""
         with pytest.raises(ValidationError):
@@ -565,6 +608,7 @@ class TestFindPathOutput:
 class TestGetSubgraphInput:
     """Test GetSubgraphInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = GetSubgraphInput(
@@ -572,11 +616,13 @@ class TestGetSubgraphInput:
         )
         assert len(inp.node_ids) == 3
     
+    @pytest.mark.p2
     def test_empty_node_ids_fails(self):
         """Empty node_ids should fail."""
         with pytest.raises(ValidationError):
             GetSubgraphInput(node_ids=[])
     
+    @pytest.mark.p2
     def test_duplicate_node_ids_fails(self):
         """Duplicate node_ids should fail."""
         with pytest.raises(ValidationError):
@@ -584,6 +630,7 @@ class TestGetSubgraphInput:
                 node_ids=["node_1", "node_2", "node_1"]  # Duplicate
             )
     
+    @pytest.mark.p2
     def test_too_many_node_ids_fails(self):
         """More than 10000 node_ids should fail."""
         with pytest.raises(ValidationError):
@@ -599,6 +646,7 @@ class TestGetSubgraphInput:
 class TestGetSubgraphOutput:
     """Test GetSubgraphOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetSubgraphOutput(
@@ -622,6 +670,7 @@ class TestGetSubgraphOutput:
         assert output.total_nodes == 1
         assert output.total_edges == 1
     
+    @pytest.mark.p2
     def test_empty_subgraph(self):
         """Empty subgraph should pass."""
         output = GetSubgraphOutput(
@@ -640,6 +689,7 @@ class TestGetSubgraphOutput:
 class TestGraphQueryError:
     """Test GraphQueryError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = GraphQueryError(
@@ -648,6 +698,7 @@ class TestGraphQueryError:
         )
         assert error.error_type == "node_not_found"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -663,6 +714,7 @@ class TestGraphQueryError:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError):
@@ -679,6 +731,7 @@ class TestGraphQueryError:
 class TestGraphContractIntegration:
     """Test contract integration and composition."""
     
+    @pytest.mark.p2
     def test_nested_contracts_validation(self):
         """Nested contracts should validate recursively."""
         # Invalid nested node should fail at top level
@@ -696,6 +749,7 @@ class TestGraphContractIntegration:
                 build_time=0.5
             )
     
+    @pytest.mark.p2
     def test_extra_forbid_at_all_levels(self):
         """extra='forbid' should be enforced at all nesting levels."""
         # Extra field at top level should fail
@@ -715,6 +769,7 @@ class TestGraphContractIntegration:
                 extra_nested="not_allowed"
             )
     
+    @pytest.mark.p2
     def test_complete_graph_build_workflow(self):
         """Complete graph build workflow should validate."""
         # Input

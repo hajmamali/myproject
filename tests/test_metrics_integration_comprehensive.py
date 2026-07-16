@@ -28,6 +28,7 @@ from mahoun.metrics import (
 class TestFullLifecycleWorkflow:
     """Test complete lifecycle from registration to export."""
     
+    @pytest.mark.p2
     def test_complete_workflow(self):
         """Test full workflow: register -> collect -> snapshot -> export."""
         collector = MetricsCollector()
@@ -70,6 +71,7 @@ class TestFullLifecycleWorkflow:
         restored = MetricsSnapshot.from_json(json_output)
         assert restored.content_hash == audit_snapshot.content_hash
     
+    @pytest.mark.p2
     def test_reset_and_restart_workflow(self):
         """Test reset and restart cycle."""
         collector = MetricsCollector()
@@ -100,6 +102,7 @@ class TestFullLifecycleWorkflow:
 class TestBackwardCompatibility:
     """Ensure backward compatibility with existing code."""
     
+    @pytest.mark.p2
     def test_old_api_still_works(self):
         """Old API patterns should still work."""
         reset_global_collector()
@@ -124,6 +127,7 @@ class TestBackwardCompatibility:
 class TestConcurrentUsage:
     """Test concurrent usage scenarios."""
     
+    @pytest.mark.p2
     def test_multi_threaded_collection(self):
         """Test metrics collection from multiple threads."""
         collector = MetricsCollector()

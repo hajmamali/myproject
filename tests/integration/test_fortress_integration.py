@@ -20,6 +20,7 @@ from mahoun.reasoning.unified_reasoning_service import (
 )
 
 
+@pytest.mark.p0
 async def test_fortress_integration():
     """Test fortress integration with unified reasoning service"""
     

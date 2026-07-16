@@ -40,6 +40,7 @@ class TestConcurrentAsync(DeterminismTestBase):
     """Test determinism under concurrent async execution"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_100_concurrent_symbolic_reasoning(self):
         """
         Test 2.1: 100 concurrent symbolic reasoning requests
@@ -91,6 +92,7 @@ class TestConcurrentAsync(DeterminismTestBase):
         print(f"✅ CONCURRENT DETERMINISM VERIFIED: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_fortress_validation(self):
         """
         Test 2.2: Concurrent FortressValidator operations
@@ -146,6 +148,7 @@ class TestConcurrentAsync(DeterminismTestBase):
         print(f"✅ CONCURRENT VALIDATION VERIFIED: 100/100 successful")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_with_delays(self):
         """
         Test 2.3: Concurrent execution with random delays
@@ -186,6 +189,7 @@ class TestConcurrentAsync(DeterminismTestBase):
         print(f"✅ DELAYED CONCURRENT DETERMINISM VERIFIED: 100/100")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_different_requests(self):
         """
         Test 2.4: Concurrent execution of DIFFERENT requests
@@ -233,6 +237,7 @@ class TestConcurrentAsync(DeterminismTestBase):
         print(f"✅ CONCURRENT DIFFERENT REQUESTS VERIFIED: 10 requests × 10 iterations")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_validator_stats_integrity(self):
         """
         Test 2.5: Validator statistics integrity under concurrency
@@ -317,6 +322,7 @@ class TestConcurrentAsync(DeterminismTestBase):
         print(f"✅ VALIDATOR STATS INTEGRITY VERIFIED: 50 pass + 50 fail")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_audit_trail_integrity(self):
         """
         Test 2.6: Audit trail integrity under concurrent writes

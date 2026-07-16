@@ -13,7 +13,7 @@ Endpoints:
   GET  /metrics                   - Prometheus metrics (simple)
 
 Usage:
-  python -m mahoun.core.governance_kernel.server
+  python -m mahoun.infrastructure.interfaces.governance_server
   
 Environment:
   MAHOUN_GOVERNANCE_PORT=8080

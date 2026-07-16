@@ -51,6 +51,7 @@ from mahoun.schemas.contracts.invariants_contracts import (
 class TestInvariantSpecContract:
     """Test InvariantSpecContract validation."""
     
+    @pytest.mark.p2
     def test_valid_invariant_spec(self):
         """Valid invariant spec should pass."""
         spec = InvariantSpecContract(
@@ -63,6 +64,7 @@ class TestInvariantSpecContract:
         assert spec.id == "EL-I1"
         assert len(spec.enforced_at) == 1
     
+    @pytest.mark.p2
     def test_different_prefix_valid(self):
         """Invariant with different prefix should pass."""
         spec = InvariantSpecContract(
@@ -74,6 +76,7 @@ class TestInvariantSpecContract:
         )
         assert spec.id == "G-I1"
     
+    @pytest.mark.p2
     def test_invalid_id_format_fails(self):
         """Invalid ID format should fail."""
         with pytest.raises(ValidationError):
@@ -85,6 +88,7 @@ class TestInvariantSpecContract:
                 failure_consequence="Test"
             )
     
+    @pytest.mark.p2
     def test_empty_enforced_at_fails(self):
         """Empty enforced_at should fail."""
         with pytest.raises(ValidationError):
@@ -96,6 +100,7 @@ class TestInvariantSpecContract:
                 failure_consequence="Test"
             )
     
+    @pytest.mark.p2
     def test_spec_is_frozen(self):
         """Invariant spec should be immutable."""
         spec = InvariantSpecContract(
@@ -108,6 +113,7 @@ class TestInvariantSpecContract:
         with pytest.raises((ValidationError, AttributeError)):
             spec.id = "modified"
     
+    @pytest.mark.p2
     def test_extra_fields_forbidden(self):
         """Extra fields should be rejected."""
         with pytest.raises(ValidationError):
@@ -128,11 +134,13 @@ class TestInvariantSpecContract:
 class TestGetInvariantByIdInput:
     """Test GetInvariantByIdInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = GetInvariantByIdInput(invariant_id="EL-I1")
         assert inp.invariant_id == "EL-I1"
     
+    @pytest.mark.p2
     def test_invalid_id_format_fails(self):
         """Invalid ID format should fail."""
         with pytest.raises(ValidationError):
@@ -146,6 +154,7 @@ class TestGetInvariantByIdInput:
 class TestGetInvariantByIdOutput:
     """Test GetInvariantByIdOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetInvariantByIdOutput(
@@ -167,6 +176,7 @@ class TestGetInvariantByIdOutput:
 class TestGetInvariantByIdError:
     """Test GetInvariantByIdError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = GetInvariantByIdError(
@@ -175,6 +185,7 @@ class TestGetInvariantByIdError:
         )
         assert error.error_type == "invariant_not_found"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = ["invariant_not_found", "invalid_id_format"]
@@ -193,6 +204,7 @@ class TestGetInvariantByIdError:
 class TestGetAllInvariantsOutput:
     """Test GetAllInvariantsOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetAllInvariantsOutput(
@@ -217,6 +229,7 @@ class TestGetAllInvariantsOutput:
         assert output.total_count == 2
         assert len(output.invariants) == 2
     
+    @pytest.mark.p2
     def test_mismatched_count_fails(self):
         """Mismatched total_count should fail."""
         with pytest.raises(ValidationError):
@@ -233,6 +246,7 @@ class TestGetAllInvariantsOutput:
                 total_count=5  # Doesn't match list length
             )
     
+    @pytest.mark.p2
     def test_empty_invariants_fails(self):
         """Empty invariants list should fail."""
         with pytest.raises(ValidationError):
@@ -249,6 +263,7 @@ class TestGetAllInvariantsOutput:
 class TestInvariantVersionContract:
     """Test InvariantVersionContract validation."""
     
+    @pytest.mark.p2
     def test_valid_version(self):
         """Valid version should pass."""
         version = InvariantVersionContract(
@@ -257,6 +272,7 @@ class TestInvariantVersionContract:
         )
         assert version.version == "1.0.0"
     
+    @pytest.mark.p2
     def test_invalid_version_format_fails(self):
         """Invalid version format should fail."""
         with pytest.raises(ValidationError):
@@ -265,6 +281,7 @@ class TestInvariantVersionContract:
                 description="Test"
             )
     
+    @pytest.mark.p2
     def test_version_is_frozen(self):
         """Version should be immutable."""
         version = InvariantVersionContract(
@@ -282,11 +299,13 @@ class TestInvariantVersionContract:
 class TestGetCurrentVersionOutput:
     """Test GetCurrentVersionOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetCurrentVersionOutput(current_version="1.1.0")
         assert output.current_version == "1.1.0"
     
+    @pytest.mark.p2
     def test_invalid_version_format_fails(self):
         """Invalid version format should fail."""
         with pytest.raises(ValidationError):
@@ -300,6 +319,7 @@ class TestGetCurrentVersionOutput:
 class TestGetVersionHistoryOutput:
     """Test GetVersionHistoryOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetVersionHistoryOutput(
@@ -327,6 +347,7 @@ class TestGetVersionHistoryOutput:
 class TestValidateInvariantInput:
     """Test ValidateInvariantInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = ValidateInvariantInput(
@@ -344,6 +365,7 @@ class TestValidateInvariantInput:
 class TestValidateInvariantOutput:
     """Test ValidateInvariantOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output_success(self):
         """Valid output with success should pass."""
         output = ValidateInvariantOutput(
@@ -354,6 +376,7 @@ class TestValidateInvariantOutput:
         assert output.is_valid is True
         assert output.violation_message is None
     
+    @pytest.mark.p2
     def test_valid_output_failure(self):
         """Valid output with failure should pass."""
         output = ValidateInvariantOutput(
@@ -364,6 +387,7 @@ class TestValidateInvariantOutput:
         assert output.is_valid is False
         assert output.violation_message is not None
     
+    @pytest.mark.p2
     def test_invalid_without_message_fails(self):
         """Invalid without violation_message should fail."""
         with pytest.raises(ValidationError):
@@ -381,6 +405,7 @@ class TestValidateInvariantOutput:
 class TestValidateInvariantError:
     """Test ValidateInvariantError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = ValidateInvariantError(
@@ -389,6 +414,7 @@ class TestValidateInvariantError:
         )
         assert error.error_type == "invariant_not_found"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -411,6 +437,7 @@ class TestValidateInvariantError:
 class TestRegisterInvariantInput:
     """Test RegisterInvariantInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = RegisterInvariantInput(
@@ -432,6 +459,7 @@ class TestRegisterInvariantInput:
 class TestRegisterInvariantOutput:
     """Test RegisterInvariantOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = RegisterInvariantOutput(
@@ -449,6 +477,7 @@ class TestRegisterInvariantOutput:
 class TestRegisterInvariantError:
     """Test RegisterInvariantError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = RegisterInvariantError(
@@ -457,6 +486,7 @@ class TestRegisterInvariantError:
         )
         assert error.error_type == "duplicate_id"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = ["duplicate_id", "invalid_spec"]
@@ -475,6 +505,7 @@ class TestRegisterInvariantError:
 class TestInvariantStatisticsContract:
     """Test InvariantStatisticsContract validation."""
     
+    @pytest.mark.p2
     def test_valid_statistics(self):
         """Valid statistics should pass."""
         stats = InvariantStatisticsContract(
@@ -488,6 +519,7 @@ class TestInvariantStatisticsContract:
         assert stats.violations == 5
         assert stats.success_rate == 0.995
     
+    @pytest.mark.p2
     def test_default_statistics(self):
         """Default statistics should pass."""
         stats = InvariantStatisticsContract(invariant_id="EL-I1")
@@ -495,6 +527,7 @@ class TestInvariantStatisticsContract:
         assert stats.violations == 0
         assert stats.success_rate == 1.0
     
+    @pytest.mark.p2
     def test_negative_checks_fails(self):
         """Negative checks should fail."""
         with pytest.raises(ValidationError):
@@ -503,6 +536,7 @@ class TestInvariantStatisticsContract:
                 total_checks=-1
             )
     
+    @pytest.mark.p2
     def test_success_rate_out_of_range_fails(self):
         """Success rate outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -519,6 +553,7 @@ class TestInvariantStatisticsContract:
 class TestGetInvariantStatisticsOutput:
     """Test GetInvariantStatisticsOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetInvariantStatisticsOutput(
@@ -550,6 +585,7 @@ class TestGetInvariantStatisticsOutput:
 class TestInvariantsContractIntegration:
     """Test contract integration and workflows."""
     
+    @pytest.mark.p2
     def test_complete_invariant_workflow(self):
         """Complete invariant workflow should validate."""
         # Register
@@ -588,6 +624,7 @@ class TestInvariantsContractIntegration:
         assert validate_output.is_valid is True
         assert get_output.invariant.id == "TEST-I1"
     
+    @pytest.mark.p2
     def test_version_management_workflow(self):
         """Version management workflow should validate."""
         # Current version
@@ -612,6 +649,7 @@ class TestInvariantsContractIntegration:
         assert current.current_version == history.current_version
         assert len(history.versions) == history.total_versions
     
+    @pytest.mark.p2
     def test_extra_forbid_at_all_levels(self):
         """extra='forbid' should be enforced at all nesting levels."""
         # Extra field at spec level

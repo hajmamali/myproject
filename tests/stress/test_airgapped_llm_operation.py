@@ -111,6 +111,7 @@ class TestLocalLLMOperation:
     - No external API calls attempted
     """
     
+    @pytest.mark.p1
     def test_local_llm_loads_without_network(self, airgap_env, mock_local_llm):
         """
         **Setup**: Airgapped environment, network blocked
@@ -140,6 +141,7 @@ class TestLocalLLMOperation:
                     
                     print("✅ LLM manager initialized in offline mode")
     
+    @pytest.mark.p1
     def test_local_llm_generates_verdict(
         self,
         airgap_env,
@@ -203,6 +205,7 @@ class TestLocalLLMOperation:
         print(f"✅ Verdict generated in {elapsed_ms:.0f}ms, "
               f"memory delta: {memory_delta:.1f}MB")
     
+    @pytest.mark.p1
     def test_local_llm_output_format(self, airgap_env, mock_local_llm):
         """
         **Setup**: Local LLM operational
@@ -245,6 +248,7 @@ class TestFortressValidatorWithLocalLLM:
     - No OpenAI-specific dependencies
     """
     
+    @pytest.mark.p1
     def test_fortress_accepts_local_llm_output(
         self,
         airgap_env,
@@ -290,6 +294,7 @@ class TestFortressValidatorWithLocalLLM:
         
         print(f"✅ Local LLM output structure accepted")
     
+    @pytest.mark.p1
     def test_agreement_score_achievable_with_local_llm(
         self,
         airgap_env,
@@ -366,6 +371,7 @@ class TestRealLocalModelIntegration:
         not Path("/home/haji/Desktop/KingMahouN/models").exists(),
         reason="Local models directory not found"
     )
+    @pytest.mark.p1
     def test_load_llama_model_from_local(
         self,
         airgap_env,
@@ -414,6 +420,7 @@ class TestRealLocalModelIntegration:
         not Path("/home/haji/Desktop/KingMahouN/models").exists(),
         reason="Local models directory not found"
     )
+    @pytest.mark.p1
     def test_inference_with_local_qwen_model(
         self,
         airgap_env,
@@ -462,6 +469,7 @@ class TestMemoryAndPerformanceBenchmarks:
     - CPU-only inference viable
     """
     
+    @pytest.mark.p1
     def test_memory_stays_under_8gb(
         self,
         airgap_env,
@@ -501,6 +509,7 @@ class TestMemoryAndPerformanceBenchmarks:
         print(f"✅ Memory stable: {memory_increase:.1f} MB increase for 10 verdicts")
         print(f"   Peak: {peak_memory:.1f} MB")
     
+    @pytest.mark.p1
     def test_inference_latency_acceptable(
         self,
         airgap_env,
@@ -549,6 +558,7 @@ class TestAirGapFailureScenarios:
     - HuggingFace auto-download blocked
     """
     
+    @pytest.mark.p1
     def test_missing_model_file_clear_error(self, airgap_env):
         """
         **Setup**: Model file path points to non-existent file
@@ -578,6 +588,7 @@ class TestAirGapFailureScenarios:
         
         print(f"✅ Clear error message: {error_msg[:100]}...")
     
+    @pytest.mark.p1
     def test_huggingface_download_blocked(self, airgap_env):
         """
         **Setup**: HF_HUB_OFFLINE=1 set

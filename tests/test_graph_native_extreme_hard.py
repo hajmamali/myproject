@@ -112,6 +112,7 @@ class TestGraphNativeExtremeHardAudit:
         return question, context
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_extreme_graph_native_audit_full_graph(self):
         """Test FULL GRAPH mode: multi-step chaining, contradiction preservation, graph dependency"""
         engine = self._setup_engine_with_rules()
@@ -251,6 +252,7 @@ class TestGraphNativeExtremeHardAudit:
             f"trace_json['graph_dependency_proof'] must be True. Got: {trace_json['graph_dependency_proof']}"
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_extreme_graph_native_audit_ablated_graph(self):
         """Test ABLATED GRAPH mode: degraded behavior when graph edges removed"""
         engine = self._setup_engine_with_rules()

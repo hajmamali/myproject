@@ -233,6 +233,7 @@ class TestDeepChainingStress:
             'rules': rules
         }
     
+    @pytest.mark.p2
     def test_forward_chaining_10_hop(self, indirect_liability_chain):
         """
         Test 1: Forward Chaining on 10-hop chain
@@ -283,6 +284,7 @@ class TestDeepChainingStress:
         
         logger.info("\n✅ TEST 1 PASSED: Forward chaining handles 10-hop chain efficiently\n")
     
+    @pytest.mark.p2
     def test_backward_chaining_10_hop(self, indirect_liability_chain, fol):
         """
         Test 2: Backward Chaining on 10-hop chain
@@ -322,6 +324,7 @@ class TestDeepChainingStress:
         
         logger.info("\n✅ TEST 2 PASSED: Backward chaining proves 10-hop goal efficiently\n")
     
+    @pytest.mark.p2
     def test_cycle_detection_forward(self, cyclic_graph):
         """
         Test 3: Cycle Detection in Forward Chaining
@@ -356,6 +359,7 @@ class TestDeepChainingStress:
         
         logger.info("\n✅ TEST 3 PASSED: Cycle detection prevents infinite loops in forward chaining\n")
     
+    @pytest.mark.p2
     def test_cycle_detection_backward(self, cyclic_graph, fol):
         """
         Test 4: Cycle Detection in Backward Chaining
@@ -395,6 +399,7 @@ class TestDeepChainingStress:
         
         logger.info("\n✅ TEST 4 PASSED: Cycle detection prevents infinite loops in backward chaining\n")
     
+    @pytest.mark.p2
     def test_combined_forward_backward_stress(self, indirect_liability_chain, fol):
         """
         Test 5: Combined Forward + Backward Chaining Stress Test
@@ -457,6 +462,7 @@ class TestDeepChainingStress:
         
         logger.info("\n✅ TEST 5 PASSED: Combined forward + backward chaining handles stress efficiently\n")
     
+    @pytest.mark.p2
     def test_deep_chain_scalability(self, kb, fol):
         """
         Test 6: Scalability Test - Variable Chain Lengths

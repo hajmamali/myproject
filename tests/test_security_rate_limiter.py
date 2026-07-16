@@ -27,6 +27,7 @@ from mahoun.security.rate_limiter import (
 class TestSlidingWindowCounter:
     """Test sliding window counter implementation."""
     
+    @pytest.mark.p3
     def test_basic_counting(self):
         """Test basic request counting."""
         config = RateLimitConfig(requests_per_window=5, window_seconds=10)
@@ -40,6 +41,7 @@ class TestSlidingWindowCounter:
             assert allowed, f"Request {i+1} should be allowed"
             assert retry_after == 0.0
     
+    @pytest.mark.p3
     def test_burst_limit(self):
         """Test burst multiplier enforcement."""
         config = RateLimitConfig(
@@ -61,6 +63,7 @@ class TestSlidingWindowCounter:
         assert not allowed
         assert retry_after > 0
     
+    @pytest.mark.p3
     def test_sliding_window_expiry(self):
         """Test that old requests expire correctly."""
         config = RateLimitConfig(requests_per_window=3, window_seconds=5)
@@ -81,6 +84,7 @@ class TestSlidingWindowCounter:
         allowed, _ = counter.check_and_increment(current_time + 6)
         assert allowed
     
+    @pytest.mark.p3
     def test_get_current_count(self):
         """Test current count retrieval."""
         config = RateLimitConfig(requests_per_window=10, window_seconds=60)
@@ -95,6 +99,7 @@ class TestSlidingWindowCounter:
         
         assert counter.get_current_count(current_time + 2) == 2
     
+    @pytest.mark.p3
     def test_thread_safety(self):
         """Test thread-safe concurrent access."""
         config = RateLimitConfig(requests_per_window=100, window_seconds=10)
@@ -121,6 +126,7 @@ class TestSlidingWindowCounter:
 class TestRateLimiter:
     """Test rate limiter with memory backend."""
     
+    @pytest.mark.p3
     def test_default_config(self):
         """Test rate limiter with default configuration."""
         limiter = RateLimiter()
@@ -140,6 +146,7 @@ class TestRateLimiter:
         assert exc_info.value.window == 60
         assert exc_info.value.retry_after > 0
     
+    @pytest.mark.p3
     def test_custom_limit_per_identifier(self):
         """Test custom limits for specific identifiers."""
         limiter = RateLimiter()
@@ -155,6 +162,7 @@ class TestRateLimiter:
         for i in range(100):
             limiter.check_rate_limit("regular_user")
     
+    @pytest.mark.p3
     def test_request_cost(self):
         """Test request cost multiplier."""
         limiter = RateLimiter(
@@ -171,6 +179,7 @@ class TestRateLimiter:
         with pytest.raises(RateLimitExceeded):
             limiter.check_rate_limit("user1", cost=5)
     
+    @pytest.mark.p3
     def test_get_remaining_requests(self):
         """Test remaining requests calculation."""
         limiter = RateLimiter(
@@ -184,6 +193,7 @@ class TestRateLimiter:
         
         assert limiter.get_remaining_requests("user1") == 8
     
+    @pytest.mark.p3
     def test_reset_limit(self):
         """Test limit reset."""
         limiter = RateLimiter(
@@ -204,6 +214,7 @@ class TestRateLimiter:
         # Should work again
         limiter.check_rate_limit("user1")
     
+    @pytest.mark.p3
     def test_cleanup_expired(self):
         """Test cleanup of expired counters."""
         limiter = RateLimiter(
@@ -222,6 +233,7 @@ class TestRateLimiter:
         removed = limiter.cleanup_expired()
         assert removed == 3
     
+    @pytest.mark.p3
     def test_multiple_identifiers_isolated(self):
         """Test that different identifiers have isolated limits."""
         limiter = RateLimiter(
@@ -256,12 +268,14 @@ class TestRateLimiterRedis:
             mock.from_url.return_value = redis_client
             yield redis_client
     
+    @pytest.mark.p3
     def test_redis_backend_enabled(self, mock_redis):
         """Test Redis backend initialization."""
         limiter = RateLimiter(redis_url="redis://localhost:6379")
         
         assert limiter.redis_client is not None
     
+    @pytest.mark.p3
     def test_redis_rate_limiting(self, mock_redis):
         """Test rate limiting with Redis backend."""
         mock_redis.pipeline.return_value.execute.return_value = [None, 5, None, None]
@@ -277,6 +291,7 @@ class TestRateLimiterRedis:
         # Verify Redis calls
         assert mock_redis.pipeline.called
     
+    @pytest.mark.p3
     def test_redis_fallback_on_error(self, mock_redis):
         """Test fallback to memory when Redis fails."""
         mock_redis.pipeline.side_effect = Exception("Redis connection failed")
@@ -292,6 +307,7 @@ class TestRateLimiterRedis:
         # Should still work
         assert limiter.get_remaining_requests("user1") == 9
     
+    @pytest.mark.p3
     def test_redis_limit_exceeded(self, mock_redis):
         """Test rate limit exceeded with Redis."""
         # Simulate limit exceeded (count = 150, limit = 100)
@@ -310,6 +326,7 @@ class TestRateLimiterRedis:
 class TestRateLimitExceeded:
     """Test RateLimitExceeded exception."""
     
+    @pytest.mark.p3
     def test_exception_message(self):
         """Test exception message formatting."""
         exc = RateLimitExceeded(limit=100, window=60, retry_after=30.5)
@@ -317,6 +334,7 @@ class TestRateLimitExceeded:
         assert "100 requests per 60s" in str(exc)
         assert "30.5s" in str(exc)
     
+    @pytest.mark.p3
     def test_exception_attributes(self):
         """Test exception attributes."""
         exc = RateLimitExceeded(limit=50, window=120, retry_after=45.0)
@@ -329,12 +347,14 @@ class TestRateLimitExceeded:
 class TestRateLimitConfig:
     """Test rate limit configuration."""
     
+    @pytest.mark.p3
     def test_default_burst_multiplier(self):
         """Test default burst multiplier."""
         config = RateLimitConfig(requests_per_window=100, window_seconds=60)
         
         assert config.burst_multiplier == 1.5
     
+    @pytest.mark.p3
     def test_custom_burst_multiplier(self):
         """Test custom burst multiplier."""
         config = RateLimitConfig(
@@ -350,6 +370,7 @@ class TestRateLimitConfig:
 class TestRateLimiterPerformance:
     """Performance and stress tests."""
     
+    @pytest.mark.p3
     def test_high_throughput(self):
         """Test high throughput scenario."""
         limiter = RateLimiter(
@@ -366,6 +387,7 @@ class TestRateLimiterPerformance:
         # Should handle 1000 requests quickly
         assert elapsed < 1.0, f"Too slow: {elapsed}s"
     
+    @pytest.mark.p3
     def test_many_identifiers(self):
         """Test with many different identifiers."""
         limiter = RateLimiter(

@@ -54,6 +54,7 @@ class TestExecutionControllerHard:
     """تست‌های سخت برای ExecutionController"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_deterministic_execution_with_same_seed(self):
         """تست: آیا با seed یکسان، نتیجه یکسان می‌دهد؟"""
         controller = ExecutionController()
@@ -83,6 +84,7 @@ class TestExecutionControllerHard:
         # اما output باید یکسان باشد
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_concurrent_executions_thread_safety(self):
         """تست: آیا concurrent executions thread-safe است؟"""
         controller = ExecutionController()
@@ -111,6 +113,7 @@ class TestExecutionControllerHard:
         assert len(set(request_ids)) == 100
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_error_handling_and_recovery(self):
         """تست: آیا error handling درست کار می‌کند؟"""
         controller = ExecutionController()
@@ -140,6 +143,7 @@ class TestExecutionControllerHard:
         assert result_success.error is None
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_replay_verification(self):
         """تست: آیا replay verification درست کار می‌کند؟"""
         controller = ExecutionController(enable_replay=True)
@@ -169,6 +173,7 @@ class TestExecutionControllerHard:
 class TestSeedManagerHard:
     """تست‌های سخت برای SeedManager"""
     
+    @pytest.mark.p1
     def test_seed_derivation_deterministic(self):
         """تست: آیا seed derivation deterministic است؟"""
         manager = SeedManager()
@@ -189,6 +194,7 @@ class TestSeedManagerHard:
         # باید متفاوت باشند
         assert child1_a.seed != child2.seed
     
+    @pytest.mark.p1
     def test_seed_lineage_tracking(self):
         """تست: آیا seed lineage درست track می‌شود؟"""
         manager = SeedManager()
@@ -206,6 +212,7 @@ class TestSeedManagerHard:
         assert lineage[0].seed == root.seed
         assert lineage[-1].seed == child3.seed
     
+    @pytest.mark.p1
     def test_thread_safety_concurrent_derivation(self):
         """تست: آیا concurrent seed derivation thread-safe است؟"""
         manager = SeedManager()
@@ -237,6 +244,7 @@ class TestSeedManagerHard:
 class TestDeadlockDetectorHard:
     """تست‌های سخت برای DeadlockDetector"""
     
+    @pytest.mark.p1
     def test_simple_deadlock_detection(self):
         """تست: آیا deadlock ساده را detect می‌کند؟"""
         detector = DeadlockDetector()
@@ -253,6 +261,7 @@ class TestDeadlockDetectorHard:
         assert "tx1" in deadlock.cycle
         assert "tx2" in deadlock.cycle
     
+    @pytest.mark.p1
     def test_complex_deadlock_detection(self):
         """تست: آیا deadlock پیچیده را detect می‌کند؟"""
         detector = DeadlockDetector()
@@ -268,6 +277,7 @@ class TestDeadlockDetectorHard:
         assert deadlock.detected
         assert len(deadlock.cycle) >= 4
     
+    @pytest.mark.p1
     def test_deadlock_resolution_youngest(self):
         """تست: آیا resolution policy درست کار می‌کند؟"""
         detector = DeadlockDetector(
@@ -292,6 +302,7 @@ class TestDeadlockDetectorHard:
         deadlock_after = detector.detect()
         assert not deadlock_after.detected
     
+    @pytest.mark.p1
     def test_no_false_positives(self):
         """تست: آیا false positive ندارد؟"""
         detector = DeadlockDetector()
@@ -310,6 +321,7 @@ class TestDeadlockDetectorHard:
 class TestEncryptionHard:
     """تست‌های سخت برای Encryption (بدون external deps)"""
     
+    @pytest.mark.p1
     def test_encryption_key_generation_uniqueness(self):
         """تست: آیا هر بار key متفاوت generate می‌شود؟"""
         try:
@@ -330,6 +342,7 @@ class TestEncryptionHard:
         except ImportError:
             pytest.skip("cryptography not installed")
     
+    @pytest.mark.p1
     def test_encryption_decryption_roundtrip(self):
         """تست: آیا encrypt/decrypt roundtrip درست کار می‌کند؟"""
         try:
@@ -355,6 +368,7 @@ class TestEncryptionHard:
         except ImportError:
             pytest.skip("cryptography not installed")
     
+    @pytest.mark.p1
     def test_encryption_tamper_detection(self):
         """تست: آیا tampered data را detect می‌کند؟"""
         try:
@@ -380,6 +394,7 @@ class TestEncryptionHard:
 class TestSigningHard:
     """تست‌های سخت برای Digital Signing (بدون external deps)"""
     
+    @pytest.mark.p1
     def test_signing_verification_roundtrip(self):
         """تست: آیا sign/verify roundtrip درست کار می‌کند؟"""
         try:
@@ -397,6 +412,7 @@ class TestSigningHard:
         except ImportError:
             pytest.skip("PyNaCl not installed")
     
+    @pytest.mark.p1
     def test_signing_tamper_detection(self):
         """تست: آیا tampered data را detect می‌کند؟"""
         try:
@@ -422,6 +438,7 @@ class TestIntegrationScenarios:
     """تست‌های integration سخت"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_full_execution_pipeline_with_replay(self):
         """تست: pipeline کامل execution + replay"""
         controller = ExecutionController(enable_replay=True)
@@ -460,6 +477,7 @@ class TestIntegrationScenarios:
         assert result2.output["random_value"] == result1.output["random_value"]
         assert result2.output["seed"] == result1.output["seed"]
     
+    @pytest.mark.p1
     def test_deadlock_detection_under_load(self):
         """تست: deadlock detection تحت فشار"""
         detector = DeadlockDetector()
@@ -483,6 +501,7 @@ class TestPerformance:
     """تست‌های performance"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_execution_controller_throughput(self):
         """تست: throughput ExecutionController"""
         controller = ExecutionController()
@@ -512,6 +531,7 @@ class TestPerformance:
         assert throughput > 100
         assert all(r.status == ExecutionStatus.COMPLETED for r in results)
     
+    @pytest.mark.p1
     def test_deadlock_detector_performance(self):
         """تست: performance DeadlockDetector"""
         detector = DeadlockDetector()
@@ -539,6 +559,7 @@ class TestEdgeCases:
     """تست‌های edge case"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_execution_with_zero_seed(self):
         """تست: seed=0 درست کار می‌کند؟"""
         controller = ExecutionController()
@@ -555,6 +576,7 @@ class TestEdgeCases:
         assert result.status == ExecutionStatus.COMPLETED
         assert result.context.seed == 0
     
+    @pytest.mark.p1
     def test_deadlock_detector_empty_graph(self):
         """تست: empty graph deadlock ندارد"""
         detector = DeadlockDetector()
@@ -564,6 +586,7 @@ class TestEdgeCases:
         assert not deadlock.detected
         assert len(deadlock.cycle) == 0
     
+    @pytest.mark.p1
     def test_seed_manager_large_hierarchy(self):
         """تست: hierarchy بزرگ"""
         manager = SeedManager()

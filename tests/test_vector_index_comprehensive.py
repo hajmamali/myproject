@@ -54,6 +54,7 @@ def sample_metadata():
 class TestIndexCreation:
     """Test index creation and configuration"""
     
+    @pytest.mark.p2
     def test_flat_index_creation(self):
         """Test Flat index creation"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -63,6 +64,7 @@ class TestIndexCreation:
         assert index.ntotal == 0
         assert index.is_trained  # Flat index doesn't need training
     
+    @pytest.mark.p2
     def test_ivf_index_creation(self):
         """Test IVF index creation"""
         index = FAISSVectorIndex(
@@ -76,6 +78,7 @@ class TestIndexCreation:
         assert index.nlist == 50
         assert not index.is_trained  # IVF needs training
     
+    @pytest.mark.p2
     def test_hnsw_index_creation(self):
         """Test HNSW index creation"""
         index = FAISSVectorIndex(dimension=768, index_type="HNSW")
@@ -84,11 +87,13 @@ class TestIndexCreation:
         assert index.index_type == "HNSW"
         assert index.is_trained  # HNSW doesn't need training
     
+    @pytest.mark.p2
     def test_invalid_index_type(self):
         """Test invalid index type raises error"""
         with pytest.raises(ValueError, match="Unknown index type"):
             FAISSVectorIndex(dimension=768, index_type="INVALID")
     
+    @pytest.mark.p2
     def test_custom_dimension(self):
         """Test custom dimension"""
         index = FAISSVectorIndex(dimension=384)
@@ -99,6 +104,7 @@ class TestIndexCreation:
 class TestVectorAddition:
     """Test adding vectors to index"""
     
+    @pytest.mark.p2
     def test_add_vectors_flat(self, sample_vectors, sample_metadata):
         """Test adding vectors to Flat index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -108,6 +114,7 @@ class TestVectorAddition:
         assert index.ntotal == len(sample_vectors)
         assert len(index.id_to_metadata) == len(sample_vectors)
     
+    @pytest.mark.p2
     def test_add_vectors_ivf(self, sample_vectors, sample_metadata):
         """Test adding vectors to IVF index"""
         index = FAISSVectorIndex(dimension=768, index_type="IVF", nlist=10)
@@ -120,6 +127,7 @@ class TestVectorAddition:
         
         assert index.ntotal == len(sample_vectors)
     
+    @pytest.mark.p2
     def test_add_without_metadata(self, sample_vectors):
         """Test adding vectors without metadata"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -130,6 +138,7 @@ class TestVectorAddition:
         # Should have empty metadata
         assert all(meta == {} for meta in index.id_to_metadata.values())
     
+    @pytest.mark.p2
     def test_add_incremental(self, sample_vectors, sample_metadata):
         """Test adding vectors incrementally"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -143,6 +152,7 @@ class TestVectorAddition:
         index.add(sample_vectors[half:], sample_metadata[half:])
         assert index.ntotal == len(sample_vectors)
     
+    @pytest.mark.p2
     def test_add_wrong_dimension(self):
         """Test adding vectors with wrong dimension"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -152,6 +162,7 @@ class TestVectorAddition:
         with pytest.raises(ValueError, match="dimension mismatch"):
             index.add(wrong_vectors)
     
+    @pytest.mark.p2
     def test_add_auto_converts_dtype(self):
         """Test that vectors are auto-converted to float32"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -167,6 +178,7 @@ class TestVectorAddition:
 class TestVectorSearch:
     """Test vector similarity search"""
     
+    @pytest.mark.p2
     def test_basic_search(self, sample_vectors, sample_metadata):
         """Test basic vector search"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -183,6 +195,7 @@ class TestVectorSearch:
         assert results[0].distance < 0.01
         assert results[0].metadata["id"] == 0
     
+    @pytest.mark.p2
     def test_search_ranks(self, sample_vectors, sample_metadata):
         """Test that results have correct ranks"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -195,6 +208,7 @@ class TestVectorSearch:
         ranks = [r.rank for r in results]
         assert ranks == [1, 2, 3]
     
+    @pytest.mark.p2
     def test_search_sorted_by_distance(self, sample_vectors, sample_metadata):
         """Test that results are sorted by distance"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -207,6 +221,7 @@ class TestVectorSearch:
         distances = [r.distance for r in results]
         assert distances == sorted(distances)
     
+    @pytest.mark.p2
     def test_search_empty_index(self):
         """Test search on empty index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -216,6 +231,7 @@ class TestVectorSearch:
         
         assert results == []
     
+    @pytest.mark.p2
     def test_search_k_larger_than_index(self, sample_vectors, sample_metadata):
         """Test search with k larger than index size"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -229,6 +245,7 @@ class TestVectorSearch:
         # Should return only 10 results
         assert len(results) == 10
     
+    @pytest.mark.p2
     def test_search_with_1d_query(self, sample_vectors, sample_metadata):
         """Test search with 1D query vector"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -244,6 +261,7 @@ class TestVectorSearch:
 class TestBatchSearch:
     """Test batch vector search"""
     
+    @pytest.mark.p2
     def test_batch_search(self, sample_vectors, sample_metadata):
         """Test batch search with multiple queries"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -256,6 +274,7 @@ class TestBatchSearch:
         assert len(all_results) == 5
         assert all(len(results) == 3 for results in all_results)
     
+    @pytest.mark.p2
     def test_batch_search_empty_index(self):
         """Test batch search on empty index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -270,6 +289,7 @@ class TestBatchSearch:
 class TestIVFIndex:
     """Test IVF-specific functionality"""
     
+    @pytest.mark.p2
     def test_ivf_training(self, sample_vectors):
         """Test IVF index training"""
         index = FAISSVectorIndex(dimension=768, index_type="IVF", nlist=10)
@@ -280,6 +300,7 @@ class TestIVFIndex:
         
         assert index.is_trained
     
+    @pytest.mark.p2
     def test_ivf_auto_training_on_add(self, sample_vectors, sample_metadata):
         """Test that IVF auto-trains when adding vectors"""
         index = FAISSVectorIndex(dimension=768, index_type="IVF", nlist=10)
@@ -291,6 +312,7 @@ class TestIVFIndex:
         assert index.is_trained
         assert index.ntotal == len(sample_vectors)
     
+    @pytest.mark.p2
     def test_ivf_nprobe_parameter(self, sample_vectors, sample_metadata):
         """Test IVF nprobe parameter affects search"""
         index = FAISSVectorIndex(
@@ -311,6 +333,7 @@ class TestIVFIndex:
 class TestPersistence:
     """Test saving and loading index"""
     
+    @pytest.mark.p2
     def test_save_and_load_flat(self, sample_vectors, sample_metadata, temp_dir):
         """Test save and load Flat index"""
         # Create and populate index
@@ -342,6 +365,7 @@ class TestPersistence:
         assert len(results1) == len(results2)
         assert results1[0].vector_id == results2[0].vector_id
     
+    @pytest.mark.p2
     def test_save_and_load_ivf(self, sample_vectors, sample_metadata, temp_dir):
         """Test save and load IVF index"""
         # Create and populate index
@@ -359,6 +383,7 @@ class TestPersistence:
         assert index2.ntotal == index1.ntotal
         assert index2.is_trained
     
+    @pytest.mark.p2
     def test_load_nonexistent_path(self):
         """Test loading from nonexistent path"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -366,6 +391,7 @@ class TestPersistence:
         with pytest.raises(FileNotFoundError):
             index.load("/nonexistent/path")
     
+    @pytest.mark.p2
     def test_load_dimension_mismatch(self, sample_vectors, temp_dir):
         """Test loading index with dimension mismatch"""
         # Save with dimension 768
@@ -385,6 +411,7 @@ class TestPersistence:
 class TestStatistics:
     """Test index statistics"""
     
+    @pytest.mark.p2
     def test_get_stats_empty(self):
         """Test statistics on empty index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -397,6 +424,7 @@ class TestStatistics:
         assert stats["is_trained"] == True
         assert stats["metadata_count"] == 0
     
+    @pytest.mark.p2
     def test_get_stats_populated(self, sample_vectors, sample_metadata):
         """Test statistics on populated index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -407,6 +435,7 @@ class TestStatistics:
         assert stats["num_vectors"] == len(sample_vectors)
         assert stats["metadata_count"] == len(sample_metadata)
     
+    @pytest.mark.p2
     def test_get_stats_ivf(self, sample_vectors):
         """Test statistics for IVF index"""
         index = FAISSVectorIndex(dimension=768, index_type="IVF", nlist=10, nprobe=5)
@@ -421,6 +450,7 @@ class TestStatistics:
 class TestClearAndRemove:
     """Test clearing and removing vectors"""
     
+    @pytest.mark.p2
     def test_clear_index(self, sample_vectors, sample_metadata):
         """Test clearing index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -433,6 +463,7 @@ class TestClearAndRemove:
         assert index.ntotal == 0
         assert len(index.id_to_metadata) == 0
     
+    @pytest.mark.p2
     def test_remove_vectors(self, sample_vectors, sample_metadata):
         """Test removing vectors (metadata only)"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -450,6 +481,7 @@ class TestClearAndRemove:
 class TestEdgeCases:
     """Test edge cases and error handling"""
     
+    @pytest.mark.p2
     def test_single_vector(self):
         """Test with single vector"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -462,6 +494,7 @@ class TestEdgeCases:
         results = index.search(vector[0], k=1)
         assert len(results) == 1
     
+    @pytest.mark.p2
     def test_very_small_vectors(self):
         """Test with very small dimension"""
         index = FAISSVectorIndex(dimension=2, index_type="Flat")
@@ -471,6 +504,7 @@ class TestEdgeCases:
         
         assert index.ntotal == 10
     
+    @pytest.mark.p2
     def test_zero_vectors(self):
         """Test with zero vectors"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -490,6 +524,7 @@ class TestEdgeCases:
 class TestRepr:
     """Test string representation"""
     
+    @pytest.mark.p2
     def test_repr_flat(self):
         """Test repr for Flat index"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -501,6 +536,7 @@ class TestRepr:
         assert "dim=768" in repr_str
         assert "vectors=0" in repr_str
     
+    @pytest.mark.p2
     def test_repr_with_vectors(self, sample_vectors):
         """Test repr with vectors"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")
@@ -518,6 +554,7 @@ class TestRepr:
 class TestIntegration:
     """Integration tests with real use cases"""
     
+    @pytest.mark.p2
     def test_legal_document_search(self):
         """Test legal document vector search"""
         # Simulate document embeddings
@@ -550,6 +587,7 @@ class TestIntegration:
         # Distances should be small (normalized vectors)
         assert all(r.distance < 2.0 for r in results)
     
+    @pytest.mark.p2
     def test_incremental_indexing(self):
         """Test incremental document indexing"""
         index = FAISSVectorIndex(dimension=768, index_type="Flat")

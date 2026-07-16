@@ -149,3 +149,154 @@ def assert_raw_executor(obj: Any, context: str = "") -> None:
             f"Context: {context or 'unknown'}. "
             "Pass Neo4jConnection._raw_execute."
         )
+
+
+# ---------------------------------------------------------------------------
+# MetricsCollector Protocol
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class MetricsCollectorProtocol(Protocol):
+    """
+    Protocol for dependency-injected metrics collection in the Kernel.
+    
+    Prevents the Kernel Runtime from depending directly on infrastructure
+    observability layers, satisfying the dependency inversion principle.
+    """
+    def register_counter(self, name: str, labels: Optional[Dict[str, str]] = None) -> Any:
+        ...
+
+    def register_gauge(self, name: str, labels: Optional[Dict[str, str]] = None) -> Any:
+        ...
+
+    def register_histogram(self, name: str, buckets: Optional[list] = None, labels: Optional[Dict[str, str]] = None) -> Any:
+        ...
+
+
+# ---------------------------------------------------------------------------
+# AuditSinkProtocol
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class AuditSinkProtocol(Protocol):
+    """
+    Append-only persistence surface for governance audit events.
+
+    The kernel boundary calls ``AuditSinkProtocol.append(entry)`` exactly
+    once per successfully validated mutation. The concrete implementation
+    (filesystem, remote ledger, in-memory test sink) is injected at the
+    application composition root. The kernel does not know the medium.
+    """
+    def append(self, entry: Dict[str, Any]) -> None:
+        """Persist a single immutable audit entry. Raises on failure."""
+        ...
+
+
+# ---------------------------------------------------------------------------
+# SchemaValidatorProtocol
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class SchemaValidatorProtocol(Protocol):
+    """
+    Validates a payload dict against an opaque schema object.
+
+    The kernel exposes a registry of label -> SchemaValidatorProtocol
+    implementations. Concrete validators (Pydantic, JSON Schema, dataclass,
+    in-memory prototypes) live in ``mahoun/contracts`` or ``mahoun/infrastructure``.
+
+    The kernel does not import pydantic itself; conforming adapters wrap it.
+    """
+    def validate(
+        self,
+        payload: Dict[str, Any],
+        schema: Any,
+        *,
+        label: str,
+    ) -> None:
+        """Validate ``payload`` against ``schema`` or raise."""
+        ...
+
+
+# ---------------------------------------------------------------------------
+# GovernedWriteSessionProtocol (vendor-neutral)
+# ---------------------------------------------------------------------------
+
+@runtime_checkable
+class GovernedWriteSessionProtocol(Protocol):
+    """
+    Vendor-neutral abstraction of the only authorized write surface.
+
+    The kernel enforces classification, audit ordering, and authorization
+    token management. The adapter (e.g., GovernedNeo4jSession under
+    mahoun/graph/neo4j) implements the protocol with its driver-specific
+    Cypher / driver / session abstraction.
+
+    The protocol is the *contract*; the implementation carries driver
+    semantics and stays outside the kernel.
+    """
+    def write_node(
+        self,
+        label: str,
+        node_data: Dict[str, Any],
+        merge: bool = True,
+    ) -> Any:
+        ...
+
+    def write_relationship(
+        self,
+        source_type: str,
+        source_id: str,
+        relationship_type: str,
+        target_type: str,
+        target_id: str,
+        rel_data: Dict[str, Any],
+        merge: bool = True,
+    ) -> Any:
+        ...
+
+    def delete_node(
+        self,
+        label: str,
+        node_id: str,
+        soft_delete: bool = True,
+        deleted_reason: str = "governance_delete",
+        source_event_id: str = "",
+    ) -> Any:
+        ...
+
+    def begin_transaction(self) -> Any:
+        ...
+
+    @property
+    def ledger(self) -> Any:
+        ...
+
+    @property
+    def mutation_count(self) -> int:
+        ...
+
+
+class NoOpMetric:
+    """Null Object pattern for a metric."""
+    def inc(self, amount: float = 1) -> None:
+        pass
+    def set(self, value: float) -> None:
+        pass
+    def observe(self, value: float) -> None:
+        pass
+
+
+class NoOpMetricsCollector:
+    """
+    Null Object pattern implementation of MetricsCollectorProtocol.
+    Used as a fail-safe default when no external collector is injected.
+    """
+    def register_counter(self, name: str, labels: Optional[Dict[str, str]] = None) -> Any:
+        return NoOpMetric()
+        
+    def register_gauge(self, name: str, labels: Optional[Dict[str, str]] = None) -> Any:
+        return NoOpMetric()
+        
+    def register_histogram(self, name: str, buckets: Optional[list] = None, labels: Optional[Dict[str, str]] = None) -> Any:
+        return NoOpMetric()

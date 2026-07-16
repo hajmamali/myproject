@@ -22,6 +22,7 @@ from mahoun.preproduction.validators.exception_validator import (
 class TestExceptionHierarchyAnalyzer:
     """Test AST analysis of exception classes."""
     
+    @pytest.mark.p2
     def test_extracts_basic_exception(self):
         """Should extract basic exception metadata."""
         code = """
@@ -40,6 +41,7 @@ class MyError(Exception):
         assert exc.docstring == "My custom error."
         assert exc.is_root
     
+    @pytest.mark.p2
     def test_extracts_status_code(self):
         """Should detect status_code class attribute."""
         code = """
@@ -54,6 +56,7 @@ class APIError(Exception):
         assert exc.has_status_code
         assert exc.status_code_value == 400
     
+    @pytest.mark.p2
     def test_extracts_to_dict_method(self):
         """Should detect to_dict() method."""
         code = """
@@ -69,6 +72,7 @@ class MyError(Exception):
         assert exc.has_to_dict
         assert exc.to_dict_signature == "()"
     
+    @pytest.mark.p2
     def test_extracts_to_dict_with_args(self):
         """Should extract to_dict() signature with arguments."""
         code = """
@@ -84,6 +88,7 @@ class MyError(Exception):
         assert exc.has_to_dict
         assert "include_trace" in exc.to_dict_signature
     
+    @pytest.mark.p2
     def test_detects_inheritance_chain(self):
         """Should extract inheritance relationships."""
         code = """
@@ -112,6 +117,7 @@ class GrandchildError(ChildError):
         grandchild = next(e for e in analyzer.exceptions if e.name == "GrandchildError")
         assert "ChildError" in grandchild.bases
     
+    @pytest.mark.p2
     def test_ignores_non_exceptions(self):
         """Should not extract non-exception classes."""
         code = """
@@ -148,6 +154,7 @@ class TestExceptionHierarchyValidator:
         
         return project_root
     
+    @pytest.mark.p2
     def test_detects_duplicate_roots(self, temp_project):
         """Should detect multiple root exception classes."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -172,6 +179,7 @@ class ChildError(MahounError):
         assert "MahounError" in blocker_findings[0].message
         assert "BaseMahounError" in blocker_findings[0].message
     
+    @pytest.mark.p2
     def test_single_root_passes(self, temp_project):
         """Should pass with single root exception."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -199,6 +207,7 @@ class GrandchildError(ChildError):
         ]
         assert len(blocker_findings) == 0
     
+    @pytest.mark.p2
     def test_detects_inconsistent_to_dict_signatures(self, temp_project):
         """Should detect inconsistent to_dict() signatures."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -227,6 +236,7 @@ class ErrorB(MahounError):
         assert len(signature_findings) > 0
         assert signature_findings[0].severity == FindingSeverity.P1_HIGH
     
+    @pytest.mark.p2
     def test_detects_missing_status_codes_in_api_exceptions(self, temp_project):
         """Should detect API-facing exceptions without status_code."""
         # Create exceptions without status_code
@@ -265,6 +275,7 @@ def my_validator():
         assert len(status_findings) > 0
         assert status_findings[0].severity == FindingSeverity.P1_HIGH
     
+    @pytest.mark.p2
     def test_detects_circular_inheritance(self, temp_project):
         """Should detect circular inheritance chains."""
         # Note: This is a synthetic test - Python won't actually allow this at runtime
@@ -287,6 +298,7 @@ def my_validator():
         assert findings[0].severity == FindingSeverity.P0_CRITICAL
         assert "Circular inheritance" in findings[0].message
     
+    @pytest.mark.p2
     def test_detects_bad_naming_conventions(self, temp_project):
         """Should detect exceptions not ending with Error or Exception."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -312,6 +324,7 @@ class GoodError(Exception):
         assert len(naming_findings) > 0
         assert naming_findings[0].severity == FindingSeverity.P3_LOW
     
+    @pytest.mark.p2
     def test_generates_migration_plan(self, temp_project):
         """Should generate migration plan for fixing issues."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -332,6 +345,7 @@ class BaseMahounError(Exception):
         assert len(plan["steps"]) > 0
         assert plan["priority"] == "P0_BLOCKER"
     
+    @pytest.mark.p2
     def test_caches_ast_parsing(self, temp_project):
         """Should cache AST parsing results."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -353,6 +367,7 @@ class MahounError(Exception):
         assert cache_key1 == cache_key2
         assert exceptions1 == exceptions2
     
+    @pytest.mark.p2
     def test_invalidates_cache_on_content_change(self, temp_project):
         """Should invalidate cache when file content changes."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -383,6 +398,7 @@ class NewError(MahounError):
         assert cache_key1 != cache_key2
         assert len(exceptions2) > len(exceptions1)
     
+    @pytest.mark.p2
     def test_reports_metadata(self, temp_project):
         """Should report comprehensive metadata."""
         exceptions_file = temp_project / "mahoun" / "core" / "exceptions.py"
@@ -411,6 +427,7 @@ class ErrorC(MahounError):
         assert result.evidence["with_status_code"] >= 2
         assert result.evidence["with_to_dict"] >= 2
     
+    @pytest.mark.p2
     def test_handles_missing_exceptions_file(self, temp_project):
         """Should handle missing exceptions.py gracefully."""
         # Don't create exceptions.py
@@ -424,6 +441,7 @@ class ErrorC(MahounError):
 class TestExceptionClass:
     """Test ExceptionClass dataclass."""
     
+    @pytest.mark.p2
     def test_is_root_detection(self):
         """Should correctly identify root exceptions."""
         root = ExceptionClass(name="MyError", bases=["Exception"], lineno=1, col_offset=0)
@@ -432,6 +450,7 @@ class TestExceptionClass:
         child = ExceptionClass(name="ChildError", bases=["MyError"], lineno=2, col_offset=0)
         assert not child.is_root
     
+    @pytest.mark.p2
     def test_full_location(self):
         """Should format location string."""
         exc = ExceptionClass(name="MyError", bases=[], lineno=42, col_offset=8)
@@ -441,6 +460,7 @@ class TestExceptionClass:
 class TestIntegrationWithRealExceptions:
     """Integration tests with actual exceptions.py file."""
     
+    @pytest.mark.p2
     def test_real_exceptions_file(self):
         """Should successfully parse real exceptions.py."""
         # This test runs against the actual project exceptions file

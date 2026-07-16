@@ -28,6 +28,7 @@ import time
 class TestE2EFineTuningFlow:
     """End-to-end tests for complete fine-tuning workflow"""
     
+    @pytest.mark.p2
     async def test_complete_user_journey(self):
         """
         Test complete user journey from feedback to deployment.
@@ -294,6 +295,7 @@ class TestE2EFineTuningFlow:
         print("🎉 E2E TEST COMPLETED SUCCESSFULLY!")
         print("="*70)
     
+    @pytest.mark.p2
     async def test_error_handling_flow(self):
         """Test error handling in the flow"""
         from api.main import app
@@ -342,6 +344,7 @@ class TestE2EFineTuningFlow:
         
         print("\n✅ Error handling tests passed!")
     
+    @pytest.mark.p2
     async def test_concurrent_jobs(self):
         """Test creating multiple jobs concurrently"""
         from api.main import app
@@ -397,6 +400,7 @@ class TestE2EFineTuningFlow:
 class TestE2EValidationFlow:
     """Test validation and security in E2E flow"""
     
+    @pytest.mark.p2
     async def test_input_validation_e2e(self):
         """Test that input validation works throughout the flow"""
         from api.main import app

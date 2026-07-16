@@ -162,6 +162,7 @@ def client(mock_verdict_engine):
 class TestVerdictGeneration:
     """Tests for verdict generation endpoint"""
 
+    @pytest.mark.p0
     def test_generate_verdict_success(self, client):
         """Test successful verdict generation with high-quality evidence"""
         response = client.post(
@@ -217,6 +218,7 @@ class TestVerdictGeneration:
         # Cryptographic proof is separate
         assert "proof" in data
 
+    @pytest.mark.p0
     def test_generate_verdict_without_governance_context(self, client):
         """Test verdict generation without governance context"""
         # This should fail with 422 (SecurityBreachException converted to controlled response)
@@ -236,6 +238,7 @@ class TestVerdictGeneration:
         error_name = body.get("error") or (body.get("detail", {}).get("error") if isinstance(body.get("detail"), dict) else None)
         assert error_name and error_name.upper() == "SECURITY_BREACH"
 
+    @pytest.mark.p0
     def test_generate_verdict_with_invalid_facts(self, client):
         """Test verdict generation with invalid facts (empty facts rejected by governance)"""
         response = client.post(
@@ -256,6 +259,7 @@ class TestVerdictGeneration:
         error_name = body.get("error") or (body.get("detail", {}).get("error") if isinstance(body.get("detail"), dict) else None)
         assert (error_name and error_name.upper() in ("SECURITY_BREACH", "MISSING_EVIDENCE")) or "MISSING_EVIDENCE" in str(body)
 
+    @pytest.mark.p0
     def test_generate_verdict_without_proof(self, client):
         """Test verdict generation without proof (generate_proof=False)"""
         response = client.post(
@@ -290,6 +294,7 @@ class TestVerdictGeneration:
 class TestVerdictVerification:
     """Tests for verdict verification endpoint"""
 
+    @pytest.mark.p0
     def test_verify_verdict_success(self, client):
         """Test successful verdict verification"""
         # First generate a verdict with high-quality evidence
@@ -330,6 +335,7 @@ class TestVerdictVerification:
         assert data["fortress_validated"] is True
         assert "audit_hash" in data
 
+    @pytest.mark.p0
     def test_verify_verdict_with_invalid_proof(self, client):
         """Test verdict verification with invalid proof"""
         response = client.post(
@@ -363,6 +369,7 @@ class TestVerdictVerification:
 class TestLedgerQuery:
     """Tests for ledger query endpoint"""
 
+    @pytest.mark.p0
     def test_query_ledger_by_verdict_id(self, client):
         """Test querying ledger by verdict_id"""
         response = client.post("/api/v1/reasoning/query-ledger", json={"verdict_id": "non-existent-verdict"})
@@ -377,6 +384,7 @@ class TestLedgerQuery:
         assert data["fortress_validated"] is True
         assert "audit_hash" in data
 
+    @pytest.mark.p0
     def test_query_ledger_by_case_id(self, client):
         """Test querying ledger by case_id"""
         response = client.post("/api/v1/reasoning/query-ledger", json={"case_id": "non-existent-case"})
@@ -388,6 +396,7 @@ class TestLedgerQuery:
         assert "entries" in data
         assert "total_count" in data
 
+    @pytest.mark.p0
     def test_query_ledger_by_node_id(self, client):
         """Test querying ledger by node_id"""
         response = client.post("/api/v1/reasoning/query-ledger", json={"node_id": "non-existent-node"})
@@ -399,6 +408,7 @@ class TestLedgerQuery:
         assert "entries" in data
         assert "total_count" in data
 
+    @pytest.mark.p0
     def test_query_ledger_by_time_range(self, client):
         """Test querying ledger by time range"""
         response = client.post(
@@ -422,6 +432,7 @@ class TestLedgerQuery:
 class TestHealthCheck:
     """Tests for health check endpoint"""
 
+    @pytest.mark.p0
     def test_health_check_success(self, client):
         """Test successful health check"""
         response = client.get("/api/v1/reasoning/health")
@@ -435,6 +446,7 @@ class TestHealthCheck:
         assert "components" in data
         assert "timestamp" in data
 
+    @pytest.mark.p0
     def test_health_check_desktop_minimal_mode(self, client):
         """Test health check in DESKTOP_MINIMAL mode"""
         # This test may need environment variable setup
@@ -455,6 +467,7 @@ class TestHealthCheck:
 class TestErrorHandling:
     """Tests for error handling"""
 
+    @pytest.mark.p0
     def test_generate_verdict_with_missing_question(self, client):
         """Test verdict generation with missing question"""
         response = client.post(
@@ -469,6 +482,7 @@ class TestErrorHandling:
         # Should return validation error
         assert response.status_code == 422
 
+    @pytest.mark.p0
     def test_generate_verdict_with_missing_facts(self, client):
         """Test verdict generation with missing facts"""
         response = client.post(
@@ -479,6 +493,7 @@ class TestErrorHandling:
         # Should return validation error (facts is required)
         assert response.status_code == 422
 
+    @pytest.mark.p0
     def test_generate_verdict_with_empty_question(self, client):
         """Test verdict generation with empty question"""
         response = client.post(
@@ -494,6 +509,7 @@ class TestErrorHandling:
         # Should return validation error
         assert response.status_code == 422
 
+    @pytest.mark.p0
     def test_verify_verdict_with_missing_verdict_id(self, client):
         """Test verdict verification with missing verdict_id"""
         response = client.post(
@@ -515,6 +531,7 @@ class TestErrorHandling:
         # Should return validation error
         assert response.status_code == 422
 
+    @pytest.mark.p0
     def test_query_ledger_with_invalid_time_range(self, client):
         """Test ledger query with invalid time range"""
         response = client.post(
@@ -533,6 +550,7 @@ class TestErrorHandling:
 class TestProofCarryingResponse:
     """Tests for proof-carrying response validation"""
 
+    @pytest.mark.p0
     def test_all_responses_include_proof_carrying_fields(self, client):
         """Test that all responses include proof-carrying fields"""
         # Generate verdict
@@ -561,6 +579,7 @@ class TestProofCarryingResponse:
         timestamp = gen_data["validation_timestamp"]
         datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
+    @pytest.mark.p0
     def test_verification_response_includes_proof_carrying(self, client):
         """Test that verification response includes proof-carrying fields"""
         # Generate verdict
@@ -589,6 +608,7 @@ class TestProofCarryingResponse:
         assert verify_data["fortress_validated"] is True
         assert "audit_hash" in verify_data
 
+    @pytest.mark.p0
     def test_ledger_query_response_includes_proof_carrying(self, client):
         """Test that ledger query response includes proof-carrying fields"""
         response = client.post("/api/v1/reasoning/query-ledger", json={"case_id": "test-case"})
@@ -609,6 +629,7 @@ class TestProofCarryingResponse:
 class TestPerformance:
     """Tests for API performance"""
 
+    @pytest.mark.p0
     def test_generate_verdict_performance(self, client):
         """Test verdict generation performance"""
         import time
@@ -628,6 +649,7 @@ class TestPerformance:
         assert response.status_code == 200
         assert elapsed < 5.0  # < 5s
 
+    @pytest.mark.p0
     def test_concurrent_requests(self, client):
         """Test concurrent requests"""
         import time
@@ -685,6 +707,7 @@ class TestPerformance:
 class TestEdgeCases:
     """Tests for edge cases"""
 
+    @pytest.mark.p0
     def test_generate_verdict_with_long_question(self, client):
         """Test verdict generation with long question"""
         long_question = "Test question " * 1000
@@ -704,6 +727,7 @@ class TestEdgeCases:
         data = response.json()
         assert data["success"] is True
 
+    @pytest.mark.p0
     def test_generate_verdict_with_many_facts(self, client):
         """Test verdict generation with many facts"""
         facts = [{"value": f"Fact {i}", "type": "FACT", "confidence": 1.0} for i in range(100)]
@@ -718,6 +742,7 @@ class TestEdgeCases:
         data = response.json()
         assert data["success"] is True
 
+    @pytest.mark.p0
     def test_generate_verdict_with_special_characters(self, client):
         """Test verdict generation with special characters"""
         response = client.post(

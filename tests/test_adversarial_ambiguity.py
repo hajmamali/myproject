@@ -126,6 +126,7 @@ class _AmbiguityResolver(GraphResolver):
 class TestAdversarialAmbiguity:
     """Tests semantic graph linking under ambiguity conditions"""
 
+    @pytest.mark.p2
     def test_judgment_ambiguity_detection(self):
         """Test that ambiguous judgment reference returns UNRESOLVED"""
 
@@ -200,6 +201,7 @@ class TestAdversarialAmbiguity:
         assert expected_nodes.issubset(candidate_node_ids), \
             f"Expected candidates {expected_nodes}, got {candidate_node_ids}"
 
+    @pytest.mark.p2
     def test_judgment_entity_extraction(self):
         """Test that JUDGMENT entities are properly extracted from text"""
 
@@ -234,6 +236,7 @@ class TestAdversarialAmbiguity:
             assert test_case["expected_year"] in years_found, \
                 f"Year {test_case['expected_year']} not found in {years_found}"
 
+    @pytest.mark.p2
     def test_ambiguous_vs_unambiguous_judgment(self):
         """Test that unambiguous judgment gets linked while ambiguous doesn't"""
 

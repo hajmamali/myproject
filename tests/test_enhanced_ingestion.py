@@ -45,41 +45,49 @@ HAS_ENHANCED = True # Still kept for backward compat in test logic down below if
 class TestEnhancedImports:
     """Test that all enhanced components can be imported"""
     
+    @pytest.mark.p2
     def test_import_enhanced_pipeline(self):
         """Test EnhancedIngestionPipeline import"""
         from mahoun.pipelines.ingestion import EnhancedIngestionPipeline
         assert EnhancedIngestionPipeline is not None
     
+    @pytest.mark.p2
     def test_import_llm_enhanced_parser(self):
         """Test LLMEnhancedParser import"""
         from mahoun.pipelines.ingestion import LLMEnhancedParser
         assert LLMEnhancedParser is not None
     
+    @pytest.mark.p2
     def test_import_enhanced_ner(self):
         """Test EnhancedNEREngine import"""
         from mahoun.pipelines.ingestion import EnhancedNEREngine
         assert EnhancedNEREngine is not None
     
+    @pytest.mark.p2
     def test_import_enhanced_chunker(self):
         """Test EnhancedChunker import"""
         from mahoun.pipelines.ingestion import EnhancedChunker
         assert EnhancedChunker is not None
     
+    @pytest.mark.p2
     def test_import_enhanced_embedding(self):
         """Test EnhancedEmbeddingService import"""
         from mahoun.pipelines.ingestion import EnhancedEmbeddingService
         assert EnhancedEmbeddingService is not None
     
+    @pytest.mark.p2
     def test_import_validator(self):
         """Test DocumentValidator import"""
         from mahoun.pipelines.ingestion import DocumentValidator
         assert DocumentValidator is not None
     
+    @pytest.mark.p2
     def test_import_quality_assessor(self):
         """Test QualityAssessor import"""
         from mahoun.pipelines.ingestion import QualityAssessor
         assert QualityAssessor is not None
     
+    @pytest.mark.p2
     def test_import_llm_refiner(self):
         """Test LLMRefinementService import"""
         from mahoun.pipelines.ingestion import LLMRefinementService
@@ -90,6 +98,7 @@ class TestEnhancedInitialization:
     """Test initialization of enhanced components"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_init_default(self):
         """Test EnhancedIngestionPipeline initialization with defaults"""
         pipeline = EnhancedIngestionPipeline()
@@ -101,6 +110,7 @@ class TestEnhancedInitialization:
         assert pipeline.refiner is not None
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_init_custom(self):
         """Test EnhancedIngestionPipeline with custom settings"""
         pipeline = EnhancedIngestionPipeline(
@@ -114,6 +124,7 @@ class TestEnhancedInitialization:
         assert pipeline.quality_assessor is None  # Disabled
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_initialize(self):
         """Test pipeline initialization"""
         pipeline = EnhancedIngestionPipeline()
@@ -123,18 +134,21 @@ class TestEnhancedInitialization:
         assert pipeline.embedding_service is not None
         assert pipeline.vector_store is not None
     
+    @pytest.mark.p2
     def test_llm_enhanced_parser_init(self):
         """Test LLMEnhancedParser initialization"""
         parser = LLMEnhancedParser(enable_refinement=False)
         assert parser is not None
         assert parser.enable_refinement is False
     
+    @pytest.mark.p2
     def test_enhanced_ner_init(self):
         """Test EnhancedNEREngine initialization"""
         ner = EnhancedNEREngine(enable_cross_validation=False)
         assert ner is not None
         assert ner.enable_cross_validation is False
     
+    @pytest.mark.p2
     def test_enhanced_chunker_init(self):
         """Test EnhancedChunker initialization"""
         config = ChunkingConfig(chunk_size=256, overlap=25)
@@ -147,6 +161,7 @@ class TestFallbackMechanisms:
     """Test fallback mechanisms when components fail"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_llm_parser_fallback_no_llm(self):
         """Test LLM parser falls back when LLM unavailable"""
         parser = LLMEnhancedParser(enable_refinement=True)
@@ -161,6 +176,7 @@ class TestFallbackMechanisms:
         assert "_parsing_quality" in result
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_ner_fallback(self):
         """Test Enhanced NER falls back when cross-validation disabled"""
         ner = EnhancedNEREngine(enable_cross_validation=False)
@@ -172,6 +188,7 @@ class TestFallbackMechanisms:
         assert "persons" in result
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_chunker_fallback(self):
         """Test Enhanced Chunker fallback"""
         chunker = EnhancedChunker()
@@ -214,6 +231,7 @@ class TestEnhancedPipelineIntegration:
         """
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_ingest_verdict(self, sample_verdict_text):
         """Test enhanced pipeline ingestion of verdict"""
         pipeline = EnhancedIngestionPipeline(
@@ -237,6 +255,7 @@ class TestEnhancedPipelineIntegration:
         assert hasattr(result, 'validation_passed')
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_ingest_regular_document(self):
         """Test enhanced pipeline with regular document"""
         pipeline = EnhancedIngestionPipeline()
@@ -253,6 +272,7 @@ class TestEnhancedPipelineIntegration:
         assert result.chunks_created > 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enhanced_pipeline_quality_metrics(self, sample_verdict_text):
         """Test that quality metrics are included"""
         pipeline = EnhancedIngestionPipeline(enable_validation=True)
@@ -273,6 +293,7 @@ class TestBackwardCompatibility:
     """Test backward compatibility with standard pipeline"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_result_compatibility(self):
         """Test EnhancedIngestionResult is compatible with IngestionResult"""
         from mahoun.pipelines.ingestion.pipeline import IngestionResult
@@ -295,6 +316,7 @@ class TestBackwardCompatibility:
         assert enhanced_result.chunks_created == 5
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_api_compatibility(self):
         """Test API can use both pipelines"""
         from mahoun.pipelines.ingestion import IngestionPipeline, EnhancedIngestionPipeline
@@ -330,6 +352,7 @@ class TestAPIIntegration:
     """Test API integration with enhanced pipeline"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_api_endpoint_with_enhanced(self):
         """Test API endpoint can use enhanced pipeline"""
         # Mock environment variable
@@ -371,6 +394,7 @@ class TestPerformanceComparison:
     
     @pytest.mark.asyncio
     @pytest.mark.skip(reason="Performance test - run manually")
+    @pytest.mark.p2
     async def test_performance_comparison(self, performance_test_text):
         """Compare processing time between pipelines"""
         from mahoun.pipelines.ingestion import IngestionPipeline, EnhancedIngestionPipeline
@@ -409,6 +433,7 @@ class TestPerformanceComparison:
     
     @pytest.mark.asyncio
     @pytest.mark.skip(reason="Performance test - run manually")
+    @pytest.mark.p2
     async def test_llm_call_monitoring(self):
         """Monitor LLM calls in enhanced pipeline"""
         parser = LLMEnhancedParser(enable_refinement=True)
@@ -464,6 +489,7 @@ class TestValidationAndQuality:
             "system_tags": ["اعتراض ثالث"]
         }
     
+    @pytest.mark.p2
     def test_document_validator(self, sample_verdict_struct):
         """Test DocumentValidator"""
         validator = DocumentValidator(strict_mode=False)
@@ -474,6 +500,7 @@ class TestValidationAndQuality:
         assert hasattr(result, 'quality_score')
         assert hasattr(result, 'missing_fields')
     
+    @pytest.mark.p2
     def test_quality_assessor(self, sample_verdict_struct):
         """Test QualityAssessor"""
         assessor = QualityAssessor()
@@ -494,6 +521,7 @@ class TestErrorHandling:
     """Test error handling in enhanced components"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_pipeline_error_handling_empty_text(self):
         """Test pipeline handles empty text gracefully"""
         pipeline = EnhancedIngestionPipeline()
@@ -509,6 +537,7 @@ class TestErrorHandling:
         assert result.chunks_created == 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_pipeline_error_handling_invalid_metadata(self):
         """Test pipeline handles invalid metadata"""
         pipeline = EnhancedIngestionPipeline()

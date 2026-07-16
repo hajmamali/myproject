@@ -122,7 +122,7 @@ def warmup_embedding_model():
             ...
     
     Note: Not autouse=True to avoid slowing down unrelated tests.
-    """
+    """/home/haji/Desktop/KingMahouN/tests/
     try:
         from sentence_transformers import SentenceTransformer
         
@@ -152,6 +152,22 @@ def warmup_embedding_model():
 # Automatically skip integration/slow tests unless environment variables are set.
 # This prevents accidental runs of tests requiring external services.
 #
+
+
+def pytest_configure(config):
+    """Register custom pytest markers at test collection time."""
+    markers = [
+        "p0_critical: P0 critical path tests (governance, determinism, security)",
+        "p1_integration: P1 high-value integration tests (core business logic)",
+        "p2_extended: P2 regression protection tests (infrastructure, graph, pipelines)",
+        "p3_full: P3 optional tests (stress, benchmarks, nightly)",
+        "integration: Requires external services (databases, APIs)",
+        "slow: Slow to run (large data, complex computations)",
+        "benchmark: Performance and throughput benchmarks",
+        "unit: Fast unit tests with no external dependencies",
+    ]
+    for marker in markers:
+        config.addinivalue_line("markers", marker)
 
 
 def pytest_collection_modifyitems(config, items):
