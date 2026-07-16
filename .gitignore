@@ -109,6 +109,8 @@ private/
 # ============================================================================
 
 __pycache__/
+**/__pycache__/
+*/__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -127,6 +129,8 @@ wheels/
 pip-wheel-metadata/
 *.manifest
 *.spec
+tests/**/__pycache__/
+tests/__pycache__/
 
 # ============================================================================
 # TESTING & COVERAGE
@@ -601,3 +605,25 @@ sandbox/
 # Devin worktrees
 KingMahouN-main-*
 KingMahouN-task-*
+
+# ============================================================================
+# WORKTREES & EMBEDDED GIT REPOS (NEVER COMMIT)
+# ============================================================================
+
+# Temporary worktrees (embedded git repositories)
+.worktrees/
+.kilo/worktrees/
+worktrees/
+**/worktrees/
+
+# Backup worktrees
+backup/commit-*/
+backup/consolidation-*/
+
+# Consolidation backups
+.consolidation_backups/
+.entity_feature_merge_backups/
+
+# Lock files from git operations
+*.lock
+.git/MERGE_HEAD
