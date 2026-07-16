@@ -84,6 +84,9 @@ class GovernanceContext:
     deterministic_resolver: DeterministicResolver
     ontology_enforcer: OntologyEnforcer
 
+    # Optional actor identity for audit trail compatibility
+    actor_id: str | None = None
+
     # Runtime state
     proof_tracking_active: bool = True
     contradiction_hooks_active: bool = True
@@ -102,6 +105,7 @@ class GovernanceContext:
             "correlation_id": self.correlation_id,
             "timestamp": self.timestamp,
             "execution_mode": self.execution_mode,
+            "actor_id": self.actor_id,
             "governance_components": {
                 "provenance_tracker": True,
                 "validator_pipeline": True,
@@ -166,6 +170,7 @@ class GovernanceContext:
             correlation_id=child_id,
             timestamp=datetime.now(UTC).isoformat(),
             execution_mode=self.execution_mode,
+            actor_id=self.actor_id,
             provenance_tracker=self.provenance_tracker,
             validator_pipeline=self.validator_pipeline,
             deterministic_resolver=self.deterministic_resolver,
@@ -239,8 +244,8 @@ class GovernanceContextManager:
     """
 
     # Replaced with contextvars for async-safe isolation (P0 GOVERNANCE CONTEXT ISOLATION)
-    # Using immutable tuple to prevent cross-task contamination via shared list object.
-    _governance_stack: ContextVar[tuple[GovernanceContext, ...] | None] = ContextVar(
+    # We store a per-context list and replace it on push to keep tests/backward compatibility.
+    _governance_stack: ContextVar[list[GovernanceContext] | None] = ContextVar(
         "mahoun_governance_stack", default=None
     )
 
@@ -270,23 +275,27 @@ class GovernanceContextManager:
         self._metrics_collector = metrics_collector or NoOpMetricsCollector()
 
     @classmethod
-    def _get_stack(cls) -> tuple[GovernanceContext, ...]:
-        """Return the isolated stack for the current async context."""
+    def _get_stack(cls) -> list[GovernanceContext]:
+        """Return a mutable stack for the current async context."""
         stack = cls._governance_stack.get()
-        return stack if stack is not None else ()
+        if stack is None:
+            stack = []
+            cls._governance_stack.set(stack)
+        return stack
 
     @classmethod
     def _reset_for_test(cls) -> None:
         """
         Test-only helper to reset governance context for the current async task.
         """
-        cls._governance_stack.set(())
+        cls._governance_stack.set([])
 
     @classmethod
     def create_context(
         cls,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> GovernanceContext:
         """
         Create a new governance context.
@@ -294,16 +303,22 @@ class GovernanceContextManager:
         Args:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode (STRICT, AUDIT, etc.)
+            actor_id: Optional actor identity for audit trail compatibility
 
         Returns:
             GovernanceContext instance
         """
-        return cls._get_instance()._create_context(correlation_id, execution_mode)
+        return cls._get_instance()._create_context(
+            correlation_id=correlation_id,
+            execution_mode=execution_mode,
+            actor_id=actor_id,
+        )
 
     def _create_context(
         self,
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
+        actor_id: str | None = None,
     ) -> GovernanceContext:
         ctx_id = f"ctx-{uuid.uuid4().hex[:16]}"
         corr_id = correlation_id or f"req-{uuid.uuid4().hex[:16]}"
@@ -319,6 +334,7 @@ class GovernanceContextManager:
             correlation_id=corr_id,
             timestamp=datetime.now(UTC).isoformat(),
             execution_mode=execution_mode,
+            actor_id=actor_id,
             provenance_tracker=provenance_tracker,
             validator_pipeline=validator_pipeline,
             deterministic_resolver=deterministic_resolver,
@@ -341,6 +357,7 @@ class GovernanceContextManager:
         Args:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode
+            actor_id: Optional actor identity for audit trail compatibility
 
         Yields:
             GovernanceContext instance
@@ -348,7 +365,11 @@ class GovernanceContextManager:
         Raises:
             GovernanceViolationError: If context cannot be established
         """
-        async with cls._get_instance()._active_context(correlation_id, execution_mode, actor_id) as ctx:
+        async with cls._get_instance()._active_context(
+            correlation_id=correlation_id,
+            execution_mode=execution_mode,
+            actor_id=actor_id,
+        ) as ctx:
             yield ctx
 
     @asynccontextmanager
@@ -358,15 +379,19 @@ class GovernanceContextManager:
         execution_mode: str = "STRICT",
         actor_id: str | None = None,
     ) -> AsyncIterator[GovernanceContext]:
-        ctx = self._create_context(correlation_id=correlation_id, execution_mode=execution_mode)
+        ctx = self._create_context(
+            correlation_id=correlation_id,
+            execution_mode=execution_mode,
+            actor_id=actor_id,
+        )
 
         try:
             # Validate governance scope
             ctx.validate_governance_scope()
 
-            # Push to isolated context stack (IMMUTABLE update for true isolation)
+            # Push to isolated context stack (mutable list for current async context)
             stack = self._get_stack()
-            token = self._governance_stack.set(stack + (ctx,))
+            token = self._governance_stack.set([*stack, ctx])
 
             log.info(
                 "GovernanceContext activated",
@@ -381,7 +406,6 @@ class GovernanceContextManager:
 
         finally:
             # Revert context using token (standard ContextVar practice)
-            # or pop from immutable tuple if preferred. Token is safer.
             if 'token' in locals():
                 self._governance_stack.reset(token)
 

@@ -25,7 +25,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 # Import symbolic reasoning (our fixed FOL engine)
 from reasoning_logic import (
@@ -249,6 +249,12 @@ class UnifiedReasoningService:
     Provides a single API for all reasoning tasks with automatic
     mode selection and fallback mechanisms.
     """
+
+    # Type annotations for fortress-protected method attributes
+    _symbolic_reasoning: Callable[[ReasoningRequest], ReasoningResponse]
+    _neural_reasoning_with_validation: Callable[[ReasoningRequest], ReasoningResponse]
+    _hybrid_reasoning_with_enforcement: Callable[[ReasoningRequest], ReasoningResponse]
+    _select_mode: Callable[[ReasoningRequest], ReasoningMode]
 
     def __init__(self, enable_neural: bool = True):
         """
@@ -1494,6 +1500,53 @@ class UnifiedReasoningService:
             },
         }
 
+    async def _neural_reasoning(self, request: ReasoningRequest) -> ReasoningResponse:
+        """
+        Neural reasoning dispatcher that routes to appropriate neural method
+        and returns a ReasoningResponse.
+        """
+        import time
+        start_time = time.perf_counter()
+
+        try:
+            # Route to appropriate neural service based on task
+            neural_result = None
+            if request.task == ReasoningTask.QUESTION_ANSWERING:
+                neural_result = await self._neural_question_answering(request)
+            elif request.task == ReasoningTask.EXPLANATION:
+                neural_result = await self._neural_explanation(request)
+            elif request.task in [ReasoningTask.FORWARD_INFERENCE, ReasoningTask.BACKWARD_PROOF]:
+                neural_result = await self._neural_deep_reasoning(request)
+            else:
+                neural_result = await self._neural_general_reasoning(request)
+
+            execution_time = (time.perf_counter() - start_time) * 1000
+            neural_confidence = neural_result.get("confidence", 0.0)
+            neural_explanation = neural_result.get("explanation", None)
+            neural_derived_facts = neural_result.get("derived_facts", [])
+            neural_result_data = neural_result.get("result", None)
+
+            return ReasoningResponse(
+                success=True,
+                result=neural_result_data,
+                confidence=neural_confidence,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                explanation=neural_explanation,
+                derived_facts=neural_derived_facts,
+                metadata={"neural_result": neural_result}
+            )
+        except Exception as e:
+            execution_time = (time.perf_counter() - start_time) * 1000
+            return ReasoningResponse(
+                success=False,
+                result=None,
+                confidence=0.0,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                error=f"Neural reasoning failed: {e}",
+            )
+
     async def _neural_general_fallback(self, request: ReasoningRequest, patterns: dict[str, Any]) -> dict[str, Any]:
         """General neural fallback for other reasoning tasks"""
 
@@ -2045,7 +2098,7 @@ class UnifiedReasoningService:
 
         ENFORCEMENT MECHANISM: Neural facts must be symbolically derivable
         """
-        validation_result = {"valid": True, "issues": [], "validated_facts": 0, "invalid_facts": 0}
+        validation_result: dict[str, Any] = {"valid": True, "issues": [], "validated_facts": 0, "invalid_facts": 0}
 
         if not neural_response.derived_facts:
             return validation_result
@@ -2119,7 +2172,7 @@ class UnifiedReasoningService:
 
         ENFORCEMENT MECHANISM: Cross-layer results must be logically consistent
         """
-        consistency_result = {"consistent": True, "issues": [], "agreement_score": 0.0}
+        consistency_result: dict[str, Any] = {"consistent": True, "issues": [], "agreement_score": 0.0}
 
         try:
             # Check confidence agreement
@@ -2175,5 +2228,10 @@ async def prove_goal(goal: str, facts: list[str], rules: list[str], **kwargs) ->
 async def answer_question(question: str, context: dict[str, Any] = None, **kwargs) -> ReasoningResponse:
     """Convenience function for question answering"""
     service = UnifiedReasoningService()
-    request = ReasoningRequest(task=ReasoningTask.QUESTION_ANSWERING, query=question, context=context or {}, **kwargs)
+    request = ReasoningRequest(
+        task=ReasoningTask.QUESTION_ANSWERING,
+        query=question,
+        context=context or {},
+        **kwargs,
+    )
     return await service.reason(request)
