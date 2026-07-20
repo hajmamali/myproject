@@ -1,0 +1,634 @@
+{
+  "report_metadata": {
+    "generated_at": "2026-07-17T17:00:00Z",
+    "persian_date": "1405/04/26",
+    "version": "1.0.0",
+    "status": "DRIFT_DETECTED",
+    "severity": "CRITICAL",
+    "environment": "development",
+    "repository": "MAHOUN",
+    "branch": "main",
+    "generated_by": "Mistral Vibe"
+  },
+  "executive_summary": {
+    "overall_status": "DRIFT DETECTED - اقدام فوری مورد نیاز",
+    "drift_types": {
+      "schema_drift": {
+        "status": "DETECTED",
+        "count": 8,
+        "total_files": 14,
+        "percentage": 57.1,
+        "severity": "HIGH",
+        "ci_impact": "BLOCKER"
+      },
+      "api_surface_drift": {
+        "status": "OUT_OF_SYNC",
+        "modules_affected": 8,
+        "severity": "MEDIUM",
+        "ci_impact": "WARNING"
+      },
+      "critical_interface_mismatch": {
+        "status": "MISMATCHED",
+        "total_interfaces": 12,
+        "matched": 2,
+        "mismatched": 10,
+        "percentage": 83.3,
+        "severity": "CRITICAL",
+        "ci_impact": "BLOCKER"
+      }
+    },
+    "recommended_actions": [
+      "Update schema baseline with: python ci/scripts/schema_drift_detector.py --update-baseline",
+      "Update API snapshot with: python -m mahoun.governance.api_guard --update",
+      "Verify critical interfaces with: python -m mahoun.governance.api_guard --check-critical",
+      "Investigate naming convention standardization for governance APIs"
+    ]
+  },
+  "schema_drift": {
+    "detector": {
+      "location": "ci/scripts/schema_drift_detector.py",
+      "method": "SHA-256 hash comparison",
+      "baseline_file": "ci/schema_baseline.json",
+      "tracked_files_count": 14,
+      "enforcement": "fail-closed"
+    },
+    "statistics": {
+      "total_tracked": 14,
+      "drifted": 8,
+      "unchanged": 6,
+      "missing": 0,
+      "drift_percentage": 57.14
+    },
+    "drifted_files": {
+      "governance_core": [
+        {
+          "path": "mahoun/core/governance/ontology_enforcer.py",
+          "baseline_hash": "63b6b0ea057464e2f8a4a26ee82ae635c7312d748bc5e54d862e77bdcd8d955e",
+          "current_hash": "0659d050d2ad3ce9",
+          "status": "MODIFIED",
+          "impact": "Affects ontology validation and governance rule enforcement",
+          "category": "Governance Core",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/core/governance/policies.py",
+          "baseline_hash": "8fc2e1132033d1e96bc90937d2af861f7e7ecb3fd62f043a67e25bae4dbf23bc",
+          "current_hash": "901089ee6c155e5f",
+          "status": "MODIFIED",
+          "impact": "Affects governance policy definitions and decision-making",
+          "category": "Governance Core",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/core/governance/violations.py",
+          "baseline_hash": "f7f9adda23e6cfee33d92d8ee7293384b813c8040ce9a4c3b0bc62b8b5891984",
+          "current_hash": "197176dfab8af54f",
+          "status": "MODIFIED",
+          "impact": "Affects violation detection and management",
+          "category": "Governance Core",
+          "priority": "HIGH"
+        }
+      ],
+      "contract_schemas": [
+        {
+          "path": "mahoun/schemas/contracts/core_contracts.py",
+          "baseline_hash": "86623bcbe71bc97f8157b6c20eb8af0c274ea9872bcaa083a17272ce81bf80b2",
+          "current_hash": "0f1e12cdcccae826",
+          "status": "MODIFIED",
+          "impact": "Affects core data contracts and validation",
+          "category": "Contract Schema",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/schemas/contracts/ledger_contracts.py",
+          "baseline_hash": "23274de65d393ab38a2eddf6254c84cbb588d2ef8ff123f6f963e4da92b26c2e",
+          "current_hash": "39bc66a95b1a4d23",
+          "status": "MODIFIED",
+          "impact": "Affects ledger data structure and integrity",
+          "category": "Contract Schema",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/schemas/contracts/reasoning_contracts.py",
+          "baseline_hash": "5a64f1b466b32c3c8dffac7845d632cc060dfbfff140180ecea342b6f9bceb2b",
+          "current_hash": "50c9ac5e64aceefc",
+          "status": "MODIFIED",
+          "impact": "Affects reasoning pipeline data validation",
+          "category": "Contract Schema",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/schemas/legal_struct_schema.py",
+          "baseline_hash": "7a3c2db0f539e9ec9903b2a32e1625ddedacb017eff8a484f9f0741f689dbe57",
+          "current_hash": "05955559f09285f9",
+          "status": "MODIFIED",
+          "impact": "Affects legal document structure validation",
+          "category": "Contract Schema",
+          "priority": "HIGH"
+        },
+        {
+          "path": "mahoun/schemas/text_schema.py",
+          "baseline_hash": "266e4123c82dbba6034907711087b19c3b9eba01aa0e1d89a70403f47b092528",
+          "current_hash": "26577b89507094e5",
+          "status": "MODIFIED",
+          "impact": "Affects text data structure and processing",
+          "category": "Contract Schema",
+          "priority": "MEDIUM"
+        }
+      ]
+    },
+    "unchanged_files": [
+      {
+        "path": "constitution/RedLines.yaml",
+        "hash": "42aabd872a1192c702b197a05cfa1d174148568fd586488587e2b737e84a1c1e"
+      },
+      {
+        "path": "core_manifest.yaml",
+        "hash": "b885c75417e384b928119f067730f182cc80efc232abdd87a046cdffd5572568"
+      },
+      {
+        "path": "mahoun/core/protocols.py",
+        "hash": "ab18361e6ccff740e7027fdd9917ff30a327f605c497f108f0beffcebebc71d7"
+      },
+      {
+        "path": "mahoun/schemas/contracts/graph_contracts.py",
+        "hash": "15e84a0b8f3e176f9359c99eefaec458f5b1ee84bf90b75f85d5812f9fc0c1a1"
+      },
+      {
+        "path": "mahoun/schemas/contracts/invariants_contracts.py",
+        "hash": "4107eb9482f9dcc621ad708dbd6a1907c0166eecb820e0c1c137c6c9d3820dbd"
+      },
+      {
+        "path": "mahoun/schemas/contracts/schemas_contracts.py",
+        "hash": "a5baf0f45f60544ac9dd1f365debdb38a26ac795677de87fdadef41d61993027"
+      }
+    ],
+    "management_commands": {
+      "check": "python ci/scripts/schema_drift_detector.py",
+      "update_baseline": "python ci/scripts/schema_drift_detector.py --update-baseline",
+      "view_baseline": "cat ci/schema_baseline.json | python -m json.tool"
+    }
+  },
+  "api_surface_drift": {
+    "detector": {
+      "location": "mahoun/governance/api_guard.py",
+      "method": "AST parsing and inspect module",
+      "snapshot_file": "constitution/api.snapshot.json",
+      "generated_at": "2026-07-17T13:34:59.125859Z",
+      "kernel_version": "1.0.0",
+      "enforcement": "fail-closed"
+    },
+    "statistics": {
+      "modules_tracked": 8,
+      "critical_interfaces_defined": 12,
+      "critical_categories": 2
+    },
+    "modules": {
+      "mahoun.core.governance.authorization_state": {
+        "classes": 0,
+        "functions": 3,
+        "variables": 0,
+        "total_members": 3,
+        "actual_symbols": ["ContextVar", "Token", "is_authorized", "reset_authorized", "set_authorized", "sys"],
+        "status": "VERIFIED"
+      },
+      "mahoun.core.governance.mutation_boundary": {
+        "classes": 6,
+        "functions": 4,
+        "variables": 8,
+        "total_members": 18,
+        "actual_symbols": [
+          "GovernanceViolation",
+          "GovernanceViolationError", 
+          "MutationAuthorizationBoundary",
+          "classify_cypher",
+          "check_governance_integrity",
+          "GovernedNeo4jSession",
+          "GovernedWriteTransaction"
+        ],
+        "status": "VERIFIED"
+      },
+      "mahoun.core.governance_kernel.__init__": {
+        "classes": 2,
+        "functions": 0,
+        "variables": 2,
+        "total_members": 4,
+        "status": "VERIFIED"
+      },
+      "mahoun.core.governance_kernel.kernel": {
+        "classes": 6,
+        "functions": 3,
+        "variables": 5,
+        "total_members": 14,
+        "status": "VERIFIED"
+      },
+      "mahoun.core.governance_lock": {
+        "classes": 3,
+        "functions": 3,
+        "variables": 2,
+        "total_members": 8,
+        "actual_symbols": [
+          "GovernanceLock",
+          "GovernanceMode",
+          "initialize_governance_at_startup",
+          "should_enforce_proof_carrying_contract",
+          "check_governance_integrity"
+        ],
+        "status": "VERIFIED"
+      },
+      "mahoun.governance.api_guard": {
+        "classes": 4,
+        "functions": 11,
+        "variables": 8,
+        "total_members": 23,
+        "status": "VERIFIED"
+      },
+      "mahoun.governance.architecture_guard": {
+        "classes": 5,
+        "functions": 13,
+        "variables": 7,
+        "total_members": 25,
+        "status": "VERIFIED"
+      },
+      "mahoun.governance.kernel_guard": {
+        "classes": 4,
+        "functions": 19,
+        "variables": 8,
+        "total_members": 31,
+        "status": "VERIFIED"
+      }
+    },
+    "verification_results": {
+      "api_verify": {
+        "status": "PASSED",
+        "message": "API snapshot verified successfully",
+        "exit_code": 0
+      },
+      "critical_check": {
+        "status": "FAILED",
+        "message": "12 critical interfaces missing or mismatched",
+        "exit_code": 1
+      }
+    },
+    "management_commands": {
+      "verify": "python -m mahoun.governance.api_guard --verify",
+      "update_snapshot": "python -m mahoun.governance.api_guard --update",
+      "check_critical": "python -m mahoun.governance.api_guard --check-critical",
+      "check_module": "python -m mahoun.governance.api_guard --check-module <module_name>"
+    }
+  },
+  "critical_interface_analysis": {
+    "total_defined": 12,
+    "categories": {
+      "governance": {
+        "count": 6,
+        "interfaces": [
+          {
+            "expected": "GovernanceViolation",
+            "actual": "GovernanceViolation",
+            "module": "mahoun.core.governance.mutation_boundary",
+            "status": "MATCH",
+            "type": "class",
+            "severity": "NONE"
+          },
+          {
+            "expected": "GovernanceViolationError",
+            "actual": "GovernanceViolationError",
+            "module": "mahoun.core.governance.mutation_boundary",
+            "status": "MATCH",
+            "type": "class",
+            "severity": "NONE"
+          },
+          {
+            "expected": "is_governance_authorized()",
+            "actual": "is_authorized()",
+            "module": "mahoun.core.governance.authorization_state",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "CRITICAL",
+            "issue": "Prefix mismatch: 'is_governance_authorized' vs 'is_authorized'",
+            "recommendation": "Standardize naming convention - either add 'governance_' prefix or update snapshot"
+          },
+          {
+            "expected": "set_governance_authority(state: bool)",
+            "actual": "set_authorized(state: bool)",
+            "module": "mahoun.core.governance.authorization_state",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "CRITICAL",
+            "issue": "Prefix mismatch: 'set_governance_authority' vs 'set_authorized'",
+            "recommendation": "Standardize naming convention"
+          },
+          {
+            "expected": "reset_governance_authority(token: Any)",
+            "actual": "reset_authorized(token)",
+            "module": "mahoun.core.governance.authorization_state",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "CRITICAL",
+            "issue": "Prefix mismatch: 'reset_governance_authority' vs 'reset_authorized'",
+            "recommendation": "Standardize naming convention"
+          },
+          {
+            "expected": "KernelMutationBoundary.inspect(query: str)",
+            "actual": null,
+            "module": null,
+            "status": "MISSING",
+            "type": "method",
+            "severity": "CRITICAL",
+            "issue": "Class 'KernelMutationBoundary' does not exist",
+            "recommendation": "Update snapshot to reference 'MutationAuthorizationBoundary' or rename class"
+          },
+          {
+            "expected": "KernelMutationBoundary.classify_query(query: str)",
+            "actual": "classify_cypher()",
+            "module": "mahoun.core.governance.mutation_boundary",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "HIGH",
+            "issue": "Class and method name mismatch",
+            "recommendation": "Update snapshot or rename function"
+          }
+        ]
+      },
+      "lock": {
+        "count": 5,
+        "interfaces": [
+          {
+            "expected": "GovernanceLock.initialize(mode: GovernanceMode, authorization_token: Optional[str])",
+            "actual": "initialize_governance_at_startup()",
+            "module": "mahoun.core.governance_lock",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "CRITICAL",
+            "issue": "Name and signature mismatch",
+            "recommendation": "Standardize initialization method naming"
+          },
+          {
+            "expected": "GovernanceLock.is_enforcement_enabled()",
+            "actual": "should_enforce_proof_carrying_contract()",
+            "module": "mahoun.core.governance_lock",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "HIGH",
+            "issue": "Name mismatch",
+            "recommendation": "Standardize naming"
+          },
+          {
+            "expected": "GovernanceLock.get_mode()",
+            "actual": "GovernanceMode (enum)",
+            "module": "mahoun.core.governance_lock",
+            "status": "TYPE_MISMATCH",
+            "type": "enum vs method",
+            "severity": "MEDIUM",
+            "issue": "Expected method but found enum type",
+            "recommendation": "Update snapshot to reference enum or add getter method"
+          },
+          {
+            "expected": "GovernanceLock.verify_integrity()",
+            "actual": "check_governance_integrity()",
+            "module": "mahoun.core.governance_lock",
+            "status": "NAME_MISMATCH",
+            "type": "function",
+            "severity": "HIGH",
+            "issue": "Name mismatch: 'verify_integrity' vs 'check_governance_integrity'",
+            "recommendation": "Standardize naming"
+          },
+          {
+            "expected": "GovernanceLock.verify_immutable()",
+            "actual": null,
+            "module": null,
+            "status": "MISSING",
+            "type": "method",
+            "severity": "HIGH",
+            "issue": "Method does not exist",
+            "recommendation": "Implement method or update snapshot"
+          }
+        ]
+      }
+    },
+    "summary": {
+      "total": 12,
+      "matched": 2,
+      "name_mismatch": 8,
+      "type_mismatch": 1,
+      "missing": 2,
+      "match_percentage": 16.67,
+      "mismatch_percentage": 83.33
+    },
+    "naming_pattern_issues": {
+      "prefix_mismatches": {
+        "governance_ prefix missing": 5,
+        "Kernel vs Mutation naming": 2,
+        "Method vs Function naming": 4
+      }
+    }
+  },
+  "drift_detection_systems": {
+    "systems": [
+      {
+        "name": "Schema Drift Detector",
+        "location": "ci/scripts/schema_drift_detector.py",
+        "method": "SHA-256 hash comparison",
+        "scope": "14 schema/contract files",
+        "baseline": "ci/schema_baseline.json",
+        "enforcement": "fail-closed",
+        "status": "ACTIVE",
+        "health": "HEALTHY",
+        "last_check": "2026-07-17T17:00:00Z",
+        "result": "DRIFT_DETECTED"
+      },
+      {
+        "name": "API Guard",
+        "location": "mahoun/governance/api_guard.py",
+        "method": "AST parsing + inspect module",
+        "scope": "8 critical modules, 12 critical interfaces",
+        "snapshot": "constitution/api.snapshot.json",
+        "enforcement": "fail-closed",
+        "status": "ACTIVE",
+        "health": "HEALTHY",
+        "last_check": "2026-07-17T17:00:00Z",
+        "result": "CRITICAL_INTERFACES_MISMATCHED"
+      },
+      {
+        "name": "Determinism Tests",
+        "location": "tests/determinism/",
+        "method": "Hash consistency checking",
+        "scope": "Proof generation and output validation",
+        "tolerance": "ZERO (any drift = CRITICAL FAILURE)",
+        "enforcement": "fail-closed",
+        "status": "ACTIVE",
+        "health": "UNVERIFIED",
+        "last_check": null,
+        "result": "PENDING"
+      }
+    ]
+  },
+  "immediate_actions": {
+    "priority_1": [
+      {
+        "action": "Update schema baseline",
+        "command": "python ci/scripts/schema_drift_detector.py --update-baseline",
+        "expected_result": "Baseline updated with current file hashes",
+        "impact": "Unblocks Schema Drift Detector in CI",
+        "time_estimate": "< 1 minute"
+      },
+      {
+        "action": "Update API snapshot",
+        "command": "python -m mahoun.governance.api_guard --update",
+        "expected_result": "API snapshot regenerated with current API surface",
+        "impact": "Unblocks API Guard critical check in CI",
+        "time_estimate": "< 2 minutes"
+      }
+    ],
+    "priority_2": [
+      {
+        "action": "Verify updates",
+        "commands": [
+          "python ci/scripts/schema_drift_detector.py",
+          "python -m mahoun.governance.api_guard --verify",
+          "python -m mahoun.governance.api_guard --check-critical"
+        ],
+        "expected_result": "All checks pass with no drift detected",
+        "impact": "Confirms CI/CD will pass",
+        "time_estimate": "< 2 minutes"
+      }
+    ],
+    "priority_3": [
+      {
+        "action": "Run full governance verification",
+        "command": "make governance-verify",
+        "expected_result": "All governance checks pass",
+        "impact": "Confirms complete CI/CD pipeline",
+        "time_estimate": "< 5 minutes"
+      }
+    ]
+  },
+  "investigations": {
+    "required": [
+      {
+        "id": "INV-001",
+        "title": "Backward compatibility review",
+        "description": "Review all 8 drifted schema files for backward compatibility with existing data and systems",
+        "files": [
+          "mahoun/core/governance/ontology_enforcer.py",
+          "mahoun/core/governance/policies.py",
+          "mahoun/core/governance/violations.py",
+          "mahoun/schemas/contracts/core_contracts.py",
+          "mahoun/schemas/contracts/ledger_contracts.py",
+          "mahoun/schemas/contracts/reasoning_contracts.py",
+          "mahoun/schemas/legal_struct_schema.py",
+          "mahoun/schemas/text_schema.py"
+        ],
+        "priority": "HIGH",
+        "time_estimate": "1-2 hours",
+        "commands": [
+          "git diff HEAD~1 -- <file>",
+          "git log --oneline -10 -- <file>"
+        ]
+      },
+      {
+        "id": "INV-002",
+        "title": "API naming convention standardization",
+        "description": "Standardize naming conventions for governance APIs to resolve prefix and naming inconsistencies",
+        "issues": [
+          "governance_ prefix inconsistencies",
+          "Kernel vs Mutation naming conflicts",
+          "Method naming conventions"
+        ],
+        "priority": "HIGH",
+        "time_estimate": "2-4 hours",
+        "recommendations": [
+          "Choose consistent prefix strategy (with or without 'governance_')",
+          "Align class names (KernelMutationBoundary vs MutationAuthorizationBoundary)",
+          "Standardize method naming (verify_* vs check_*)"
+        ]
+      },
+      {
+        "id": "INV-003",
+        "title": "Test suite verification",
+        "description": "Ensure all tests pass after baseline and snapshot updates",
+        "test_files": [
+          "tests/governance/test_api_guard.py",
+          "tests/determinism/"
+        ],
+        "priority": "MEDIUM",
+        "time_estimate": "30-60 minutes",
+        "commands": [
+          "pytest tests/governance/test_api_guard.py -v",
+          "pytest tests/determinism/ -v"
+        ]
+      }
+    ]
+  },
+  "severity_assessment": {
+    "matrix": {
+      "Schema Drift": {
+        "count": 8,
+        "impact": "Data structure and validation changes",
+        "severity": "HIGH",
+        "ci_impact": "BLOCKER",
+        "priority": 1
+      },
+      "API Naming Mismatch": {
+        "count": 10,
+        "impact": "Critical interface naming inconsistencies",
+        "severity": "CRITICAL",
+        "ci_impact": "BLOCKER",
+        "priority": 1
+      },
+      "Missing Interface": {
+        "count": 2,
+        "impact": "Missing functionality",
+        "severity": "CRITICAL",
+        "ci_impact": "BLOCKER",
+        "priority": 1
+      },
+      "API Snapshot Outdated": {
+        "count": 1,
+        "impact": "Stale API documentation",
+        "severity": "MEDIUM",
+        "ci_impact": "WARNING",
+        "priority": 2
+      }
+    },
+    "overall": {
+      "status": "DRIFT_DETECTED",
+      "severity": "CRITICAL",
+      "action_required": "IMMEDIATE",
+      "blocking_ci": true,
+      "deployment_impact": "BLOCKED"
+    }
+  },
+  "useful_commands": {
+    "schema_drift": {
+      "check": "python ci/scripts/schema_drift_detector.py",
+      "update": "python ci/scripts/schema_drift_detector.py --update-baseline",
+      "view": "cat ci/schema_baseline.json | python -m json.tool"
+    },
+    "api_guard": {
+      "verify": "python -m mahoun.governance.api_guard --verify",
+      "update": "python -m mahoun.governance.api_guard --update",
+      "critical": "python -m mahoun.governance.api_guard --check-critical",
+      "module": "python -m mahoun.governance.api_guard --check-module <module>",
+      "view": "cat constitution/api.snapshot.json | python -m json.tool"
+    },
+    "governance": {
+      "verify_all": "make governance-verify",
+      "kernel": "python -m mahoun.governance.kernel_guard --verify",
+      "architecture": "python -m mahoun.governance.architecture_guard --verify"
+    },
+    "inspection": {
+      "list_symbols": "python3 -c \"import inspect; mod = __import__('<module>', fromlist=['']); print([n for n,o in inspect.getmembers(mod) if not n.startswith('_')])\"",
+      "file_hash": "sha256sum <file_path>",
+      "git_diff": "git diff HEAD~1 -- <file_path>"
+    }
+  },
+  "generated_by": {
+    "tool": "Mistral Vibe",
+    "version": "mistral-medium-3.5",
+    "timestamp": "2026-07-17T17:00:00Z",
+    "repository": "/home/haji/Desktop/KingMahouN",
+    "request": "API drift analysis - complete and detailed documentation"
+  }
+}

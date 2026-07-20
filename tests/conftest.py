@@ -122,7 +122,7 @@ def warmup_embedding_model():
             ...
     
     Note: Not autouse=True to avoid slowing down unrelated tests.
-    """/home/haji/Desktop/KingMahouN/tests/
+    """
     try:
         from sentence_transformers import SentenceTransformer
         

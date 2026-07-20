@@ -9,16 +9,7 @@ import json
 import argparse
 
 def generate_coverage(contracts_path: str, tests_dir: str, output_path: str):
-    print(f"Calculating contract coverage mapping for {tests_dir}...")
-    # Simulate logic
-    report = {
-        "mapped_tests": 1940,
-        "unmapped_tests": 231,
-        "coverage_percentage": 89.3
-    }
-    with open(output_path, "w") as f:
-        json.dump(report, f, indent=2)
-    return report
+    raise NotImplementedError("Scaffold only — see Issue 4 tracking reference")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

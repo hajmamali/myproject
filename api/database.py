@@ -88,10 +88,16 @@ async def init_neo4j():
             max_connection_pool_size=settings.neo4j_max_connection_pool_size,
             connection_acquisition_timeout=settings.neo4j_connection_timeout
         )
-        # Test connection and apply schema
+        # Test connection and apply schema.
+        # GOVERNED EXEMPTION (startup only): this raw `neo4j_driver.session()`
+        # runs BEFORE Neo4jConnection / GovernedNeo4jSession exist, because
+        # this call is what brings the connection up. It is a one-time
+        # schema-apply step executed during DB bootstrap. After bootstrap the
+        # runtime path is `Neo4jConnection.execute_query()` /
+        # `governed_session()`. Documented in AGENTRULES.md governance section.
         async with neo4j_driver.session() as session:
             await session.run("RETURN 1")
-            
+
             # Apply Graph Schema using Switchboard
             try:
                 from mahoun.switchboard import switchboard
@@ -131,17 +137,13 @@ async def close_neo4j():
         log.info("Neo4j driver closed")
 
 
-async def get_neo4j():
-    """Get Neo4j session"""
-    if not HAS_NEO4J:
-        raise RuntimeError("Neo4j driver not installed. Install with: pip install neo4j")
-    if not neo4j_driver:
-        await init_neo4j()
-    if neo4j_driver:
-        async with neo4j_driver.session() as session:
-            yield session
-    else:
-        raise RuntimeError("Neo4j driver not initialized")
+# NOTE: Historical get_neo4j() / Depends(get_neo4j) session-yielding helper was
+# a latent governance bypass (raw neo4j_driver.session() handed to routers).
+# It had zero callers in this build (grep across api/, services/, tests/).
+# Removed. All Neo4j access must go through mahoun.graph.neo4j.connection:
+#   - READS: Neo4jConnection.execute_query() (classification-enforced)
+#   - WRITES: Neo4jConnection.governed_session() -> GovernedNeo4jSession
+# See AGENTRULES.md / Governance section.
 
 
 # ============================================================================

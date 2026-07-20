@@ -9,9 +9,7 @@ import json
 import argparse
 
 def validate_schema(path: str):
-    print(f"Validating contract schema for {path}...")
-    # Simulate validation
-    return True
+    raise NotImplementedError("Scaffold only — see Issue 4 tracking reference")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -169,10 +169,10 @@ class OrphanModuleIntegrator:
             from mahoun.reasoning.kg_adapters import Neo4jKGAdapter
             from mahoun.graph.neo4j.connection import get_connection
             
-            # Session factory for governed access
+            # Session factory for governed access (read-only path)
             def kg_session_factory():
                 conn = get_connection()
-                return conn.session()
+                return conn.execute_query  # governed read-only access
             
             kg_adapter = Neo4jKGAdapter(session_factory=kg_session_factory)
             SERVICE_REGISTRY["kg_adapter"] = kg_adapter

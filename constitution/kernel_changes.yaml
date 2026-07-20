@@ -1,0 +1,62 @@
+# =============================================================================
+# MAHOUN KERNEL CHANGE TRACKING
+# =============================================================================
+# Source of Truth: Authorized kernel modifications
+# 
+# This file tracks all authorized changes to the Tier-0 kernel.
+# A kernel hash change WITHOUT a corresponding entry here will FAIL verification.
+# 
+# ARCHITECTURAL PRINCIPLE:
+# - Every kernel modification requires explicit authorization
+# - Version bump is mandatory
+# - Reason and approver must be documented
+# - Hash changes without authorization will cause CI to fail
+# =============================================================================
+
+# Current version of the kernel
+current_version: "1.0.0"
+
+# List of all authorized kernel changes
+changes:
+  # Example entry (initial version)
+  - version: "1.0.0"
+    date: "2026-07-17T00:00:00Z"
+    files_changed:
+      - "mahoun/core/governance_kernel/__init__.py"
+      - "mahoun/core/governance_kernel/kernel.py"
+      - "mahoun/core/governance/authorization_state.py"
+      - "mahoun/core/governance/mutation_boundary.py"
+      - "mahoun/core/governance_lock.py"
+    reason: "Initial constitutional kernel implementation with zero-dependency design"
+    approved_by: "architecture-team"
+    authorization_hash: "initial_hash_placeholder"
+    # Additional metadata
+    severity: "critical"
+    category: "initial_implementation"
+    related_pr: "N/A"
+    audit_record: " see PHASE_1_COMPLETION_REPORT.md"
+
+# =============================================================================
+# AUTHORIZATION RULES
+# =============================================================================
+# 
+# To authorize a new kernel change:
+# 
+#   python -m mahoun.governance.kernel_guard \
+#       --authorize-change \
+#       --version 1.1.0 \
+#       --reason "Description of the change" \
+#       --approved-by "security-team"
+# 
+# Authorized approvers (from kernel.manifest.yaml):
+#   - security-team
+#   - architecture-team
+#   - maintainer
+# 
+# Requirements:
+#   - Reason must be at least 10 characters
+#   - Approver must be in authorized list
+#   - Version must be bumped (semantic versioning recommended)
+#   - All modified files must be listed
+# 
+# =============================================================================

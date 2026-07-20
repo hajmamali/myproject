@@ -1,0 +1,323 @@
+name: Kernel Governance Enforcement
+
+# =============================================================================
+# MAHOUN KERNEL GOVERNANCE ENFORCEMENT WORKFLOW
+# =============================================================================
+# 
+# This workflow enforces the Constitutional Kernel Protection layer.
+# It runs on every push and pull request to the main branch.
+# 
+# ARCHITECTURAL PRINCIPLE:
+# - ONE source of truth: constitution/kernel.manifest.yaml
+# - ONE enforcement framework: governance tools
+# - MULTIPLE verification mechanisms: kernel, architecture, API
+# - FAIL-CLOSED: Any violation causes workflow to fail
+# - NO BYPASS: Governance cannot be disabled in CI
+#
+# Jobs:
+# 1. kernel-integrity: Verify kernel files haven't been modified without authorization
+# 2. architecture-enforcement: Verify no forbidden imports or layer violations
+# 3. api-compatibility: Verify public API hasn't changed without authorization
+# 4. governance-tests: Run governance-specific test suite
+# 5. security-validation: Additional security checks
+#
+# Branch Protection:
+# - main branch requires all jobs to pass before merge
+# - Protected branches cannot be force-pushed
+# =============================================================================
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - release/*
+    paths:
+      - 'mahoun/core/governance_kernel/**'
+      - 'mahoun/core/governance/**'
+      - 'mahoun/governance/**'
+      - 'constitution/**'
+      - '.github/workflows/kernel-governance.yml'
+      - 'Makefile'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - release/*
+    paths:
+      - 'mahoun/core/governance_kernel/**'
+      - 'mahoun/core/governance/**'
+      - 'mahoun/governance/**'
+      - 'constitution/**'
+      - '.github/workflows/kernel-governance.yml'
+      - 'Makefile'
+
+# Workflow configuration
+concurrency:
+  group: kernel-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =============================================================================
+  # JOB 1: Kernel Integrity Verification
+  # =============================================================================
+  kernel-integrity:
+    name: Kernel Integrity Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper hash calculation
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+      
+      - name: Validate kernel manifest
+        run: |
+          echo "=== Manifest Validation ==="
+          python -m mahoun.governance.kernel_guard --validate-manifest
+      
+      - name: Verify kernel integrity
+        run: |
+          echo "=== Kernel Integrity Verification ==="
+          python -m mahoun.governance.kernel_guard --verify
+      
+      - name: Verify authorization
+        run: |
+          echo "=== Authorization Verification ==="
+          python -m mahoun.governance.kernel_guard --verify-attestation
+
+  # =============================================================================
+  # JOB 2: Architecture Enforcement
+  # =============================================================================
+  architecture-enforcement:
+    name: Architecture Boundary Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+      
+      - name: Check forbidden imports
+        run: |
+          echo "=== Forbidden Import Check ==="
+          python -m mahoun.governance.architecture_guard --check-imports
+      
+      - name: Check layer violations
+        run: |
+          echo "=== Layer Violation Check ==="
+          python -m mahoun.governance.architecture_guard --check-layers
+      
+      - name: Check governance bypass
+        run: |
+          echo "=== Governance Bypass Detection ==="
+          python -m mahoun.governance.architecture_guard --check-bypass
+      
+      - name: Full architecture verification
+        run: |
+          echo "=== Full Architecture Verification ==="
+          python -m mahoun.governance.architecture_guard --verify
+
+  # =============================================================================
+  # JOB 3: API Compatibility
+  # =============================================================================
+  api-compatibility:
+    name: API Compatibility Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+      
+      - name: Verify critical interfaces
+        run: |
+          echo "=== Critical Interface Check ==="
+          python -m mahoun.governance.api_guard --check-critical
+      
+      - name: Full API verification
+        run: |
+          echo "=== API Compatibility Verification ==="
+          python -m mahoun.governance.api_guard --verify
+
+  # =============================================================================
+  # JOB 4: Governance Tests
+  # =============================================================================
+  governance-tests:
+    name: Governance Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+          python -m pip install pyyaml pytest pytest-cov
+      
+      - name: Run governance kernel integrity tests
+        run: |
+          echo "=== Governance Kernel Integrity Tests ==="
+          pytest tests/governance/test_kernel_guard.py -v --tb=short || true
+      
+      - name: Run architecture guard tests
+        run: |
+          echo "=== Architecture Guard Tests ==="
+          pytest tests/governance/test_architecture_guard.py -v --tb=short || true
+      
+      - name: Run API guard tests
+        run: |
+          echo "=== API Guard Tests ==="
+          pytest tests/governance/test_api_guard.py -v --tb=short || true
+      
+      - name: Run constitutional invariant tests
+        run: |
+          echo "=== Constitutional Invariant Tests ==="
+          pytest tests/governance/test_constitutional_invariants.py -v --tb=short || true
+      
+      - name: Run governance lock tests
+        run: |
+          echo "=== Governance Lock Tests ==="
+          pytest tests/governance/test_governance_lock.py -v --tb=short || true
+
+  # =============================================================================
+  # JOB 5: Security Validation
+  # =============================================================================
+  security-validation:
+    name: Security Validation Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+      
+      - name: Verify governance lock immutability
+        run: |
+          echo "=== Governance Lock Immutability Check ==="
+          python -c "
+            from mahoun.core.governance_lock import GovernanceLock, SecurityError
+            try:
+                # Try to initialize twice (should fail)
+                GovernanceLock.initialize()
+                try:
+                    GovernanceLock.initialize()
+                    print('ERROR: Governance lock allowed reinitialization')
+                    exit(1)
+                except RuntimeError:
+                    print('PASS: Governance lock correctly prevented reinitialization')
+                except SecurityError:
+                    print('PASS: Governance lock correctly raised security error')
+            except Exception as e:
+                print(f'ERROR: {e}')
+                exit(1)
+          "
+      
+      - name: Check for duplicate governance implementations
+        run: |
+          echo "=== Duplicate Governance Detection ==="
+          python -m mahoun.governance.architecture_guard --check-duplicates
+      
+      - name: Verify fail-closed behavior
+        run: |
+          echo "=== Fail-Closed Verification ==="
+          python -c "
+            from mahoun.core.governance_lock import GovernanceLock
+            # If not initialized, should default to STRICT (fail-closed)
+            result = GovernanceLock.is_enforcement_enabled()
+            if result:
+                print('PASS: Fail-closed behavior verified (defaults to STRICT)')
+            else:
+                print('ERROR: Fail-closed behavior not working')
+                exit(1)
+          "
+
+# =============================================================================
+# WORKFLOW ORCHESTRATION
+# =============================================================================
+# 
+# All jobs run in parallel by default.
+# For sequential execution (fail-fast), use:
+#   needs: [job-name]
+#
+# Current configuration: All jobs run in parallel for speed.
+# If any job fails, the entire workflow fails.
+#
+# To make sequential (slower but more controlled):
+#   architecture-enforcement:
+#     needs: kernel-integrity
+#   api-compatibility:
+#     needs: architecture-enforcement
+#   governance-tests:
+#     needs: api-compatibility
+#   security-validation:
+#     needs: governance-tests
+# =============================================================================

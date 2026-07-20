@@ -1,0 +1,312 @@
+# =============================================================================
+# MAHOUN CONSTITUTIONAL KERNEL MANIFEST
+# =============================================================================
+# Source of Truth: ONE Constitution Manifest for the entire repository
+# 
+# ARCHITECTURAL PRINCIPLE:
+# - Tier-0 (Constitution/Kernel): Zero-dependency, cannot depend on governance tools
+# - Tier-1 (Police/Enforcement): Enforces rules, depends on Tier-0 only for inspection
+# - Dependency direction: Tier-0 -> Tier-1 (Tier-0 independent of Tier-1)
+#
+# This manifest is machine-readable and used by:
+# - kernel_guard.py (integrity verification)
+# - architecture_guard.py (boundary enforcement)
+# - CI/CD pipelines (governance gates)
+# =============================================================================
+
+kernel:
+  name: "mahoun_governance_kernel"
+  version: "1.0.0"
+  description: "Immutable Constitutional Kernel - Zero external dependencies"
+  strict_mode: true
+  hash_algorithm: "SHA256"
+
+# =============================================================================
+# TIER DEFINITIONS
+# =============================================================================
+#
+# ARCHITECTURAL PRINCIPLE:
+# - Tier-0 (Constitution): Zero external dependencies, cannot import from any other tier
+# - Tier-1 (Police): Can import from Tier-0 (read-only), can import from own tier
+# - Tier-2 (Infrastructure): Can import from Tier-0 and Tier-1
+# - Tier-3 (Application): Can import from all tiers
+#
+# CRITICAL: Tier-0 MUST NEVER import from Tier-1, Tier-2, or Tier-3
+# This is the foundational invariant of the constitutional architecture
+# =============================================================================
+
+tiers:
+  tier_0:
+    description: "The Constitution - Core Kernel. Zero external dependencies. Non-bypassable. CANNOT depend on governance tools."
+    protected_files:
+      - "mahoun/core/governance_kernel/__init__.py"
+      - "mahoun/core/governance_kernel/kernel.py"
+    allowed_imports:
+      - "stdlib"
+      - "contextvars"
+      - "dataclasses"
+      - "datetime"
+      - "enum"
+      - "hashlib"
+      - "json"
+      - "logging"
+      - "re"
+      - "typing"
+      - "unicodedata"
+    forbidden_imports:
+      # Tier-0 must NOT import from any other Mahoun modules
+      - "mahoun.governance"
+      - "mahoun.core.governance"
+      - "mahoun.infrastructure"
+      - "mahoun.api"
+      - "mahoun.pipelines"
+      - "mahoun.agents"
+      - "mahoun.services"
+      # Tier-0 must NOT import external dependencies
+      - "sqlalchemy"
+      - "neo4j"
+      - "openai"
+      - "anthropic"
+      - "torch"
+      - "transformers"
+      - "requests"
+      - "aiohttp"
+      - "pydantic"
+      - "fastapi"
+      - "langchain"
+      - "llama_index"
+      - "chromadb"
+      - "weaviate"
+      - "pinecone"
+      - "boto3"
+      - "google.cloud"
+      - "azure"
+
+  tier_1:
+    description: "The Police - Governance Enforcement Tools. Can import from Tier-0 (read-only) and own tier. Cannot import from Tier-2+."
+    protected_files:
+      - "mahoun/governance/kernel_guard.py"
+      - "mahoun/governance/architecture_guard.py"
+      - "mahoun/governance/api_guard.py"
+    allowed_imports:
+      - "stdlib"
+      - "mahoun.core.governance_kernel"  # Read-only inspection of Tier-0
+      - "mahoun.governance"  # Can import from own tier
+      - "ast"
+      - "yaml"
+      - "json"
+      - "hashlib"
+    forbidden_imports:
+      # Tier-1 must NOT import from higher tiers (Tier-2+)
+      - "mahoun.api"
+      - "mahoun.pipelines"
+      - "mahoun.agents"
+      - "mahoun.infrastructure"
+      - "mahoun.services"
+
+  tier_2:
+    description: "Infrastructure and Services - May use governance for enforcement"
+    allowed_imports:
+      - "mahoun.core.governance_kernel"
+      - "mahoun.governance"
+
+  tier_3:
+    description: "Application Layer - Full access but subject to governance"
+    allowed_imports:
+      - "*"
+
+# =============================================================================
+# ARCHITECTURE BOUNDARIES
+# =============================================================================
+
+boundaries:
+  forbidden_imports:
+    tier_0:
+      - "mahoun.governance"
+      - "mahoun.infrastructure"
+      - "mahoun.api"
+      - "mahoun.pipelines"
+      - "mahoun.agents"
+      - "mahoun.security"
+      - "sqlalchemy"
+      - "neo4j"
+      - "openai"
+      - "anthropic"
+      - "torch"
+      - "transformers"
+      - "requests"
+      - "aiohttp"
+      - "pydantic"
+      - "fastapi"
+      - "langchain"
+      - "llama_index"
+      - "chromadb"
+      - "weaviate"
+      - "pinecone"
+      - "boto3"
+      - "google.cloud"
+      - "azure"
+
+  tier_boundary_violations:
+    tier_0_cannot_import:
+      - "tier_1"
+      - "tier_2"
+      - "tier_3"
+
+  layer_violations:
+    forbidden_layers_for_tier_0:
+      - "api"
+      - "infrastructure"
+      - "pipelines"
+      - "agents"
+      - "services"
+      - "adapters"
+
+# =============================================================================
+# CRITICAL MODULES
+# =============================================================================
+
+critical_modules:
+  - module: "mahoun.core.governance_kernel.kernel"
+    description: "Core governance kernel with mutation boundary enforcement"
+    critical_apis:
+      - "GovernanceViolation"
+      - "GovernanceViolationError"
+      - "KernelMutationBoundary"
+      - "QueryType"
+      - "ViolationCategory"
+      - "ViolationSeverity"
+      - "is_governance_authorized"
+      - "set_governance_authority"
+      - "reset_governance_authority"
+
+  - module: "mahoun.core.governance.authorization_state"
+    description: "Authorization state management for governance context"
+    critical_apis:
+      - "_authorized_write_ctx"
+      - "is_authorized"
+      - "set_authorized"
+      - "reset_authorized"
+
+  - module: "mahoun.core.governance.mutation_boundary"
+    description: "Mutation authorization boundary for Cypher queries"
+    critical_apis:
+      - "classify_cypher"
+      - "MutationAuthorizationBoundary"
+
+  - module: "mahoun.core.governance_lock"
+    description: "Immutable governance lock preventing runtime bypass"
+    critical_apis:
+      - "GovernanceLock"
+      - "GovernanceMode"
+      - "initialize"
+      - "is_enforcement_enabled"
+      - "verify_immutable"
+      - "verify_integrity"
+
+# =============================================================================
+# CRITICAL APIS
+# =============================================================================
+
+critical_apis:
+  governance:
+    - "GovernanceViolation"
+    - "GovernanceViolationError"
+    - "is_governance_authorized()"
+    - "set_governance_authority(state: bool)"
+    - "reset_governance_authority(token: Any)"
+    - "KernelMutationBoundary.inspect(query: str)"
+    - "KernelMutationBoundary.classify_query(query: str)"
+
+  lock:
+    - "GovernanceLock.initialize(mode: GovernanceMode, authorization_token: Optional[str])"
+    - "GovernanceLock.is_enforcement_enabled()"
+    - "GovernanceLock.get_mode()"
+    - "GovernanceLock.verify_integrity()"
+    - "GovernanceLock.verify_immutable()"
+
+# =============================================================================
+# REQUIRED CHECKS
+# =============================================================================
+
+required_checks:
+  pre_commit:
+    - kernel_integrity
+    - architecture_boundaries
+    - api_compatibility
+    - forbidden_imports
+    - layer_violations
+
+  pre_merge:
+    - kernel_integrity
+    - architecture_boundaries
+    - api_compatibility
+    - forbidden_imports
+    - layer_violations
+    - governance_tests
+    - security_validation
+
+  ci_gates:
+    - kernel-integrity
+    - architecture-enforcement
+    - api-compatibility
+    - governance-tests
+    - security-validation
+
+  runtime:
+    - governance_lock_integrity
+    - enforcement_enabled
+
+# =============================================================================
+# KERNEL CHANGE POLICY
+# =============================================================================
+
+kernel_change_policy:
+  require_version_bump: true
+  require_approval_label:
+    - "kernel-change"
+    - "governance-override"
+  require_audit_record: true
+  require_authorization: true
+  authorized_approvers:
+    - "security-team"
+    - "architecture-team"
+    - "maintainer"
+  change_record_path: "constitution/kernel_changes.yaml"
+
+# =============================================================================
+# DETECTION CONFIGURATION
+# =============================================================================
+
+detection:
+  duplicate_symbols:
+    enabled: true
+    check_packages:
+      - "mahoun.core.governance_kernel"
+      - "mahoun.core.governance"
+      - "mahoun.governance"
+    forbidden_duplicates:
+      - "policy_engine"
+      - "governance_controller"
+      - "enforcement_function"
+      - "violation_check"
+      - "governance_kernel"
+
+  governance_bypass:
+    enabled: true
+    patterns:
+      - "raw_session ="
+      - "create_raw_session\\("
+      - "bypass_governance\\("
+      - "disable_enforcement\\("
+      - "override_authorization\\("
+      - "Session\\("
+      - "engine\\.connect\\("
+    detect_raw_sessions: true
+    detect_direct_database_access: true
+    detect_unauthorized_execution: true
+
+  layer_violations:
+    enabled: true
+    strict: true
+    fail_on_violation: true

@@ -54,6 +54,7 @@ from mahoun.reasoning.fortress_integration import (
     FortressProtectedReasoningService,  # noqa: F401
     create_fortress_protected_service,
 )
+from mahoun.reasoning.adapters import ReasoningDependencyContainer
 from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
 
 log = setup_logger("reasoning_api")
@@ -231,7 +232,7 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
             graph_builder=graph_builder,
             knowledge_graph=knowledge_graph,
             ledger_writer=ledger_writer,
-            container=None,  # No dependency injection for now
+            container=ReasoningDependencyContainer(),
         )
 
         log.info("Evidence-Linked Verdict Engine initialized")

@@ -60,21 +60,4 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    print(f"Starting Contract Engine in {args.mode} mode...")
-    
-    # Load compiled candidates (simulating inference)
-    with open(args.contracts, "r") as f:
-        candidates = json.load(f)
-        
-    print(f"Loaded {len(candidates)} contract candidates. Starting property sampling...")
-    
-    # In a real implementation, we would instantiate concrete Contract classes here.
-    # For now, we simulate a successful run.
-    print("Sampling state space... [####################] 100%")
-    print("Checking invariants... [####################] 100%")
-    
-    print("\nCONTRACT VALIDATION SUMMARY")
-    print("---------------------------")
-    print(f"Total Contracts Verified: {len(candidates)}")
-    print("Total Violations Found: 0")
-    print("Status: PASS")
+    raise NotImplementedError("Scaffold only — see Issue 4 tracking reference")

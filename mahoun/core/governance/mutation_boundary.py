@@ -325,9 +325,20 @@ def _make_receipt(
 # Mutation Authorization Boundary (constitutional checkpoint)
 # ---------------------------------------------------------------------------
 
-# ContextVar: safe for asyncio, completely isolates coroutines even on the same OS thread.
-_authorized_write_ctx: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "_authorized_write_ctx", default=False
+# IMPORTANT: The ContextVar is owned canonically by
+# mahoun.core.governance_kernel.authorization_state (single source of
+# truth, stdlib-only). This module MUST NOT redefine it. Doing so creates
+# a second ContextVar and governance state silently split-brains: the
+# canonical var never receives the True flag set by GovernedNeo4jSession,
+# so MutationAuthorizationBoundary.inspect() sees mutation outside an
+# authorized context and the kernel chokepoint raises spuriously (or, in
+# the inverse direction, writing the canonical var never releases the
+# boundary enforced here). See AGENTRULES.md §1 and the singleton test
+# at tests/test_authorization_state_singleton.py.
+from mahoun.core.governance.authorization_state import (
+    _authorized_write_ctx,
+    set_authorized as _set_authorized,
+    reset_authorized as _reset_authorized,
 )
 
 
@@ -795,14 +806,15 @@ class GovernedNeo4jSession:
     def _execute_authorized(self, query: str, params: Dict[str, Any]) -> List[Any]:
         """Execute mutation Cypher under the authorization token.
 
-        Sets contextvar flag → executes → resets flag.
-        The token is managed contextually — it cannot leak across async boundaries.
+        Sets the canonical _authorized_write_ctx flag → executes → resets.
+        The token is managed contextually — it cannot leak across async
+        boundaries or across separate GovernedNeo4jSession instances.
         """
-        token = _authorized_write_ctx.set(True)
+        token = _set_authorized(True)
         try:
             return self._raw_executor(query, params)
         finally:
-            _authorized_write_ctx.reset(token)
+            _reset_authorized(token)
 
 
 # ---------------------------------------------------------------------------

@@ -9,15 +9,7 @@ import argparse
 import json
 
 def evaluate_gate(contracts_path: str, coverage_path: str, threshold: int):
-    print(f"Evaluating Contract Gate (Threshold: {threshold}%)")
-    
-    # Simulate logic
-    print(f"Invariants Checked: 100%")
-    print(f"Contract Coverage: 89%")
-    
-    if 89 >= threshold:
-        return True
-    return False
+    raise NotImplementedError("Scaffold only — see Issue 4 tracking reference")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MAHOUN Contract Gate")

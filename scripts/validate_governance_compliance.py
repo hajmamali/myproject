@@ -71,7 +71,8 @@ class GovernanceValidator:
             "node_modules/",
             ".pytest_cache/",
             "/examples/",  # Example files don't enforce governance
-            ".kilo/worktrees/",  # Worktree copies
+            ".kilo/worktrees/",  # Agent Manager worktree copies (legacy path)
+            ".worktrees/",  # git worktree copies (current path)
             ".test_classification_backup/",  # Backup directories
         }
     
@@ -85,7 +86,8 @@ class GovernanceValidator:
         self._check_raw_session_usage()
         self._check_authorized_context_usage()
         self._check_mutation_bypasses()
-        
+        self._check_authorization_contextvar_singleton()
+
         return self._report_results()
     
     def _check_mutation_boundary_usage(self):
@@ -119,6 +121,66 @@ class GovernanceValidator:
                 code_snippet=""
             ))
     
+    def _check_authorization_contextvar_singleton(self):
+        """Verify the mutation-authorization ContextVar has exactly ONE definition.
+
+        The canonical ContextVar lives in
+        ``mahoun/core/governance_kernel/authorization_state.py`` and is re-exported
+        through the shim ``mahoun/core/governance/authorization_state.py``. Any
+        other ``.py`` file that creates a fresh ``ContextVar`` bound to the name
+        ``_authorized_write_ctx`` reintroduces a split-brain bug — writing one
+        var does not release the boundary enforced by the other.
+        """
+        print("🔍 Checking authorization ContextVar singleton...")
+
+        # Files ALLOWED to assign (define) _authorized_write_ctx as a ContextVar.
+        canonical_files = {
+            "mahoun/core/governance_kernel/authorization_state.py",
+        }
+        # Files ALLOWED to import / re-export but NOT to construct a new ContextVar.
+        allowlisted_reexport = {
+            "mahoun/core/governance/authorization_state.py",
+        }
+
+        # Match: NAME = ContextVar(  or  NAME : ContextVar[...] = ContextVar(
+        pattern = (
+            r'_authorized_write_ctx\s*(?::\s*ContextVar[^=]*)?\s*=\s*'
+            r'contextvars\.ContextVar\('
+        )
+        matches = self._find_pattern(pattern, include_patterns=['*.py'])
+
+        for file_path, line_num, line_content in matches:
+            rel = file_path.replace('\\', '/')
+            if rel in canonical_files:
+                continue
+            if rel in allowlisted_reexport:
+                # The shim must re-export only; a bare construction here would
+                # itself be a redefinition (no construction expected).
+                self.violations.append(GovernanceViolation(
+                    file_path=file_path,
+                    line_number=line_num,
+                    severity=ViolationSeverity.CRITICAL,
+                    category="DUPLICATE_AUTH_CONTEXTVAR",
+                    description=(
+                        "_authorized_write_ctx constructed outside the "
+                        "canonical module governance_kernel/authorization_state.py"
+                    ),
+                    code_snippet=line_content.strip(),
+                ))
+                continue
+            self.violations.append(GovernanceViolation(
+                file_path=file_path,
+                line_number=line_num,
+                severity=ViolationSeverity.CRITICAL,
+                category="DUPLICATE_AUTH_CONTEXTVAR",
+                description=(
+                    "Duplicate _authorized_write_ctx ContextVar construction. "
+                    "Import the canonical from mahoun.core.governance_kernel."
+                    "authorization_state instead."
+                ),
+                code_snippet=line_content.strip(),
+            ))
+
     def _check_direct_driver_creation(self):
         """Check for forbidden direct driver creation"""
         print("🚫 Checking direct Neo4j driver creation...")

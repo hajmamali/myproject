@@ -208,6 +208,74 @@ ci-push: ## Push images to registry (requires login)
 	docker push mahoun/backend:${VERSION}
 	docker push mahoun/frontend:${VERSION}
 
+# ============================================================================
+# Kernel Governance Verification Commands
+# ============================================================================
+
+.PHONY: kernel-verify
+kernel-verify: ## Verify kernel integrity against lock file
+	@echo "Verifying Kernel Integrity..."
+	python -m mahoun.governance.kernel_guard --verify
+
+.PHONY: kernel-update
+kernel-update: ## Update kernel lock file (requires authorization)
+	@echo "WARNING: This will update the kernel lock. Ensure you have authorization."
+	python -m mahoun.governance.kernel_guard --update
+
+.PHONY: architecture-verify
+architecture-verify: ## Verify architecture boundaries and detect violations
+	@echo "Verifying Architecture Boundaries..."
+	python -m mahoun.governance.architecture_guard --verify
+
+.PHONY: api-verify
+api-verify: ## Verify API compatibility against snapshot
+	@echo "Verifying API Compatibility..."
+	python -m mahoun.governance.api_guard --verify
+
+.PHONY: api-update
+api-update: ## Update API snapshot (requires authorization)
+	@echo "WARNING: This will update the API snapshot. Ensure you have authorization."
+	python -m mahoun.governance.api_guard --update
+
+.PHONY: manifest-validate
+manifest-validate: ## Validate kernel manifest structure
+	@echo "Validating Kernel Manifest..."
+	python -m mahoun.governance.kernel_guard --validate-manifest
+
+.PHONY: attestation-verify
+attestation-verify: ## Verify kernel attestation
+	@echo "Verifying Kernel Attestation..."
+	python -m mahoun.governance.kernel_guard --verify-attestation
+
+.PHONY: governance-verify
+governance-verify: ## Run all governance verification checks
+	@echo "Running Governance Verification Suite..."
+	@echo "=========================================="
+	@echo "1. Manifest Validation"
+	@python -m mahoun.governance.kernel_guard --validate-manifest || exit 1
+	@echo ""
+	@echo "2. Kernel Integrity Verification"
+	@python -m mahoun.governance.kernel_guard --verify || exit 1
+	@echo ""
+	@echo "3. Architecture Boundary Verification"
+	@python -m mahoun.governance.architecture_guard --verify || exit 1
+	@echo ""
+	@echo "4. API Compatibility Verification"
+	@python -m mahoun.governance.api_guard --verify || exit 1
+	@echo ""
+	@echo "5. Attestation Verification"
+	@python -m mahoun.governance.kernel_guard --verify-attestation || exit 1
+	@echo ""
+	@echo "=========================================="
+	@echo "All Governance Checks Passed"
+
+.PHONY: verify
+verify: governance-verify ## Run full verification suite (includes governance)
+	@echo "Running Full Verification Suite..."
+	@make governance-verify
+	@echo "Running existing verification tests..."
+	docker-compose -f docker-compose.verification.yml up --build --abort-on-container-exit || true
+
 
 # ============================================================================
 # Verification Test Commands (Full Stack Integration)
