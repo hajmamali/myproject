@@ -350,6 +350,8 @@ async def generate_verdict(
             protected_service = create_fortress_protected_service(reasoning_service=adapted_engine, strict_mode=True)
 
             # Execute reasoning (auto-validated through Fortress)
+            # Pass case_id through to the reasoning service for proper ledger storage
+            user_case_id = request.case_id or str(uuid.uuid4())
             verdict = await protected_service.reason(
                 request=type(
                     "ReasoningRequest",
@@ -358,6 +360,7 @@ async def generate_verdict(
                         "question": request.question,
                         "facts": facts_list,
                         "correlation_id": ctx.correlation_id,
+                        "case_id": user_case_id,
                     },
                 )(),
                 correlation_id=ctx.correlation_id,
@@ -365,7 +368,7 @@ async def generate_verdict(
 
         # Generate verdict ID
         verdict_id = str(uuid.uuid4())
-        case_id = request.case_id or str(uuid.uuid4())
+        case_id = user_case_id
 
         # Extract steps from proof_tree (ReasoningResponse format)
         # CRITICAL: ReasoningResponse.proof_tree is VerdictProofTree with .steps tuple
@@ -763,8 +766,9 @@ async def query_ledger(
             end_dt = datetime.fromisoformat(request.end_time.replace("Z", "+00:00"))
             entries = ledger.get_entries_in_range(start_dt, end_dt)
 
-        # Convert entries to dict
-        entries_dict = [entry.model_dump() for entry in entries]
+        # Convert entries to dict (LedgerEntry is a dataclass, not a Pydantic model)
+        from dataclasses import asdict
+        entries_dict = [asdict(entry) for entry in entries]
 
         processing_time_ms = (time.time() - start_time) * 1000
 

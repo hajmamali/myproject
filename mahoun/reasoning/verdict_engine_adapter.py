@@ -243,12 +243,18 @@ class VerdictEngineAdapter:
             # Extract request data with validation
             question = self._extract_question(request)
             facts = self._extract_facts(request)
-            case_id = correlation_id or "unknown"
+            # Extract case_id from request if available, otherwise use correlation_id
+            request_case_id = getattr(request, "case_id", None)
+            case_id = request_case_id or correlation_id or "unknown"
 
             log.debug(f"[{case_id}] Adapting verdict request: question_len={len(question)}, facts_count={len(facts)}")
 
-            # Invoke underlying verdict engine
-            verdict_result = await self.engine.generate_verdict(question=question, facts=facts)
+            # Invoke underlying verdict engine with case_id
+            verdict_result = await self.engine.generate_verdict(
+                question=question, 
+                facts=facts,
+                case_id=case_id
+            )
 
             # Transform verdict result to ReasoningResponse
             response = self._transform_verdict_to_response(
@@ -400,21 +406,23 @@ class VerdictEngineAdapter:
             steps: List of reasoning steps
 
         Returns:
-            List of derived fact strings
+            List of derived fact strings (non-empty only)
         """
         derived_facts = []
 
         for step in steps:
             # Extract conclusion
             if "conclusion" in step:
-                derived_facts.append(step["conclusion"])
+                conclusion = step["conclusion"]
+                if conclusion and isinstance(conclusion, str):
+                    derived_facts.append(conclusion)
 
             # Extract derived predicates
             if "derived" in step:
                 derived = step["derived"]
                 if isinstance(derived, list):
-                    derived_facts.extend(derived)
-                elif isinstance(derived, str):
+                    derived_facts.extend([d for d in derived if d and isinstance(d, str)])
+                elif isinstance(derived, str) and derived:
                     derived_facts.append(derived)
 
         return derived_facts

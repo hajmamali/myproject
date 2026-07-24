@@ -293,13 +293,19 @@ class EvidenceLinkedVerdictEngine:
         )
 
     @track_legal_query_decorator
-    async def generate_verdict(self, question: str, facts: list[Any]) -> EvidenceLinkedVerdict:
+    async def generate_verdict(
+        self, 
+        question: str, 
+        facts: list[Any],
+        case_id: Optional[str] = None
+    ) -> EvidenceLinkedVerdict:
         """
         Generate evidence-linked verdict with atomic contradiction resolution
 
         Args:
             question: Legal question to answer
             facts: List of facts in the case (strings or dicts)
+            case_id: Optional case identifier (if None, generated deterministically)
 
         Returns:
             EvidenceLinkedVerdict with explicit evidence links
@@ -506,8 +512,11 @@ class EvidenceLinkedVerdictEngine:
 
         # HARDENING PATCH P10: Deterministic IDs
         # Generate IDs deterministically to ensure replayability
-        case_basis = f"{question}|{'|'.join(sorted(fact_texts))}"
-        case_id = hashlib.sha256(case_basis.encode()).hexdigest()[:16]
+        # Use provided case_id if available, otherwise generate from content
+        if case_id is None:
+            case_basis = f"{question}|{'|'.join(sorted(fact_texts))}"
+            case_id = hashlib.sha256(case_basis.encode()).hexdigest()[:16]
+        # If case_id is provided, use it directly
 
         # We add a timestamp hour bucket to verdict_id to allow the same case
         # to produce different verdicts across major time boundaries, but

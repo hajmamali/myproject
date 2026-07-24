@@ -36,6 +36,8 @@ from mahoun.core.fortress_validator import (
     ReasoningResponse,
     SecurityBreachException,
     ValidationResult,
+    ViolationSeverity,
+    ViolationType,
 )
 from mahoun.core.governance import (
     GovernanceContextManager,
@@ -163,16 +165,18 @@ class FortressProtectedReasoningService:
             
             self.stats["validated_responses"] += 1
             
-            if not validation_result.passed:
-                self.stats["blocked_responses"] += 1
-                log.error(
-                    f"[{correlation_id}] Response BLOCKED by Fortress: "
-                    f"{len(validation_result.violations)} violations"
-                )
-            else:
+            if validation_result.passed:
                 log.info(
                     f"[{correlation_id}] Response VALIDATED by Fortress "
                     f"({validation_result.execution_time_ms:.2f}ms)"
+                )
+            else:
+                # This should never be reached in strict mode since validator.raise() will be called
+                # But we keep it for safety and non-strict mode
+                self.stats["blocked_responses"] += 1
+                log.warning(
+                    f"[{correlation_id}] Response blocked by Fortress: "
+                    f"{len(validation_result.violations)} violations (non-strict mode)"
                 )
                 
             return response
