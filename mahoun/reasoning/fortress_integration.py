@@ -176,8 +176,8 @@ class FortressProtectedReasoningService:
             response = await self.reasoning_service.reason(request)
             
             # Get the execution result from the reasoning service if available
-            # The VerdictEngineAdapter now returns ReasoningResponse with execution artifacts
-            # We need to extract the VerdictExecutionResult from the adapter
+            # PER RULE 3: Execution artifacts travel through explicit contract field
+            # NOT through response.metadata
             execution_result = self._extract_execution_result(response)
             
             # Validate response through Fortress
@@ -270,10 +270,8 @@ class FortressProtectedReasoningService:
         """
         Extract VerdictExecutionResult from ReasoningResponse.
         
-        The VerdictEngineAdapter stores the execution result in the response metadata
-        for backward compatibility. This method extracts it.
-        
-        PER RULE 3: Execution artifacts travel through explicit contracts
+        PER RULE 3: Execution artifacts travel through EXPLICIT contracts,
+        NOT through response.metadata. This method extracts from the explicit field.
         
         Args:
             response: ReasoningResponse that may contain execution result
@@ -281,13 +279,21 @@ class FortressProtectedReasoningService:
         Returns:
             VerdictExecutionResult if available, None otherwise
         """
-        # Check if response has execution result in metadata
+        # PER RULE 3: Check explicit execution_result field first
+        if hasattr(response, 'execution_result'):
+            return response.execution_result
+        
+        # Fallback for backward compatibility (old metadata-based approach)
+        # This should be removed once all services are migrated
         if hasattr(response, 'metadata') and response.metadata:
             if '_execution_result' in response.metadata:
+                log.warning(
+                    "RULE 3 VIOLATION: execution_result found in response.metadata. "
+                    "This is deprecated. Use explicit execution_result field instead."
+                )
                 return response.metadata['_execution_result']
         
-        # In new architecture, the adapter should have stored it
-        # For backward compatibility, return None
+        # No execution result available
         return None
     
     async def reason_batch(

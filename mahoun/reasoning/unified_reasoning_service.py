@@ -145,6 +145,15 @@ class ReasoningResponse:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     # ========================================================================
+    # EXECUTION LIFECYCLE CONTRACT FIELDS (RULE 3: Explicit, not hidden)
+    # ========================================================================
+    # PER RULE 3: Execution artifacts MUST travel through explicit contracts,
+    # NOT through response.metadata. This field carries the VerdictExecutionResult
+    # for FortressProtectedReasoningService to commit the ledger AFTER validation.
+    execution_result: Any = None
+    """VerdictExecutionResult from EvidenceLinkedVerdictEngine (RULE 3: Explicit contract)"""
+
+    # ========================================================================
     # PROOF-CARRYING CONTRACT FIELDS (MANDATORY for successful responses)
     # ========================================================================
     fortress_validated: bool = False

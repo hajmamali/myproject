@@ -424,7 +424,7 @@ class VerdictEngineAdapter:
 
         # Enrich metadata with forensic context
         # Include execution metadata for auditability
-        # PER RULE 3: Store execution result in metadata for Fortress extraction
+        # PER RULE 3: Execution artifacts travel through EXPLICIT contracts, not metadata
         metadata = {
             "agreement_score": agreement_score,
             "verdict_id": verdict_id,
@@ -438,8 +438,6 @@ class VerdictEngineAdapter:
             "adapter_version": "3.0.0",
             "ledger_validation_status": ledger_entry.validation_status if ledger_entry else None,
             "proof_generated": proof is not None,
-            # Store execution result for Fortress to extract (RULE 3)
-            "_execution_result": execution_result,
         }
 
         return ReasoningResponse(
@@ -451,6 +449,8 @@ class VerdictEngineAdapter:
             proof_tree=proof_tree,
             derived_facts=derived_facts,
             metadata=metadata,
+            # PER RULE 3: Execution artifacts travel through explicit contract field
+            execution_result=execution_result,
         )
 
     def _transform_verdict_to_response(
