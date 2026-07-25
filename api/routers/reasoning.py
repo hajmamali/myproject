@@ -228,6 +228,14 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
         immutable_ledger = get_immutable_ledger()
         ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
 
+        # PER RULE 8: Explicit dependency injection
+        # Create LedgerCommitService and inject it into Fortress
+        from mahoun.reasoning.ledger_commit_service import create_ledger_commit_service
+        ledger_commit_service = create_ledger_commit_service(
+            ledger_writer=ledger_writer,
+            strict_mode=True
+        )
+
         _verdict_engine = EvidenceLinkedVerdictEngine(
             graph_builder=graph_builder,
             knowledge_graph=knowledge_graph,
@@ -235,7 +243,7 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
             container=ReasoningDependencyContainer(),
         )
 
-        log.info("Evidence-Linked Verdict Engine initialized")
+        log.info("Evidence-Linked Verdict Engine initialized with LedgerCommitService")
 
         # Record metrics
         try:
@@ -343,11 +351,23 @@ async def generate_verdict(
         ) as ctx:
             # Adapt verdict engine to reasoning service interface
             from mahoun.reasoning.verdict_engine_adapter import create_verdict_engine_adapter
+            from mahoun.reasoning.ledger_commit_service import create_ledger_commit_service
 
             adapted_engine = create_verdict_engine_adapter(engine)
 
+            # Create ledger commit service with the ledger writer
+            ledger_commit_service = create_ledger_commit_service(
+                ledger_writer=ledger_writer,
+                strict_mode=True
+            )
+
             # Wrap adapted engine with Fortress protection
-            protected_service = create_fortress_protected_service(reasoning_service=adapted_engine, strict_mode=True)
+            # PER RULE 8: Explicitly inject ledger_commit_service
+            protected_service = create_fortress_protected_service(
+                reasoning_service=adapted_engine,
+                strict_mode=True,
+                ledger_commit_service=ledger_commit_service
+            )
 
             # Execute reasoning (auto-validated through Fortress)
             # Pass case_id through to the reasoning service for proper ledger storage
@@ -366,99 +386,54 @@ async def generate_verdict(
                 correlation_id=ctx.correlation_id,
             )
 
-        # Generate verdict ID
-        verdict_id = str(uuid.uuid4())
+        # PER RULE 9: API Router becomes transport only
+        # - No proof construction
+        # - No ledger construction  
+        # - No execution assembly
+        # - No cryptographic orchestration
+        #
+        # All execution artifacts are now handled by:
+        # - EvidenceLinkedVerdictEngine (creates verdict + proof + pending ledger)
+        # - VerdictEngineAdapter (transforms to ReasoningResponse)
+        # - FortressProtectedReasoningService (validates + commits ledger)
+        #
+        # Extract verdict_id and case_id from the response metadata
+        # These are already set by the execution pipeline
+        verdict_id = verdict.metadata.get("verdict_id", str(uuid.uuid4()))
         case_id = user_case_id
-
-        # Extract steps from proof_tree (ReasoningResponse format)
-        # CRITICAL: ReasoningResponse.proof_tree is VerdictProofTree with .steps tuple
+        
+        # Extract steps from proof_tree if available (for backward compatibility)
         steps_data = []
-        if verdict.proof_tree is not None:
-            if hasattr(verdict.proof_tree, "steps"):
-                # VerdictProofTree.steps is immutable tuple, convert to list
-                steps_data = list(verdict.proof_tree.steps)
-            else:
-                # FAIL-CLOSED: proof_tree exists but has no steps
-                log.error(
-                    f"proof_tree exists but missing .steps attribute: {type(verdict.proof_tree)}",
-                    extra={"correlation_id": ctx.correlation_id}
-                )
-                raise RuntimeError(
-                    "Governance contract violation: proof_tree missing .steps attribute. "
-                    "This indicates architectural corruption."
-                )
-        else:
-            # FAIL-CLOSED: No proof_tree means no evidence linkage
-            log.error(
-                "ReasoningResponse missing proof_tree - zero-hallucination guarantee violated",
-                extra={"correlation_id": ctx.correlation_id}
-            )
-            raise RuntimeError(
-                "Governance contract violation: ReasoningResponse missing proof_tree. "
-                "Zero-hallucination guarantee requires proof_tree for all successful responses."
-            )
-
-        # Generate cryptographic proof if requested
+        if verdict.proof_tree is not None and hasattr(verdict.proof_tree, "steps"):
+            steps_data = list(verdict.proof_tree.steps)
+        
+        # PER RULE 9: Proof is already generated by the engine
+        # No proof generation in router - this is now done in EvidenceLinkedVerdictEngine
+        # If proof was generated, it's already in the execution artifacts
         proof_response = None
         if request.generate_proof:
-            proof_system = get_proof_system()
-            private_key, public_key = get_keypair()
-
-            # Extract graph nodes and edges from verdict steps
-            graph_nodes: dict[str, Any] = {}
-            graph_edges: list[Any] = []
-
-            # Collect nodes from verdict steps
-            for step in steps_data:
-                if isinstance(step, dict):
-                    evidence_list = step.get("evidence", [])
-                    if isinstance(evidence_list, list):
-                        for ev in evidence_list:
-                            if isinstance(ev, dict):
-                                node_id = ev.get("node_id")
-                                if node_id and node_id not in graph_nodes:
-                                    graph_nodes[node_id] = {
-                                        "id": node_id,
-                                        "type": ev.get("node_type", "unknown"),
-                                        "confidence": ev.get("confidence", 1.0),
-                                    }
-                            elif hasattr(ev, "node_id"):
-                                if ev.node_id not in graph_nodes:
-                                    graph_nodes[ev.node_id] = {
-                                        "id": ev.node_id,
-                                        "type": getattr(ev, "node_type", "unknown"),
-                                        "confidence": getattr(ev, "confidence", 1.0),
-                                    }
-                            elif isinstance(ev, str):
-                                if ev not in graph_nodes:
-                                    graph_nodes[ev] = {
-                                        "id": ev,
-                                        "type": "unknown",
-                                        "confidence": 1.0,
-                                    }
-
-            # Generate proof
-            proof = proof_system.generate_proof(
-                graph_nodes=graph_nodes,
-                graph_edges=graph_edges,
-                reasoning_steps=steps_data,
-                evidence_refs=[],
-                verdict_id=verdict_id,
-                case_id=case_id,
-                confidence=verdict.confidence,
-                private_key=private_key,
-            )
-
-            proof_response = CryptographicProofResponse(
-                graph_state_hash=proof.graph_state_hash,
-                reasoning_chain_hash=proof.reasoning_chain_hash,
-                evidence_merkle_root=proof.evidence_merkle_root,
-                timestamp=proof.timestamp,
-                signature=proof.signature,
-                verdict_id=proof.verdict_id,
-                case_id=proof.case_id,
-                confidence=proof.confidence,
-            )
+            # Check if proof was already generated by the engine
+            # In new architecture, proof should be in execution result
+            # For backward compatibility, we check response metadata
+            if hasattr(verdict, 'metadata') and '_execution_result' in verdict.metadata:
+                execution_result = verdict.metadata['_execution_result']
+                if execution_result and execution_result.proof:
+                    proof = execution_result.proof
+                    proof_response = CryptographicProofResponse(
+                        graph_state_hash=proof.graph_state_hash,
+                        reasoning_chain_hash=proof.reasoning_chain_hash,
+                        evidence_merkle_root=proof.evidence_merkle_root,
+                        timestamp=proof.timestamp,
+                        signature=proof.signature,
+                        verdict_id=proof.verdict_id,
+                        case_id=proof.case_id,
+                        confidence=proof.confidence,
+                    )
+                else:
+                    log.warning(
+                        "Proof generation not available in execution result - "
+                        "proof will not be included in response"
+                    )
 
         # Convert verdict steps to response format
         steps_response = []

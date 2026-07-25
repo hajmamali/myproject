@@ -17,7 +17,8 @@ class TestRealSystemScenarios:
     """تست سناریوهای واقعی سیستم"""
     
     @pytest.mark.p2
-    def test_contract_breach_scenario(self):
+    @pytest.mark.asyncio
+    async def test_contract_breach_scenario(self):
         """تست سناریو واقعی breach of contract"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -63,7 +64,8 @@ class TestRealSystemScenarios:
         ]
         
         # Generate verdict
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # بررسی‌های واقعی
         assert verdict is not None
@@ -94,7 +96,8 @@ class TestRealSystemScenarios:
         print(f"  Rules: {len(rule_evidence)}, Precedents: {len(prec_evidence)}")
     
     @pytest.mark.p2
-    def test_payment_dispute_scenario(self):
+    @pytest.mark.asyncio
+    async def test_payment_dispute_scenario(self):
         """تست سناریو واقعی payment dispute"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -137,7 +140,8 @@ class TestRealSystemScenarios:
             "تأخیر در پرداخت"
         ]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # بررسی‌ها
         assert verdict.final_verdict
@@ -154,7 +158,8 @@ class TestRealSystemScenarios:
         print(f"  Fact evidence: {len(fact_evidence)}, Rule evidence: {len(rule_evidence)}")
     
     @pytest.mark.p2
-    def test_termination_scenario(self):
+    @pytest.mark.asyncio
+    async def test_termination_scenario(self):
         """تست سناریو واقعی contract termination"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -188,7 +193,8 @@ class TestRealSystemScenarios:
             "وجوه پرداخت شده"
         ]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         assert verdict.final_verdict
         assert len(verdict.steps) > 0
@@ -204,7 +210,8 @@ class TestRealEvidenceLinking:
     """تست واقعی Evidence Linking"""
     
     @pytest.mark.p2
-    def test_evidence_traceability(self):
+    @pytest.mark.asyncio
+    async def test_evidence_traceability(self):
         """تست اینکه می‌توان evidence را trace کرد"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -228,7 +235,8 @@ class TestRealEvidenceLinking:
         question = "سوال تست"
         facts = ["شرط خاص"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # پیدا کردن evidence برای rule
         rule_evidence = [
@@ -249,7 +257,8 @@ class TestRealEvidenceLinking:
         print(f"  Justification: {evidence.justification[:50]}...")
     
     @pytest.mark.p2
-    def test_evidence_chain_integrity(self):
+    @pytest.mark.asyncio
+    async def test_evidence_chain_integrity(self):
         """تست integrity زنجیره evidence"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -269,7 +278,8 @@ class TestRealEvidenceLinking:
         question = "زنجیره استدلال چیست؟"
         facts = ["واقعیت الف"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # بررسی زنجیره
         all_node_ids = {e.node_id for step in verdict.steps for e in step.evidence}
@@ -285,7 +295,8 @@ class TestRealEvidenceLinking:
         print(f"  Has facts: {has_fact}, Has rules: {has_rule}")
     
     @pytest.mark.p2
-    def test_evidence_justification_quality(self):
+    @pytest.mark.asyncio
+    async def test_evidence_justification_quality(self):
         """تست کیفیت justification در evidence"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -303,7 +314,8 @@ class TestRealEvidenceLinking:
         question = "تست کیفیت"
         facts = ["شرط کیفیت"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # بررسی کیفیت justifications
         all_justifications = [
@@ -321,7 +333,8 @@ class TestRealEvidenceLinking:
         print(f"  Avg length: {sum(len(j) for j in all_justifications) / len(all_justifications):.1f} chars")
     
     @pytest.mark.p2
-    def test_each_step_has_evidence(self):
+    @pytest.mark.asyncio
+    async def test_each_step_has_evidence(self):
         """Test that each VerdictStep has at least one evidence reference"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -339,7 +352,8 @@ class TestRealEvidenceLinking:
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         for i, step in enumerate(verdict.steps):
             assert len(step.evidence) > 0, \
@@ -354,7 +368,8 @@ class TestRealEvidenceLinking:
         print(f"✓ All {len(verdict.steps)} steps have evidence references")
     
     @pytest.mark.p2
-    def test_evidence_justification_exists(self):
+    @pytest.mark.asyncio
+    async def test_evidence_justification_exists(self):
         """Test that evidence has justification"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -372,7 +387,8 @@ class TestRealEvidenceLinking:
         question = "قرارداد چیست؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         for step in verdict.steps:
             for evidence in step.evidence:
@@ -386,7 +402,8 @@ class TestRealContradictionHandling:
     """تست واقعی Contradiction Handling"""
     
     @pytest.mark.p2
-    def test_contradiction_detection_real(self):
+    @pytest.mark.asyncio
+    async def test_contradiction_detection_real(self):
         """تست واقعی detect کردن contradiction"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -416,7 +433,8 @@ class TestRealContradictionHandling:
         question = "قرارداد باید اجرا شود؟"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # بررسی contradiction handling
         # باید یا resolve شده باشد یا در unresolved_conflicts باشد
@@ -448,7 +466,8 @@ class TestRealContradictionHandling:
             print(f"✓ Contradiction resolved: rule_yes={rule_yes_refs}, rule_no={rule_no_refs}")
     
     @pytest.mark.p2
-    def test_contradiction_resolution_by_confidence(self):
+    @pytest.mark.asyncio
+    async def test_contradiction_resolution_by_confidence(self):
         """تست resolve کردن contradiction با confidence"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -478,7 +497,8 @@ class TestRealContradictionHandling:
         question = "تست contradiction resolution"
         facts = ["شرط موجود"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # باید rule با confidence بالاتر استفاده شود
         high_conf_refs = sum(
@@ -503,7 +523,8 @@ class TestRealSystemIntegration:
     """تست واقعی Integration با سیستم"""
     
     @pytest.mark.p2
-    def test_integration_with_graph_builder(self):
+    @pytest.mark.asyncio
+    async def test_integration_with_graph_builder(self):
         """تست integration با UltraGraphBuilder"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -519,7 +540,8 @@ class TestRealSystemIntegration:
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
         
         # Generate verdict
-        verdict = engine.generate_verdict("سوال", ["شرط"])
+        result = await engine.generate_verdict("سوال", ["شرط"])
+        verdict = result.verdict
         
         # بررسی اینکه graph builder استفاده شده
         assert len(builder.get_nodes()) > 0 or len(verdict.steps) > 0, \
@@ -528,7 +550,8 @@ class TestRealSystemIntegration:
         print("✓ Integration with graph builder works")
     
     @pytest.mark.p2
-    def test_integration_with_knowledge_graph(self):
+    @pytest.mark.asyncio
+    async def test_integration_with_knowledge_graph(self):
         """تست integration با LegalKnowledgeGraph"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -544,7 +567,8 @@ class TestRealSystemIntegration:
         
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
         
-        verdict = engine.generate_verdict("سوال", ["شرط"])
+        result = await engine.generate_verdict("سوال", ["شرط"])
+        verdict = result.verdict
         
         # بررسی اینکه knowledge graph استفاده شده
         rule_evidence = [
@@ -558,7 +582,8 @@ class TestRealSystemIntegration:
         print("✓ Integration with knowledge graph works")
     
     @pytest.mark.p2
-    def test_end_to_end_workflow(self):
+    @pytest.mark.asyncio
+    async def test_end_to_end_workflow(self):
         """تست workflow کامل end-to-end"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -581,7 +606,8 @@ class TestRealSystemIntegration:
         question = "سوال پیچیده با چند واقعیت"
         facts = ["واقعیت 1", "واقعیت 2"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # Verify
         assert verdict.final_verdict
@@ -605,7 +631,8 @@ class TestRealSystemRobustness:
     """تست Robustness سیستم"""
     
     @pytest.mark.p2
-    def test_empty_facts_handling(self):
+    @pytest.mark.asyncio
+    async def test_empty_facts_handling(self):
         """تست handling کردن empty facts"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -621,16 +648,15 @@ class TestRealSystemRobustness:
         question = "سوال"
         facts = []  # Empty facts
         
-        verdict = engine.generate_verdict(question, facts)
-        
-        # باید gracefully handle شود
-        assert verdict is not None
-        assert verdict.final_verdict, "باید verdict تولید شود (حتی اگر empty)"
-        
-        print("✓ Empty facts handled gracefully")
+        # EL-I8: Verdict without evidence is not allowed
+        with pytest.raises(RuntimeError, match="EL-I1/EL-I3 violation"):
+            await engine.generate_verdict(question, facts)
+
+        print("✓ Empty facts properly rejected (EL-I8 enforcement)")
     
     @pytest.mark.p2
-    def test_no_applicable_rules_handling(self):
+    @pytest.mark.asyncio
+    async def test_no_applicable_rules_handling(self):
         """تست handling کردن وقتی هیچ rule applicable نیست"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -649,7 +675,8 @@ class TestRealSystemRobustness:
         question = "سوال"
         facts = ["واقعیت کاملاً متفاوت"]  # No matching rule
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # باید gracefully handle شود
         assert verdict is not None
@@ -666,7 +693,8 @@ class TestRealSystemRobustness:
         print("✓ No applicable rules handled gracefully")
     
     @pytest.mark.p2
-    def test_multiple_contradictions_handling(self):
+    @pytest.mark.asyncio
+    async def test_multiple_contradictions_handling(self):
         """تست handling کردن multiple contradictions"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -689,7 +717,8 @@ class TestRealSystemRobustness:
         question = "سوال با contradictions متعدد"
         facts = ["شرط", "شرط دیگر"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         # باید handle شود
         assert verdict is not None
@@ -705,7 +734,8 @@ class TestRealSystemPerformance:
     """تست Performance سیستم"""
     
     @pytest.mark.p2
-    def test_large_facts_list(self):
+    @pytest.mark.asyncio
+    async def test_large_facts_list(self):
         """تست با لیست بزرگ facts"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -725,7 +755,8 @@ class TestRealSystemPerformance:
         question = "سوال"
         facts = [f"شرط {i}" for i in range(20)]  # 20 facts
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         assert verdict is not None
         assert len(verdict.steps) > 0
@@ -742,7 +773,8 @@ class TestRealSystemPerformance:
         print(f"✓ Large facts list handled: {len(facts)} facts, {fact_evidence_count} evidence refs")
     
     @pytest.mark.p2
-    def test_many_rules_handling(self):
+    @pytest.mark.asyncio
+    async def test_many_rules_handling(self):
         """تست با rules زیاد"""
         from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -767,7 +799,8 @@ class TestRealSystemPerformance:
         question = "سوال"
         facts = ["قرارداد امضا شده"]
         
-        verdict = engine.generate_verdict(question, facts)
+        result = await engine.generate_verdict(question, facts)
+        verdict = result.verdict
         
         assert verdict is not None
         assert len(verdict.steps) > 0

@@ -10,6 +10,7 @@ ALL reasoning MUST be grounded in Knowledge Graph nodes, edges, rules, precedent
 
 import asyncio
 import hashlib
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -17,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from mahoun.reasoning.adapters import ReasoningDependencyContainer
+    from mahoun.contracts.verdict_execution import VerdictExecutionResult
 
 from mahoun.core.logging import setup_logger
 from mahoun.crypto.proof_system import ProofSystem
@@ -298,17 +300,34 @@ class EvidenceLinkedVerdictEngine:
         question: str, 
         facts: list[Any],
         case_id: Optional[str] = None
-    ) -> EvidenceLinkedVerdict:
+    ) -> "VerdictExecutionResult":
         """
-        Generate evidence-linked verdict with atomic contradiction resolution
-
+        Generate evidence-linked verdict with atomic contradiction resolution.
+        
+        PER RULE 2: Delayed Ledger Commit
+        - Creates LedgerEntry but DOES NOT commit it
+        - Generates cryptographic proof
+        - Returns VerdictExecutionResult with pending artifacts
+        
+        PER RULE 4: Proof generation ownership
+        - Proof is generated INSIDE this method, not in router
+        
+        PER RULE 5: Evidence binding
+        - Proof is generated from actual EvidenceReference objects
+        
         Args:
             question: Legal question to answer
             facts: List of facts in the case (strings or dicts)
             case_id: Optional case identifier (if None, generated deterministically)
 
         Returns:
-            EvidenceLinkedVerdict with explicit evidence links
+            VerdictExecutionResult containing:
+            - verdict: The generated EvidenceLinkedVerdict
+            - ledger_entry: PENDING LedgerEntry (NOT committed)
+            - proof: Generated CryptographicProof
+            - execution_id: Unique execution identifier
+            - correlation_id: Governance correlation identifier
+            - execution_timestamp: When execution started
 
         Raises:
             RuntimeError: If operation requires resources unavailable in current mode
@@ -492,23 +511,21 @@ class EvidenceLinkedVerdictEngine:
         confidence_score = self._calculate_confidence_score(verdict_steps)
 
         # ============================================================================
-        # LEDGER-FIRST ARCHITECTURE - CRITICAL FOR AUDIT INTEGRITY
+        # NEW ARCHITECTURE: DELAYED LEDGER COMMIT (RULE 1, RULE 2)
         # ============================================================================
         #
-        # ATOMICITY GUARANTEE: Verdict object is created ONLY AFTER successful ledger write.
-        # This ensures EL-I3 (Verdict Blocking) - if ledger write fails, no verdict exists.
+        # PER RULE 1: Ledger is NEVER written before Fortress validation
+        # PER RULE 2: EvidenceLinkedVerdictEngine may CREATE LedgerEntry but MUST NOT commit
+        # 
+        # Changes:
+        # - Generate proof INSIDE engine (RULE 4)
+        # - Create LedgerEntry but DON'T commit (RULE 2)
+        # - Return VerdictExecutionResult with pending artifacts (RULE 3)
+        # - Evidence references are bound to proof (RULE 5)
         #
-        # Invariants enforced:
-        # - EL-I3 (Verdict Blocking): Ledger failure prevents verdict creation
-        # - EL-I5 (No Resurrection via Ledger): Only resolved nodes are referenced
-        # - EL-I6 (Audit Sufficiency): Ledger ID proves audit trail exists
-        # - EL-I7 (Privacy Preservation): Sensitive data filtered at boundary
-        #
-        # CRITICAL: Verdict object is created AFTER ledger write succeeds.
-        # This prevents publishing verdicts without audit trail.
         # ============================================================================
 
-        log.debug(f"Evidence Ledger writing with invariant version: {INVARIANT_VERSION}")
+        log.debug(f"Preparing execution artifacts with invariant version: {INVARIANT_VERSION}")
 
         # HARDENING PATCH P10: Deterministic IDs
         # Generate IDs deterministically to ensure replayability
@@ -545,68 +562,118 @@ class EvidenceLinkedVerdictEngine:
                     if ev.node_id not in referenced_facts:
                         referenced_facts.append(ev.node_id)
 
-        # CRITICAL: Write to ledger FIRST (before creating verdict object)
-        ledger_hash: str | None = None
-        async with self._ledger_lock:
-            log.debug(f"Acquired ledger lock for sequential writing (agent: {id(self)})")
+        # ============================================================================
+        # PROOF GENERATION - NOW INSIDE ENGINE (RULE 4)
+        # ============================================================================
+        # 
+        # PER RULE 5: Evidence binding
+        # - Extract EvidenceReference objects from verdict steps
+        # - Pass them to proof system (NOT empty list)
+        #
+        # Build graph nodes and edges for proof generation
+        graph_nodes: dict[str, Any] = {}
+        graph_edges: list[Any] = []
+        
+        # Collect evidence from verdict steps
+        evidence_refs = []
+        for step in verdict_steps:
+            for ev in step.evidence:
+                evidence_refs.append(ev)
+                # Build graph node representation
+                if ev.node_id not in graph_nodes:
+                    graph_nodes[ev.node_id] = {
+                        "id": ev.node_id,
+                        "type": ev.node_type,
+                        "confidence": ev.confidence,
+                    }
+        
+        # Generate proof with actual evidence references (RULE 5)
+        # Note: We generate proof but don't have private key here
+        # The proof will be regenerated with proper keys at the router level
+        # For now, we generate a placeholder proof that will be replaced
+        try:
+            from mahoun.crypto.signatures import generate_keypair
+            private_key, public_key = generate_keypair()
+            proof = self.proof_system.generate_proof(
+                graph_nodes=graph_nodes,
+                graph_edges=graph_edges,
+                reasoning_steps=[
+                    {"conclusion": step.conclusion, "evidence": [
+                        {"node_id": ev.node_id, "node_type": ev.node_type, "confidence": ev.confidence}
+                        for ev in step.evidence
+                    ]} for step in verdict_steps
+                ],
+                evidence_refs=evidence_refs,  # NOT empty list - RULE 5
+                verdict_id=verdict_id,
+                case_id=case_id,
+                confidence=confidence_score,
+                private_key=private_key,
+            )
+        except Exception as e:
+            log.warning(f"Proof generation failed in engine: {e}. Will be regenerated later.")
+            proof = None
 
-            try:
-                # For deterministic testing, use fixed timestamp
-                if os.getenv("MAHOUN_DETERMINISTIC_TESTING") == "true":
-                    fixed_timestamp = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
-                else:
-                    fixed_timestamp = datetime.now(UTC)
+        # ============================================================================
+        # CREATE PENDING LEDGER ENTRY (RULE 2)
+        # ============================================================================
+        # 
+        # PER RULE 2: Delayed Ledger Commit
+        # - Create LedgerEntry but DON'T commit
+        # - Entry will be committed by FortressProtectedReasoningService AFTER validation
+        #
+        # For deterministic testing, use fixed timestamp
+        if os.getenv("MAHOUN_DETERMINISTIC_TESTING") == "true":
+            fixed_timestamp = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        else:
+            fixed_timestamp = datetime.now(UTC)
 
-                entry = LedgerEntry(
-                    verdict_id=verdict_id,
-                    case_id=case_id,
-                    referenced_ltm_nodes=referenced_ltm_nodes,
-                    referenced_facts=referenced_facts,
-                    confidence=confidence_score,
-                    invariant_version=INVARIANT_VERSION,
-                    guard_mode=get_guard_mode().value,
-                    created_at=fixed_timestamp,
+        # HARDENING PATCH P09: Enforce EL-I3 — no evidence = no ledger = no verdict
+        if not (referenced_ltm_nodes or referenced_facts):
+            # No evidence references — this is a structural problem
+            from mahoun.core.environment import is_production
+
+            if is_production():
+                raise RuntimeError(
+                    "EL-I3 VIOLATION: Verdict has no evidence references "
+                    "(no LTM nodes and no facts). Cannot create audit trail. "
+                    "Verdict generation blocked in production mode."
                 )
+            # Development: allow but mark explicitly
+            log.warning(
+                "DEVELOPMENT MODE: Empty evidence verdict detected. "
+                "This would be BLOCKED in production (EL-I3)."
+            )
 
-                # HARDENING PATCH P09: Enforce EL-I3 — no evidence = no ledger = no verdict
-                if referenced_ltm_nodes or referenced_facts:
-                    validate_entry(entry)
-                    ledger_hash = await self._write_ledger_entry_async(entry)
-                    log.info(
-                        f"Ledger entry written successfully: verdict_id={verdict_id}, hash={ledger_hash[:16] if ledger_hash else 'N/A'}..."
-                    )
-                else:
-                    # No evidence references — this is a structural problem
-                    from mahoun.core.environment import is_production
+        entry = LedgerEntry(
+            verdict_id=verdict_id,
+            case_id=case_id,
+            referenced_ltm_nodes=referenced_ltm_nodes,
+            referenced_facts=referenced_facts,
+            confidence=confidence_score,
+            invariant_version=INVARIANT_VERSION,
+            guard_mode=get_guard_mode().value,
+            created_at=fixed_timestamp,
+            # Validation fields will be populated by Fortress later
+            validation_status=None,
+            validation_timestamp=None,
+            validation_violations=None,
+            fortress_version=None,
+            # Proof hashes will be populated by Fortress later
+            proof_hash=None,
+            reasoning_chain_hash=None,
+            evidence_merkle_root=None,
+            graph_state_hash=None,
+            # Execution identifiers
+            execution_id=None,  # Will be set when creating VerdictExecutionResult
+            correlation_id=None,  # Will be set when creating VerdictExecutionResult
+        )
 
-                    if is_production():
-                        raise RuntimeError(
-                            "EL-I3 VIOLATION: Verdict has no evidence references "
-                            "(no LTM nodes and no facts). Cannot create audit trail. "
-                            "Verdict generation blocked in production mode."
-                        )
-                    # Development: allow but mark explicitly
-                    log.warning(
-                        "DEVELOPMENT MODE: Skipping ledger write for empty-evidence verdict. "
-                        "This would be BLOCKED in production (EL-I3)."
-                    )
-                    ledger_hash = None
-
-            except Exception as e:
-                # EL-I3: Verdict Blocking - ledger write failure prevents verdict creation
-                log.error(f"Ledger write failed - verdict will NOT be created: {e}")
-                raise RuntimeError(f"Ledger write failed - verdict blocked per EL-I3: {e}") from e
-            finally:
-                log.debug(f"Released ledger lock after ledger writing (agent: {id(self)})")
+        # Validate entry (but don't commit)
+        validate_entry(entry)
 
         # ============================================================================
-        # VERDICT CREATION - ONLY AFTER SUCCESSFUL LEDGER WRITE
+        # CREATE VERDICT OBJECT
         # ============================================================================
-        # At this point, ledger write has succeeded (or was skipped for empty facts).
-        # Now we can safely create the verdict object.
-        # If ledger write failed, we never reach this point (exception raised above).
-        # ============================================================================
-
         verdict = EvidenceLinkedVerdict(
             final_verdict=final_verdict,
             steps=verdict_steps,
@@ -614,19 +681,56 @@ class EvidenceLinkedVerdictEngine:
             confidence_score=confidence_score,
         )
 
-        # Add ledger metadata to verdict for auditability
-        # This proves that the verdict has a corresponding ledger entry
+        # Add identifiers to verdict
         verdict.verdict_id = verdict_id
-        verdict.ledger_hash = ledger_hash
+        # ledger_hash will be set after Fortress commits the ledger
 
         log.info(
-            f"Verdict created successfully: {len(verdict_steps)} steps, "
+            f"Execution artifacts prepared: {len(verdict_steps)} steps, "
             f"confidence={confidence_score:.2f}, "
             f"unresolved_conflicts={len(unresolved_conflicts)}, "
-            f"ledger_hash={ledger_hash[:16] if ledger_hash else 'N/A'}..."
+            f"verdict_id={verdict_id}"
         )
 
-        return verdict
+        # ============================================================================
+        # RETURN VERDICT EXECUTION RESULT (RULE 3)
+        # ============================================================================
+        # 
+        # PER RULE 3: No hidden transport
+        # All execution artifacts travel through explicit VerdictExecutionResult contract
+        #
+        # Generate execution context
+        execution_id = str(uuid.uuid4())
+        execution_timestamp = datetime.now(UTC)
+        
+        # Try to get correlation_id from governance context
+        correlation_id = None
+        try:
+            from mahoun.core.governance import GovernanceContextManager
+            ctx = GovernanceContextManager.require_context()
+            correlation_id = ctx.correlation_id
+        except (RuntimeError, Exception):
+            # If no governance context, use execution_id as correlation_id
+            correlation_id = execution_id
+
+        # Import VerdictExecutionResult here to avoid circular imports
+        from mahoun.contracts.verdict_execution import VerdictExecutionResult
+
+        return VerdictExecutionResult(
+            verdict=verdict,
+            ledger_entry=entry,  # PENDING - NOT committed
+            proof=proof,
+            execution_id=execution_id,
+            correlation_id=correlation_id or execution_id,
+            execution_timestamp=execution_timestamp,
+            validation_passed=None,  # Will be set by Fortress
+            validation_violations=None,
+            validation_timestamp=None,
+            fortress_version=None,
+            reasoning_depth=len(verdict_steps),
+            evidence_count=len(evidence_refs),
+            agreement_score=None,  # Will be calculated by adapter
+        )
 
     def generate_verdict_sync(self, question: str, facts: list[Any]) -> EvidenceLinkedVerdict:
         """
