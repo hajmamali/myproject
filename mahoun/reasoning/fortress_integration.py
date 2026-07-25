@@ -28,6 +28,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Any, Dict, Optional
 
 from mahoun.core.fortress_validator import (
@@ -91,13 +92,32 @@ class FortressProtectedReasoningService:
         - LedgerCommitService is explicitly injected, NOT discovered via object graphs
         - This prevents Fortress from walking object graphs to find ledger_writer
         
+        CRITICAL-002 FIX: LedgerCommitService is REQUIRED in production mode
+        RULE 7: Ledger must become source of truth - cannot have trustworthy execution without ledger
+        RULE 11: Failed executions must be recorded - ledger is the only way to record them
+        
         Args:
             reasoning_service: UnifiedReasoningService instance to wrap
             validator: Optional FortressValidator instance (creates new if None)
             strict_mode: If True, raise exceptions on violations
             execution_mode: Current execution mode
             ledger_commit_service: Explicitly injected LedgerCommitService (RULE 8)
+        
+        Raises:
+            ValueError: If ledger_commit_service is None in production mode
         """
+        # CRITICAL-002: Require LedgerCommitService in production
+        # CONSTITUTION Section 10: Fail-closed principle
+        # RULE 7: Ledger becomes source of truth
+        if ledger_commit_service is None:
+            from mahoun.core.environment import is_production
+            if is_production():
+                raise ValueError(
+                    "CRITICAL-002: LedgerCommitService is REQUIRED in production mode. "
+                    "Cannot have trustworthy execution without ledger recording. "
+                    "RULE 7 and RULE 11 cannot be satisfied without this service."
+                )
+        
         self.reasoning_service = reasoning_service
         self.strict_mode = strict_mode
         self.execution_mode = execution_mode
@@ -122,7 +142,7 @@ class FortressProtectedReasoningService:
         log.info(
             f"FortressProtectedReasoningService initialized: "
             f"strict={strict_mode}, mode={execution_mode.value}, "
-            f"ledger_commit_service={'ENABLED' if ledger_commit_service else 'NOT PROVIDED'}"
+            f"ledger_commit_service={'ENABLED' if ledger_commit_service else 'NOT PROVIDED (DEV ONLY)'}"
         )
     
     async def reason(
@@ -194,9 +214,13 @@ class FortressProtectedReasoningService:
             # ========================================================================
             #
             # PER RULE 1: Ledger is NEVER written before validation
+            # PER RULE 2: Delayed Ledger Commit
             # PER RULE 11: Both successful AND failed validations are recorded
             #
-            if self.ledger_commit_service and execution_result:
+            # Note: ledger_commit_service is guaranteed to be present in production
+            # by the __init__ check (CRITICAL-002 fix). In development, it may be None
+            # but the else block below will raise RuntimeError.
+            if execution_result:
                 try:
                     # Commit ledger with validation result
                     # This happens AFTER validation, ensuring trustworthy ledger
@@ -232,11 +256,19 @@ class FortressProtectedReasoningService:
                     if self.strict_mode:
                         raise
             else:
-                # No ledger commit service - log warning but continue
+                # CRITICAL-002: No ledger commit service - FAIL CLOSED
+                # RULE 7: Ledger must become source of truth
+                # RULE 11: Failed executions must be recorded
+                # We CANNOT return a successful response without ledger recording
                 if execution_result:
-                    log.warning(
-                        f"[{correlation_id}] No LedgerCommitService provided - "
-                        f"ledger will not be committed for verdict_id={execution_result.ledger_entry.verdict_id}"
+                    log.error(
+                        f"[{correlation_id}] CRITICAL-002: No LedgerCommitService configured - "
+                        f"cannot commit verdict_id={execution_result.ledger_entry.verdict_id}. "
+                        f"This violates RULE 7 and RULE 11."
+                    )
+                    raise RuntimeError(
+                        f"LedgerCommitService not configured - cannot record execution. "
+                        f"Verdict generation aborted to maintain trust guarantees."
                     )
             
             # Log validation result

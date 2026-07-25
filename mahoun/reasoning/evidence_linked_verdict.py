@@ -614,18 +614,16 @@ class EvidenceLinkedVerdictEngine:
                 public_key=keypair.public_key_pem,
             )
         except Exception as e:
-            # CRITICAL: Proof generation failure with KeyManager is a system error
-            # In production, this should not happen as KeyManager is designed to always work
-            from mahoun.core.environment import is_production
-            
-            if is_production():
-                raise RuntimeError(
-                    f"CRITICAL: Proof generation failed in production: {e}. "
-                    f"KeyManager must be available for trustworthy execution."
-                ) from e
-            
-            log.error(f"Proof generation failed in engine: {e}. This is a system error.")
-            proof = None
+            # CRITICAL: Proof generation MUST always succeed
+            # RULE 4: Proof generation ownership - it belongs in the execution pipeline
+            # CONSTITUTION Section 10: Fail-closed principle
+            # Proof is NON-NEGOTIABLE - if it fails, the entire system must fail
+            log.error(f"CRITICAL: Proof generation failed in engine: {e}")
+            raise RuntimeError(
+                f"CRITICAL: Proof generation failed: {e}. "
+                f"The system CANNOT operate without cryptographic proof generation. "
+                f"This is a trust-critical failure."
+            ) from e
 
         # ============================================================================
         # CREATE PENDING LEDGER ENTRY (RULE 2)
@@ -717,15 +715,11 @@ class EvidenceLinkedVerdictEngine:
         execution_id = str(uuid.uuid4())
         execution_timestamp = datetime.now(UTC)
         
-        # Try to get correlation_id from governance context
-        correlation_id = None
-        try:
-            from mahoun.core.governance import GovernanceContextManager
-            ctx = GovernanceContextManager.require_context()
-            correlation_id = ctx.correlation_id
-        except (RuntimeError, Exception):
-            # If no governance context, use execution_id as correlation_id
-            correlation_id = execution_id
+        # REQUIRE governance context - fail-closed per CONSTITUTION Section 10
+        # RULE 14: Every execution MUST occur inside GovernanceContext
+        from mahoun.core.governance import GovernanceContextManager
+        ctx = GovernanceContextManager.require_context()
+        correlation_id = ctx.correlation_id
 
         # Import VerdictExecutionResult here to avoid circular imports
         from mahoun.contracts.verdict_execution import VerdictExecutionResult
