@@ -264,6 +264,13 @@ class LedgerCommitService:
         - Fortress version
         - Execution identifiers
         - Proof hashes
+        - Public key and key version (for independent verification)
+        
+        PER RULE 5: Evidence binding
+        - public_key and key_version from proof enable independent verification
+        
+        PER RULE 7: Ledger becomes source of truth
+        - All information for verification is stored in ledger
         
         Args:
             entry: The original pending LedgerEntry
@@ -281,17 +288,22 @@ class LedgerCommitService:
         if validation_violations:
             violation_strings = [str(v) for v in validation_violations]
         
-        # Get proof hashes if proof exists
+        # Get proof hashes and key information if proof exists
         proof_hash = None
         reasoning_chain_hash = None
         evidence_merkle_root = None
         graph_state_hash = None
+        public_key = None
+        key_version = None
         
         if execution_result.proof:
             proof_hash = execution_result.proof.signature
             reasoning_chain_hash = execution_result.proof.reasoning_chain_hash
             evidence_merkle_root = execution_result.proof.evidence_merkle_root
             graph_state_hash = execution_result.proof.graph_state_hash
+            # Store public key and key version for independent verification
+            public_key = execution_result.proof.public_key
+            key_version = execution_result.proof.key_version
         
         # Create updated entry
         # Note: LedgerEntry is frozen, so we create a new instance
@@ -321,6 +333,10 @@ class LedgerCommitService:
             reasoning_chain_hash=reasoning_chain_hash,
             evidence_merkle_root=evidence_merkle_root,
             graph_state_hash=graph_state_hash,
+            
+            # Key information for independent verification (RULE 5, RULE 6, RULE 7)
+            public_key=public_key,
+            key_version=key_version,
             
             # Execution identifiers (RULE 7)
             execution_id=execution_result.execution_id,

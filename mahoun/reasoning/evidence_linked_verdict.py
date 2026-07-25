@@ -588,17 +588,19 @@ class EvidenceLinkedVerdictEngine:
                     }
         
         # Generate proof with actual evidence references (RULE 5)
-        # Note: We generate proof but don't have private key here
-        # The proof will be regenerated with proper keys at the router level
-        # For now, we generate a placeholder proof that will be replaced
+        # Use KeyManager for persistent keypair (RULE 12: Determinism)
+        # This ensures same keys across all executions for deterministic signatures
         try:
-            from mahoun.crypto.signatures import generate_keypair
-            private_key, public_key = generate_keypair()
+            from mahoun.crypto.key_manager import get_key_manager
+            
+            key_manager = get_key_manager()
+            keypair = key_manager.get_keypair()
+            
             proof = self.proof_system.generate_proof(
                 graph_nodes=graph_nodes,
                 graph_edges=graph_edges,
                 reasoning_steps=[
-                    {"conclusion": step.conclusion, "evidence": [
+                    {"conclusion": step.statement, "evidence": [
                         {"node_id": ev.node_id, "node_type": ev.node_type, "confidence": ev.confidence}
                         for ev in step.evidence
                     ]} for step in verdict_steps
@@ -607,10 +609,22 @@ class EvidenceLinkedVerdictEngine:
                 verdict_id=verdict_id,
                 case_id=case_id,
                 confidence=confidence_score,
-                private_key=private_key,
+                private_key=keypair.private_key_pem,
+                key_version=keypair.version,
+                public_key=keypair.public_key_pem,
             )
         except Exception as e:
-            log.warning(f"Proof generation failed in engine: {e}. Will be regenerated later.")
+            # CRITICAL: Proof generation failure with KeyManager is a system error
+            # In production, this should not happen as KeyManager is designed to always work
+            from mahoun.core.environment import is_production
+            
+            if is_production():
+                raise RuntimeError(
+                    f"CRITICAL: Proof generation failed in production: {e}. "
+                    f"KeyManager must be available for trustworthy execution."
+                ) from e
+            
+            log.error(f"Proof generation failed in engine: {e}. This is a system error.")
             proof = None
 
         # ============================================================================
