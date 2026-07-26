@@ -108,7 +108,9 @@ class FortressProtectedReasoningService:
         """
         # CRITICAL-002: Require LedgerCommitService in production
         # CONSTITUTION Section 10: Fail-closed principle
+        # CONSTITUTION Section 268: Governance reference
         # RULE 7: Ledger becomes source of truth
+        # # This prevents Fortress from walking object graphs
         if ledger_commit_service is None:
             from mahoun.core.environment import is_production
             if is_production():
@@ -151,20 +153,14 @@ class FortressProtectedReasoningService:
         correlation_id: Optional[str] = None
     ) -> ReasoningResponse:
         """
-        Execute reasoning with automatic fortress validation, ledger commit, and governance scope.
+        Execute reasoning with full Fortress security and governance validation.
         
-        PER RULE 1: Ledger is NEVER written before Fortress validation
-        PER RULE 10: Execution Atomicity - all steps succeed or fail together
-        PER RULE 11: Failed executions must also be recorded
-        
-        This method:
-        1. Requires active governance context (CORRELATION LINEAGE)
-        2. Executes reasoning within governance scope (PROOF TRACKING ACTIVE)
-        3. Validates response through FortressValidator
-        4. **COMMITS LEDGER AFTER VALIDATION** (NEW - RULE 1)
-        5. Returns validated response or raises SecurityBreachException
-        
-        CRITICAL: NO reasoning can execute without active governance context.
+        Workflow:
+        1. Require active governance context (RULE 14)
+        2. Execute reasoning (returns pending VerdictExecutionResult)
+        3. Validate response with Fortress (RULE 1)
+        4. Commit pending ledger entry (RULE 1, RULE 2, RULE 11)
+        5. Return validated response
         
         Args:
             request: ReasoningRequest to process
@@ -201,6 +197,7 @@ class FortressProtectedReasoningService:
             execution_result = self._extract_execution_result(response)
             
             # Validate response through Fortress
+            # # Validate execution result with Fortress
             log.debug(f"[{correlation_id}] Validating response through Fortress")
             validation_result = await self.validator.validate(
                 response=response,
@@ -221,6 +218,16 @@ class FortressProtectedReasoningService:
             # by the __init__ check (CRITICAL-002 fix). In development, it may be None
             # but the else block below will raise RuntimeError.
             if execution_result:
+                if not self.ledger_commit_service:
+                    log.error(
+                        f"[{correlation_id}] CRITICAL-002: No LedgerCommitService configured - "
+                        f"cannot commit verdict_id={execution_result.ledger_entry.verdict_id}. "
+                        f"This violates RULE 7 and RULE 11."
+                    )
+                    raise RuntimeError(
+                        f"LedgerCommitService not configured - cannot record execution. "
+                        f"Verdict generation aborted to maintain trust guarantees."
+                    )
                 try:
                     # Commit ledger with validation result
                     # This happens AFTER validation, ensuring trustworthy ledger

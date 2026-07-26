@@ -490,11 +490,13 @@ def check_duplicate_symbols(
     # Extract symbols from this file
     current_symbols = extract_defined_symbols(tree)
     
-    # Store symbols by file
-    file_symbols = {filepath: current_symbols}
+    # Store symbols by file in the all_symbols dict (mutate the passed-in dict)
+    all_symbols[filepath] = current_symbols
     
     # Check for duplicates with previously processed files
     for prev_file, prev_symbols in all_symbols.items():
+        if prev_file == filepath:
+            continue  # Skip comparing with self
         for symbol, lines in current_symbols.items():
             if symbol in prev_symbols and symbol in forbidden_duplicates:
                 violations.append(

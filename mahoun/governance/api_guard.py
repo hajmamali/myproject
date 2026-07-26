@@ -90,6 +90,31 @@ class APISnapshot:
     variables: Dict[str, APIMember] = field(default_factory=dict)
 
 
+# Helper function to extract defined symbols from AST (used by tests)
+def extract_defined_symbols(tree: ast.AST) -> Dict[str, List[int]]:
+    """
+    Extract all defined symbols (classes, functions, variables) from AST.
+    
+    Returns:
+        Dict mapping symbol names to list of line numbers where defined
+    """
+    from collections import defaultdict
+    symbols = defaultdict(list)
+    
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            symbols[node.name].append(node.lineno)
+        elif isinstance(node, ast.FunctionDef):
+            symbols[node.name].append(node.lineno)
+        elif isinstance(node, ast.AsyncFunctionDef):
+            symbols[node.name].append(node.lineno)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            # Variable assignment
+            symbols[node.id].append(node.lineno)
+    
+    return dict(symbols)
+
+
 def load_manifest() -> Dict[str, Any]:
     """Load the kernel manifest."""
     if not os.path.exists(MANIFEST_PATH):
@@ -656,7 +681,7 @@ def check_critical_interfaces(manifest: Dict[str, Any]) -> bool:
         print("\nCRITICAL INTERFACE MISSING:")
         for interface in missing_critical:
             print(f"  - {interface}")
-        sys.exit(1)
+        return False
     else:
         print("All critical interfaces present.")
         return True

@@ -164,21 +164,27 @@ class TestDirectServiceInstantiation:
         # Governance should default to STRICT (fail-closed)
         assert GovernanceLock.get_mode() == GovernanceMode.STRICT
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_reasoning_requires_governance_context(self, reset_governance_lock):
+    def test_reasoning_requires_governance_context(self, reset_governance_lock):
         """Test that reasoning operations require active governance context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
+
+        # CRITICAL: Force reset the context stack to ensure no active context
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        GovernanceContextManager._governance_stack.set(None)
 
         # Try to require context without active context
         with pytest.raises(GovernanceViolationError):
             GovernanceContextManager.require_context()
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_provenance_requires_governance_context(self, reset_governance_lock):
+    def test_provenance_requires_governance_context(self, reset_governance_lock):
         """Test that provenance creation requires active governance context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
+
+        # CRITICAL: Force reset the context stack to ensure no active context
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        GovernanceContextManager._governance_stack.set(None)
 
         # Try to create provenance without active context
         with pytest.raises(GovernanceViolationError):
@@ -239,10 +245,10 @@ class TestDeserializationAttackPrevention:
 class TestThresholdLoweringPrevention:
     """Tests that validation thresholds cannot be lowered"""
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_cannot_lower_agreement_threshold(self, reset_governance_lock):
+    def test_cannot_lower_agreement_threshold(self, reset_governance_lock):
         """Test that agreement score threshold cannot be lowered"""
+        import asyncio
         from mahoun.core.fortress_validator import ReasoningResponse
 
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -261,9 +267,12 @@ class TestThresholdLoweringPrevention:
             metadata={"agreement_score": 0.70},  # Below 0.85 threshold
         )
 
-        # Should fail validation
-        with pytest.raises(SecurityBreachException):
-            await validator.validate(response, correlation_id="test-001")
+        async def test_async():
+            # Should fail validation
+            with pytest.raises(SecurityBreachException):
+                await validator.validate(response, correlation_id="test-001")
+
+        asyncio.run(test_async())
 
     @pytest.mark.p0
     def test_cannot_modify_validator_config(self, reset_governance_lock):
@@ -294,44 +303,52 @@ class TestThresholdLoweringPrevention:
 class TestGovernanceContextBypass:
     """Tests that governance context cannot be bypassed"""
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_cannot_execute_without_context(self, reset_governance_lock):
+    def test_cannot_execute_without_context(self, reset_governance_lock):
         """Test that operations cannot execute without active context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
-        # Ensure no context is active
-        GovernanceContextManager._reset_for_test()
+        # CRITICAL: Force reset the context stack to ensure no active context
+        # This is needed because some tests may leave contexts active
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        GovernanceContextManager._governance_stack.set(None)
+        
+        # Verify no context is active
+        assert GovernanceContextManager._governance_stack.get() is None
 
         # Try to require context
         with pytest.raises(GovernanceViolationError):
             GovernanceContextManager.require_context()
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_cannot_create_provenance_without_context(self, reset_governance_lock):
+    def test_cannot_create_provenance_without_context(self, reset_governance_lock):
         """Test that provenance cannot be created without context"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
-        # Ensure no context is active
-        GovernanceContextManager._reset_for_test()
-
+        # CRITICAL: Force reset the context stack to ensure no active context
+        from mahoun.core.governance.governance_context import GovernanceContextManager
+        GovernanceContextManager._governance_stack.set(None)
+        
         # Try to create provenance
         with pytest.raises(GovernanceViolationError):
             GovernanceContextManager.require_provenance(source="test", author="system")
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_context_cleanup_on_exception(self, reset_governance_lock):
+    def test_context_cleanup_on_exception(self, reset_governance_lock):
         """Test that context is cleaned up on exception"""
+        import asyncio
+
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
-        with pytest.raises(ValueError):
-            async with GovernanceContextManager.active_context(correlation_id="test-002", execution_mode="STRICT"):
-                raise ValueError("Test exception")
+        async def test_async():
+            with pytest.raises(ValueError):
+                async with GovernanceContextManager.active_context(correlation_id="test-002", execution_mode="STRICT"):
+                    raise ValueError("Test exception")
 
-        # Context should be cleaned up
-        assert GovernanceContextManager.get_current_context() is None
+            # Context should be cleaned up
+            assert GovernanceContextManager.get_current_context() is None
+
+        asyncio.run(test_async())
 
 
 # ============================================================================
@@ -342,9 +359,8 @@ class TestGovernanceContextBypass:
 class TestProvenanceTamperingPrevention:
     """Tests that provenance cannot be tampered with"""
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_provenance_is_immutable(self, reset_governance_lock):
+    def test_provenance_is_immutable(self, reset_governance_lock):
         """Test that provenance metadata is immutable"""
         from mahoun.core.governance.provenance_attestation import ProvenanceAttestation
 
@@ -361,9 +377,8 @@ class TestProvenanceTamperingPrevention:
         with pytest.raises((AttributeError, TypeError)):
             attestation.provenance_hash = "tampered_hash"
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_provenance_integrity_verification(self, reset_governance_lock):
+    def test_provenance_integrity_verification(self, reset_governance_lock):
         """Test that provenance integrity can be verified"""
         from mahoun.core.governance.provenance_attestation import ProvenanceAttestation
 
@@ -379,9 +394,8 @@ class TestProvenanceTamperingPrevention:
         # Verify integrity
         assert attestation.verify_integrity() is True
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_broken_lineage_detected(self, reset_governance_lock):
+    def test_broken_lineage_detected(self, reset_governance_lock):
         """Test that broken provenance lineage is detected"""
         import dataclasses
 
@@ -426,13 +440,17 @@ class TestProvenanceTamperingPrevention:
 class TestAPIBypassPrevention:
     """Tests that API endpoints cannot bypass governance"""
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_api_requires_fortress_protection(self, reset_governance_lock):
+    def test_api_requires_fortress_protection(self, reset_governance_lock):
         """Test that API endpoints require FortressProtectedReasoningService"""
+        import asyncio
         from mahoun.reasoning.fortress_integration import FortressProtectedReasoningService
+        from mahoun.core.governance.governance_context import GovernanceContextManager
 
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
+        
+        # CRITICAL: Force reset the context stack to ensure no active context
+        GovernanceContextManager._governance_stack.set(None)
 
         # Create mock reasoning service
         class MockReasoningService:
@@ -455,16 +473,23 @@ class TestAPIBypassPrevention:
             reasoning_service=MockReasoningService(), strict_mode=True
         )
 
-        # Try to call without governance context (should fail)
-        with pytest.raises(GovernanceViolationError):
-            await protected_service.reason(
-                request=type("Request", (), {"question": "test"})(), correlation_id="test-003"
-            )
+        async def test_async():
+            # Verify no context is active
+            current = GovernanceContextManager._governance_stack.get()
+            assert current is None, f"Expected no context, but got: {current}"
+            
+            # Try to call without governance context (should fail)
+            with pytest.raises(GovernanceViolationError):
+                await protected_service.reason(
+                    request=type("Request", (), {"question": "test"})(), correlation_id="test-003"
+                )
 
-    @pytest.mark.asyncio
+        asyncio.run(test_async())
+
     @pytest.mark.p0
-    async def test_api_validates_all_responses(self, reset_governance_lock):
+    def test_api_validates_all_responses(self, reset_governance_lock):
         """Test that API validates all responses"""
+        import asyncio
         from mahoun.reasoning.fortress_integration import FortressProtectedReasoningService
 
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
@@ -490,12 +515,15 @@ class TestAPIBypassPrevention:
             reasoning_service=MockReasoningService(), strict_mode=True
         )
 
-        # Try to call with governance context (should fail validation)
-        async with GovernanceContextManager.active_context(correlation_id="test-004", execution_mode="STRICT"):
-            with pytest.raises(SecurityBreachException):
-                await protected_service.reason(
-                    request=type("Request", (), {"question": "test"})(), correlation_id="test-004"
-                )
+        async def test_async():
+            # Try to call with governance context (should fail validation)
+            async with GovernanceContextManager.active_context(correlation_id="test-004", execution_mode="STRICT"):
+                with pytest.raises(SecurityBreachException):
+                    await protected_service.reason(
+                        request=type("Request", (), {"question": "test"})(), correlation_id="test-004"
+                    )
+
+        asyncio.run(test_async())
 
 
 # ============================================================================
@@ -533,9 +561,8 @@ class TestComprehensiveBypassPrevention:
         metadata = GovernanceLock.get_audit_metadata()
         assert metadata["change_attempts"] >= 1
 
-    @pytest.mark.asyncio
     @pytest.mark.p0
-    async def test_fail_closed_on_all_errors(self, reset_governance_lock):
+    def test_fail_closed_on_all_errors(self, reset_governance_lock):
         """Test that system fails closed on all error conditions"""
         GovernanceLock.initialize(mode=GovernanceMode.STRICT)
 
@@ -549,10 +576,12 @@ class TestComprehensiveBypassPrevention:
         assert should_enforce_proof_carrying_contract() is True
 
         # 2. No governance context
+        GovernanceContextManager._governance_stack.set(None)
         with pytest.raises(GovernanceViolationError):
             GovernanceContextManager.require_context()
 
         # 3. Invalid provenance
+        GovernanceContextManager._governance_stack.set(None)
         with pytest.raises(GovernanceViolationError):
             GovernanceContextManager.require_provenance(source="test", author="system")
 

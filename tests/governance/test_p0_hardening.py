@@ -55,7 +55,7 @@ class TestP0_1_ProvenanceEnforcement:
             from mahoun.reasoning.evidence_linked_verdict import _resolve_provenance
             ctx = GovernanceContextManager.create_context(correlation_id="p0-test", execution_mode="STRICT")
             stack = GovernanceContextManager._get_stack()
-            GovernanceContextManager._governance_stack.set(stack + (ctx,))
+            GovernanceContextManager._governance_stack.set(stack + [ctx])
             try:
                 prov = _resolve_provenance("test_op")
                 assert prov.governance_scope_id == ctx.context_id
@@ -285,7 +285,7 @@ class TestDevProductionIsolation:
         with temporary_environment("production"):
             ctx = GovernanceContextManager.create_context(correlation_id="iso", execution_mode="STRICT")
             stack = GovernanceContextManager._get_stack()
-            GovernanceContextManager._governance_stack.set(stack + (ctx,))
+            GovernanceContextManager._governance_stack.set(stack + [ctx])
             try:
                 prov = ProvenanceMetadata.create(source="prod_test", correlation_id=ctx.correlation_id, author="mahoun", governance_scope_id=ctx.context_id, runtime_attestation_id=ctx.runtime_attestation.get("context_id", ctx.context_id), lineage_parent=None)
                 assert "synthetic" not in prov.source

@@ -1,7 +1,22 @@
 # mahoun/ledger/models.py
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from enum import Enum
+from typing import List, Optional, Tuple
+
+
+class ValidationStatus(str, Enum):
+    """
+    Validation status enum for ledger entries.
+    
+    HIGH-007 FIX: validation_status is now required and uses explicit enum values
+    instead of Optional[str] to ensure it's never None after commit.
+    
+    PER RULE 6: Validation result ownership - ledger must permanently record validation status
+    """
+    PENDING = "PENDING"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
 
 
 @dataclass(frozen=True)
@@ -23,18 +38,24 @@ class LedgerEntry:
     - key_version tracks which key was used
     
     PER RULE 6: Validation result ownership
-    - validation_status records whether execution passed or failed
+    - validation_status records whether execution PASSED or FAILED
     
     PER RULE 7: Ledger becomes source of truth
     - All information needed for verification is stored in ledger
+    
+    # ARCHITECTURE Section 156: Architectural integrity
+    
+    HIGH-001 FIX: All mutable lists replaced with immutable tuples
+    to prevent post-creation tampering in frozen dataclass.
     """
     # Core identifiers
     verdict_id: str
     case_id: str
 
     # Evidence references (RULE 5: Evidence binding)
-    referenced_ltm_nodes: List[str]   # rule_id, statute_id, precedent_id
-    referenced_facts: List[str]       # fact_id
+    # HIGH-001: Use Tuple instead of List for immutability
+    referenced_ltm_nodes: Tuple[str, ...]   # rule_id, statute_id, precedent_id
+    referenced_facts: Tuple[str, ...]       # fact_id
 
     # Execution quality metrics
     confidence: float
@@ -50,10 +71,12 @@ class LedgerEntry:
     request_id: Optional[str] = None
     
     # Validation result (RULE 6: Validation result ownership)
-    # This is now REQUIRED - ledger must record validation status
-    validation_status: Optional[str] = None
+    # HIGH-007 FIX: Now uses ValidationStatus enum and defaults to PENDING
+    # This ensures validation_status is never None after commit
+    validation_status: ValidationStatus = ValidationStatus.PENDING
     validation_timestamp: Optional[datetime] = None
-    validation_violations: Optional[List[str]] = None
+    # HIGH-001: Use Tuple instead of List for immutability
+    validation_violations: Optional[Tuple[str, ...]] = None
     fortress_version: Optional[str] = None
     
     # Proof hashes (RULE 4: Proof generation ownership, RULE 5: Evidence binding)

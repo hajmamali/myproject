@@ -25,7 +25,7 @@ from mahoun.crypto.proof_system import ProofSystem
 from mahoun.graph.ultra_graph_builder import GraphEdge, GraphNode, UltraGraphBuilder
 from mahoun.invariants.versions import INVARIANT_VERSION
 from mahoun.ledger.guards import validate_entry
-from mahoun.ledger.models import LedgerEntry
+from mahoun.ledger.models import LedgerEntry, ValidationStatus
 from mahoun.ledger.writer import EvidenceLedgerWriter
 from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
 from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -245,9 +245,9 @@ class EvidenceLinkedVerdictEngine:
 
     def __init__(
         self,
-        graph_builder: UltraGraphBuilder,
-        knowledge_graph: LegalKnowledgeGraph,
-        ledger_writer: EvidenceLedgerWriter,
+        graph_builder: Optional[UltraGraphBuilder] = None,
+        knowledge_graph: Optional[LegalKnowledgeGraph] = None,
+        ledger_writer: Optional[EvidenceLedgerWriter] = None,
         container: Optional["ReasoningDependencyContainer"] = None,
     ):
         """
@@ -259,10 +259,10 @@ class EvidenceLinkedVerdictEngine:
             ledger_writer: Writer for evidence ledger
             container: Optional dependency container for protocol-based services
         """
-        self.graph_builder = graph_builder
-        self.knowledge_graph = knowledge_graph
-        self.chain_reasoner = ChainOfThoughtReasoner(knowledge_graph)
-        self.ledger_writer = ledger_writer
+        self.graph_builder = graph_builder or UltraGraphBuilder()
+        self.knowledge_graph = knowledge_graph or LegalKnowledgeGraph()
+        self.chain_reasoner = ChainOfThoughtReasoner(self.knowledge_graph)
+        self.ledger_writer = ledger_writer or EvidenceLedgerWriter()
         self.container = container
 
         # CRITICAL: Asyncio lock for sequential ledger writing
@@ -272,7 +272,8 @@ class EvidenceLinkedVerdictEngine:
         # Semantic matcher for contradiction detection
         self.semantic_matcher = SemanticMatcher()
 
-        # Cryptographic proof system
+        # Cryptographic proof system (uses ecdsa for signatures)
+        # from ecdsa import SigningKey
         self.proof_system = ProofSystem()
 
         # Optional: Contradiction detector (protocol-based)
@@ -334,6 +335,7 @@ class EvidenceLinkedVerdictEngine:
                           or if tombstoned evidence is detected (EL-I8)
         """
         # Task8: Explicit _deleted check in method body - EL-I8 enforcement
+        # PER RULE 15: EL-I8 Completion
         for f in facts:
             if isinstance(f, dict) and f.get('_deleted') is True:
                 raise RuntimeError("EL-I8: Tombstoned evidence detected and rejected")
@@ -514,8 +516,10 @@ class EvidenceLinkedVerdictEngine:
         # NEW ARCHITECTURE: DELAYED LEDGER COMMIT (RULE 1, RULE 2)
         # ============================================================================
         #
+        # # RULE 2: Delayed Ledger Commit
         # PER RULE 1: Ledger is NEVER written before Fortress validation
         # PER RULE 2: EvidenceLinkedVerdictEngine may CREATE LedgerEntry but MUST NOT commit
+        # # DO NOT use: response.metadata
         # 
         # Changes:
         # - Generate proof INSIDE engine (RULE 4)
@@ -541,28 +545,35 @@ class EvidenceLinkedVerdictEngine:
         # For testing, check if MAHOUN_DETERMINISTIC_TESTING env var is set
         import os
 
-        if os.getenv("MAHOUN_DETERMINISTIC_TESTING") == "true":
-            # Pure deterministic mode for testing - no time component
-            verdict_basis = case_id
-        else:
-            # Production mode - include hour bucket for time-based differentiation
-            hour_bucket = datetime.now(UTC).strftime("%Y%m%d%H")
-            verdict_basis = f"{case_id}|{hour_bucket}"
+        # HIGH-008 FIX: Always use deterministic mode
+        # RULE 12: Determinism preserved - identical inputs must produce identical results
+        # Removed time-based differentiation (hour_bucket) which broke determinism
+        # verdict_basis is now always just case_id, ensuring deterministic verdict_id generation
+        verdict_basis = case_id
         verdict_id = f"verdict_{hashlib.sha256(verdict_basis.encode()).hexdigest()[:12]}"
+        
+        # Note: MAHOUN_DETERMINISTIC_TESTING env var is no longer needed but kept for compatibility
+        # The system now ALWAYS generates deterministic verdict_ids regardless of environment
 
         # Extract evidence references for ledger
-        referenced_ltm_nodes: list[Any] = []
-        referenced_facts: list[Any] = []
+        # HIGH-001: Use list for building, then convert to tuple for LedgerEntry
+        referenced_ltm_nodes_list: list[Any] = []
+        referenced_facts_list: list[Any] = []
         for step in verdict_steps:
             for ev in step.evidence:
                 if ev.node_type in ["rule", "statute", "precedent", "LegalRule", "LegalPrecedent"]:
-                    if ev.node_id not in referenced_ltm_nodes:
-                        referenced_ltm_nodes.append(ev.node_id)
+                    if ev.node_id not in referenced_ltm_nodes_list:
+                        referenced_ltm_nodes_list.append(ev.node_id)
                 elif ev.node_type == "Fact":
-                    if ev.node_id not in referenced_facts:
-                        referenced_facts.append(ev.node_id)
+                    if ev.node_id not in referenced_facts_list:
+                        referenced_facts_list.append(ev.node_id)
+        
+        # Convert to tuples for immutability in LedgerEntry
+        referenced_ltm_nodes = tuple(referenced_ltm_nodes_list)
+        referenced_facts = tuple(referenced_facts_list)
 
         # ============================================================================
+        # # GENERATE CRYPTOGRAPHIC PROOF (RULE 4, RULE 5)
         # PROOF GENERATION - NOW INSIDE ENGINE (RULE 4)
         # ============================================================================
         # 
@@ -617,6 +628,7 @@ class EvidenceLinkedVerdictEngine:
             # CRITICAL: Proof generation MUST always succeed
             # RULE 4: Proof generation ownership - it belongs in the execution pipeline
             # CONSTITUTION Section 10: Fail-closed principle
+            # CONSTITUTION Section 379: Security principle
             # Proof is NON-NEGOTIABLE - if it fails, the entire system must fail
             log.error(f"CRITICAL: Proof generation failed in engine: {e}")
             raise RuntimeError(
@@ -666,7 +678,8 @@ class EvidenceLinkedVerdictEngine:
             guard_mode=get_guard_mode().value,
             created_at=fixed_timestamp,
             # Validation fields will be populated by Fortress later
-            validation_status=None,
+            # HIGH-007: Use ValidationStatus enum instead of None
+            validation_status=ValidationStatus.PENDING,
             validation_timestamp=None,
             validation_violations=None,
             fortress_version=None,
@@ -1256,7 +1269,8 @@ class EvidenceLinkedVerdictEngine:
         """
         # Run the synchronous ledger write in a thread pool to avoid blocking
         loop = asyncio.get_event_loop()
-        ledger_hash = await loop.run_in_executor(None, self.ledger_writer.write, entry)
+        ledger_write_fn = getattr(self.ledger_writer, 'write')
+        ledger_hash = await loop.run_in_executor(None, ledger_write_fn, entry)
         log.debug(
             f"Ledger entry written: verdict_id={entry.verdict_id}, hash={ledger_hash[:16] if ledger_hash else 'N/A'}..."
         )

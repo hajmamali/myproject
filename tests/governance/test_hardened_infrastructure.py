@@ -66,9 +66,9 @@ def setup_governance_context():
         execution_mode="STRICT",
     )
     ctx.validate_governance_scope()
-    # _governance_stack holds an immutable tuple — use the ContextVar API directly.
+    # _governance_stack holds a mutable list — use the ContextVar API directly.
     current = GovernanceContextManager._get_stack()
-    token = GovernanceContextManager._governance_stack.set(current + (ctx,))
+    token = GovernanceContextManager._governance_stack.set([*current, ctx])
     yield ctx
     GovernanceContextManager._governance_stack.reset(token)
 

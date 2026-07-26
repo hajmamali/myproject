@@ -28,9 +28,17 @@ logger.configure(
     ]
 )
 
-# Metrics
-governance_requests = Counter('governance_requests_total', 'Total governance requests', ['operation', 'result'])
-governance_duration = Histogram('governance_duration_seconds', 'Governance operation duration', ['operation'])
+# Metrics (guarded against duplicate registration on reload)
+from prometheus_client import REGISTRY, CollectorRegistry
+try:
+    governance_requests = Counter('governance_requests_total', 'Total governance requests', ['operation', 'result'])
+    governance_duration = Histogram('governance_duration_seconds', 'Governance operation duration', ['operation'])
+except ValueError:
+    # Already registered — retrieve existing collectors
+    governance_requests = REGISTRY._names_to_collectors.get('governance_requests_total',
+        Counter('governance_requests_total', 'Total governance requests', ['operation', 'result'], registry=CollectorRegistry()))
+    governance_duration = REGISTRY._names_to_collectors.get('governance_duration_seconds',
+        Histogram('governance_duration_seconds', 'Governance operation duration', ['operation'], registry=CollectorRegistry()))
 
 class GovernanceRequest(BaseModel):
     query_type: str

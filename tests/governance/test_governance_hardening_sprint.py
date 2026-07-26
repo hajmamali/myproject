@@ -19,6 +19,7 @@ Test naming convention:
 from __future__ import annotations
 
 import asyncio
+import pytest
 import contextlib
 import threading
 import unittest
@@ -314,11 +315,18 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
             })
             return []
 
+        # Setup audit sink to prevent AUDIT_FAILURE
+        from mahoun.core.governance.mutation_boundary import set_audit_sink
+        from mahoun.infrastructure.audit.filesink import NullAuditSink
+        set_audit_sink(NullAuditSink())
+        
         with patch(
-            "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_context",
+            "mahoun.core.governance.mutation_boundary._append_governance_audit",
+        ), patch(
+            "mahoun.core.governance.governance_context.GovernanceContextManager.require_context",
             return_value=ctx,
         ), patch(
-            "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
+            "mahoun.core.governance.governance_context.GovernanceContextManager.require_provenance",
             return_value=MagicMock(
                 to_dict=lambda: {
                     "source": "test",
@@ -331,15 +339,24 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
                 },
                 provenance_hash="ph",
             ),
-        ), patch(
-            "mahoun.core.governance.mutation_boundary._append_governance_audit",
         ):
-            session = GovernedNeo4jSession(
-                raw_executor=raw_exec,
-                actor_id=f"worker-{worker_id}",
-                correlation_id=f"corr-{worker_id}",
-            )
-            session.write_node("Verdict", {"id": f"v-{worker_id}"})
+            # CRITICAL: Set up a real governance context in the ContextVar
+            # This is required because GovernedNeo4jSession.__init__ calls
+            # GovernanceContextManager.require_context() which will fail without it
+            from mahoun.core.governance.governance_context import GovernanceContextManager
+            original_stack = GovernanceContextManager._governance_stack.get()
+            GovernanceContextManager._governance_stack.set([ctx])
+            
+            try:
+                session = GovernedNeo4jSession(
+                    raw_executor=raw_exec,
+                    actor_id=f"worker-{worker_id}",
+                    correlation_id=f"corr-{worker_id}",
+                )
+                session.write_node("Verdict", {"id": f"v-{worker_id}"})
+            finally:
+                # Restore original stack
+                GovernanceContextManager._governance_stack.set(original_stack)
 
         # After execution, context var must be reset to False
         if _authorized_write_ctx.get():

@@ -13,11 +13,42 @@ This module provides shared fixtures for all governance tests including:
 - ProvenanceAttestation instance
 """
 
+import os
+import sys
 import dataclasses
 from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+
+# CRITICAL: Set testing mode BEFORE any imports happen
+# This ensures TrustedHostMiddleware is not added to the app in api/main.py
+# The app checks: if os.getenv("MAHOUN_TESTING") != "1": add middleware
+os.environ["MAHOUN_TESTING"] = "1"
+os.environ["MAHOUN_ENV"] = "development"
+
+# CRITICAL: Wire audit sink for governance tests
+# This prevents "AUDIT SINK NOT WIRED" errors
+try:
+    from mahoun.core.governance.mutation_boundary import set_audit_sink
+    from mahoun.infrastructure.audit.filesink import NullAuditSink
+    set_audit_sink(NullAuditSink())
+except Exception:
+    # If audit sink is already set, that's fine
+    pass
+
+
+# CRITICAL: Setup governance context for tests that need it
+# This prevents "No active governance context" errors in tests
+# NOTE: We do NOT set a default context at module level because it interferes
+# with security bypass tests that need to verify behavior without a context.
+# The reset_governance_lock autouse fixture handles context setup/cleanup per test.
+try:
+    from mahoun.core.governance.governance_context import GovernanceContextManager
+    pass  # Context setup is handled by reset_governance_lock fixture
+except Exception:
+    # If context is already set, that's fine
+    pass
 
 from mahoun.core.fortress_validator import (
     ExecutionMode,
@@ -91,11 +122,13 @@ def reset_governance_lock():
     from mahoun.core.governance.governance_context import GovernanceContextManager
     GovernanceLock._reset()
     GovernanceContextManager._default_instance = None
-    GovernanceContextManager._governance_stack.set(())
+    # Reset ContextVar by setting it to None (the default value)
+    # This ensures clean state for each test
+    GovernanceContextManager._governance_stack.set(None)
     yield
     GovernanceLock._reset()
     GovernanceContextManager._default_instance = None
-    GovernanceContextManager._governance_stack.set(())
+    GovernanceContextManager._governance_stack.set(None)
 
 
 @pytest.fixture

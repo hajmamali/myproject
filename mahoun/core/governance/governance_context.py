@@ -288,7 +288,7 @@ class GovernanceContextManager:
         """
         Test-only helper to reset governance context for the current async task.
         """
-        cls._governance_stack.set([])
+        cls._governance_stack.set(None)
 
     @classmethod
     def create_context(
@@ -296,6 +296,9 @@ class GovernanceContextManager:
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
         actor_id: str | None = None,
+        request_id: str | None = None,
+        user_id: str | None = None,
+        **kwargs: Any,
     ) -> GovernanceContext:
         """
         Create a new governance context.
@@ -304,14 +307,19 @@ class GovernanceContextManager:
             correlation_id: Optional correlation ID
             execution_mode: Execution mode (STRICT, AUDIT, etc.)
             actor_id: Optional actor identity for audit trail compatibility
+            request_id: Optional request ID alias
+            user_id: Optional user ID alias
 
         Returns:
             GovernanceContext instance
         """
         return cls._get_instance()._create_context(
-            correlation_id=correlation_id,
+            correlation_id=correlation_id or request_id,
             execution_mode=execution_mode,
-            actor_id=actor_id,
+            actor_id=actor_id or user_id,
+            request_id=request_id,
+            user_id=user_id,
+            **kwargs,
         )
 
     def _create_context(
@@ -319,6 +327,9 @@ class GovernanceContextManager:
         correlation_id: str | None = None,
         execution_mode: str = "STRICT",
         actor_id: str | None = None,
+        request_id: str | None = None,
+        user_id: str | None = None,
+        **kwargs: Any,
     ) -> GovernanceContext:
         ctx_id = f"ctx-{uuid.uuid4().hex[:16]}"
         corr_id = correlation_id or f"req-{uuid.uuid4().hex[:16]}"

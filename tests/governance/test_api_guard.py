@@ -118,12 +118,14 @@ class TestAPIExtraction:
     
     def test_extract_api_from_source(self, setup_test_modules):
         """Test extracting API from source file."""
-        from mahoun.governance.api_guard import extract_api_from_source
+        from mahoun.governance.api_guard import extract_api_from_source, ROOT_DIR
         
         test_info = setup_test_modules
         filepath = os.path.join(test_info["temp_dir"], "test_module.py")
         
-        api = extract_api_from_source("test_module.py", "test_module")
+        # Use relative path from ROOT_DIR
+        rel_path = os.path.relpath(filepath, ROOT_DIR)
+        api = extract_api_from_source(rel_path, "test_module")
         
         assert api.module == "test_module"
         assert "TestClass" in api.classes

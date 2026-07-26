@@ -206,10 +206,22 @@ class TestLockFileOperations:
     
     def test_load_lock_file_not_found(self):
         """Test loading lock file when it doesn't exist."""
-        from mahoun.governance.kernel_guard import load_lock
+        from mahoun.governance.kernel_guard import load_lock, LOCK_PATH
+        import os
         
-        result = load_lock()
-        assert result == {}
+        # Temporarily rename lock file if it exists
+        temp_path = None
+        if os.path.exists(LOCK_PATH):
+            temp_path = LOCK_PATH + ".tmp"
+            os.rename(LOCK_PATH, temp_path)
+        
+        try:
+            result = load_lock()
+            assert result == {}
+        finally:
+            # Restore lock file if it was renamed
+            if temp_path and os.path.exists(temp_path):
+                os.rename(temp_path, LOCK_PATH)
     
     def test_save_and_load_lock(self):
         """Test saving and loading lock file."""

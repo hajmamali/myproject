@@ -223,10 +223,16 @@ def generate_proof(
     - key_version and public_key enable independent verification
     """
     # Validate inputs
+    # HIGH-005 FIX: Validate evidence_refs is not empty (RULE 5)
     if not graph_nodes:
         raise ValueError("graph_nodes cannot be empty")
     if not reasoning_steps:
         raise ValueError("reasoning_steps cannot be empty")
+    if not evidence_refs:
+        raise ValueError(
+            "RULE 5 VIOLATION: evidence_refs cannot be empty. "
+            "Proof must be cryptographically bound to actual evidence."
+        )
     if not (0.0 <= confidence <= 1.0):
         raise ValueError(f"confidence must be in [0, 1], got {confidence}")
     if not verdict_id or not case_id:

@@ -426,7 +426,7 @@ class TestIdentityMandatoryMutation:
             execution_mode="STRICT",
         )
         token = GovernanceContextManager._governance_stack.set(
-            GovernanceContextManager._get_stack() + (ctx,)
+            GovernanceContextManager._get_stack() + [ctx]
         )
         try:
             session = GovernedNeo4jSession(

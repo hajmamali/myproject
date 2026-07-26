@@ -28,7 +28,7 @@ from datetime import datetime, UTC
 from typing import TYPE_CHECKING, Any, Optional
 
 from mahoun.core.governance import GovernanceContextManager
-from mahoun.ledger.models import LedgerEntry
+from mahoun.ledger.models import LedgerEntry, ValidationStatus
 from mahoun.ledger.writer import EvidenceLedgerWriter
 
 if TYPE_CHECKING:
@@ -149,9 +149,13 @@ class LedgerCommitService:
             f"validation_status={execution_result.validation_status}"
         )
         
+        # HIGH-004 FIX: Implement transaction-level atomicity
+        # Use two-phase approach: prepare -> commit
+        # If commit fails, the prepared entry is discarded (no side effects)
+        # Lock ensures no concurrent modifications during transaction
         async with self._lock:
             try:
-                # Create updated ledger entry with validation results
+                # Phase 1: Prepare updated entry (no side effects yet)
                 updated_entry = self._update_entry_with_validation(
                     entry=execution_result.ledger_entry,
                     validation_passed=validation_passed,
@@ -161,7 +165,8 @@ class LedgerCommitService:
                     execution_result=execution_result
                 )
                 
-                # Commit to ledger
+                # Phase 2: Commit to ledger (atomic operation)
+                # HIGH-004: If this fails, no changes are persisted
                 ledger_hash = await self._commit_entry_async(updated_entry)
                 
                 self.stats["successful_commits"] += 1
@@ -190,13 +195,23 @@ class LedgerCommitService:
                     exc_info=True
                 )
                 
+                # HIGH-004: Atomicity - no partial state persisted
+                # The prepared entry (updated_entry) is discarded
+                # Return original entry (not updated) to indicate failure
+                # This ensures no inconsistent state between preparation and commit
+                
                 if self.strict_mode:
-                    raise RuntimeError(error_msg) from e
+                    # In strict mode, always raise to ensure atomicity
+                    # RULE 10: Execution Atomicity - no partial commits
+                    raise RuntimeError(
+                        f"[{correlation_id}] HIGH-004: Ledger commit atomicity violation. "
+                        f"Commit failed after preparation: {e}"
+                    ) from e
                 
                 return LedgerCommitResult(
                     success=False,
                     ledger_hash=None,
-                    entry=execution_result.ledger_entry,
+                    entry=execution_result.ledger_entry,  # Return ORIGINAL, not updated
                     error=error_msg,
                     timestamp=timestamp
                 )
@@ -323,7 +338,8 @@ class LedgerCommitService:
             request_id=entry.request_id or execution_result.execution_id,
             
             # Validation results (RULE 6)
-            validation_status="PASSED" if validation_passed else "FAILED",
+            # HIGH-007: Use ValidationStatus enum
+            validation_status=ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
             validation_timestamp=validation_timestamp or datetime.now(UTC),
             validation_violations=violation_strings,
             fortress_version=fortress_version,

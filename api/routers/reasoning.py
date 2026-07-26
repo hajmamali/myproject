@@ -59,6 +59,31 @@ from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
 
 log = setup_logger("reasoning_api")
 
+
+# HIGH-006 FIX: Ensure GovernanceContext is active
+# This will be applied to individual endpoints that require governance
+def require_governance_context():
+    """
+    Dependency that ensures GovernanceContext is active.
+    
+    HIGH-006: Governance Context Not Propagated Through All Layers
+    This enforces that every execution has an active GovernanceContext.
+    
+    Returns:
+        The active GovernanceContext
+    
+    Raises:
+        HTTPException: If no GovernanceContext is active
+    """
+    try:
+        return GovernanceContextManager.require_context()
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Governance context required: {e}"
+        )
+
+
 router = APIRouter(
     prefix="/api/v1/reasoning",
     tags=["reasoning"],
@@ -314,6 +339,7 @@ def get_keypair() -> tuple[str, str]:
     - Cryptographic proof for verification
     - Deterministic contradiction resolution
     - Fortress validation on all responses
+    - Governance context enforced (HIGH-006)
     
     **Process:**
     1. Establish governance context (correlation lineage, runtime attestation)
@@ -355,6 +381,10 @@ async def generate_verdict(
 
             adapted_engine = create_verdict_engine_adapter(engine)
 
+            # Get ledger writer for commit service
+            immutable_ledger = get_immutable_ledger()
+            ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
+            
             # Create ledger commit service with the ledger writer
             ledger_commit_service = create_ledger_commit_service(
                 ledger_writer=ledger_writer,
@@ -428,21 +458,21 @@ async def generate_verdict(
         
         if request.generate_proof and execution_result and execution_result.proof:
             proof = execution_result.proof
-                    proof_response = CryptographicProofResponse(
-                        graph_state_hash=proof.graph_state_hash,
-                        reasoning_chain_hash=proof.reasoning_chain_hash,
-                        evidence_merkle_root=proof.evidence_merkle_root,
-                        timestamp=proof.timestamp,
-                        signature=proof.signature,
-                        verdict_id=proof.verdict_id,
-                        case_id=proof.case_id,
-                        confidence=proof.confidence,
-                    )
-                else:
-                    log.warning(
-                        "Proof generation not available in execution result - "
-                        "proof will not be included in response"
-                    )
+            proof_response = CryptographicProofResponse(
+                graph_state_hash=proof.graph_state_hash,
+                reasoning_chain_hash=proof.reasoning_chain_hash,
+                evidence_merkle_root=proof.evidence_merkle_root,
+                timestamp=proof.timestamp,
+                signature=proof.signature,
+                verdict_id=proof.verdict_id,
+                case_id=proof.case_id,
+                confidence=proof.confidence,
+            )
+        else:
+            log.warning(
+                "Proof generation not available in execution result - "
+                "proof will not be included in response"
+            )
 
         # Convert verdict steps to response format
         steps_response = []

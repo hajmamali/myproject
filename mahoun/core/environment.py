@@ -335,7 +335,7 @@ def bootstrap_environment(
             source = "override"
             logger.info(f"🔧 Environment override: {raw_value}")
         else:
-            raw_value = os.getenv("MAHOUN_ENV")
+            raw_value = os.getenv("MAHOUN_ENV") or os.getenv("MAHOUN_ENVIRONMENT")
             if raw_value is None:
                 if fail_on_missing:
                     raise EnvironmentAccessError(
@@ -420,7 +420,7 @@ def get_current_environment() -> EnvironmentContext:
     """
     with _ENVIRONMENT_LOCK:
         if _CANONICAL_ENVIRONMENT is None:
-            env_override = os.getenv("MAHOUN_ENV")
+            env_override = os.getenv("MAHOUN_ENV") or os.getenv("MAHOUN_ENVIRONMENT")
             if env_override:
                 logger.debug(
                     "⚠️ Environment accessed before bootstrap. Auto-bootstrapping from MAHOUN_ENV=%s.",
