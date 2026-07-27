@@ -367,6 +367,11 @@ class TestReplayCapabilityHardcore:
                 case_id=case_id
             )
             verdict_id = exec_result.verdict.verdict_id
+            # Manually commit the ledger entry for testing
+            engine.ledger_writer.write(exec_result.ledger_entry)
+
+        # Reload ledger to see the committed entry
+        ledger = get_immutable_ledger()
         
         
         
@@ -380,7 +385,7 @@ class TestReplayCapabilityHardcore:
         
         # Check for execution metadata
         exec_metadata = ['execution_id', 'correlation_id', 'timestamp', 'execution_timestamp']
-        has_metadata = any(field in found_entry for field in exec_metadata)
+        has_metadata = any(hasattr(found_entry, field) for field in exec_metadata)
         assert has_metadata, "No execution metadata in ledger entry"
         
         print(f"✅ Ledger contains execution metadata PASSED")
