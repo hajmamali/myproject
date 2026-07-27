@@ -156,8 +156,8 @@ class ReasoningChain:
         # Initialize NLI Verifier
         if self.config.nli_enabled and self._nli_verifier is None:
             try:
-                # from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier as NLIVerifier
-                self._nli_verifier = NLIVerifier(threshold=self.config.nli_threshold)
+                from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier
+                self._nli_verifier = UltraNLIVerifier(threshold=self.config.nli_threshold)
                 self.nli_available = True
                 logger.info("✅ NLI Verifier initialized")
             except Exception as e:

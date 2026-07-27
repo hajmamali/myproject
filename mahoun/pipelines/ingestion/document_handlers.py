@@ -402,9 +402,21 @@ class PdfHandler(BaseDocumentHandler):
             )
     
     def _extract_with_ocr(self, file_path: str) -> DocumentExtractionResult:
-        """Extract using OCR (for scanned PDFs)"""
+        """Extract using OCR (for scanned PDFs)
+        
+        Uses HardenedPaddleOCR for production-grade OCR with:
+        - Checkpoint/resume support for large documents
+        - Document-level Merkle tree integrity proof
+        - Persian-legal-specific validation
+        - Weighted confidence calculation
+        
+        Falls back to plain PaddleOCR only if HardenedPaddleOCR is unavailable.
+        In production, HardenedPaddleOCR is REQUIRED for scanned documents.
+        """
         try:
             from pdf2image import convert_from_path
+            import hashlib
+            from pathlib import Path
             
             # Convert PDF pages to images
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -416,18 +428,91 @@ class PdfHandler(BaseDocumentHandler):
                 )
                 
                 pages_text: List[Any] = []
-                # Try PaddleOCR first (better for Persian)
+                ocr_engine_name = "unknown"
+                merkle_root = None
+                
+                # ========================================================================
+                # PRIORITY 1: Use HardenedPaddleOCR (production-grade)
+                # ========================================================================
                 try:
-                    from paddleocr import PaddleOCR
-                    paddle_ocr = PaddleOCR(use_angle_cls=True, lang='fa')
-                    ocr_engine_name = "paddleocr"
+                    from mahoun.pipelines.ingestion.hardened_paddle_ocr import HardenedPaddleOCR
+                    
+                    # Generate document ID for checkpointing
+                    pdf_path = Path(file_path)
+                    with open(pdf_path, "rb") as f:
+                        doc_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                    document_id = f"ocr_{doc_hash}"
+                    
+                    # Initialize HardenedPaddleOCR
+                    hardened_ocr = HardenedPaddleOCR(
+                        model_dir="/secure/models/paddleocr",
+                        checkpoint_dir="/tmp/mahoun_ocr_checkpoints",
+                        legal_keyword_threshold=0.85,
+                        general_confidence_threshold=0.80
+                    )
+                    
+                    # Process each page with hardened OCR
+                    all_text_parts = []
                     
                     for page_num, image in enumerate(images):
                         # Save image temporarily
                         img_path = os.path.join(temp_dir, f"page_{page_num}.png")
                         image.save(img_path)
                         
-                        # OCR
+                        # Use ocr_image_hardened method
+                        page_result = hardened_ocr.ocr_image_hardened(
+                            image_path=img_path,
+                            document_id=document_id,
+                            page_number=page_num,
+                            enable_checkpointing=True
+                        )
+                        
+                        if page_result and page_result.get('success') and page_result.get('text'):
+                            text = page_result['text']
+                            if text and text.strip():
+                                all_text_parts.append(f"=== صفحه {page_num + 1} ===\n{text}")
+                    
+                    if all_text_parts:
+                        pages_text = all_text_parts
+                        ocr_engine_name = "hardened_paddleocr"
+                        
+                        # Get Merkle root for the document
+                        try:
+                            merkle_root = hardened_ocr.get_document_merkle_root()
+                        except Exception as e:
+                            logger.debug(f"Could not get Merkle root: {e}")
+                            merkle_root = None
+                    else:
+                        # Hardened OCR produced no text, fallback to plain PaddleOCR
+                        logger.warning("HardenedPaddleOCR produced no text, falling back to PaddleOCR")
+                        raise ImportError("HardenedPaddleOCR text extraction failed")
+                    
+                except ImportError as e:
+                    # ========================================================================
+                    # PRIORITY 2: Fallback to plain PaddleOCR
+                    # ========================================================================
+                    logger.warning(f"HardenedPaddleOCR not available: {e}, falling back to PaddleOCR")
+                    
+                    from mahoun.core.environment import is_production
+                    
+                    if is_production():
+                        # In production, we should NOT allow fallback without hardened OCR
+                        # for scanned documents (this is a security/trust requirement)
+                        raise ImportError(
+                            f"HardenedPaddleOCR is REQUIRED in production for OCR. "
+                            f"Scanned PDF processing cannot proceed without integrity guarantees. "
+                            f"Original error: {e}"
+                        )
+                    
+                    # In development, allow fallback with warning
+                    from paddleocr import PaddleOCR
+                    paddle_ocr = PaddleOCR(use_angle_cls=True, lang='fa')
+                    ocr_engine_name = "paddleocr_fallback"
+                    
+                    for page_num, image in enumerate(images):
+                        img_path = os.path.join(temp_dir, f"page_{page_num}.png")
+                        image.save(img_path)
+                        
                         result = paddle_ocr.ocr(img_path, cls=True)
                         
                         if result and result[0]:
@@ -442,7 +527,9 @@ class PdfHandler(BaseDocumentHandler):
                                 pages_text.append(f"=== صفحه {page_num + 1} ===\n" + '\n'.join(text_parts))
                 
                 except ImportError:
-                    # Fallback to Tesseract
+                    # ========================================================================
+                    # PRIORITY 3: Fallback to Tesseract (last resort)
+                    # ========================================================================
                     import pytesseract
                     ocr_engine_name = "tesseract"
                     
@@ -454,17 +541,25 @@ class PdfHandler(BaseDocumentHandler):
                 
                 all_text = '\n\n'.join(pages_text)
                 
+                # Build metadata
+                file_size = Path(file_path).stat().st_size
+                metadata = {
+                    "format": "pdf",
+                    "file_path": file_path,
+                    "file_size": file_size,
+                    "num_pages": len(images),
+                    "extraction_method": f"ocr_{ocr_engine_name}",
+                    "is_scanned": True
+                }
+                
+                # Add Merkle root if available
+                if merkle_root:
+                    metadata["merkle_root"] = merkle_root
+                
                 return DocumentExtractionResult(
                     success=len(all_text.strip()) > 0,
                     text=all_text,
-                    metadata={
-                        "format": "pdf",
-                        "file_path": file_path,
-                        "file_size": Path(file_path).stat().st_size,
-                        "num_pages": len(images),
-                        "extraction_method": f"ocr_{ocr_engine_name}",
-                        "is_scanned": True
-                    },
+                    metadata=metadata,
                     handler_used="PdfHandler"
                 )
                 

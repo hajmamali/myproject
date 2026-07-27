@@ -34,10 +34,25 @@ if [ -d "venv" ]; then
     source venv/bin/activate
 fi
 
-# Step 1: Run complete governance integration test suite
-echo "Step 1: Running complete Governance Integration Test Suite..."
+# Step 1: Run CRITICAL governance bypass prevention tests FIRST
+echo "Step 1: Running CRITICAL Governance Bypass Prevention Tests FIRST..."
 echo ""
-if python -m pytest tests/governance/ -v -k "not test_concurrent_requests" --tb=short; then
+if python -m pytest tests/governance/test_security_bypass_prevention.py -v --tb=short; then
+    echo ""
+    echo -e "${GREEN}✓ Critical Bypass Prevention Tests Passed${NC}"
+else
+    echo ""
+    echo -e "${RED}✗ FAILED: Critical Bypass Prevention Tests Failed${NC}"
+    echo "Failures in bypass prevention indicate a SERIOUS security regression."
+    exit 1
+fi
+echo ""
+
+# Step 1.5: Run other governance tests
+# Exclude tests that require external dependencies (neo4j, psycopg2, httpx2)
+echo "Step 1.5: Running remaining Governance Integration Tests..."
+echo ""
+if python -m pytest tests/governance/ -v -k "not test_concurrent_requests and not test_schema_governance and not test_outbox_refactor and not test_api_integration and not test_security_bypass_prevention" --tb=short; then
     echo ""
     echo -e "${GREEN}✓ Governance Integration Tests Passed Successfully${NC}"
 else

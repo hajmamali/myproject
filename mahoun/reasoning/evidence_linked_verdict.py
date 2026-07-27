@@ -509,6 +509,146 @@ class EvidenceLinkedVerdictEngine:
         # Guard G4: If unresolved conflicts, verdict must be UNDETERMINED
         G4_ContradictionVisibility(unresolved_conflicts, final_verdict)
 
+        # Step 9: NLI Text-Grounding Verification (CRITICAL)
+        # ============================================================================
+        # NLI verification ensures the generated text is fully grounded in evidence
+        # This is a HARD REQUIREMENT per CONSTITUTION and ARCHITECTURE
+        # If NLI verification fails, the verdict MUST be rejected (fail-closed)
+        # ============================================================================
+        try:
+            # Build context from evidence for NLI verification
+            # Extract all facts and evidence text that the verdict is based on
+            context_parts = []
+            for step in verdict_steps:
+                for ev in step.evidence:
+                    # Add evidence text to context
+                    if hasattr(ev, 'text') and ev.text:
+                        context_parts.append(ev.text)
+                    elif hasattr(ev, 'node_id') and ev.node_id:
+                        # For nodes, get their properties
+                        if ev.node_id in resolved_nodes:
+                            node = resolved_nodes[ev.node_id]
+                            if hasattr(node, 'properties'):
+                                if 'text' in node.properties:
+                                    context_parts.append(node.properties['text'])
+                                elif 'description' in node.properties:
+                                    context_parts.append(node.properties['description'])
+                                elif 'content' in node.properties:
+                                    context_parts.append(node.properties['content'])
+                            
+                        # Also add the step statement itself as it's part of the reasoning
+                    context_parts.append(step.statement)
+            
+            # Also include rule and precedent text from resolved nodes
+            for node_id, node in resolved_nodes.items():
+                if hasattr(node, 'properties'):
+                    if node.node_type in ["LegalRule", "LegalPrecedent"]:
+                        if 'text' in node.properties:
+                            context_parts.append(node.properties['text'])
+                        elif 'description' in node.properties:
+                            context_parts.append(node.properties['description'])
+                        elif 'conclusion' in node.properties:
+                            context_parts.append(node.properties['conclusion'])
+                        elif 'decision' in node.properties:
+                            context_parts.append(node.properties['decision'])
+            
+            context = "\n".join(context_parts) if context_parts else ""
+            
+            # Skip NLI verification if no context (should not happen with proper evidence)
+            if context and final_verdict and final_verdict.strip():
+                # Import UltraNLIVerifier here to avoid circular imports
+                # and to allow lazy loading
+                from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier, UltraNLIResult
+                
+                # Create verifier instance
+                nli_verifier = UltraNLIVerifier(threshold=0.7)
+                
+                # Verify the generated text against the evidence context
+                nli_result: UltraNLIResult = nli_verifier.verify(
+                    context=context,
+                    answer=final_verdict
+                )
+                
+                # Check results - FAIL-CLOSED per CONSTITUTION Section 10
+                if not nli_result.is_supported:
+                    # NLI verification failed - this is a blocking condition
+                    from mahoun.core.environment import is_production
+                    
+                    error_msg = (
+                        f"NLI Text-Grounding Verification FAILED. "
+                        f"Generated verdict is not supported by evidence. "
+                        f"Entailment: {nli_result.entailment_score:.3f}, "
+                        f"Contradiction: {nli_result.contradiction_score:.3f}, "
+                        f"Label: {nli_result.label.value}"
+                    )
+                    
+                    if is_production():
+                        # In production: hard fail (fail-closed)
+                        raise RuntimeError(
+                            f"CRITICAL: {error_msg}. "
+                            f"Verdict cannot be generated without evidence grounding. "
+                            f"This is a trust-critical failure."
+                        )
+                    else:
+                        # In development: allow but log as critical
+                        log.critical(
+                            f"DEVELOPMENT MODE: {error_msg}. "
+                            f"This would be BLOCKED in production."
+                        )
+                else:
+                    # NLI passed - log success
+                    log.info(
+                        f"NLI verification PASSED: entailment={nli_result.entailment_score:.3f}, "
+                        f"contradiction={nli_result.contradiction_score:.3f}"
+                    )
+            elif not context:
+                # No context available for verification
+                from mahoun.core.environment import is_production
+                
+                if is_production():
+                    raise RuntimeError(
+                        "CRITICAL: NLI verification cannot proceed - no evidence context available. "
+                        "Verdict generation blocked in production mode."
+                    )
+                else:
+                    log.warning(
+                        "DEVELOPMENT MODE: NLI verification skipped - no evidence context. "
+                        "This would be BLOCKED in production."
+                    )
+        except ImportError as e:
+            # UltraNLIVerifier not available - this is a configuration issue
+            from mahoun.core.environment import is_production
+            
+            error_msg = f"NLI Verifier module failed to import: {e}"
+            
+            if is_production():
+                raise ImportError(
+                    f"FATAL: {error_msg}. "
+                    f"NLI verification is a REQUIRED component for production. "
+                    f"The system CANNOT operate without text-grounding verification."
+                ) from e
+            else:
+                log.critical(
+                    f"DEVELOPMENT MODE: {error_msg}. "
+                    f"NLI verification disabled - zero-hallucination guarantee COMPROMISED."
+                )
+        except Exception as e:
+            # Any other NLI verification error
+            from mahoun.core.environment import is_production
+            
+            error_msg = f"NLI verification error: {e}"
+            
+            if is_production():
+                raise RuntimeError(
+                    f"CRITICAL: {error_msg}. "
+                    f"Text-grounding verification failed. Verdict cannot be trusted."
+                ) from e
+            else:
+                log.critical(
+                    f"DEVELOPMENT MODE: {error_msg}. "
+                    f"NLI verification degraded."
+                )
+
         # Step 9: Calculate confidence score from evidence
         confidence_score = self._calculate_confidence_score(verdict_steps)
 
