@@ -140,7 +140,8 @@ class Neo4jConnection:
         
         uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
         user = user or get_secret('NEO4J_USER', 'neo4j')
-        password = password or require_secret('NEO4J_PASSWORD')
+        # Use canonical secret name DB_NEO4J_PASSWORD (secrets module expects this)
+        password = password or require_secret('DB_NEO4J_PASSWORD')
         
         try:
             from neo4j import GraphDatabase

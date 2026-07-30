@@ -61,8 +61,9 @@ logger = logging.getLogger(__name__)
 from mahoun.core.governance_kernel import (
     QueryType,
     GovernanceError,
+    classify_query as _kernel_classify_query,
+    enforce_governance as _kernel_enforce_governance,
 )
-from mahoun.core.governance.mutation_boundary import classify_cypher
 
 
 def classify_query(query: str) -> QueryType:
@@ -71,20 +72,7 @@ def classify_query(query: str) -> QueryType:
     Delegates to the governance kernel's canonical implementation.
     Local definition required by P0.2 static proof tests.
     """
-    if not query or not query.strip():
-        return QueryType.UNKNOWN
-    
-    # Delegate to the canonical robust NFKC-based classifier
-    is_mutation = classify_cypher(query)
-    if is_mutation:
-        return QueryType.WRITE
-    
-    # Read-only fallback logic
-    query_upper = query.upper()
-    if any(kw in query_upper for kw in ["MATCH", "RETURN", "OPTIONAL MATCH"]):
-        return QueryType.READ
-        
-    return QueryType.UNKNOWN
+    return _kernel_classify_query(query)
 
 
 def enforce_governance(
@@ -101,31 +89,7 @@ def enforce_governance(
     Raises:
         GovernanceError: If governance policy is violated.
     """
-    if query_type == QueryType.READ:
-        return
-    
-    if query_type == QueryType.WRITE:
-        if not correlation_id or not actor_id:
-            raise GovernanceError(
-                "WRITE queries require correlation_id and actor_id"
-            )
-        return
-    
-    if query_type == QueryType.DESTRUCTIVE:
-        if not correlation_id or not actor_id:
-            raise GovernanceError(
-                "DESTRUCTIVE queries require correlation_id and actor_id"
-            )
-        if not allow_destructive:
-            raise GovernanceError(
-                "DESTRUCTIVE queries require allow_destructive=True"
-            )
-        return
-    
-    if query_type == QueryType.UNKNOWN:
-        raise GovernanceError(
-            "UNKNOWN query type - cannot execute. Treat as WRITE by default."
-        )
+    _kernel_enforce_governance(query_type, correlation_id, actor_id, allow_destructive)
 
 # =============================================================================
 # Connection Layer - MOVED TO LAZY LOADING FOR P0.4 STABILIZATION
