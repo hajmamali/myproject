@@ -22,7 +22,11 @@ if TYPE_CHECKING:
 
 from mahoun.core.logging import setup_logger
 from mahoun.crypto.proof_system import ProofSystem
+from typing import Union
 from mahoun.graph.ultra_graph_builder import GraphEdge, GraphNode, UltraGraphBuilder
+from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
+
+GraphBuilderType = Union[UltraGraphBuilder, ConcurrentGraphBuilder]
 from mahoun.invariants.versions import INVARIANT_VERSION
 from mahoun.ledger.guards import validate_entry
 from mahoun.ledger.models import LedgerEntry, ValidationStatus
@@ -245,7 +249,7 @@ class EvidenceLinkedVerdictEngine:
 
     def __init__(
         self,
-        graph_builder: Optional[UltraGraphBuilder] = None,
+        graph_builder: Optional[GraphBuilderType] = None,
         knowledge_graph: Optional[LegalKnowledgeGraph] = None,
         ledger_writer: Optional[EvidenceLedgerWriter] = None,
         container: Optional["ReasoningDependencyContainer"] = None,
@@ -254,12 +258,12 @@ class EvidenceLinkedVerdictEngine:
         Initialize Evidence-Linked Verdict Engine
 
         Args:
-            graph_builder: UltraGraphBuilder instance for graph operations
+            graph_builder: GraphBuilder instance (UltraGraphBuilder or ConcurrentGraphBuilder) for graph operations
             knowledge_graph: LegalKnowledgeGraph instance for rules/precedents
             ledger_writer: Writer for evidence ledger
             container: Optional dependency container for protocol-based services
         """
-        self.graph_builder = graph_builder or UltraGraphBuilder()
+        self.graph_builder = graph_builder or ConcurrentGraphBuilder()
         self.knowledge_graph = knowledge_graph or LegalKnowledgeGraph()
         self.chain_reasoner = ChainOfThoughtReasoner(self.knowledge_graph)
         self.ledger_writer = ledger_writer or EvidenceLedgerWriter()

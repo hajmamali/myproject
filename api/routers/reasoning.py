@@ -44,7 +44,7 @@ from mahoun.core.runtime_config import (
 )
 from mahoun.crypto.proof_system import ProofSystem
 from mahoun.crypto.signatures import generate_keypair
-from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
+from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 from mahoun.ledger.blockchain import ImmutableLedger
 from mahoun.ledger.writer import EvidenceLedgerWriter
 from mahoun.reasoning.evidence_linked_verdict import (
@@ -248,7 +248,7 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
             )
 
         # Initialize components
-        graph_builder = UltraGraphBuilder()
+        graph_builder = ConcurrentGraphBuilder()
         knowledge_graph = LegalKnowledgeGraph()
         immutable_ledger = get_immutable_ledger()
         ledger_writer = EvidenceLedgerWriter(blockchain=immutable_ledger)
