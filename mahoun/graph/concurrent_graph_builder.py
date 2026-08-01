@@ -100,23 +100,38 @@ class ConcurrentGraphBuilder:
     
     @property
     def nodes(self) -> Dict[str, GraphNode]:
-        """Thread-safe access to nodes"""
-        return self._graph.nodes
+        """Thread-safe access to nodes - returns a copy under read lock"""
+        with self._read_context():
+            return dict(self._graph.nodes)
     
     @property
     def edges(self) -> List[GraphEdge]:
-        """Thread-safe access to edges"""
-        return self._graph.edges
+        """Thread-safe access to edges - returns a copy under read lock"""
+        with self._read_context():
+            return list(self._graph.edges)
     
     @property
     def node_index(self) -> Dict[str, GraphNode]:
-        """Thread-safe access to node index"""
-        return getattr(self._graph, 'node_index', {})
+        """Thread-safe access to node index - returns a copy under read lock"""
+        with self._read_context():
+            return dict(getattr(self._graph, 'node_index', {}))
     
     @property
     def edge_index(self) -> Dict[str, List[GraphEdge]]:
-        """Thread-safe access to edge index"""
-        return getattr(self._graph, 'edge_index', {})
+        """Thread-safe access to edge index - returns a copy under read lock"""
+        with self._read_context():
+            return {k: list(v) for k, v in getattr(self._graph, 'edge_index', {}).items()}
+    
+    # Option 2: Explicit getter methods for better control
+    def get_nodes(self) -> Dict[str, GraphNode]:
+        """Thread-safe access to nodes - returns a copy. Prefer over property for explicit control."""
+        with self._read_context():
+            return dict(self._graph.nodes)
+    
+    def get_edges(self) -> List[GraphEdge]:
+        """Thread-safe access to edges - returns a copy. Prefer over property for explicit control."""
+        with self._read_context():
+            return list(self._graph.edges)
     
     @contextmanager
     def _write_context(self):
@@ -243,9 +258,10 @@ class ConcurrentGraphBuilder:
             
             build_time = time.time() - start_time
             
+            # Access underlying graph directly since we're already under write lock
             result = {
-                "nodes": list(self.nodes.values()),
-                "edges": self.edges,
+                "nodes": list(self._graph.nodes.values()),
+                "edges": list(self._graph.edges),
                 "build_time": build_time,
                 "parallel_used": len(entities) >= self._parallel_batch_size,
             }
@@ -278,12 +294,13 @@ class ConcurrentGraphBuilder:
             futures.append(future)
         
         # Collect results and merge into graph atomically
+        # Access _graph directly since we're under write lock from parent context
         for future in as_completed(futures):
             node_id, node = future.result()
             
-            if node_id in self.nodes:
+            if node_id in self._graph.nodes:
                 # Update existing node
-                existing = self.nodes[node_id]
+                existing = self._graph.nodes[node_id]
                 existing.updated_at = node.updated_at
                 existing.properties.update(node.properties)
                 if source_id and source_id not in existing.source_documents:
@@ -293,7 +310,7 @@ class ConcurrentGraphBuilder:
                 if hasattr(self._graph, 'node_index'):
                     self._graph.node_index[node_id] = existing
             else:
-                self.nodes[node_id] = node
+                self._graph.nodes[node_id] = node
                 # Incremental index update
                 if hasattr(self._graph, 'node_index'):
                     self._graph.node_index[node_id] = node
@@ -311,7 +328,7 @@ class ConcurrentGraphBuilder:
         # Collect and add edges with incremental index updates
         for future in as_completed(rel_futures):
             edge = future.result()
-            self.edges.append(edge)
+            self._graph.edges.append(edge)
             
             # Incremental edge index update
             if hasattr(self._graph, 'edge_index'):
@@ -327,10 +344,11 @@ class ConcurrentGraphBuilder:
         Uses incremental index updates instead of full rebuild.
         """
         with self._write_context():
-            if node.id in self.nodes:
+            # Access _graph directly since we're under write lock
+            if node.id in self._graph.nodes:
                 log.warning(f"Node {node.id} already exists, updating")
             
-            self.nodes[node.id] = node
+            self._graph.nodes[node.id] = node
             
             # Incremental index update instead of full _build_indexes()
             if hasattr(self._graph, 'node_index'):
@@ -346,13 +364,13 @@ class ConcurrentGraphBuilder:
         Uses incremental index updates instead of full rebuild.
         """
         with self._write_context():
-            # Validate nodes exist
-            if edge.source_id not in self.nodes:
+            # Validate nodes exist - access _graph directly
+            if edge.source_id not in self._graph.nodes:
                 raise ValueError(f"Source node {edge.source_id} does not exist")
-            if edge.target_id not in self.nodes:
+            if edge.target_id not in self._graph.nodes:
                 raise ValueError(f"Target node {edge.target_id} does not exist")
             
-            self.edges.append(edge)
+            self._graph.edges.append(edge)
             
             # Incremental index update
             if hasattr(self._graph, 'edge_index'):
@@ -365,13 +383,15 @@ class ConcurrentGraphBuilder:
     def get_node(self, node_id: str) -> Optional[GraphNode]:
         """Thread-safe node retrieval"""
         with self._read_context():
-            return self.nodes.get(node_id)
+            # Access _graph directly since we're already under read lock
+            return self._graph.nodes.get(node_id)
     
     def get_nodes_by_type(self, node_type: str) -> List[GraphNode]:
         """Thread-safe node type query"""
         with self._read_context():
+            # Access _graph directly since we're already under read lock
             return [
-                node for node in self.nodes.values()
+                node for node in self._graph.nodes.values()
                 if node.node_type == node_type
             ]
     
@@ -388,12 +408,13 @@ class ConcurrentGraphBuilder:
         """
         # Take snapshot under lock
         with self._read_context():
-            if node_id not in self.nodes:
+            # Access _graph directly since we're under read lock
+            if node_id not in self._graph.nodes:
                 return {"neighbors": [], "paths": []}
             
-            # Copy relevant data structures
-            nodes_snapshot = dict(self.nodes)
-            edges_snapshot = list(self.edges)
+            # Copy relevant data structures from _graph directly
+            nodes_snapshot = dict(self._graph.nodes)
+            edges_snapshot = list(self._graph.edges)
         
         # Perform traversal without lock (using snapshot)
         neighbors = []
@@ -449,8 +470,9 @@ class ConcurrentGraphBuilder:
         Uses snapshot to avoid long-held locks.
         """
         with self._read_context():
+            # Access _graph directly since we're under read lock
             if nodes is None:
-                nodes = list(self.nodes.values())
+                nodes = list(self._graph.nodes.values())
             else:
                 nodes = list(nodes)  # Copy to avoid mutation
         
