@@ -28,11 +28,13 @@ except ImportError:
 # Always safe imports
 try:
     from .hybrid_rag_service import HybridRAGService, RAGMode, create_hybrid_rag_service
+    from .policy_aware_rag_service import PolicyAwareRAGService
     from .query_router import QueryRouter, QueryType, QueryClassification, RoutedQueryResult, route_query
     from .citation_engine import CitationEngine, Citation, CitationResult, extract_citations_from_rag
     from .indexing_pipeline import IndexingPipeline, DocumentType, IndexingResult, index_document
     __all__ = [
         "HybridRAGService",
+        "PolicyAwareRAGService",
         "RAGMode",
         "create_hybrid_rag_service",
         # Query Router

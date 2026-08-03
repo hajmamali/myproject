@@ -201,7 +201,7 @@ class TestBootstrapIntegration:
             from fastapi.testclient import TestClient
             
             # App startup should fail
-            with pytest.raises(RuntimeError, match="Missing critical service|failed to register required services"):
+            with pytest.raises(RuntimeError, match="Critical services not registered|Missing critical service|failed to register required services"):
                 with TestClient(app):
                     pass
 

@@ -58,6 +58,19 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown"""
     # ============================================================================
+    # SWITCHBOARD INITIALIZATION - CRITICAL
+    # ============================================================================
+    # Initialize Switchboard to enable BASE/ULTRA mode switching for all modules.
+    # This MUST happen before any service instantiation.
+    # ============================================================================
+    from mahoun.switchboard import switchboard
+    
+    registered_modules = list(switchboard._registry.keys())
+    mode_info = f"ULTRA_MODE={'enabled' if switchboard.ultra_mode_enabled else 'disabled'}, hardware_ready={switchboard.hardware_ready}"
+    logger.info(f"🔰 Switchboard initialized: {len(registered_modules)} modules registered ({mode_info})")
+    logger.debug(f"🔰 Registered modules: {', '.join(registered_modules)}")
+    
+    # ============================================================================
     # STARTUP VALIDATION - CRITICAL
     # ============================================================================
     # Validate runtime configuration before starting the application.
@@ -112,6 +125,47 @@ async def lifespan(app: FastAPI):
 
     # Startup
     app.state.start_time = time.time()
+
+    # ============================================================================
+    # BOOTSTRAP RUNTIME - CRITICAL (P0)
+    # ============================================================================
+    # Initialize SERVICE_REGISTRY with all required services.
+    # This MUST happen before any endpoint handling to ensure graph_retriever
+    # and other critical services are available for RAG-augmented reasoning.
+    # ============================================================================
+    try:
+        from mahoun.bootstrap.runtime import bootstrap_runtime
+        
+        bootstrap_start = time.time()
+        registry = bootstrap_runtime()
+        bootstrap_duration = time.time() - bootstrap_start
+        
+        logger.info(
+            f"✅ Runtime bootstrap completed in {bootstrap_duration*1000:.1f}ms",
+            extra={"phase": "startup", "component": "bootstrap"}
+        )
+        
+        # Verify critical services are present (fail-closed principle)
+        critical_services = ["graph_retriever", "query", "gnn"]
+        missing = [s for s in critical_services if s not in registry]
+        if missing:
+            raise RuntimeError(
+                f"FATAL: Critical services not registered: {missing}. "
+                f"Available: {list(registry.keys())}"
+            )
+        
+        # Store registry in app.state for health checks and observability
+        app.state.service_registry = registry
+        logger.info(f"📋 Registered services: {', '.join(registry.keys())}")
+        
+    except Exception as e:
+        logger.error(
+            f"❌ FATAL: Runtime bootstrap failed: {e}",
+            exc_info=True,
+            extra={"phase": "startup", "critical": True}
+        )
+        # Fail-fast: Do not start application with incomplete bootstrap
+        raise RuntimeError(f"MAHOUN bootstrap failed: {e}") from e
 
     # Check if databases are enabled
     enable_postgres = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
@@ -527,13 +581,16 @@ class RollbackRequest(BaseModel):
 
 # Health check
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     """Health check endpoint connected to the internal health system"""
     from datetime import datetime
 
     from mahoun.infrastructure.health_checker import HealthChecker
 
-    checker = HealthChecker()
+    # Pass ``app.state`` and the canonical SwitchboardRegistry so the
+    # checker can inspect pre-existing service singletons instead of
+    # constructing new ones on every /health hit (see Action Item 1).
+    checker = HealthChecker(app_state=request.app.state)
     results = await checker.check_all()
 
     # Normalize status to lowercase for consistency with test expectations
@@ -858,11 +915,11 @@ async def get_system_status():
 
 
 @app.get("/api/v1/status/health")
-async def get_health_status():
+async def get_health_status(request: Request):
     """Get detailed health status from the internal health system"""
     from mahoun.infrastructure.health_checker import HealthChecker
 
-    checker = HealthChecker()
+    checker = HealthChecker(app_state=request.app.state)
     results = await checker.check_all()
     return results
 

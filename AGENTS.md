@@ -383,3 +383,18 @@ a bug, citing file:line evidence for the correction.
 It is subordinate to `mahoun/constitutional/` for all matters of principle,
 authority, and process. Keep it accurate; it is only useful if it reflects
 reality.*
+## Development Environment
+
+**Repository Root**
+
+Always perform all development, code modifications, testing, and Git operations from the project repository root. Do not work from subdirectories unless explicitly required.
+
+**Python Virtual Environment**
+
+Before running any Python command, activate the project's virtual environment:
+
+```bash
+source venv/bin/activate
+```
+
+All development tools, scripts, tests, and package installations must be executed with this virtual environment activated unless explicitly instructed otherwise.

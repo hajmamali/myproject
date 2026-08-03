@@ -112,6 +112,7 @@ class MahounEnvironment(str, Enum):
 
         # Map common aliases to canonical values
         aliases = {
+            "base": cls.DEVELOPMENT,
             "dev": cls.DEVELOPMENT,
             "develop": cls.DEVELOPMENT,
             "development": cls.DEVELOPMENT,

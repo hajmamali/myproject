@@ -6,6 +6,10 @@
 
 All AI agents working on MAHOUN MUST perform the following initialization before any analysis, planning, coding, modification, refactoring, testing, or architectural decision.
 
+project development environment activate with this command : 
+
+source venv/bin/activate  
+
 ## Step 1 — Constitutional Loading
 
 The agent MUST read and understand:

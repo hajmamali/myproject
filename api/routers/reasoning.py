@@ -22,10 +22,11 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from api.models.proof_carrying import ProofCarryingResponse
+from api.middleware.governance_context import get_governance_context
 from mahoun.api.errors import (
     VerdictGenerationError,
     VerificationError,
@@ -358,6 +359,7 @@ def get_keypair() -> tuple[str, str]:
 )
 async def generate_verdict(
     request: VerdictGenerationRequest,
+    http_request: Request,
     engine: EvidenceLinkedVerdictEngine = Depends(get_verdict_engine),
 ) -> VerdictGenerationResponse:
     """Generate evidence-linked verdict with Fortress validation"""
@@ -371,10 +373,14 @@ async def generate_verdict(
         # Convert facts to engine format
         facts_list = [fact.value for fact in request.facts]
 
-        # CRITICAL: Create governance context with correlation lineage
-        async with GovernanceContextManager.active_context(
-            correlation_id=request.case_id or str(uuid.uuid4()), execution_mode="STRICT"
-        ) as ctx:
+        # CRITICAL: Get governance context from middleware (created at API boundary)
+        # The middleware creates GovernanceContext and injects it into request.state
+        # This ensures context is created once, not per-endpoint
+        ctx = get_governance_context(http_request)
+        
+        # Use proper context manager instead of manual stack manipulation
+        # This prevents potential context leaks and ensures proper cleanup
+        async with GovernanceContextManager.active_context(ctx):
             # Adapt verdict engine to reasoning service interface
             from mahoun.reasoning.verdict_engine_adapter import create_verdict_engine_adapter
             from mahoun.reasoning.ledger_commit_service import create_ledger_commit_service

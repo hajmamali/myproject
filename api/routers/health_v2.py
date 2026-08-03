@@ -9,7 +9,7 @@ Endpoints:
 - GET /health/v2/component/{component} - Component-specific health check
 """
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Request
 from typing import Any, Dict, Optional
 import logging
 
@@ -62,6 +62,7 @@ async def basic_health_check() -> Dict[str, Any]:
     """
 )
 async def detailed_health_check(
+    request: Request,
     use_cache: bool = Query(True, description="Use cached results if available"),
     cache_ttl: float = Query(30.0, description="Cache TTL in seconds")
 ) -> Dict[str, Any]:
@@ -76,7 +77,10 @@ async def detailed_health_check(
         Dictionary with overall status and component details
     """
     try:
-        checker = CachedHealthChecker(cache_ttl=cache_ttl)
+        checker = CachedHealthChecker(
+            cache_ttl=cache_ttl,
+            app_state=request.app.state,
+        )
         results = await checker.check_all_cached(use_cache=use_cache)
         
         # Add cache info
@@ -115,6 +119,7 @@ async def detailed_health_check(
     """
 )
 async def component_health_check(
+    request: Request,
     component_name: str,
     use_cache: bool = Query(True, description="Use cached results if available"),
     cache_ttl: float = Query(30.0, description="Cache TTL in seconds")
@@ -131,7 +136,10 @@ async def component_health_check(
         Component health status
     """
     try:
-        checker = CachedHealthChecker(cache_ttl=cache_ttl)
+        checker = CachedHealthChecker(
+            cache_ttl=cache_ttl,
+            app_state=request.app.state,
+        )
         
         # Use cached checker method
         result = await checker.check_component_cached(

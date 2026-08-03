@@ -236,10 +236,54 @@ class ReasoningDependencyContainer:
 
         Override this in tests to inject mocks.
 
+        Feature Flag Support:
+        - MAHOUN_USE_POLICY_AWARE_RAG=true: Use PolicyAwareRAGService (governance-aware wrapper)
+        - MAHOUN_USE_POLICY_AWARE_RAG=false (default): Use HybridRAGService (standard retrieval)
+
+        Architecture:
+        - PolicyAwareRAGService wraps HybridRAGService (composition pattern)
+        - Receives GovernanceContext from middleware (doesn't create it)
+        - Only performs retrieval + policy filtering (no decisions)
+        - Maintains architectural boundaries (no reasoning engine calls)
+
         Note:
             Uses rag_adapter to avoid direct import from RAG module.
             This maintains architectural boundary between core and non-core.
         """
+        import os
+
+        # Check feature flag for PolicyAwareRAGService
+        use_policy_aware = os.getenv("MAHOUN_USE_POLICY_AWARE_RAG", "false").lower() == "true"
+
+        if use_policy_aware:
+            logger.info("Feature flag enabled: Using PolicyAwareRAGService")
+            try:
+                from mahoun.reasoning.rag_adapter import create_rag_service as create_base
+                from mahoun.rag.policy_aware_rag_service import PolicyAwareRAGService
+
+                # Create base HybridRAGService
+                base_service = create_base()
+                if base_service is None:
+                    raise RuntimeError("Base HybridRAGService not available for PolicyAwareRAGService wrapper")
+
+                # Wrap with PolicyAwareRAGService
+                logger.info("Wrapping HybridRAGService with PolicyAwareRAGService")
+                service = PolicyAwareRAGService(
+                    base_service=base_service,
+                    enable_governance=True,  # Governance enforcement enabled
+                    enable_cache=True,  # Policy-aware caching enabled
+                )
+
+                logger.info("PolicyAwareRAGService initialized successfully")
+                return service
+
+            except ImportError as e:
+                logger.error(f"PolicyAwareRAGService not available: {e}")
+                logger.warning("Falling back to HybridRAGService")
+                # Fall through to standard service
+
+        # Standard HybridRAGService (default)
+        logger.info("Using standard HybridRAGService")
         from mahoun.reasoning.rag_adapter import create_rag_service
 
         service = create_rag_service()

@@ -103,18 +103,23 @@ def create_query_router(
 
 def create_rag_service() -> Optional['RAGServiceProtocol']:
     """
-    Create HybridRAGService instance with runtime import.
+    Create HybridRAGService instance with runtime import and SERVICE_REGISTRY injection.
     
     This factory provides access to the hybrid RAG service combining:
     - Dense retrieval (vector similarity)
     - Sparse retrieval (BM25/keyword)
     - Graph-based retrieval (knowledge graph traversal)
     
+    Bootstrap Integration (P0 - Critical):
+        Retrieves graph_retriever from SERVICE_REGISTRY populated by bootstrap_runtime().
+        If bootstrap was not called or graph_retriever is missing, raises RuntimeError
+        per fail-closed principle (CONSTITUTION.md § 10).
+    
     Returns:
         RAGServiceProtocol implementation or None if unavailable
         
     Raises:
-        None - All exceptions are caught and logged
+        RuntimeError: If graph_retriever not found in SERVICE_REGISTRY (fail-closed)
         
     Thread Safety:
         Thread-safe - no shared mutable state
@@ -125,8 +130,8 @@ def create_rag_service() -> Optional['RAGServiceProtocol']:
               (loading embeddings, indices, etc.)
         
     Graceful Degradation:
-        Returns None if RAG unavailable
-        Caller must handle None case appropriately
+        Returns None if RAG module unavailable (ImportError)
+        Raises on missing graph_retriever (fail-fast on bootstrap failure)
         
     Example:
         >>> rag = create_rag_service()
@@ -138,9 +143,31 @@ def create_rag_service() -> Optional['RAGServiceProtocol']:
     """
     try:
         from mahoun.rag.hybrid_rag_service import HybridRAGService
+        from mahoun.bootstrap.runtime import get_service
         
-        service = HybridRAGService()
-        logger.info("HybridRAGService created successfully via adapter")
+        # Retrieve graph_retriever from SERVICE_REGISTRY (populated by bootstrap_runtime)
+        try:
+            graph_retriever = get_service("graph_retriever")
+            
+            if graph_retriever is None:
+                raise RuntimeError(
+                    "graph_retriever is registered in SERVICE_REGISTRY but is None. "
+                    "This indicates a bootstrap wiring error."
+                )
+            
+            logger.info("Retrieved graph_retriever from SERVICE_REGISTRY successfully")
+            
+        except KeyError as e:
+            # SERVICE_REGISTRY doesn't have graph_retriever → bootstrap not called
+            raise RuntimeError(
+                "graph_retriever not found in SERVICE_REGISTRY. "
+                "Has bootstrap_runtime() been called in api/main.py lifespan? "
+                "This is a critical P0 failure (see canonical-api-endpoint-stabilization Phase 1)."
+            ) from e
+        
+        # Create HybridRAGService WITH graph_retriever
+        service = HybridRAGService(graph_retriever=graph_retriever)
+        logger.info("HybridRAGService created successfully with graph_retriever")
         return service
         
     except ImportError as e:
@@ -149,6 +176,15 @@ def create_rag_service() -> Optional['RAGServiceProtocol']:
             extra={"adapter": "rag_adapter", "component": "HybridRAGService"}
         )
         return None
+        
+    except RuntimeError as e:
+        # Re-raise bootstrap errors (fail-fast, don't degrade silently)
+        logger.error(
+            f"HybridRAGService creation failed due to bootstrap error: {e}",
+            extra={"adapter": "rag_adapter", "component": "HybridRAGService"},
+            exc_info=True
+        )
+        raise
         
     except Exception as e:
         logger.error(
