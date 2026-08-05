@@ -1,0 +1,84 @@
+{
+  "executor_name": "EmbeddingModelsExecutor",
+  "snapshot_date": "2026-08-05T18:15:22.114480",
+  "snapshot_version": "1.0.0",
+  "context_before": {
+    "timestamp": 1785941121.8820615,
+    "services": [
+      "neo4j_connection",
+      "governance_controller"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "BASE"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_after": {
+    "timestamp": 1785941122.1143909,
+    "services": [
+      "neo4j_connection",
+      "governance_controller",
+      "embedding_service"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "BASE"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_mutations": {
+    "services_added": [
+      "embedding_service"
+    ],
+    "services_removed": []
+  },
+  "service_registrations": [],
+  "metrics_emitted": {},
+  "metrics_invariants": {
+    "monotonic_increase": true
+  },
+  "events": [
+    {
+      "type": "test_started",
+      "timestamp": 1785941121.882141,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "scenario": "easy_success"
+      }
+    },
+    {
+      "type": "execution_completed",
+      "timestamp": 1785941122.1143773,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "success": true,
+        "phase": "EMBEDDING_MODELS",
+        "components_count": 4
+      }
+    },
+    {
+      "type": "test_completed",
+      "timestamp": 1785941122.1144297,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "status": "success"
+      }
+    }
+  ],
+  "rollback_sequence": [],
+  "rollback_invariants": {
+    "reverse_order": true
+  },
+  "exception_fingerprints": {},
+  "timing": {
+    "execution_time_ms": 232.5758934020996,
+    "start_time": 1785941121.8820434
+  }
+}

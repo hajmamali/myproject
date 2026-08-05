@@ -145,14 +145,18 @@ def bootstrap_runtime() -> Dict[str, Any]:
     # 5. GOVERNANCE RUNTIME VALIDATION — must pass before system is considered ready
     # NOTE: In production, set_audit_sink() must be called BEFORE bootstrap_runtime().
     # validate_governance_runtime() will catch missing sink configuration early.
+    # FAIL-CLOSED: Per CONSTITUTION.md § 10, validation failure prevents bootstrap completion.
     try:
         validate_governance_runtime()
     except RuntimeError as e:
-        logger.warning(
-            "Governance runtime validation warning: %s. "
-            "Wire an audit sink via set_audit_sink() for full governance compliance.",
+        logger.critical(
+            "FATAL: Governance runtime validation failed: %s. "
+            "System cannot start without valid governance runtime. "
+            "Wire an audit sink via set_audit_sink() before calling bootstrap_runtime().",
             e,
         )
+        # Re-raise to enforce fail-closed principle
+        raise
 
     logger.info("MAHOUN Runtime Bootstrap COMPLETED")
     return SERVICE_REGISTRY.copy()

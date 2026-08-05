@@ -1,0 +1,90 @@
+{
+  "executor_name": "EmbeddingModelsExecutor",
+  "snapshot_date": "2026-08-05T18:16:55.445281",
+  "snapshot_version": "1.0.0",
+  "context_before": {
+    "timestamp": 1785941215.4450963,
+    "services": [
+      "governance_controller"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "BASE"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_after": {
+    "timestamp": 1785941215.4452417,
+    "services": [
+      "governance_controller"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "BASE"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_mutations": {
+    "services_added": [],
+    "services_removed": []
+  },
+  "service_registrations": [],
+  "metrics_emitted": {},
+  "metrics_invariants": {
+    "monotonic_increase": true
+  },
+  "events": [
+    {
+      "type": "test_started",
+      "timestamp": 1785941215.4451473,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "scenario": "missing_neo4j"
+      }
+    },
+    {
+      "type": "expected_exception",
+      "timestamp": 1785941215.4451993,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "type": "BootstrapException",
+        "phase": "EMBEDDING_MODELS",
+        "message": "[Phase: EMBEDDING_MODELS] Neo4j connection dependency not satisfied. Required: neo4j_connection, Available: ['governance_controller']",
+        "contains_neo4j": true,
+        "contains_dependency": true
+      }
+    },
+    {
+      "type": "rollback_completed",
+      "timestamp": 1785941215.4452386,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "success": true
+      }
+    },
+    {
+      "type": "test_completed",
+      "timestamp": 1785941215.4452715,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "exception_occurred": true,
+        "services_count": 1
+      }
+    }
+  ],
+  "rollback_sequence": [],
+  "rollback_invariants": {
+    "reverse_order": true
+  },
+  "exception_fingerprints": {},
+  "timing": {
+    "execution_time_ms": 0.2894401550292969,
+    "start_time": 1785941215.44509
+  }
+}
