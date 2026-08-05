@@ -581,6 +581,149 @@ python ci/gates/frontend_readiness_gate.py > /dev/null 2>&1; echo "Exit code: $?
 
 ---
 
+## ی. وضعیت کنونی و مسدود کننده‌ها
+
+### ⚠️ **توسعه فرانت‌اند در حال حاضر مسدود است**
+
+**وضعیت فعلی گیت:**
+```
+Status: NOT_READY
+Exit Code: 1
+Summary: 8 passed, 2 failed
+```
+
+**معنی:** توسعه فرانت‌اند **نمی‌تواند** آغاز شود تا زمانی که ۲ چک شکست خورده اصلاح شوند.
+
+---
+
+### چک‌های مسدود کننده (Blocking Checks)
+
+#### ۱. چک ۵: Authentication Contract ❌ FAIL
+
+**فایل مورد نیاز:** `docs/security/authentication.md`
+
+**چرا مسدود کننده است؟**
+- بدون مستندات احراز هویت، تیم فرانت‌اند **نمیداند:**
+  - مدل هویت (Identity Model) چگونه طراحی شده است
+  - چه نقش‌هایی (Roles) وجود دارد
+  - چه مجوزهایی (Permissions) تعریف شده است
+  - مکانیسم‌های احراز هویت چیست (JWT, OAuth, API Key, etc.)
+  - جریان کاربری (User Flow) چگونه است
+
+**تأثیر بر فرانت‌اند:**
+- ❌ نمیتواند فرم‌های لاگین/ثبت‌نام طراحی کند
+- ❌ نمیتواند dashboardهای کاربری با دسترسی‌های مختلف ایجاد کند
+- ❌ نمیتواند stateهای احراز هویت را مدیریت کند
+- ❌ نمیتواند با بک‌اند برای authentication ارتباط برقرار کند
+
+**محتوای مورد نیاز در فایل:**
+```markdown
+# Authentication Contract
+
+## Identity Model
+- struct کاربر
+- فیلدهای اجباری
+- ارتباطات
+
+## Roles
+- لیست roleها
+- مجوزهای هر role
+- سلسله مراتب
+
+## Permissions
+- لیست permissionها
+- نقشه permission به role
+- مکانیسم بررسی
+
+## Authentication Flow
+- روش احراز هویت
+- جریان ثبت‌نام/ورود/خروج
+- مدیریت session/token
+```
+
+---
+
+#### ۲. چک ۹: Frontend Architecture Declaration ❌ FAIL
+
+**فایل مورد نیاز:** `docs/frontend/architecture.md`
+
+**چرا مسدود کننده است؟**
+- بدون مستندات معماری، تیم فرانت‌اند **نمیداند:**
+  - چه فریمورکی استفاده می‌شود (React, Vue, Svelte, etc.)
+  - استراتژی ارتباط با API چیست
+  - مدیریت state چگونه پیاده‌سازی می‌شود
+  - ادغام احراز هویت چگونه است
+  - استراتژی کامپوننت‌ها چیست
+
+**تأثیر بر فرانت‌اند:**
+- ❌ نمیتواند ساختار پروژه مناسبی ایجاد کند
+- ❌ نمیتواند با API به صورت یکپارچه کار کند
+- ❌ نمیتواند stateها را به درستی مدیریت کند
+- ❌ نمیتواند کامپوننت‌های قابل استفاده مجدد ایجاد کند
+- ❌ ریسک بالا برای جفت شدن با بک‌اند
+
+**محتوای مورد نیاز در فایل:**
+```markdown
+# Frontend Architecture
+
+## Framework
+- نام فریمورک: React 18+
+- دلیل انتخاب
+- نسخه و وابستگی‌ها
+
+## API Client Strategy
+- لایه انتزاع: frontend/src/api/
+- متدهای ارتباطی: fetch/axios
+- مدیریت خطاها
+- retry mechanisms
+
+## State Management
+- کتابخانه: Redux/Context/Zustand
+- ساختار state
+- flow داده‌ها
+
+## Authentication Integration
+- روش نگهداری token
+- refresh mechanisms
+- نگه‌داری session
+
+## Component Strategy
+- ساختار کامپوننت‌ها
+- قابل استفاده مجدد بودن
+- patternهای استفاده شده
+```
+
+---
+
+### چگونه مسدودیت را رفع کنیم؟
+
+**مرحله ۱:** فایل‌های مورد نیاز را ایجاد کنید
+```bash
+# ایجاد دایرکتوری اگر وجود ندارد
+mkdir -p docs/security
+mkdir -p docs/frontend
+
+# ایجاد فایل‌های خالی
+touch docs/security/authentication.md
+touch docs/frontend/architecture.md
+```
+
+**مرحله ۲:** محتواهای مورد نیاز را اضافه کنید (از templateهای بالا استفاده کنید)
+
+**مرحله ۳:** گیت را دوباره اجرا کنید
+```bash
+python ci/gates/frontend_readiness_gate.py
+```
+
+**مرحله ۴:** اگر همه ۱۰ چک PASS شدند:
+```
+Status: READY
+Exit Code: 0
+```
+✅ **توسعه فرانت‌اند می‌تواند آغاز شود!**
+
+---
+
 ## ز. دستور git
 
 ### فایل‌های اضافه شده
