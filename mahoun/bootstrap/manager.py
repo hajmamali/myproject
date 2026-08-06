@@ -100,9 +100,21 @@ class BootstrapPhaseExecutor:
     which handles migration/deployment phases.
     """
     
-    def __init__(self, phase: BootstrapPhase):
+    def __init__(self, phase: Optional[BootstrapPhase] = None, 
+                 phase_name: Optional[str] = None, 
+                 description: Optional[str] = None):
+        """
+        Initialize executor
+        
+        Args:
+            phase: BootstrapPhase enum (preferred)
+            phase_name: Phase name string (alternative)
+            description: Human-readable description (optional)
+        """
         self.phase = phase
-        self.logger = logging.getLogger(f"{__name__}.{phase.value}")
+        self.phase_name = phase_name or (phase.value if phase else "unknown")
+        self.description = description or f"Bootstrap phase: {self.phase_name}"
+        self.logger = logging.getLogger(f"{__name__}.{self.phase_name}")
         
     async def execute(self, context: BootstrapContext) -> PhaseResult:
         """
@@ -196,10 +208,9 @@ class BootstrapManager:
         
     def _register_default_executors(self):
         """
-        Register default phase executors.
+        Register default phase executors and coordinators.
         
-        Implements the complete 12-phase bootstrap sequence.
-        Executors are added as they are implemented.
+        NEW: Phases 7-9 now use thin coordinators with service injection!
         """
         from mahoun.bootstrap.executors import (
             RuntimeIntegrityExecutor,
@@ -208,35 +219,67 @@ class BootstrapManager:
             ImmutableLedgerExecutor,
             Neo4jExecutor,
             PolicyEngineExecutor,
-            EmbeddingModelsExecutor,
-            LLMLoaderExecutor,
-            AgentRegistryExecutor,
             ServicesExecutor,
             APIExecutor,
             ReadinessGateExecutor,
         )
         
-        # Phase 1-4: Critical Infrastructure
+        # Phase 1-4: Critical Infrastructure (unchanged)
         self.phase_executors[BootstrapPhase.RUNTIME_INTEGRITY] = RuntimeIntegrityExecutor()
         self.phase_executors[BootstrapPhase.CONFIGURATION] = ConfigurationExecutor()
         self.phase_executors[BootstrapPhase.GOVERNANCE_KERNEL] = GovernanceKernelExecutor()
         self.phase_executors[BootstrapPhase.IMMUTABLE_LEDGER] = ImmutableLedgerExecutor()
         
-        # Phase 5-6: Database & Storage
+        # Phase 5-6: Database & Storage (unchanged)
         self.phase_executors[BootstrapPhase.NEO4J] = Neo4jExecutor()
         self.phase_executors[BootstrapPhase.POLICY_ENGINE] = PolicyEngineExecutor()
         
-        # Phase 7-9: AI/ML Components
-        self.phase_executors[BootstrapPhase.EMBEDDING_MODELS] = EmbeddingModelsExecutor()
-        self.phase_executors[BootstrapPhase.LLM_LOADER] = LLMLoaderExecutor()
-        self.phase_executors[BootstrapPhase.AGENT_REGISTRY] = AgentRegistryExecutor()
+        # Phase 7-9: AI/ML Components (NEW: Will be set up with coordinators!)
+        # NOTE: These will be dynamically created with service container
+        self._service_container = None  # Lazy initialization
         
-        # Phase 10: Services
+        # Phase 10: Services (unchanged)
         self.phase_executors[BootstrapPhase.SERVICES] = ServicesExecutor()
         
-        # Phase 11-12: API & Readiness (NEW!)
+        # Phase 11-12: API & Readiness (unchanged)
         self.phase_executors[BootstrapPhase.API] = APIExecutor()
         self.phase_executors[BootstrapPhase.READINESS_GATE] = ReadinessGateExecutor()
+        
+    async def _setup_coordinators(self, context: BootstrapContext):
+        """
+        Setup service-based coordinators (Phases 7-9)
+        
+        This creates the service container and injects it into coordinators.
+        Must be called after infrastructure phases are complete.
+        """
+        logger.info("🔧 Setting up service-based coordinators...")
+        
+        # Import coordinators
+        from mahoun.bootstrap.coordinators import (
+            EmbeddingModelsCoordinator,
+            LLMLoaderCoordinator, 
+            AgentRegistryCoordinator,
+        )
+        from mahoun.bootstrap.services import create_service_container
+        
+        # Create service container
+        self._service_container = await create_service_container()
+        
+        # Register coordinators with service injection
+        self.phase_executors[BootstrapPhase.EMBEDDING_MODELS] = EmbeddingModelsCoordinator(
+            service_container=self._service_container
+        )
+        self.phase_executors[BootstrapPhase.LLM_LOADER] = LLMLoaderCoordinator(
+            service_container=self._service_container
+        )
+        self.phase_executors[BootstrapPhase.AGENT_REGISTRY] = AgentRegistryCoordinator(
+            service_container=self._service_container
+        )
+        
+        # Store container in context for later use
+        context.service_registry["service_container"] = self._service_container
+        
+        logger.info("✅ Service-based coordinators registered")
         
     def register_executor(
         self, 
@@ -292,6 +335,12 @@ class BootstrapManager:
                 
                 # Get executor for this phase
                 executor = self.phase_executors.get(phase)
+                
+                # NEW: Setup coordinators before Phase 7 (EMBEDDING_MODELS)
+                if phase == BootstrapPhase.EMBEDDING_MODELS and executor is None:
+                    await self._setup_coordinators(context)
+                    executor = self.phase_executors.get(phase)
+                
                 if executor is None:
                     raise BootstrapException(
                         f"No executor registered for phase: {phase.value}",

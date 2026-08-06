@@ -221,7 +221,7 @@ async def test_complete_embedding_executor_characterization():
     assert all(coverage.values()), f"Incomplete behavioral coverage: {coverage}"
     
     print(f"\n🔒 Behavioral baseline established for EmbeddingModelsExecutor")
-    print(f"📁 Golden master snapshots: {len(report['regression_protection']['snapshot_files_created'])}")
+    print(f"📁 Golden master snapshots: {report['regression_protection']['snapshot_files_created']}")
     print(f"🛡️ Refactoring safety level: {report['regression_protection']['refactoring_safety']}")
     
     return report

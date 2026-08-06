@@ -53,6 +53,8 @@ class BehavioralSnapshot:
     rollback_invariants: Dict[str, bool]
     exception_fingerprints: Dict[str, Dict[str, Any]]
     timing: Dict[str, float]
+    timestamp: float = field(default_factory=time.time)
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(asdict(self), indent=indent, default=str)

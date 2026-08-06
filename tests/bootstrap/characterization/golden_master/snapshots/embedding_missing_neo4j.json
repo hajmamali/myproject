@@ -1,9 +1,9 @@
 {
   "executor_name": "EmbeddingModelsExecutor",
-  "snapshot_date": "2026-08-05T18:16:55.445281",
+  "snapshot_date": "2026-08-07T02:00:16.639355",
   "snapshot_version": "1.0.0",
   "context_before": {
-    "timestamp": 1785941215.4450963,
+    "timestamp": 1786055416.6378927,
     "services": [
       "governance_controller"
     ],
@@ -17,7 +17,7 @@
     "metrics": {}
   },
   "context_after": {
-    "timestamp": 1785941215.4452417,
+    "timestamp": 1786055416.6393073,
     "services": [
       "governance_controller"
     ],
@@ -42,7 +42,7 @@
   "events": [
     {
       "type": "test_started",
-      "timestamp": 1785941215.4451473,
+      "timestamp": 1786055416.6379397,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "scenario": "missing_neo4j"
@@ -50,7 +50,7 @@
     },
     {
       "type": "expected_exception",
-      "timestamp": 1785941215.4451993,
+      "timestamp": 1786055416.6392696,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "type": "BootstrapException",
@@ -62,7 +62,7 @@
     },
     {
       "type": "rollback_completed",
-      "timestamp": 1785941215.4452386,
+      "timestamp": 1786055416.639304,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "success": true
@@ -70,7 +70,7 @@
     },
     {
       "type": "test_completed",
-      "timestamp": 1785941215.4452715,
+      "timestamp": 1786055416.6393452,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "exception_occurred": true,
@@ -84,7 +84,9 @@
   },
   "exception_fingerprints": {},
   "timing": {
-    "execution_time_ms": 0.2894401550292969,
-    "start_time": 1785941215.44509
-  }
+    "execution_time_ms": 1.5718936920166016,
+    "start_time": 1786055416.637889
+  },
+  "timestamp": 1786055416.6394699,
+  "metadata": {}
 }

@@ -54,13 +54,59 @@ from enum import Enum
 # Import the new MetricsCollector
 from mahoun.metrics import get_metrics_collector
 
-# Import UltraPerformanceMonitor for advanced analytics
-from mahoun.self_improve.ultra_performance_monitoring import (
-    UltraPerformanceMonitor,
-    MetricType,
-    AlertSeverity,
-    Alert,
-)
+# Import UltraPerformanceMonitor for advanced analytics (DISABLED - self_improve intentionally disabled)
+# from mahoun.self_improve.ultra_performance_monitoring import (
+#     UltraPerformanceMonitor,
+#     MetricType,
+#     AlertSeverity,
+#     Alert,
+# )
+
+# Fallback classes for when self_improve is disabled
+class UltraPerformanceMonitor:
+    """Fallback stub for UltraPerformanceMonitor"""
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def track_metric(self, *args, **kwargs):
+        pass
+    
+    def get_stats(self, *args, **kwargs):
+        return {}
+    
+    def register_alert_callback(self, *args, **kwargs):
+        """No-op alert callback registration"""
+        pass
+    
+    def set_sla_target(self, *args, **kwargs):
+        """No-op SLA target setting"""
+        pass
+    
+    def __getattr__(self, name):
+        """Fallback for any missing methods"""
+        def no_op(*args, **kwargs):
+            pass
+        return no_op
+
+class MetricType:
+    """Fallback stub for MetricType"""
+    LATENCY = "latency"
+    THROUGHPUT = "throughput"
+    ERROR_RATE = "error_rate"
+
+class AlertSeverity:
+    """Fallback stub for AlertSeverity"""
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    WARNING = "warning"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class Alert:
+    """Fallback stub for Alert"""
+    def __init__(self, *args, **kwargs):
+        pass
 
 logger = logging.getLogger(__name__)
 

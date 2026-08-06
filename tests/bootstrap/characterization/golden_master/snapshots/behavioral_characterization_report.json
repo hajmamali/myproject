@@ -1,57 +1,58 @@
 {
   "suite_metadata": {
     "executor": "EmbeddingModelsExecutor",
-    "timestamp": 1785937931.3401027,
-    "duration": 0.9981560707092285,
-    "all_passed": false,
+    "timestamp": 1786055417.4069276,
+    "duration": 0.9853134155273438,
+    "all_passed": true,
     "total_scenarios": 4
   },
   "test_results": {
     "\ud83d\udfe2 EASY": {
-      "status": "FAILED",
-      "duration": 0.21217703819274902,
-      "error": "[Phase: EMBEDDING_MODELS] Advanced initialization failed: LocalEmbeddingService.__init__() missing 1 required positional argument: 'config' | Details: {'error': \"LocalEmbeddingService.__init__() missing 1 required positional argument: 'config'\", 'circuit_breaker_state': 'closed', 'loaded_models': ['paraphrase-multilingual-mpnet-base-v2'], 'performance_metrics': {'paraphrase-multilingual-mpnet-base-v2': {'load_time_ms': 190.5364990234375, 'memory_usage_mb': 2048.0, 'last_load_time': 1785937930.5332365}}} (Caused by: LocalEmbeddingService.__init__() missing 1 required positional argument: 'config')",
-      "error_type": "BootstrapException",
+      "status": "PASSED",
+      "duration": 0.21576762199401855,
+      "snapshot_path": "unknown",
+      "events_count": 3,
+      "mutations_count": 1,
       "description": "Basic Success Path"
     },
     "\ud83d\udfe1 MEDIUM": {
-      "status": "FAILED",
-      "duration": 0.0004115104675292969,
-      "error": "",
-      "error_type": "AssertionError",
+      "status": "PASSED",
+      "duration": 0.004511117935180664,
+      "snapshot_path": "unknown",
+      "events_count": 4,
+      "mutations_count": 0,
       "description": "Neo4j Missing Dependency"
     },
     "\ud83d\udd34 HARD": {
-      "status": "FAILED",
-      "duration": 0.3273327350616455,
-      "error": "'BehavioralSnapshot' object has no attribute 'timestamp'",
-      "error_type": "AttributeError",
+      "status": "PASSED",
+      "duration": 0.32953596115112305,
+      "snapshot_path": "unknown",
+      "events_count": 5,
+      "mutations_count": 0,
       "description": "Rollback Race Conditions"
     },
     "\u26ab ULTRA HARD": {
-      "status": "FAILED",
-      "duration": 0.4556102752685547,
-      "error": "'BehavioralSnapshot' object has no attribute 'timestamp'",
-      "error_type": "AttributeError",
+      "status": "PASSED",
+      "duration": 0.4348564147949219,
+      "snapshot_path": "unknown",
+      "events_count": 4,
+      "mutations_count": 0,
       "description": "Adversarial State Corruption"
     }
   },
   "behavioral_coverage": {
-    "success_paths": false,
-    "failure_paths": false,
-    "rollback_paths": false,
-    "adversarial_paths": false
+    "success_paths": true,
+    "failure_paths": true,
+    "rollback_paths": true,
+    "adversarial_paths": true
   },
   "regression_protection": {
-    "snapshot_files_created": 0,
-    "behavioral_contracts_established": false,
-    "refactoring_safety": "LOW"
+    "snapshot_files_created": 4,
+    "behavioral_contracts_established": true,
+    "refactoring_safety": "HIGH"
   },
   "next_steps": {
-    "ready_for_refactoring": false,
-    "required_actions": [
-      "Fix failing characterization tests",
-      "Re-establish behavioral baseline"
-    ]
+    "ready_for_refactoring": true,
+    "required_actions": []
   }
 }

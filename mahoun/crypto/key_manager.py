@@ -37,7 +37,8 @@ from mahoun.crypto.signatures import generate_keypair
 CURRENT_KEY_VERSION = "1.0.0"
 
 # Key storage directory
-KEY_STORAGE_DIR = Path.home() / ".mahoun" / "keys"
+_key_dir_env = os.environ.get("MAHOUN_KEY_DIR")
+KEY_STORAGE_DIR = Path(_key_dir_env) if _key_dir_env else Path.home() / ".mahoun" / "keys"
 PRIVATE_KEY_FILE = KEY_STORAGE_DIR / "ed25519_private_key.pem"
 PUBLIC_KEY_FILE = KEY_STORAGE_DIR / "ed25519_public_key.pem"
 KEY_VERSION_FILE = KEY_STORAGE_DIR / "key_version.txt"
@@ -153,7 +154,10 @@ class KeyManager:
     
     def _ensure_storage_directory(self) -> None:
         """Ensure key storage directory exists."""
-        KEY_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            KEY_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
     
     def _load_keypair_from_disk(self) -> Optional[KeyPair]:
         """

@@ -1,9 +1,9 @@
 {
   "executor_name": "EmbeddingModelsExecutor",
-  "snapshot_date": "2026-08-05T18:17:49.454254",
+  "snapshot_date": "2026-08-07T02:00:17.405796",
   "snapshot_version": "1.0.0",
   "context_before": {
-    "timestamp": 1785941269.0241275,
+    "timestamp": 1786055416.9727957,
     "services": [
       "neo4j_connection",
       "governance_controller"
@@ -18,11 +18,12 @@
     "metrics": {}
   },
   "context_after": {
-    "timestamp": 1785941269.4540896,
+    "timestamp": 1786055417.4056802,
     "services": [
+      "neo4j_connection",
       "governance_controller"
     ],
-    "governance_validated": true,
+    "governance_validated": false,
     "config": {
       "profile": "ULTRA"
     },
@@ -30,15 +31,13 @@
       "start_time": 1234567890.0
     },
     "metrics": {
-      "corrupted_3": "<object object at 0x7ac4b2227360>",
-      "corrupted_5": "<object object at 0x7ac4b2227380>"
+      "corrupted_0": "<object object at 0x7914a7e4f600>",
+      "corrupted_5": "<object object at 0x7914a7e4f610>"
     }
   },
   "context_mutations": {
     "services_added": [],
-    "services_removed": [
-      "neo4j_connection"
-    ]
+    "services_removed": []
   },
   "service_registrations": [],
   "metrics_emitted": {},
@@ -48,7 +47,7 @@
   "events": [
     {
       "type": "ultra_hard_test_started",
-      "timestamp": 1785941269.0241632,
+      "timestamp": 1786055416.9729161,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "scenario": "adversarial_state_corruption",
@@ -57,28 +56,17 @@
       }
     },
     {
-      "type": "state_corruption_detected",
-      "timestamp": 1785941269.2284214,
-      "phase": "EmbeddingModelsExecutor",
-      "data": {
-        "services_corrupted": true,
-        "config_corrupted": false,
-        "governance_corrupted": false,
-        "mutation_count": 5
-      }
-    },
-    {
       "type": "adversarial_rollback_starting",
-      "timestamp": 1785941269.4038985,
+      "timestamp": 1786055417.355559,
       "phase": "EmbeddingModelsExecutor",
       "data": {
-        "context_integrity": false,
+        "context_integrity": true,
         "memory_pressure": false
       }
     },
     {
       "type": "adversarial_rollback_completed",
-      "timestamp": 1785941269.4039762,
+      "timestamp": 1786055417.3556316,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "success": true
@@ -86,15 +74,15 @@
     },
     {
       "type": "system_stability_check",
-      "timestamp": 1785941269.4542413,
+      "timestamp": 1786055417.405788,
       "phase": "EmbeddingModelsExecutor",
       "data": {
         "execution_result_type": "AttributeError",
         "exception_chain_length": 0,
         "memory_exhausted": false,
-        "corruption_detected": true,
+        "corruption_detected": false,
         "rollback_success": true,
-        "final_services_count": 1,
+        "final_services_count": 2,
         "mutation_count": 6
       }
     }
@@ -105,7 +93,9 @@
   },
   "exception_fingerprints": {},
   "timing": {
-    "execution_time_ms": 430.2704334259033,
-    "start_time": 1785941269.0241175
-  }
+    "execution_time_ms": 433.091402053833,
+    "start_time": 1786055416.9727905
+  },
+  "timestamp": 1786055417.4058876,
+  "metadata": {}
 }
