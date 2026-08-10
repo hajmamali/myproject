@@ -207,7 +207,9 @@ export function parsePrometheusMetrics(text: string): Record<string, number> {
     const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\s+([0-9.eE+-]+)/);
     if (match) {
       const [, name, value] = match;
-      metrics[name] = parseFloat(value);
+      if (name && value) {
+        metrics[name] = parseFloat(value);
+      }
     }
   }
 

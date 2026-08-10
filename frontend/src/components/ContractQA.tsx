@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { PaperAirplaneIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
-import { askContract, ContractQueryResponse } from "../api/mahounClient";
+import { askContract, ContractQueryResponse, ContractQueryRequest } from "../api/mahounClient";
 
 interface Message {
   id: string;
@@ -47,11 +47,12 @@ export default function ContractQA() {
     setLoading(true);
 
     try {
-      const response: ContractQueryResponse = await askContract({
+      const request: ContractQueryRequest = {
         query: input,
         clause_number: clauseNumber || undefined,
         top_k: 10,
-      });
+      };
+      const response: ContractQueryResponse = await askContract(request);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

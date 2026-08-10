@@ -34,10 +34,36 @@ def _assert_no_duplicate_contextvar() -> None:
         if other is not None and other is not _authorized_write_ctx:
             raise RuntimeError(f"DUPLICATE _authorized_write_ctx ContextVar detected in {name}")
 
+
+class authorize_write:
+    """
+    Context manager for temporarily authorizing write operations.
+    
+    Usage:
+        with authorize_write():
+            # Write operations are authorized here
+            session.run("CREATE (n:Node)")
+        # Authorization automatically cleared after exit
+    """
+    
+    def __init__(self):
+        self.token: Token[bool] | None = None
+    
+    def __enter__(self):
+        self.token = set_authorized(True)
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.token is not None:
+            reset_authorized(self.token)
+        return False
+
+
 __all__ = [
     "_authorized_write_ctx",
     "is_authorized",
     "set_authorized",
     "reset_authorized",
+    "authorize_write",
     "_assert_no_duplicate_contextvar",
 ]

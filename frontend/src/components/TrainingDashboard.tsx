@@ -104,7 +104,7 @@ export default function TrainingDashboard({
     const fullConfig: TrainingConfig = {
       model_name: selectedModel.id,
       training_mode: config.training_mode || "lora",
-      quantization_mode: config.quantization_mode,
+      quantization_mode: config.quantization_mode || "none",
       num_train_epochs: config.num_train_epochs || 3,
       per_device_train_batch_size: config.per_device_train_batch_size || 4,
       per_device_eval_batch_size: config.per_device_eval_batch_size || 8,

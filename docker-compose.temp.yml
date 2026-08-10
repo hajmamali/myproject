@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mahoun-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"  # Expose to host
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-mahoun}
+      - POSTGRES_USER=${POSTGRES_USER:-mahoun}
+      - POSTGRES_PASSWORD=${DB_POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres_data:/var/lib/postgresql/data
+    networks:
+      - mahoun_secure_tier
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: mahoun-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/${DB_NEO4J_PASSWORD}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_max__size=${NEO4J_HEAP_SIZE:-512M}
+      - NEO4J_dbms_memory_pagecache_size=${NEO4J_PAGECACHE_SIZE:-256M}
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+    volumes:
+      - ./data/neo4j_data:/data
+      - ./data/neo4j_logs:/logs
+    networks:
+      - mahoun_secure_tier
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ${DB_NEO4J_PASSWORD} 'RETURN 1;' || exit 1"]
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: mahoun-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ./data/redis_data:/data
+    networks:
+      - mahoun_secure_tier
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+networks:
+  mahoun_secure_tier:
+    external: true

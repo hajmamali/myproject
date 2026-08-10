@@ -24,10 +24,10 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 from pathlib import Path
 import asyncio
 
-from core.models import LegalDocument, RetrievalResult, UncertaintyEstimate, ReasoningStep
+from mahoun.core.models import LegalDocument, RetrievalResult, UncertaintyEstimate, ReasoningStep
 from mahoun.graph.gnn.graph_builder import LegalGraphBuilder
 from mahoun.graph.gnn.uncertainty_estimator import UncertaintyEstimator
-from core.reasoning.reranking_cot import RerankingCoTGenerator
+from mahoun.reasoning.reranking_cot import RerankingCoTGenerator
 from mahoun.core.logging import setup_logger
 
 log = setup_logger("gat_reranker")

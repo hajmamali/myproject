@@ -1,15 +1,15 @@
 {
   "suite_metadata": {
     "executor": "EmbeddingModelsExecutor",
-    "timestamp": 1786055417.4069276,
-    "duration": 0.9853134155273438,
+    "timestamp": 1786059310.594469,
+    "duration": 1.1350553035736084,
     "all_passed": true,
     "total_scenarios": 4
   },
   "test_results": {
     "\ud83d\udfe2 EASY": {
       "status": "PASSED",
-      "duration": 0.21576762199401855,
+      "duration": 0.21261143684387207,
       "snapshot_path": "unknown",
       "events_count": 3,
       "mutations_count": 1,
@@ -17,7 +17,7 @@
     },
     "\ud83d\udfe1 MEDIUM": {
       "status": "PASSED",
-      "duration": 0.004511117935180664,
+      "duration": 0.0016782283782958984,
       "snapshot_path": "unknown",
       "events_count": 4,
       "mutations_count": 0,
@@ -25,7 +25,7 @@
     },
     "\ud83d\udd34 HARD": {
       "status": "PASSED",
-      "duration": 0.32953596115112305,
+      "duration": 0.3270432949066162,
       "snapshot_path": "unknown",
       "events_count": 5,
       "mutations_count": 0,
@@ -33,9 +33,9 @@
     },
     "\u26ab ULTRA HARD": {
       "status": "PASSED",
-      "duration": 0.4348564147949219,
+      "duration": 0.5933353900909424,
       "snapshot_path": "unknown",
-      "events_count": 4,
+      "events_count": 5,
       "mutations_count": 0,
       "description": "Adversarial State Corruption"
     }

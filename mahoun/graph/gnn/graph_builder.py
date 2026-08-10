@@ -12,12 +12,13 @@ Features:
 - Semantic similarity edges
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List, Tuple, Dict, Any
 
 import torch
 from torch_geometric.data import Data
 
-from core.models import LegalEntity, LegalDocument, EntityLabel
+from mahoun.core.models import LegalEntity, LegalDocument
+from mahoun.core.models.entity import EntityType
 from mahoun.core.logging import setup_logger
 
 if TYPE_CHECKING:
@@ -95,13 +96,13 @@ class LegalGraphBuilder:
 
         # Legal relationship rules
         self.legal_relationships = {
-            (EntityLabel.COURT, EntityLabel.JUDGE): True,
-            (EntityLabel.CASE_NO, EntityLabel.VERDICT): True,
-            (EntityLabel.PARTY, EntityLabel.LAWYER): True,
-            (EntityLabel.ARTICLE, EntityLabel.LAW_NAME): True,
-            (EntityLabel.VERDICT, EntityLabel.COURT): True,
-            (EntityLabel.JUDGE, EntityLabel.VERDICT): True,
-            (EntityLabel.LAWYER, EntityLabel.PARTY): True,
+            (EntityType.COURT, EntityType.JUDGE): True,
+            (EntityType.CASE_NO, EntityType.VERDICT): True,
+            (EntityType.PARTY, EntityType.LAWYER): True,
+            (EntityType.ARTICLE, EntityType.LAW_NAME): True,
+            (EntityType.VERDICT, EntityType.COURT): True,
+            (EntityType.JUDGE, EntityType.VERDICT): True,
+            (EntityType.LAWYER, EntityType.PARTY): True,
         }
 
         log.info(f"Graph builder initialized on {device}")
@@ -252,12 +253,12 @@ class LegalGraphBuilder:
         """
         return self.legal_relationships.get((entity1.label, entity2.label), False)
 
-    def _is_bidirectional_relationship(self, label1: EntityLabel, label2: EntityLabel) -> bool:
+    def _is_bidirectional_relationship(self, label1: EntityType, label2: EntityType) -> bool:
         """Check if relationship is bidirectional"""
         # Some relationships are symmetric
         symmetric_pairs = {
-            (EntityLabel.PARTY, EntityLabel.LAWYER),
-            (EntityLabel.LAWYER, EntityLabel.PARTY),
+            (EntityType.PARTY, EntityType.LAWYER),
+            (EntityType.LAWYER, EntityType.PARTY),
         }
         return (label1, label2) in symmetric_pairs
 
@@ -300,7 +301,7 @@ class LegalGraphBuilder:
 
         return edge_attrs
 
-    def _get_relationship_type(self, label1: EntityLabel, label2: EntityLabel) -> List[float]:
+    def _get_relationship_type(self, label1: EntityType, label2: EntityType) -> List[float]:
         """
         Get one-hot encoded relationship type
 

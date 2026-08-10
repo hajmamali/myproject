@@ -57,32 +57,37 @@ class TestNeo4jImportPrevention:
     @pytest.mark.p1
     def test_import_firewall_can_be_installed(self):
         """Test that import firewall can be installed without errors"""
-        from mahoun.core.import_firewall import MahounImportHook
-        hook = MahounImportHook()
-        # Just test that it can be created
-        assert hook is not None
+        from mahoun.core.import_firewall import ImportFirewall
+        # The firewall is enabled on module import, verify it's enabled
+        assert ImportFirewall.enabled() is True
     
     @pytest.mark.p1
     def test_direct_neo4j_import_blocked_in_production(self):
-        """Neo4j import should be blocked in production mode"""
-        from mahoun.core.import_firewall import check_import_allowed
+        """Neo4j import should be blocked by firewall in Tier-0 modules"""
+        from mahoun.core.import_firewall import safe_import, DependencyTier, ImportFirewallError
         
-        with patch.dict(os.environ, {'MAHOUN_ENV': 'production'}):
-            # Test the check function directly since we can't easily test actual import
-            with pytest.raises(ImportError, match="FORBIDDEN IMPORT BLOCKED"):
-                check_import_allowed("neo4j", "test_context")
+        # safe_import with KERNEL tier should block neo4j
+        result = safe_import("neo4j", tier=DependencyTier.KERNEL, optional=True)
+        assert result is None, "safe_import should return None for blocked neo4j in KERNEL tier"
+        
+        # With optional=False, should raise
+        with pytest.raises(ImportFirewallError):
+            safe_import("neo4j", tier=DependencyTier.KERNEL, optional=False)
     
     @pytest.mark.p1
     def test_neo4j_import_allowed_in_development(self):
-        """Neo4j import should be allowed in development with warning"""
-        with patch.dict(os.environ, {'MAHOUN_ENV': 'development'}):
-            try:
-                # This should work in development 
-                exec("import sys")  # Use a safe import for testing
-                # If we get here, import worked (expected in dev)
-            except ImportError:
-                # If there's an error, that's fine for this test
-                pass
+        """Neo4j import should be allowed in non-KERNEL tiers"""
+        from mahoun.core.import_firewall import safe_import, DependencyTier
+        
+        # safe_import with INFRA tier should allow neo4j (it might fail if not installed, but won't be firewall-blocked)
+        try:
+            result = safe_import("neo4j", tier=DependencyTier.INFRA, optional=True)
+            # Either imports successfully or returns SafeStub, but shouldn't be firewall-blocked
+            assert result is not None
+        except Exception as e:
+            # Should not be ImportFirewallError
+            from mahoun.core.import_firewall import ImportFirewallError
+            assert not isinstance(e, ImportFirewallError)
 
 
 class TestSeededDataGovernance:

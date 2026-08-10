@@ -1,11 +1,25 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ToastContainer } from "./components/Toast";
+import {
+  AppErrorBoundary,
+  errorService,
+  initErrorService,
+  setupGlobalErrorHandlers,
+  ToastContainer,
+  registerToastContainer,
+} from "./shared/errors";
+import CommandPalette, { useCommandPalette } from "./components/CommandPalette";
 import AppLayout from "./components/AppLayout";
+import StudioLayout from "./components/StudioLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import LoginPage from "./components/auth/LoginPage";
+import { useAuth, Permission, Role } from "./store/authStore";
+import { useGovernanceStore } from "./store/governanceStore";
 
-// Lazy load components for code splitting
+// Lazy load components for code splitting with governance integration
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const AIChat = lazy(() => import("./components/AIChat"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const AdvancedDocumentUpload = lazy(() => import("./components/AdvancedDocumentUpload"));
 const DelayAnalysisDashboard = lazy(() => import("./components/DelayAnalysisDashboard"));
@@ -17,56 +31,315 @@ const TrainingDashboard = lazy(() => import("./components/TrainingDashboard"));
 const MonitoringDashboard = lazy(() => import("./components/MonitoringDashboard"));
 const ABTestingDashboard = lazy(() => import("./components/ABTestingDashboard"));
 const FineTuningDashboard = lazy(() => import("./pages/FineTuningDashboard"));
+const KnowledgeGraphCenter = lazy(() => import("./pages/KnowledgeGraphCenter"));
 
-// Create React Query client
+// Governance Center - The heart of MahouN!
+const GovernanceCenter = lazy(() => import("./pages/GovernanceCenter"));
+
+// Create React Query client with governance integration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 3,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Add governance context to all queries
+      meta: {
+        governance: true,
+      },
+    },
+    mutations: {
+      // Add governance context to all mutations
+      meta: {
+        governance: true,
+      },
     },
   },
 });
 
-
-// Loading fallback component
+// Enhanced loading fallback with governance context
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-700"></div>
+    <div className="flex items-center justify-center min-h-screen bg-slate-955">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-700 mx-auto mb-4"></div>
+        <p className="text-slate-400">بارگذاری سیستم ماحون...</p>
+      </div>
     </div>
   );
 }
 
+// Authentication provider wrapper
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { validateSession, logUserAction } = useAuth();
+  const { validateConstitutionalCompliance } = useGovernanceStore();
+
+  useEffect(() => {
+    // Initialize governance validation
+    validateConstitutionalCompliance();
+    
+    // Set up session validation interval
+    const interval = setInterval(() => {
+      validateSession();
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Log application startup
+    logUserAction('app_startup', {
+      timestamp: new Date().toISOString(),
+      user_agent: navigator.userAgent,
+      screen_resolution: `${screen.width}x${screen.height}`,
+    });
+  }, []);
+
+  return <>{children}</>;
+}
+
+
 function App() {
+  const commandPalette = useCommandPalette();
+
+  // Initialize error handling service
+  useEffect(() => {
+    initErrorService({
+      logToConsole: import.meta.env.DEV,
+      reportToTrackingService: import.meta.env.PROD,
+      showDetailsInDevelopment: import.meta.env.DEV,
+    });
+    
+    setupGlobalErrorHandlers();
+    
+    // Set governance context for error tracking
+    const governanceContext = {
+      request_id: crypto.randomUUID(),
+      trace_id: crypto.randomUUID(),
+      audit_reference: `audit_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+    };
+    errorService.setGovernanceContext(governanceContext);
+    
+    // Initialize Sentry if DSN is available
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      errorService.initSentry({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        environment: import.meta.env.MODE || 'development',
+        tracesSampleRate: 1.0,
+        replaySessionSampleRate: 0.1,
+        release: `mahoun@${import.meta.env.VITE_VERSION || '1.0.0'}`,
+        dist: 'frontend',
+      });
+    }
+  }, []);
+
+  // Toast container reference
+  const toastContainerRef = useRef<{
+    addToast: (toast: any) => string;
+    dismissToast: (id: string) => void;
+    clearToasts: () => void;
+  }>(null);
+
+  // Register toast container
+  useEffect(() => {
+    if (toastContainerRef.current) {
+      registerToastContainer(toastContainerRef.current);
+    }
+  }, []);
+
   return (
-    <ErrorBoundary>
+    <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ToastContainer />
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="upload" element={<AdvancedDocumentUpload />} />
-                <Route path="delay" element={<DelayAnalysisDashboard />} />
-                <Route path="timeline" element={<TimelineVisualization />} />
-                <Route path="contract-qa" element={<ContractQA />} />
-                <Route path="search" element={<LegalSearchPage />} />
-                <Route path="models" element={<ModelSelector onSelect={() => {}} />} />
-                <Route path="training" element={<TrainingDashboard onStartTraining={async () => {}} />} />
-                <Route path="finetuning" element={<FineTuningDashboard />} />
-                <Route path="monitoring" element={<MonitoringDashboard />} />
-                <Route path="experiments" element={<ABTestingDashboard />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Route>
-            </Routes>
-          </Suspense>
+          <AuthProvider>
+            <CommandPalette isOpen={commandPalette.isOpen} onClose={commandPalette.close} />
+            <ToastContainer ref={toastContainerRef} position="top-right" maxToasts={5} />
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Public Landing Page */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* Authentication Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                
+                {/* Protected Application Routes */}
+                <Route path="/app" element={<Navigate to="/app/portal/dashboard" replace />} />
+                
+                {/* 1. User Portal Workspace */}
+                <Route path="/app/portal" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="/app/portal/dashboard" replace />} />
+                  
+                  {/* Dashboard - Basic read access */}
+                  <Route 
+                    path="dashboard" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* AI Chat - Read access */}
+                  <Route 
+                    path="chat" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <AIChat />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Document Upload - Write access required */}
+                  <Route 
+                    path="upload" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ, Permission.WRITE]}>
+                        <AdvancedDocumentUpload />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Legal Search - Read access */}
+                  <Route 
+                    path="search" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <LegalSearchPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Analysis Tools */}
+                  <Route 
+                    path="delay" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <DelayAnalysisDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="timeline" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <TimelineVisualization />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="contract-qa" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <ContractQA />
+                      </ProtectedRoute>
+                    } 
+                  />
+                </Route>
+
+                {/* 2. Operations / Engineer Workbench (Studio) */}
+                <Route path="/app/studio" element={
+                  <ProtectedRoute requireAuth={true} requiredRoles={[Role.ANALYST, Role.ADMIN]}>
+                    <StudioLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="/app/studio/graph" replace />} />
+                  
+                  {/* Knowledge Graph Center */}
+                  <Route 
+                    path="graph" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <KnowledgeGraphCenter />
+                      </ProtectedRoute>
+                    } 
+                  />
+
+                  {/* Dummy placeholder for Dataset Engineering */}
+                  <Route 
+                    path="datasets" 
+                    element={
+                      <div className="p-8 text-slate-300">
+                        <h2 className="text-2xl font-bold mb-4 text-white">Dataset Engineering</h2>
+                        <p className="text-slate-400">پنل مدیریت دیتاست‌ها و تولید خودکار داده‌های آموزشی در حال توسعه...</p>
+                      </div>
+                    } 
+                  />
+                  
+                  {/* Model Management */}
+                  <Route 
+                    path="models" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
+                        <ModelSelector onSelect={() => {}} />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* AI Training */}
+                  <Route 
+                    path="training" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
+                        <TrainingDashboard onStartTraining={async () => {}} />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Fine-Tuning */}
+                  <Route 
+                    path="finetuning" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
+                        <FineTuningDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* System Monitor */}
+                  <Route 
+                    path="monitoring" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <MonitoringDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* A/B Testing */}
+                  <Route 
+                    path="experiments" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
+                        <ABTestingDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Governance Center */}
+                  <Route 
+                    path="governance" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <GovernanceCenter />
+                      </ProtectedRoute>
+                    } 
+                  />
+                </Route>
+                
+                {/* Fallback for unknown routes */}
+                <Route path="*" element={<Navigate to="/app/portal/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
-    </ErrorBoundary>
+    </AppErrorBoundary>
   );
 }
 

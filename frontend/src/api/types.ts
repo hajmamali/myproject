@@ -115,7 +115,7 @@ export interface APIError {
 export interface TrainingConfig {
   model_name: string;
   training_mode: "full_finetune" | "lora" | "qlora" | "dora" | "adalora";
-  quantization_mode?: "none" | "int8" | "int4" | "fp8";
+  quantization_mode: "none" | "int8" | "int4" | "fp8";
   num_train_epochs: number;
   per_device_train_batch_size: number;
   per_device_eval_batch_size: number;

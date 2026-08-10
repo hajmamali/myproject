@@ -182,6 +182,15 @@ retrieval service directly inside a router or engine.
   deliberate, documented future option, not an oversight — do not wire it
   in without an explicit decision, since running N OCR engines per page has
   real cost implications on constrained (BASE-tier) hardware.
+- `mahoun/execution/controller.py`'s `ExecutionController` — provides
+  deterministic seed management, request replay, and checksum computation.
+  Confirmed **zero production importers** in the verdict generation path
+  (`api/routers/reasoning.py`). The existing GovernanceContextManager +
+  Fortress + LedgerCommitService stack already provides auditability and
+  ledger safety. ExecutionController remains available as a utility for
+  other entry points (batch processing, admin APIs) but is not wired into
+  the main verdict path — this is a deliberate architectural decision per
+  Phase A investigation (2026-08-09).
 
 ---
 
@@ -268,6 +277,36 @@ context.
 Confirmed reachable — unlike the OCR situation above, this one has been
 verified wired correctly.
 
+**Atomic graph write (governance-native):** `mahoun/core/governance/ingestion_runtime.py`'s
+`GovernedIngestionRuntime.ingest_document_atomic(doc_id, text, metadata, author_id)`.
+This is the canonical replacement for the legacy `UnifiedLoader` and
+performs a single capability-scoped governed graph write via
+`GovernedNeo4jSession.begin_transaction().commit()`. **Provenance is
+established through `GovernanceContextManager.require_provenance(source, author)`**
+— the only canonical provenance factory; do NOT reintroduce a
+`ProvenanceMetadata.create_evidence(...)` call (no such method exists).
+Requires (a) an active `GovernanceContextManager.active_context(...)`
+scope, (b) a wired audit sink via
+`set_audit_sink(compose_default_filesystem_sink())`, and (c) a
+`GovernedNeo4jSession` produced by `connection.governed_session(...)`.
+
+**Legacy `UnifiedLoader` is a phantom — `mahoun.orchestrator.unified_loader`
+has never existed in any git commit in this repo.** The earlier audit's
+"legacy manual path" verdict was incomplete: the script was broken by
+construction, not merely abandoned. The current
+`scripts/unified_ingest.py` is now wired to `GovernedIngestionRuntime`
+via the canonical path above; its docstring carries the audit history.
+
+**Outstanding related debt (NOT addressed by the script fix):** the
+production router `api/routers/ingest.py:37,399,468` still references a
+`get_unified_loader()` symbol and a `_unified_loader` global that have
+no definition in the codebase (the mypy baseline at
+`ci/mypy/baseline.txt:1196-1197` records this as `name-defined`). Any
+request that hits `/dlq/{job_id}/retry` or the DLQ delete endpoint will
+raise `NameError` at request time. This is a separate, larger blast-
+radius fix; do not assume the ingestion entry-points are healthy based
+on the CLI fix alone.
+
 ---
 
 ### 1-H. Knowledge Graph (In-Memory Reasoning Structure)
@@ -287,6 +326,37 @@ an oversight. Do not re-enable, do not add new production callers, without
 explicit instruction. Per `CONSTITUTION.md` Section 8: agents "MUST NOT
 invent architecture" — reactivating a deliberately-disabled subsystem
 without authorization falls squarely under that prohibition.
+
+### 1-J. Frontend Canonical Patterns
+
+**Canonical clean component:** `frontend/src/components/LegalSearchPage.tsx`
+is the reference implementation: imports from `../api/client`, calls a real
+`await searchVerdicts(...)` (or equivalent client method), and handles
+loading/error states. Every new frontend component rendering data presented
+as model/API output must follow this pattern.
+
+**Fabrication violation:** A frontend component that imports from `../api/`
+but replaces the real call with a hardcoded string, `setTimeout` simulation,
+or static data structure is a fabrication violation. It will be caught by
+`ci/first_step/gate_4b_frontend_antimock.sh` (Phase B of Round 10).
+
+**Suppression marker convention:**
+```tsx
+// fabrication-check-ok: <mandatory one-line reason>
+```
+Any file/line with this marker is excluded from fabrication detection. The
+reason is **required** — a bare suppression without reason fails the gate.
+Reasons like "placeholder for now" are **NOT** acceptable. All active
+suppressions are logged in gate output so they are visible to reviewers, not
+hidden.
+
+**API contract matching:** `scripts/check_api_contracts.py` (Phase E, Round 10)
+statically verifies that every `fetch('/api/...')` or `await *Client.*()` call
+in `frontend/src/` has a matching backend route in `api/routers/`. Path
+parameters are normalized (`/users/${id}`, `/users/:id`, `/users/{id}` all
+match `/users/{param}`); query strings are stripped before matching.
+Unresolved dynamic endpoints (e.g. `fetch(baseUrl + dynamicPath)`) are
+reported as warnings, not violations.
 
 ---
 
@@ -332,6 +402,41 @@ component existing in the tree is not evidence it runs.
 ---
 
 ## PART 4 — Automated Compliance Verification
+
+The enforcement chain has three layers (Amendment E):
+
+**EARLY FEEDBACK (pre-commit — local, bypassable):**
+- `gate_1_lint.sh` — ruff check+format on modified Python files
+- `gate_2_types.sh` — mypy/pyright non-regression
+- `gate_4b_frontend_antimock.sh` — fabrication marker scan (fast grep)
+- `ci/gate_md_count.sh` — root `.md` count ≤ 3
+
+**LOCAL PUSH ENFORCEMENT (pre-push — local, bypassable with --no-verify):**
+- `gate_0_integrity.sh` — pass/TODO/NotImplementedError stubs in core paths
+- `gate_3_reality.sh` — 137 pytest reality tests
+- `gate_4_antimock.sh` + `gate_4b_frontend_antimock.sh` — Python AST anti-mock + frontend fabrication
+- `gate_5_determinism.sh` — test determinism proof
+- `gate_6_artifacts.sh` — artifact generation
+- `gate_7_architecture.sh` — Python import boundary enforcement
+- `gate_8_contracts.sh` — contract file + test existence
+- `gate_9_governance.sh` — governance test suite
+- `gate_9_mypy_non_regression.sh` — mypy non-regression
+- `scripts/validate_governance_compliance.py` — backend structural check
+- `scripts/check_api_contracts.py` — frontend/backend API contract matching
+- `gate_10_constitutional_integrity.sh` — constitutional change detection (sealed manifest)
+- `scripts/check_enforcement_integrity.py` — enforcement surface self-protection
+- `ci/gate_md_count.sh` — redundant final guard
+
+**AUTHORITATIVE ENFORCEMENT (CI platform — non-bypassable for merge):**
+- `.github/workflows/kernel-governance.yml` runs on push/PR to main/develop/release
+  touching governance, constitutional, CI, or enforcement files.
+- This workflow is the merge-blocking layer when branch protection requires it.
+
+**Note on authority:** Local hooks (pre-commit/pre-push) are bypassable and
+do NOT provide authoritative enforcement. The CI platform workflow is the
+only non-bypassable enforcement layer. If CI is not configured as a required
+status check in branch protection, the project has no authoritative merge
+enforcement.
 
 Before any commit touching `mahoun/core/governance/`, `mahoun/graph/`,
 `mahoun/ledger/`, or `api/routers/`, run:

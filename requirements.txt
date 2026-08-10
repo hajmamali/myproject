@@ -302,6 +302,8 @@ python-magic==0.4.27
 python-magic-ahupp==0.4.13
 python-memcached==1.60
 python-multipart==0.0.20
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
 python-pptx==0.6.18
 python-whois==0.9.3
 python3-openid==3.2.0

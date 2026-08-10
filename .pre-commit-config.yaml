@@ -1,0 +1,41 @@
+# Pre-commit hooks for MahouN enforcement chain
+# ==============================================
+# Fast checks only (must complete in <30s on i5/8GB RAM).
+# Heavy checks run in pre-push.
+#
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: gate-1-lint
+        name: Gate 1: Format/Lint
+        entry: bash ci/first_step/gate_1_lint.sh
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+
+      - id: gate-2-types
+        name: Gate 2: Type Safety
+        entry: bash ci/first_step/gate_2_types.sh
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+
+      - id: gate-4b-frontend-antimock
+        name: Gate 4b: Frontend Fabrication Check
+        entry: bash ci/first_step/gate_4b_frontend_antimock.sh
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+        always_run: true
+
+      - id: gate-md-count
+        name: Gate md-count: Root clutter check
+        entry: bash ci/gate_md_count.sh
+        language: system
+        pass_filenames: false
+        always_run: true

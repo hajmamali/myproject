@@ -37,7 +37,12 @@ on:
       - 'mahoun/core/governance/**'
       - 'mahoun/governance/**'
       - 'constitution/**'
+      - 'ci/**'
+      - 'scripts/**'
+      - 'first_step_ci_cd/**'
+      - '.pre-commit-config.yaml'
       - '.github/workflows/kernel-governance.yml'
+      - 'AGENTS.md'
       - 'Makefile'
   pull_request:
     branches:
@@ -49,7 +54,12 @@ on:
       - 'mahoun/core/governance/**'
       - 'mahoun/governance/**'
       - 'constitution/**'
+      - 'ci/**'
+      - 'scripts/**'
+      - 'first_step_ci_cd/**'
+      - '.pre-commit-config.yaml'
       - '.github/workflows/kernel-governance.yml'
+      - 'AGENTS.md'
       - 'Makefile'
 
 # Workflow configuration
@@ -299,6 +309,38 @@ jobs:
                 print('ERROR: Fail-closed behavior not working')
                 exit(1)
           "
+
+  # =============================================================================
+  # JOB 6: Full Enforcement Suite (Phase D — authoritative CI layer)
+  # =============================================================================
+  enforcement-suite:
+    name: Full Enforcement Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml pytest
+
+      - name: Run pre-push enforcement suite
+        run: |
+          echo "=== Full Enforcement Suite ==="
+          chmod +x scripts/git-hooks/pre-push || true
+          bash scripts/git-hooks/pre-push
 
 # =============================================================================
 # WORKFLOW ORCHESTRATION

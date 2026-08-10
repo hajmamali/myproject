@@ -103,7 +103,9 @@ markers = [
   "graph_native: Tests that enforce Mahoun's graph-native reasoning contract",
   "unit: Fast unit tests with no external dependencies",
   "integration: Tests that require external services (databases, APIs, etc.)",
-  "slow: Tests that are slow to run (large data, complex computations)"
+  "slow: Tests that are slow to run (large data, complex computations)",
+  "e2e: End-to-end tests covering complete production pipelines",
+  "governance: Tests for governance enforcement and authorization"
 ]
 
 [tool.ruff]

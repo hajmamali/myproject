@@ -16,7 +16,7 @@ import {
   DocumentArrowDownIcon,
   PlayIcon
 } from "@heroicons/react/24/outline";
-import { analyzeDelay, generateDelayReport, DelayAnalysisResponse } from "../api/mahounClient";
+import { analyzeDelay, generateDelayReport, DelayAnalysisResponse, DelayAnalysisRequest } from "../api/mahounClient";
 import { toast } from "./Toast";
 
 export default function DelayAnalysisDashboard() {
@@ -31,10 +31,11 @@ export default function DelayAnalysisDashboard() {
 
     setLoading(true);
     try {
-      const result = await analyzeDelay({
+      const requestPayload: DelayAnalysisRequest = {
         project_id: projectId,
         query: query || undefined,
-      });
+      };
+      const result = await analyzeDelay(requestPayload);
       setAnalysis(result);
       toast.success("تحلیل تأخیرات با موفقیت انجام شد");
     } catch (error: any) {
@@ -49,10 +50,11 @@ export default function DelayAnalysisDashboard() {
 
     setGeneratingReport(true);
     try {
-      const report = await generateDelayReport({
+      const requestPayload: DelayAnalysisRequest = {
         project_id: projectId,
         query: query || undefined,
-      });
+      };
+      const report = await generateDelayReport(requestPayload);
       
       // Download report
       const blob = new Blob([report.markdown], { type: "text/markdown" });

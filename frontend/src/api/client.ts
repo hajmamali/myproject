@@ -1,31 +1,240 @@
 /**
- * API Client for MAHOUN Legal Search
+ * MAHOUN Enhanced API Client
  * 
- * Communicates with the FastAPI backend at /v1/search/verdicts
+ * Production-grade API client with:
+ * - Governance integration
+ * - Authentication handling
+ * - Error recovery
+ * - Request/response interceptors
+ * - Audit logging
  */
 
 import { VerdictSearchRequest, VerdictSearchResponse, APIError } from "./types";
 
 /**
- * Backend API base URL
- * 
- * In development with Vite proxy, we can use relative paths.
- * For direct connection without proxy, use full URL.
+ * Backend API base URL with environment support
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /**
- * Custom error class for API errors
+ * Enhanced API error class with governance context
  */
-export class SearchAPIError extends Error {
+export class MahounAPIError extends Error {
   public statusCode: number;
   public detail: string;
+  public requestId: string;
+  public traceId: string;
 
-  constructor(message: string, statusCode: number, detail: string) {
+  constructor(message: string, statusCode: number, detail: string, requestId?: string, traceId?: string) {
     super(message);
-    this.name = "SearchAPIError";
+    this.name = "MahounAPIError";
     this.statusCode = statusCode;
     this.detail = detail;
+    this.requestId = requestId || '';
+    this.traceId = traceId || '';
+  }
+}
+
+/**
+ * Headers interface for strict typing
+ */
+interface RequestHeaders {
+  'Content-Type'?: string;
+  'Accept'?: string;
+  'X-Request-ID'?: string;
+  'X-Trace-ID'?: string;
+  'X-Timestamp'?: string;
+  'X-Governance-Context'?: string;
+  'Authorization'?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Enhanced API Client Class with Governance Integration
+ */
+export class MahounAPIClient {
+  private baseURL: string;
+  private defaultHeaders: RequestHeaders;
+
+  constructor(baseURL: string = API_BASE_URL) {
+    this.baseURL = baseURL;
+    this.defaultHeaders = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+  }
+
+  /**
+   * Generate governance headers for requests
+   */
+  private generateGovernanceHeaders(): Record<string, string> {
+    return {
+      'X-Request-ID': this.generateRequestId(),
+      'X-Trace-ID': this.generateTraceId(),
+      'X-Timestamp': new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Generate unique request ID
+   */
+  private generateRequestId(): string {
+    return 'req_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now();
+  }
+
+  /**
+   * Generate unique trace ID
+   */
+  private generateTraceId(): string {
+    return 'trace_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now();
+  }
+
+  /**
+   * Enhanced request method with governance and error handling
+   */
+  async request<T>(
+    endpoint: string, 
+    options: RequestInit & { 
+      governanceContext?: any;
+      retries?: number;
+    } = {}
+  ): Promise<T> {
+    const { governanceContext, retries = 3, ...fetchOptions } = options;
+    
+    // Prepare headers - convert to plain object for fetch, filtering out undefined values
+    const headers: Record<string, string> = Object.fromEntries(
+      Object.entries({
+        ...this.defaultHeaders,
+        ...this.generateGovernanceHeaders(),
+      }).filter(([_, value]) => value !== undefined) as [string, string][]
+    );
+    
+    // Merge any custom headers from fetchOptions
+    if (fetchOptions.headers) {
+      const customHeaders = fetchOptions.headers as Record<string, string>;
+      Object.assign(headers, customHeaders);
+    }
+
+    // Add governance context if provided
+    if (governanceContext) {
+      headers['X-Governance-Context'] = JSON.stringify(governanceContext);
+    }
+
+    // Add authentication token if available
+    const token = this.getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Retry logic with error tracking
+    let lastError: Error = new Error('Unknown error');
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(`${this.baseURL}${endpoint}`, {
+          ...fetchOptions,
+          headers,
+        });
+
+        // Handle response
+        if (!response.ok) {
+          const errorData = await this.parseErrorResponse(response);
+          const error = new MahounAPIError(
+            errorData.message,
+            response.status,
+            errorData.detail,
+            headers['X-Request-ID'],
+            headers['X-Trace-ID']
+          );
+          throw error;
+        }
+
+        const data = await response.json();
+        
+        // Log successful request for audit
+        this.logAuditEvent('api_request_success', {
+          endpoint,
+          method: fetchOptions.method || 'GET',
+          status: response.status,
+          requestId: headers['X-Request-ID'] || 'unknown',
+        });
+
+        return data;
+
+      } catch (error) {
+        lastError = error as Error;
+        
+        // Don't retry on client errors (4xx)
+        if (error instanceof MahounAPIError && error.statusCode < 500) {
+          break;
+        }
+
+        // Wait before retry (exponential backoff)
+        if (attempt < retries) {
+          await this.delay(Math.pow(2, attempt) * 1000);
+        }
+      }
+    }
+
+    // Log failed request
+    this.logAuditEvent('api_request_failed', {
+      endpoint,
+      method: fetchOptions.method || 'GET',
+      error: lastError.message,
+      requestId: headers['X-Request-ID'] || 'unknown',
+    });
+
+    throw lastError!;
+  }
+
+  /**
+   * Get authentication token from store
+   */
+  private getAuthToken(): string | null {
+    // This will be integrated with the auth store
+    const authData = localStorage.getItem('mahoun-auth-store');
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData);
+        return parsed.state?.token || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Parse error response from API
+   */
+  private async parseErrorResponse(response: Response): Promise<{ message: string; detail: string }> {
+    try {
+      const errorData: APIError = await response.json();
+      return {
+        message: `API Error: ${errorData.detail || response.statusText}`,
+        detail: errorData.detail || `HTTP ${response.status}`,
+      };
+    } catch {
+      return {
+        message: `HTTP Error: ${response.status} ${response.statusText}`,
+        detail: `HTTP ${response.status}`,
+      };
+    }
+  }
+
+  /**
+   * Log audit events
+   */
+  private logAuditEvent(action: string, context: any): void {
+    // This will be integrated with the governance store
+    console.log('API Audit Event:', { action, context, timestamp: new Date().toISOString() });
+  }
+
+  /**
+   * Delay utility for retries
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 
@@ -52,81 +261,47 @@ function cleanFilters(
 }
 
 /**
- * Search for legal verdicts matching a query
- * 
- * @param payload - Search request with query, filters, and limit
- * @param signal - AbortSignal for request cancellation
- * @returns Promise resolving to search response
- * @throws SearchAPIError on API errors
- * 
- * @example
- * ```ts
- * const response = await searchVerdicts({
- *   query: "اعتراض ثالث اجرایی",
- *   filters: { is_final: true },
- *   limit: 10
- * });
- * console.log(response.results);
- * ```
+ * Enhanced search verdicts function with governance
  */
 export async function searchVerdicts(
   payload: VerdictSearchRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  governanceContext?: any
 ): Promise<VerdictSearchResponse> {
+  const client = new MahounAPIClient();
+  
   // Clean up the payload
+  const cleanedFilters = cleanFilters(payload.filters);
   const cleanedPayload: VerdictSearchRequest = {
     query: payload.query.trim(),
-    filters: cleanFilters(payload.filters),
+    filters: cleanedFilters || undefined,
     limit: payload.limit || 10,
     enrich_with_graph: payload.enrich_with_graph ?? true,
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/search/verdicts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
+    return await client.request<VerdictSearchResponse>('/v1/search/verdicts', {
+      method: 'POST',
       body: JSON.stringify(cleanedPayload),
-      signal, // Add AbortSignal for cancellation
+      signal: signal ?? null,
+      governanceContext: governanceContext,
     });
 
-    if (!res.ok) {
-      // Try to parse error response
-      let errorDetail = `HTTP ${res.status}`;
-      try {
-        const errorData: APIError = await res.json();
-        errorDetail = errorData.detail || errorDetail;
-      } catch {
-        // Ignore JSON parse errors
-      }
-
-      throw new SearchAPIError(
-        `Search request failed: ${errorDetail}`,
-        res.status,
-        errorDetail
-      );
-    }
-
-    const data: VerdictSearchResponse = await res.json();
-    return data;
-    
   } catch (error) {
-    if (error instanceof SearchAPIError) {
+    if (error instanceof MahounAPIError) {
       throw error;
     }
 
     // Network or other errors
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new SearchAPIError(
+      throw new MahounAPIError(
         "خطا در اتصال به سرور. لطفاً اتصال اینترنت و وضعیت سرور را بررسی کنید.",
         0,
         "Network error"
       );
     }
 
-    throw new SearchAPIError(
+    throw new MahounAPIError(
       "خطای غیرمنتظره در ارسال درخواست",
       0,
       String(error)
@@ -135,21 +310,32 @@ export async function searchVerdicts(
 }
 
 /**
- * Check search service health
+ * Enhanced health check with governance tracking
  */
-export async function checkSearchHealth(): Promise<{
+export async function checkSearchHealth(governanceContext?: any): Promise<{
   status: string;
   backends: { vector_store: string; graph: string };
 }> {
-  const res = await fetch(`${API_BASE_URL}/v1/search/health`, {
-    method: "GET",
-    headers: { "Accept": "application/json" },
-  });
-
-  if (!res.ok) {
-    throw new SearchAPIError("Health check failed", res.status, "Service unavailable");
+  const client = new MahounAPIClient();
+  
+  try {
+    return await client.request('/v1/search/health', {
+      method: 'GET',
+      governanceContext,
+    });
+  } catch (error) {
+    if (error instanceof MahounAPIError) {
+      throw error;
+    }
+    throw new MahounAPIError("Health check failed", 0, "Service unavailable");
   }
-
-  return res.json();
 }
+
+/**
+ * Create singleton API client instance
+ */
+export const apiClient = new MahounAPIClient();
+
+// Legacy alias for backward compatibility
+export const SearchAPIError = MahounAPIError;
 

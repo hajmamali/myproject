@@ -1,0 +1,103 @@
+baseline:
+  version: "architecture-baseline-v1"
+  hash: "2d62c4e205636e27"
+  timestamp: "FROZEN_BASELINE"
+
+repository:
+  total_clean_modules: 1071
+  production_entry_points: 15
+
+layers:
+  domain_subsystem: 120
+  infrastructure_support: 391
+  kernel_core: 58
+  test_suite: 428
+  tooling_utility: 74
+
+classification_summary:
+  ambiguous: 18
+  canonical_candidate: 102
+  delete_candidate: 149
+  infrastructure: 194
+  legacy: 7
+  possible_orphan: 23
+  supporting_production: 76
+  test_only: 428
+  tooling: 74
+
+domains:
+  agents:
+    interface: "UltraBaseAgent"
+    canonical_candidates: 5
+    supporting: 0
+    delete_candidates: 2
+  api:
+    interface: "BaseModel, BaseModel, BaseModel, BaseModel"
+    canonical_candidates: 14
+    supporting: 2
+    delete_candidates: 4
+  audit:
+    interface: "RegulatoryExportTemplate, RegulatoryExportTemplate, RegulatoryExportTemplate"
+    canonical_candidates: 0
+    supporting: 1
+    delete_candidates: 0
+  config:
+    interface: "N/A"
+    canonical_candidates: 0
+    supporting: 0
+    delete_candidates: 0
+  crypto:
+    interface: "N/A"
+    canonical_candidates: 2
+    supporting: 2
+    delete_candidates: 1
+  domain:
+    interface: "BaseDomainEngine"
+    canonical_candidates: 1
+    supporting: 0
+    delete_candidates: 2
+  finetuning:
+    interface: "BaseModel, BaseModel, BaseModel, BaseModel, BaseModel"
+    canonical_candidates: 1
+    supporting: 1
+    delete_candidates: 2
+  governance:
+    interface: "BaseModel"
+    canonical_candidates: 0
+    supporting: 0
+    delete_candidates: 1
+  graph:
+    interface: "BaseModel"
+    canonical_candidates: 5
+    supporting: 3
+    delete_candidates: 34
+  guardrails:
+    interface: "N/A"
+    canonical_candidates: 1
+    supporting: 0
+    delete_candidates: 3
+  ledger:
+    interface: "LedgerBackend, LedgerBackend, LedgerBackend"
+    canonical_candidates: 4
+    supporting: 3
+    delete_candidates: 0
+  pipelines:
+    interface: "N/A"
+    canonical_candidates: 7
+    supporting: 7
+    delete_candidates: 21
+  rag:
+    interface: "BaseModel, BaseModel, BaseModel"
+    canonical_candidates: 3
+    supporting: 1
+    delete_candidates: 3
+  reasoning:
+    interface: "LLMServiceProtocol"
+    canonical_candidates: 13
+    supporting: 8
+    delete_candidates: 4
+  unknown:
+    interface: "UltraBaseAgent, UltraBaseAgent"
+    canonical_candidates: 46
+    supporting: 48
+    delete_candidates: 72

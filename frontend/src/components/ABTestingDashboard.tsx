@@ -18,9 +18,7 @@ import {
   createExperiment,
   stopExperiment,
   getExperimentResults,
-  calculateWinner,
-  type Experiment,
-  type ExperimentResults,
+  calculateWinner as calculateWinnerFromResults,
 } from "../api/experimentsClient";
 
 interface ABTestingDashboardProps {
@@ -53,12 +51,12 @@ export default function ABTestingDashboard({ className = "" }: ABTestingDashboar
   const [experiments, setExperiments] = useState<ABExperiment[]>([]);
   const [selectedExperiment, setSelectedExperiment] = useState<ABExperiment | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [newExperiment, setNewExperiment] = useState({
     name: "",
     description: "",
     variants: [] as ModelOption[],
   });
+
 
   // Load experiments from API
   useEffect(() => {
@@ -94,14 +92,12 @@ export default function ABTestingDashboard({ className = "" }: ABTestingDashboar
           },
         })),
         created_at: exp.created_at,
-        started_at: exp.started_at,
-        completed_at: exp.stopped_at,
+        started_at: exp.started_at || undefined,
+        completed_at: exp.stopped_at || undefined,
       }));
       setExperiments(converted);
     } catch (error) {
       console.error("Failed to load experiments:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -123,17 +119,6 @@ export default function ABTestingDashboard({ className = "" }: ABTestingDashboar
       case "draft": return "پیش‌نویس";
       default: return status;
     }
-  };
-
-  const calculateWinner = (variants: ABExperiment["variants"]) => {
-    if (variants.length === 0) return null;
-
-    // Simple winner calculation based on accuracy
-    const winner = variants.reduce((best, current) =>
-      current.metrics.accuracy > best.metrics.accuracy ? current : best
-    );
-
-    return winner.model.id;
   };
 
   const handleCreateExperiment = async () => {
@@ -159,7 +144,7 @@ export default function ABTestingDashboard({ className = "" }: ABTestingDashboar
     }
   };
 
-  const handleStartExperiment = async (experimentId: string) => {
+  const handleStartExperiment = async (_experimentId: string) => {
     // API doesn't have start endpoint, experiments start automatically
     alert("آزمایش به صورت خودکار شروع می‌شود");
   };
@@ -176,7 +161,7 @@ export default function ABTestingDashboard({ className = "" }: ABTestingDashboar
   const handleCompleteExperiment = async (experimentId: string) => {
     try {
       const results = await getExperimentResults(experimentId);
-      const winner = calculateWinner(results);
+      const winner = calculateWinnerFromResults(results);
       
       setExperiments(experiments.map(exp => {
         if (exp.id === experimentId) {

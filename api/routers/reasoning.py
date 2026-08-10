@@ -20,7 +20,7 @@ Architecture:
 import hashlib
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -48,6 +48,7 @@ from mahoun.crypto.signatures import generate_keypair
 from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 from mahoun.ledger.blockchain import ImmutableLedger
 from mahoun.ledger.writer import EvidenceLedgerWriter
+from mahoun.execution.replay_service import get_verdict_replay_service, ReplayResult
 from mahoun.reasoning.evidence_linked_verdict import (
     EvidenceLinkedVerdictEngine,
 )
@@ -408,6 +409,19 @@ async def generate_verdict(
             # Execute reasoning (auto-validated through Fortress)
             # Pass case_id through to the reasoning service for proper ledger storage
             user_case_id = request.case_id or str(uuid.uuid4())
+            
+            # Store execution context for potential replay capability
+            from mahoun.execution.replay_service import store_verdict_execution_context, store_verdict_execution_result
+            
+            execution_id = store_verdict_execution_context(
+                question=request.question,
+                facts=facts_list,
+                correlation_id=ctx.correlation_id,
+                case_id=user_case_id,
+                user_id=getattr(request, 'user_id', None),  # Extract from request if available
+                session_id=getattr(request, 'session_id', None)
+            )
+            
             verdict = await protected_service.reason(
                 request=type(
                     "ReasoningRequest",
@@ -417,9 +431,16 @@ async def generate_verdict(
                         "facts": facts_list,
                         "correlation_id": ctx.correlation_id,
                         "case_id": user_case_id,
+                        "execution_id": execution_id,
                     },
                 )(),
                 correlation_id=ctx.correlation_id,
+            )
+            
+            # Store the result for replay comparison
+            store_verdict_execution_result(
+                execution_id=execution_id,
+                result=verdict
             )
 
         # PER RULE 9: API Router becomes transport only
@@ -960,3 +981,147 @@ async def health_check() -> dict[str, Any]:
             "error": str(e),
             "timestamp": datetime.now(UTC).isoformat(),
         }
+
+
+@router.post(
+    "/replay/{execution_id}",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Replay a verdict execution",
+    description="""
+    Replay a previously executed verdict generation request with the same inputs.
+    
+    This endpoint provides deterministic replay capability for audit and verification.
+    The replay uses the same inputs as the original execution and compares the results
+    to detect any non-deterministic behavior.
+    
+    **Use Cases:**
+    - Audit trail verification
+    - Debugging non-deterministic behavior
+    - Compliance verification for regulatory audits
+    - Regression testing for reasoning engine updates
+    
+    **Requirements:**
+    - Original execution must exist in replay service history
+    - Requires ENTERPRISE_FULL mode (graph reasoning enabled)
+    """,
+)
+async def replay_verdict_execution(
+    execution_id: str,
+    http_request: Request,
+    engine: EvidenceLinkedVerdictEngine = Depends(get_verdict_engine),
+) -> Dict[str, Any]:
+    """
+    Replay a verdict execution with the same inputs.
+    
+    Args:
+        execution_id: ID of the execution to replay
+        http_request: FastAPI request object (for governance context)
+        engine: Verdict engine instance
+        
+    Returns:
+        Replay result with comparison data
+    """
+    try:
+        log.info(f"Initiating verdict replay for execution {execution_id}")
+        
+        # Check mode compatibility
+        if is_desktop_minimal() and should_skip_graph():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "error": "REPLAY_NOT_SUPPORTED",
+                    "message": "Replay requires ENTERPRISE_FULL mode with graph reasoning enabled"
+                }
+            )
+        
+        # Get replay service
+        replay_service = get_verdict_replay_service()
+        
+        # Execute replay
+        replay_result = await replay_service.replay_verdict_execution(
+            execution_id=execution_id,
+            verdict_engine=engine
+        )
+        
+        # Format response
+        if replay_result.replay_successful:
+            log.info(
+                f"Replay {replay_result.replay_id} completed: "
+                f"checksum_match={replay_result.checksum_match}"
+            )
+            
+            return {
+                "status": "success",
+                "execution_id": replay_result.execution_id,
+                "replay_id": replay_result.replay_id,
+                "replay_successful": True,
+                "checksum_match": replay_result.checksum_match,
+                "original_checksum": replay_result.original_checksum,
+                "replay_checksum": replay_result.replay_checksum,
+                "execution_time_ms": replay_result.execution_time_ms,
+                "timestamp": replay_result.timestamp,
+                "original_context": {
+                    "question": replay_result.original_context.question,
+                    "facts_count": len(replay_result.original_context.facts),
+                    "correlation_id": replay_result.original_context.correlation_id,
+                    "case_id": replay_result.original_context.case_id,
+                    "original_timestamp": replay_result.original_context.timestamp,
+                },
+                "warning": None if replay_result.checksum_match else 
+                    "Replay checksum does not match original - possible non-deterministic behavior"
+            }
+        else:
+            log.error(f"Replay {replay_result.replay_id} failed: {replay_result.error}")
+            
+            return {
+                "status": "failed",
+                "execution_id": replay_result.execution_id,
+                "replay_id": replay_result.replay_id,
+                "replay_successful": False,
+                "error": replay_result.error,
+                "execution_time_ms": replay_result.execution_time_ms,
+                "timestamp": replay_result.timestamp,
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Replay endpoint error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "REPLAY_FAILED",
+                "message": f"Failed to replay execution: {str(e)}"
+            }
+        )
+
+
+@router.get(
+    "/replay/statistics",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Get replay service statistics",
+    description="Retrieve statistics about replay service usage and success rates",
+)
+async def get_replay_statistics() -> Dict[str, Any]:
+    """Get replay service statistics"""
+    try:
+        replay_service = get_verdict_replay_service()
+        stats = replay_service.get_statistics()
+        
+        return {
+            "status": "success",
+            "statistics": stats,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+        
+    except Exception as e:
+        log.error(f"Failed to get replay statistics: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "STATISTICS_FAILED",
+                "message": f"Failed to retrieve statistics: {str(e)}"
+            }
+        )

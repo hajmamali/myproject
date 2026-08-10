@@ -31,10 +31,10 @@ from scripts.document_processor.processor import DocumentProcessor
 from scripts.document_processor.file_manager import FileManager
 
 # Core components
-from flows.enhanced_rag import EnhancedRAGPipeline
-from core.logging import setup_logging
+from mahoun.flows.enhanced_rag import EnhancedRAGPipeline
+from mahoun.core.logging import setup_logger
 
-logger = setup_logging(__name__)
+logger = setup_logger(__name__)
 
 
 @dataclass

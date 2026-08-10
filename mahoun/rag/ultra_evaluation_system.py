@@ -76,6 +76,7 @@ class MetricType(str, Enum):
     LATENCY = "latency"
     THROUGHPUT = "throughput"
     COST = "cost"
+    CACHE_HIT_RATE = "cache_hit_rate"
     
     # Quality
     COHERENCE = "coherence"

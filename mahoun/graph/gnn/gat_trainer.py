@@ -21,8 +21,8 @@ from pathlib import Path
 from tqdm import tqdm
 
 from mahoun.graph.gnn.gat_reranker import GATReranker
-from core.monitoring.wandb_logger import AdvancedWandBLogger
-from core.monitoring.metrics_tracker import MetricsTracker
+from mahoun.monitoring.wandb_logger import AdvancedWandBLogger
+from mahoun.monitoring.metrics_tracker import MetricsTracker
 from mahoun.core.logging import setup_logger
 
 log = setup_logger("gat_trainer")

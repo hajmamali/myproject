@@ -96,6 +96,20 @@ if ! check_module_size "output/claim_generator.py" 35; then
 fi
 
 echo ""
+
+# Part 3: Frontend fabrication / anti-mock extension (Phase B, Round 10).
+# Catches the AIChat.tsx fabrication pattern that the Python-only AST walk
+# above cannot see. Lives in a companion script for clarity; failures here
+# are hard violations, identical in weight to a backend stub.
+echo "🎨 Running frontend fabrication check (gate_4b)..."
+if bash "${SCRIPT_DIR}/gate_4b_frontend_antimock.sh"; then
+    echo -e "${GREEN}✓ Frontend antimock passed${NC}"
+else
+    echo -e "${RED}❌ Frontend antimock failed${NC}"
+    ((VIOLATIONS++))
+fi
+echo ""
+
 echo "================================================"
 
 if [ $VIOLATIONS -eq 0 ]; then
@@ -110,6 +124,7 @@ else
     echo "- Code was replaced with placeholders"
     echo "- Module was significantly reduced"
     echo "- Anti-mock tests detected stub patterns"
+    echo "- Frontend component contains a fabrication (gate_4b)"
     exit 1
 fi
 

@@ -16,7 +16,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { TrainingJob, listTrainingJobs, stopTrainingJob, deleteTrainingJob } from "../api/trainingClient";
-import { getLegalMetrics, getDetailedHealth, getDashboardData, type LegalMetrics, type HealthStatus, type DashboardData } from "../api/monitoringClient";
+import { getDashboardData } from "../api/monitoringClient";
 
 interface MonitoringDashboardProps {
   className?: string;
@@ -43,8 +43,6 @@ export default function MonitoringDashboard({ className = "" }: MonitoringDashbo
     total_jobs: 0,
     uptime: 0,
   });
-  const [legalMetrics, setLegalMetrics] = useState<LegalMetrics | null>(null);
-  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
 
   // Load training jobs
   useEffect(() => {
@@ -84,14 +82,6 @@ export default function MonitoringDashboard({ className = "" }: MonitoringDashbo
         total_jobs: Object.keys(dashboard.components).length,
         uptime: dashboard.components.orchestrator?.uptime || 0,
       });
-
-      // Load legal metrics
-      const legal = await getLegalMetrics();
-      setLegalMetrics(legal);
-
-      // Load health status
-      const health = await getDetailedHealth();
-      setHealthStatus(health);
     } catch (error) {
       console.error("Failed to load metrics:", error);
     }

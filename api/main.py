@@ -5,6 +5,11 @@ MAHOUN Self-Improvement REST API
 FastAPI-based REST API for the self-improvement system.
 """
 
+# Load .env file BEFORE any other imports so that all modules
+# (especially runtime_config / config_validator) see the env vars.
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import time
 from contextlib import asynccontextmanager
@@ -28,6 +33,14 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
+
+# Import authentication middleware
+from api.middleware.auth import (
+    JWTAuthMiddleware,
+    RequestLoggingMiddleware,
+    CORSConfigMiddleware,
+    blacklist_manager,
+)
 
 # Import search router for legal verdict search
 from api.routers import search as search_router
@@ -135,6 +148,11 @@ async def lifespan(app: FastAPI):
     # ============================================================================
     try:
         from mahoun.bootstrap.runtime import bootstrap_runtime
+        from mahoun.core.governance.mutation_boundary import set_audit_sink
+        from mahoun.infrastructure.audit.filesink import compose_default_filesystem_sink
+
+        # Wire audit sink BEFORE bootstrap — governance validation gate requires it
+        set_audit_sink(compose_default_filesystem_sink())
         
         bootstrap_start = time.time()
         registry = bootstrap_runtime()
@@ -194,10 +212,20 @@ async def lifespan(app: FastAPI):
 
                 await init_redis()
                 logger.info("✅ Redis initialized")
+                
+                # Initialize token blacklist with Redis
+                from api.database import redis_client
+                await blacklist_manager.initialize(redis_client)
+                logger.info("✅ Token blacklist manager initialized with Redis")
 
         except Exception as e:
             logger.error(f"❌ Failed to initialize databases: {e}")
             # Don't raise - allow app to start even if DB is unavailable
+    
+    # Initialize token blacklist manager (without Redis if not available)
+    if not enable_redis:
+        await blacklist_manager.initialize(None)
+        logger.info("✅ Token blacklist manager initialized (in-memory mode)")
 
     yield  # Application runs here
 
@@ -238,13 +266,17 @@ SECURITY_SETTINGS = load_security_settings()
 
 
 def apply_security_middleware(application):
+    # Get CORS config from helper
+    cors_config = CORSConfigMiddleware.get_cors_config()
+    
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=SECURITY_SETTINGS.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
-        expose_headers=["X-Request-ID"],
+        allow_origins=cors_config["allow_origins"],
+        allow_credentials=cors_config["allow_credentials"],
+        allow_methods=cors_config["allow_methods"],
+        allow_headers=cors_config["allow_headers"],
+        expose_headers=cors_config["expose_headers"],
+        max_age=cors_config.get("max_age", 600),
     )
 
     # Skip trusted host middleware in test environment
@@ -254,6 +286,15 @@ def apply_security_middleware(application):
 
 # Security middleware
 apply_security_middleware(app)
+
+# Request logging middleware (before auth for better debugging)
+app.add_middleware(RequestLoggingMiddleware)
+logger.info("✓ Request logging middleware enabled")
+
+# JWT Authentication middleware (if enabled)
+if os.getenv("ENABLE_JWT_AUTH", "false").lower() == "true":
+    app.add_middleware(JWTAuthMiddleware)
+    logger.info("✓ JWT authentication middleware enabled")
 
 # Input validation middleware (PR-7)
 app.add_middleware(InputValidationMiddleware)
@@ -365,6 +406,24 @@ try:
 except ImportError as e:
     logger.warning(f"Fine-tuning router not available: {e}")
 
+# Register Authentication router (CRITICAL - User authentication)
+try:
+    from api.routers import auth as auth_router
+
+    app.include_router(auth_router.router)
+    logger.info("✓ Authentication router registered at /api/v1/auth")
+except ImportError as e:
+    logger.warning(f"Authentication router not available: {e}")
+
+# Register Dashboard router (Studio + Portal dashboards)
+try:
+    from api.routers import dashboard as dashboard_router
+
+    app.include_router(dashboard_router.router)
+    logger.info("✓ Dashboard router registered at /api/v1/dashboard")
+except ImportError as e:
+    logger.warning(f"Dashboard router not available: {e}")
+
 # Register Reasoning router (CRITICAL - Core reasoning API)
 try:
     from api.routers import reasoning as reasoning_router
@@ -391,6 +450,15 @@ try:
     logger.info("✓ Enhanced health check router registered at /health/v2")
 except ImportError as e:
     logger.warning(f"Health V2 router not available: {e}")
+
+# Register Governance Center router (CRITICAL - Constitutional Compliance)
+try:
+    from api.routers import governance as governance_router
+
+    app.include_router(governance_router.router)
+    logger.info("✓ Governance Center router registered at /api/v1/governance")
+except ImportError as e:
+    logger.warning(f"Governance router not available: {e}")
 
 # ============================================================================
 # Monitoring Endpoints (MUST be registered BEFORE metrics router
