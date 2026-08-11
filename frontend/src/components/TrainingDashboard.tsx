@@ -139,20 +139,18 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
         </div>
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             setError(null);
             setIsLoadingModels(true);
-            void (async () => {
-              try {
-                const modelList = await listAvailableModels();
-                setModels(modelList.jobs ?? []);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'خطا در بارگذاری');
-              } finally {
-                setIsLoadingModels(false);
-              }
-            })()
-          }
+            try {
+              const modelList = await listAvailableModels();
+              setModels(modelList.jobs ?? []);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'خطا در بارگذاری');
+            } finally {
+              setIsLoadingModels(false);
+            }
+          }}
           className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
         >
           تلاش مجدد

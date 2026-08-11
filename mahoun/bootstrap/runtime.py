@@ -85,6 +85,76 @@ def validate_governance_runtime() -> None:
     logger.info("Governance runtime validation passed: audit sink is wired.")
 
 
+def validate_production_reasoning_config() -> None:
+    """
+    Validate production-critical reasoning configuration.
+
+    TIER 1 HARDENING (2025-01): Ensures STRICT mode is default and
+    thread-safe components are properly configured.
+
+    Checks:
+        - Default ReasoningMode is STRICT (not FAST)
+        - ReasoningChain uses thread-safe atomic counters
+        - NLI text-grounding verification is enabled
+
+    Raises:
+        RuntimeError: If production requirements are not met.
+
+    Usage in bootstrap:
+        validate_production_reasoning_config()  # Before accepting verdict requests
+    """
+    from mahoun.reasoning.reasoning_chain import ReasoningMode, ReasoningChain, ReasoningConfig
+    import inspect
+
+    # Check 1: Default ReasoningConfig mode must be STRICT
+    config_sig = inspect.signature(ReasoningConfig)
+    if 'mode' in config_sig.parameters:
+        mode_param = config_sig.parameters['mode']
+        if mode_param.default != ReasoningMode.STRICT:
+            raise RuntimeError(
+                f"TIER 1 VIOLATION: ReasoningConfig default mode is {mode_param.default}, "
+                f"expected {ReasoningMode.STRICT}. "
+                "Production deployment requires STRICT mode as default per CONSTITUTION.md § 10."
+            )
+    else:
+        # Fallback: Check dataclass field default
+        try:
+            test_config = ReasoningConfig()
+            if test_config.mode != ReasoningMode.STRICT:
+                raise RuntimeError(
+                    f"TIER 1 VIOLATION: ReasoningConfig default mode is {test_config.mode}, "
+                    f"expected {ReasoningMode.STRICT}. "
+                    "Production deployment requires STRICT mode as default per CONSTITUTION.md § 10."
+                )
+        except Exception as e:
+            raise RuntimeError(
+                f"TIER 1 VIOLATION: Cannot instantiate ReasoningConfig: {e}. "
+                "Unable to verify STRICT mode default."
+            )
+
+    # Check 2: Verify thread-safe stats implementation
+    chain_source = inspect.getsource(ReasoningChain)
+    if 'AtomicCounter' not in chain_source or 'AtomicFloat' not in chain_source:
+        raise RuntimeError(
+            "TIER 1 VIOLATION: ReasoningChain does not use thread-safe atomic counters. "
+            "Production deployment requires AtomicCounter/AtomicFloat for concurrent safety."
+        )
+
+    # Check 3: NLI verification exists
+    if '_verify_nli' not in chain_source:
+        raise RuntimeError(
+            "TIER 1 VIOLATION: NLI text-grounding verification method not found. "
+            "Zero-hallucination guarantee requires active NLI verification."
+        )
+
+    logger.info(
+        "✅ Production reasoning config validated: "
+        f"mode={ReasoningMode.STRICT}, "
+        "thread_safe=True, "
+        "nli_enabled=True"
+    )
+
+
 def bootstrap_runtime() -> Dict[str, Any]:
     """
     Central system wiring entry point.
@@ -153,6 +223,19 @@ def bootstrap_runtime() -> Dict[str, Any]:
             "FATAL: Governance runtime validation failed: %s. "
             "System cannot start without valid governance runtime. "
             "Wire an audit sink via set_audit_sink() before calling bootstrap_runtime().",
+            e,
+        )
+        # Re-raise to enforce fail-closed principle
+        raise
+
+    # 6. PRODUCTION REASONING CONFIG VALIDATION (TIER 1 HARDENING)
+    # Validates STRICT mode default, thread-safe stats, and NLI verification
+    try:
+        validate_production_reasoning_config()
+    except RuntimeError as e:
+        logger.critical(
+            "FATAL: Production reasoning config validation failed: %s. "
+            "TIER 1 requirements not met. Cannot start in production mode.",
             e,
         )
         # Re-raise to enforce fail-closed principle

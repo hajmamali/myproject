@@ -228,7 +228,7 @@ class ReasoningStep:
 
 
 @dataclass
-class ReasoningChain:
+class ContractReasoningChain:
     """Complete chain of thought"""
     question: str
     steps: List[ReasoningStep] = field(default_factory=list)
@@ -565,7 +565,7 @@ class UltraContractAgent(UltraBaseAgent):
         correlation_id: Optional[str]
     ) -> tuple:
         """Perform chain-of-thought reasoning"""
-        chain = ReasoningChain(question=query)
+        chain = ContractReasoningChain(question=query)
         
         # Step 1: Analyze query
         chain.steps.append(ReasoningStep(
@@ -634,7 +634,7 @@ class UltraContractAgent(UltraBaseAgent):
         answer = top_result["content"][:self.config.max_answer_length]
         confidence = top_result["score"]
         
-        chain = ReasoningChain(
+        chain = ContractReasoningChain(
             question=query,
             steps=[ReasoningStep(
                 step_number=1,
