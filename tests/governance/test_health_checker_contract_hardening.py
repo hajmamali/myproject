@@ -117,7 +117,6 @@ def test_check_all_contract_shape_is_statically_preserved() -> None:
         "'core'",
         "'graph'",
         "'agents'",
-        "'self_improve'",
         "'components'",
         "'import_safe'",
         "'uptime_sec'",

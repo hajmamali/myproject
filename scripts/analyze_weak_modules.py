@@ -144,7 +144,6 @@ class WeakModuleAnalyzer:
             "tracing": 0.5,
             "execution": 0.6,
             "concurrency": 0.6,
-            "self_improve": 0.55,
             "mcp": 0.5,
         }.get(module, 0.5)
 

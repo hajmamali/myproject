@@ -1,189 +1,131 @@
-import { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import {
-  XMarkIcon,
-  Bars3Icon,
-  ShareIcon,
-  CommandLineIcon,
-  CircleStackIcon,
-  AcademicCapIcon,
-  AdjustmentsHorizontalIcon,
-  ChartBarIcon,
-  CpuChipIcon,
-  ShieldCheckIcon,
-  UserIcon,
-  LockClosedIcon,
-} from "@heroicons/react/24/outline";
-import { useAuth } from "../store/authStore";
+/**
+ * Studio Layout Component
+ *
+ * Shell for the operations/engineer workbench (Studio). Renders a dark
+ * sidebar with Studio navigation and surfaces nested routes via <Outlet />.
+ */
 
-interface NavGroup {
-  title: string;
-  items: {
-    name: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }[];
+import type { ReactNode } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth, Role, Permission } from '../store/authStore';
+import { apiClient } from '../api/client';
+
+interface StudioLayoutProps {
+  children?: ReactNode;
 }
 
-const studioNavigation: NavGroup[] = [
-  {
-    title: "Knowledge & Data",
-    items: [
-      { name: "Knowledge Graph Center", href: "/app/studio/graph", icon: ShareIcon },
-      { name: "Dataset Engineering", href: "/app/studio/datasets", icon: CircleStackIcon },
-    ],
-  },
-  {
-    title: "Model Operations",
-    items: [
-      { name: "AI Training", href: "/app/studio/training", icon: AcademicCapIcon },
-      { name: "Fine-Tuning & Eval", href: "/app/studio/finetuning", icon: AdjustmentsHorizontalIcon },
-      { name: "Model Registry", href: "/app/studio/models", icon: CommandLineIcon },
-    ],
-  },
-  {
-    title: "Observability",
-    items: [
-      { name: "System Monitor", href: "/app/studio/monitoring", icon: CpuChipIcon },
-      { name: "A/B Testing", href: "/app/studio/experiments", icon: ChartBarIcon },
-    ],
-  },
-  {
-    title: "Governance",
-    items: [
-      { name: "Governance Center", href: "/app/studio/governance", icon: ShieldCheckIcon },
-    ],
-  },
+interface StudioNavItem {
+  to: string;
+  label: string;
+  icon: string;
+  roles?: Role[];
+  permissions?: Permission[];
+}
+
+const STUDIO_NAV: StudioNavItem[] = [
+  { to: '/app/studio/graph', label: 'مرکز گراف دانش', icon: '🕸', permissions: [Permission.READ] },
+  { to: '/app/studio/datasets', label: 'مدیریت دیتاست', icon: '🗃', permissions: [Permission.READ] },
+  { to: '/app/studio/datasets/upload', label: 'بارگذاری دیتاست', icon: '⬆', permissions: [Permission.WRITE] },
+  { to: '/app/studio/models', label: 'مدیریت مدل‌ها', icon: '🧠', permissions: [Permission.ADMIN] },
+  { to: '/app/studio/training', label: 'آموزش مدل', icon: '🎯', permissions: [Permission.ADMIN] },
+  { to: '/app/studio/finetuning', label: 'فاین‌تیونینگ', icon: '🔧', permissions: [Permission.ADMIN] },
+  { to: '/app/studio/monitoring', label: 'مانیتورینگ سیستم', icon: '📊', permissions: [Permission.READ] },
+  { to: '/app/studio/experiments', label: 'آزمایش‌های A/B', icon: '🧪', permissions: [Permission.ADMIN] },
+  { to: '/app/studio/governance', label: 'مرکز حاکمیت', icon: '⚖', permissions: [Permission.READ] },
 ];
 
-export default function StudioLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+function StudioSidebar() {
+  const { user, hasPermission } = useAuth();
 
-  const isActive = (href: string) => {
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+  const visible = STUDIO_NAV.filter(
+    (item) => !item.permissions || item.permissions.every((p) => hasPermission(p))
+  );
+
+  return (
+    <nav className="flex flex-col gap-1 p-4" aria-label="پیمایش استودیو">
+      {visible.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? 'bg-slate-800 font-medium text-white'
+                : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+            }`
+          }
+        >
+          <span aria-hidden="true">{item.icon}</span>
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+function StudioHeader({ onLogout }: { onLogout: () => void }) {
+  const { user } = useAuth();
+  return (
+    <div className="flex items-center justify-between px-4 py-3" aria-label="نوار استودیو">
+      <div className="text-sm font-semibold text-white">
+        استودیو · {user?.name ?? 'مهندس'}
+      </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+      >
+        خروج
+      </button>
+    </div>
+  );
+}
+
+export default function StudioLayout({ children }: StudioLayoutProps) {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const handleLogout = () => {
+    logout();
+    void navigate('/login');
+  };
+
+  const handleHealthCheck = async () => {
+    await apiClient.get('/api/system/health').catch(() => undefined);
+    void navigate('/app/studio/monitoring');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
-      {/* Mobile Sidebar Backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-955/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="flex h-screen flex-col bg-slate-900 text-white" dir="rtl">
+      {/* Top bar */}
+      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-950">
+        <StudioHeader onLogout={handleLogout} />
+      </header>
 
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 border-l border-slate-800 flex flex-col
-          transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen
-          ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
-        `}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-extrabold bg-gradient-to-l from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              MahouN Studio
-            </span>
-            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono border border-indigo-500/30">
-              v1.0
-            </span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 flex-shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-900">
+          <StudioSidebar />
+        </aside>
 
-        {/* User Info / Role */}
-        <div className="px-6 py-4 border-b border-slate-800/60 bg-slate-900/50">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold uppercase">
-              {user?.username?.[0] || "O"}
-            </div>
-            <div className="text-right overflow-hidden">
-              <p className="text-sm font-semibold truncate text-slate-200">{user?.username || "Operator"}</p>
-              <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                <LockClosedIcon className="h-3 w-3 text-indigo-400" />
-                ROLE_{user?.role?.toUpperCase() || "ANALYST"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Groups */}
-        <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto">
-          {studioNavigation.map((group) => (
-            <div key={group.title} className="space-y-1.5">
-              <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                {group.title}
-              </h3>
-              <div className="space-y-0.5">
-                {group.items.map((item) => {
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
-                        ${
-                          active
-                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                        }
-                      `}
-                    >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* Sidebar Footer - Toggle to Portal */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-          <button
-            onClick={() => navigate("/app/portal/dashboard")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition-all cursor-pointer"
-          >
-            <UserIcon className="h-4 w-4 text-indigo-400" />
-            <span>بازگشت به پرتال کاربری</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-16 px-6 bg-slate-900 border-b border-slate-800">
-          <span className="text-lg font-bold bg-gradient-to-l from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-            MahouN Studio
-          </span>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-        </header>
-
-        {/* Content Outlet */}
-        <main className="flex-1 bg-slate-950 overflow-y-auto">
-          <Outlet />
+        {/* Routed content */}
+        <main className="flex-1 overflow-auto bg-slate-950">
+          {children ?? <Outlet />}
         </main>
       </div>
+
+      {/* Footer status strip */}
+      <footer className="flex items-center justify-between border-t border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-500">
+        <span>استودیوی ماحون — محیط مهندسی</span>
+        <button
+          type="button"
+          onClick={handleHealthCheck}
+          className="text-slate-400 transition-colors hover:text-primary-400"
+        >
+          بررسی سلامت سیستم
+        </button>
+      </footer>
     </div>
   );
 }

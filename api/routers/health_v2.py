@@ -112,7 +112,6 @@ async def detailed_health_check(
     - reasoning
     - refactored.hybrid_search
     - refactored.gaussian_process
-    - refactored.self_improvement
     - postgresql
     - redis
     - agent.{agent_name} (e.g., agent.doc_parser)

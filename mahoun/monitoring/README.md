@@ -249,7 +249,7 @@ legal_monitoring.add_sla_target(SLATarget(
 ### 4. Alert Callbacks
 
 ```python
-from mahoun.self_improve.ultra_performance_monitoring import Alert
+from mahoun.monitoring.alerting import Alert
 
 def my_alert_handler(alert: Alert):
     print(f"Alert: {alert.severity.value} - {alert.message}")

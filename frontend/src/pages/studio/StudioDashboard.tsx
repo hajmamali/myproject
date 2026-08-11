@@ -128,7 +128,7 @@ export default function StudioDashboard() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const data = await apiClient.get<DashboardOverview>('/api/v1/dashboard/studio/overview');
+      const data = await apiClient.get('/api/v1/dashboard/studio/overview') as DashboardOverview;
       setOverview(data);
       setError(null);
     } catch (err) {

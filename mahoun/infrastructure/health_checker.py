@@ -25,11 +25,6 @@ inspects pre-existing instance references from the canonical locations:
 3. Dedicated registries (e.g., ``ULTRA_AGENT_REGISTRY`` in
    ``mahoun/agents/ultra_factory.py``) — for components that are tracked
    by their own registry rather than ``app.state``.
-
-The ``mahoun.self_improve`` subsystem is **intentionally disabled for
-release** (see ``AGENTS.md`` Part 1-I). Its absence is reported as
-``HealthStatus.DISABLED`` rather than as an unhandled ``ModuleNotFoundError``
-traceback so that ``/health`` never surfaces a non-actionable error.
 """
 
 from typing import Any, Dict, Optional
@@ -104,7 +99,6 @@ class HealthChecker:
     _SB_ULTRA_GRAPH_SERVICE = "ultra_graph_service"
     _SB_BIAS_ANALYZER = "bias_analyzer"
     _SB_SMART_CACHE = "smart_cache"
-    _SB_SELF_IMPROVE_BANDIT = "self_improve_bandit"
     _SB_LEGAL_NLP = "legal_nlp"
 
     # Attribute names looked up on app.state for the most common
@@ -634,87 +628,6 @@ class HealthChecker:
                 checked_at=self._now(),
             )
 
-        # --- Self-Improvement: intentional disable --------------------
-        # Per ``AGENTS.md`` Part 1-I, ``mahoun.self_improve`` is
-        # **intentionally disabled for release**. We must therefore
-        # distinguish between "module is missing on purpose" and "real
-        # failure". A bare ``except Exception`` here would log a noisy
-        # traceback on every ``/health`` call.
-        try:
-            from mahoun.self_improve.ultra_self_improvement_system import (
-                UltraSelfImprovementSystem,
-            )
-            results["refactored.self_improvement"] = ComponentHealth(
-                component="refactored.self_improvement",
-                status=HealthStatus.HEALTHY,
-                message=(
-                    "UltraSelfImprovementSystem import successful "
-                    "(requires real model for full functionality)"
-                ),
-                details={
-                    "class": UltraSelfImprovementSystem.__name__,
-                    "module": "mahoun.self_improve.ultra_self_improvement_system",
-                    "note": (
-                        "Full initialization requires PyTorch model with "
-                        "parameters()"
-                    ),
-                },
-                checked_at=self._now(),
-            )
-        except ModuleNotFoundError as e:
-            # The expected, intentional outcome for the release build.
-            # We register the subsystem as DISABLED with a clear,
-            # non-error message — no traceback, no log noise.
-            results["refactored.self_improvement"] = ComponentHealth(
-                component="refactored.self_improvement",
-                status=HealthStatus.DISABLED,
-                message=(
-                    "Self-improvement subsystem is intentionally disabled "
-                    "for release (mahoun.self_improve not loaded)"
-                ),
-                details={
-                    "enabled": False,
-                    "subsystem": "mahoun.self_improve",
-                    "reason": "module_not_loaded",
-                    "import_error": str(e),
-                },
-                checked_at=self._now(),
-            )
-        except ImportError as e:
-            # Other import-time failures (e.g. circular import,
-            # SyntaxError-on-import). Still register as DISABLED rather
-            # than as a hard failure: the subsystem is not part of the
-            # production surface, so its absence must not fail the
-            # /health endpoint.
-            results["refactored.self_improvement"] = ComponentHealth(
-                component="refactored.self_improvement",
-                status=HealthStatus.DISABLED,
-                message=(
-                    "Self-improvement subsystem is unavailable "
-                    "(import error treated as disabled)"
-                ),
-                details={
-                    "enabled": False,
-                    "subsystem": "mahoun.self_improve",
-                    "reason": "import_error",
-                    "import_error": str(e),
-                },
-                checked_at=self._now(),
-            )
-        except Exception as e:
-            # Anything else (real failure) — surface as UNHEALTHY, but
-            # do NOT let it escape /health.
-            self.logger.error(
-                f"Error checking SelfImprovement: {e}", exc_info=True
-            )
-            results["refactored.self_improvement"] = ComponentHealth(
-                component="refactored.self_improvement",
-                status=HealthStatus.UNHEALTHY,
-                message=f"SelfImprovement check failed: {str(e)}",
-                details={"error": str(e)},
-                checked_at=self._now(),
-            )
-
         return results
 
     async def check_databases(self) -> Dict[str, ComponentHealth]:
@@ -936,24 +849,8 @@ class HealthChecker:
                 ),
                 "count": 0 if agents_failed else len(agents_health),
             },
-            "self_improve": {
-                "status": "DISABLED",
-                "reason": "Not verified or disabled",
-            },
             "components": components_map,
         }
-
-        # Self-improve status update — promote DISABLED/NOT_LOADED to
-        # an explicit "ENABLED" only when the subsystem is genuinely
-        # importable. Anything else is left as DISABLED with the
-        # sub-check's own message.
-        si_health = refactored_health.get("refactored.self_improvement")
-        if si_health is not None:
-            if si_health.status == HealthStatus.HEALTHY:
-                response["self_improve"]["status"] = "ENABLED"
-            else:
-                response["self_improve"]["status"] = si_health.status.value.upper()
-            response["self_improve"]["reason"] = si_health.message
 
         # 4. Calculate Global Status
         if core_status == "FAILED" or agents_failed:

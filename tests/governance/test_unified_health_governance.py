@@ -145,7 +145,6 @@ class TestEnforcement:
         ("VectorStoreManager", "Vector store re-instantiation"),
         ("UltraHybridSearch", "Hybrid search re-instantiation"),
         ("GaussianProcessUncertainty", "Uncertainty model re-instantiation"),
-        ("UltraSelfImprovementSystem", "Disabled subsystem re-instantiation"),
         ("UltraReasoningService", "Reasoning service re-instantiation"),
         ("UltraGraphBuilder", "Graph builder re-instantiation"),
     )
@@ -255,53 +254,6 @@ class TestEnforcement:
             "registry, never construct."
         )
 
-    def test_self_improve_block_handles_module_not_found(
-        self, hc_tree: ast.Module
-    ) -> None:
-        """``mahoun.self_improve`` is INTENTIONALLY DISABLED for release
-        (AGENTS.md Part 1-I). The health check must:
-
-        1. Have a dedicated ``except ModuleNotFoundError`` handler for
-           this import.
-        2. Set ``HealthStatus.DISABLED`` (not ``UNHEALTHY``) on missing.
-        3. NEVER instantiate ``UltraSelfImprovementSystem``.
-        """
-        body = _get_function(hc_tree, "check_refactored_modules")
-        assert body is not None
-        body_src = ast.unparse(body)
-
-        # Must catch ModuleNotFoundError explicitly
-        assert "except ModuleNotFoundError" in body_src, (
-            "check_refactored_modules must catch ModuleNotFoundError "
-            "explicitly for the self_improve subsystem. A bare except "
-            "Exception hides other errors and is too coarse."
-        )
-
-        # The ModuleNotFoundError block must set DISABLED
-        si_block = re.search(
-            r"from\s+mahoun\.self_improve[\s\S]+?except\s+ModuleNotFoundError"
-            r"[^{]*\{(?P<body>.*?)\n\s+except",
-            body_src,
-            re.DOTALL,
-        )
-        assert si_block, (
-            "Could not isolate the self_improve ModuleNotFoundError "
-            "block. The health checker must have a dedicated handler "
-            "for this subsystem."
-        )
-        handler_body = si_block.group("body")
-        assert "HealthStatus.DISABLED" in handler_body, (
-            "self_improve ModuleNotFoundError must register status "
-            "HealthStatus.DISABLED (the subsystem is intentionally "
-            "disabled — surfacing it as UNHEALTHY is misleading)."
-        )
-
-        # And must NOT instantiate
-        assert "UltraSelfImprovementSystem()" not in body_src, (
-            "check_refactored_modules must NOT instantiate the "
-            "intentionally-disabled self_improve subsystem"
-        )
-
     # ---- Governance source-tree level enforcement -----------------------
     def test_no_raw_neo4j_driver_session_outside_canonical(self) -> None:
         """``AGENTS.md`` 1-A: raw ``neo4j_driver.session()`` is
@@ -347,9 +299,13 @@ class TestEnforcement:
                 continue
             if "tests" in path.parts or "examples" in path.parts:
                 continue
+            # Skip node_modules and other non-project directories
+            if "node_modules" in path.parts:
+                continue
             try:
                 tree = _parse(path)
-            except SyntaxError:
+            except (SyntaxError, UnicodeDecodeError):
+                # Skip files that can't be parsed or decoded
                 continue
             for node in ast.walk(tree):
                 if isinstance(node, ast.ClassDef) and node.name in {
@@ -591,18 +547,18 @@ class TestHardening:
         assert check_all is not None
         body_src = ast.unparse(check_all)
         for key in ('"status"', '"core"', '"graph"', '"agents"',
-                    '"self_improve"', '"components"'):
-            assert key in body_src, (
+                    '"components"'):
+            # ast.unparse() may use single or double quotes
+            assert key in body_src or key.replace('"', "'") in body_src, (
                 f"check_all response is missing required key: {key}"
             )
-        # core.import_safe
-        assert '"import_safe"' in body_src, (
+        # core.import_safe - ast.unparse() may use single or double quotes
+        assert '"import_safe"' in body_src or "'import_safe'" in body_src, (
             "check_all core section must include import_safe"
         )
-        # graph.reason, agents.count, self_improve.reason
+        # graph.reason, agents.count
         assert '"reason"' in body_src, (
-            "check_all must include 'reason' fields (graph.reason, "
-            "self_improve.reason)"
+            "check_all must include 'reason' fields (graph.reason)"
         )
         assert '"count"' in body_src, (
             "check_all must include agents.count"
@@ -694,23 +650,19 @@ class TestUnifiedGovernance:
                 f"Health checks inspect, never build."
             )
 
-    def test_self_improve_remains_disabled(self) -> None:
-        """``mahoun.self_improve`` is INTENTIONALLY DISABLED (AGENTS.md
-        Part 1-I). The refactor must not accidentally re-enable it.
+    def test_self_improve_removed_from_production_code(self) -> None:
+        """``self_improve`` has been REMOVED from the MAHOUN architecture
+        (not merely disabled). Production code paths must not reference
+        the removed subsystem.
         """
         hc_src = _read(HC)
-        # The health checker references it for presence/absence, but
-        # never in a way that would instantiate.
-        assert "from mahoun.self_improve" in hc_src, (
-            "check_refactored_modules must reference "
-            "mahoun.self_improve for presence/absence reporting"
+        assert "mahoun.self_improve" not in hc_src, (
+            "health_checker must not reference mahoun.self_improve — "
+            "the subsystem has been removed, not disabled"
         )
-        assert "UltraSelfImprovementSystem()" not in hc_src, (
-            "mahoun.self_improve must NOT be instantiated in the "
-            "health check — the subsystem is intentionally disabled."
+        assert "UltraSelfImprovementSystem" not in hc_src, (
+            "health_checker must not reference UltraSelfImprovementSystem"
         )
-        # And in a deeper scan: the production code paths must not
-        # have added any new ultra_self_improvement callers.
         offenders: List[Tuple[str, int, str]] = []
         for path in ROOT.rglob("*.py"):
             if any(part.startswith(".") for part in path.parts):
@@ -721,18 +673,16 @@ class TestUnifiedGovernance:
                 src = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
-            if "ultra_self_improvement_system" in src.lower() and \
-               path.resolve() != HC.resolve():
-                # Allow existing intentional references in
-                # documented self_improve usage; just block new ones
-                # in non-self_improve code paths.
+            lowered = src.lower()
+            if "ultra_self_improvement_system" in lowered or \
+               ("self_improve" in lowered and "self_improvement" not in lowered):
                 rel = path.relative_to(ROOT)
                 if "self_improve" not in str(rel):
-                    # Reference outside the self_improve package
                     offenders.append((str(rel), 0, ""))
         assert not offenders, (
-            f"mahoun.self_improve referenced outside its own package "
-            f"(intentionally disabled). Offending paths: {offenders}"
+            "self_improve referenced outside its own package "
+            "(subsystem removed). Offending paths: "
+            + ", ".join(str(o[0]) for o in offenders)
         )
 
     def test_single_canonical_neo4j_driver_construction(self) -> None:
@@ -745,13 +695,16 @@ class TestUnifiedGovernance:
         for path in ROOT.rglob("*.py"):
             if "tests" in path.parts or "examples" in path.parts:
                 continue
+            # Skip node_modules which may contain binary files
+            if "node_modules" in path.parts:
+                continue
             try:
                 tree = _parse(path)
-            except SyntaxError:
+            except (SyntaxError, UnicodeDecodeError):
+                # Skip files that can't be parsed or decoded
                 continue
             for name, line, _ in _collect_calls(tree):
-                if name == "driver" and "AsyncGraphDatabase" in \
-                        ast.unparse(tree).split("\n")[line - 1]:
+                if name == "driver":
                     # Heuristic: line containing "driver(" also mentions
                     # AsyncGraphDatabase
                     src = ast.unparse(tree)
@@ -1012,8 +965,6 @@ def _main() -> int:
     check_graph = _get_function(hc_tree, "check_graph")
     if check_graph is None or "GraphConnectionState" not in ast.unparse(check_graph):
         _fail("governance", "check_graph does not consult GraphConnectionState")
-    if "UltraSelfImprovementSystem()" in _read(HC):
-        _fail("governance", "UltraSelfImprovementSystem() instantiated in health_checker")
     main_tree = _parse(MAIN)
     found_health = False
     for node in ast.walk(main_tree):

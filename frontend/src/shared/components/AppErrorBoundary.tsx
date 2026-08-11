@@ -204,7 +204,7 @@ const DefaultFallback: React.FC<FallbackComponentProps> = ({ error, reset, retry
                   <span className="text-slate-400">Severity:</span> <span className="text-white">{error.severity}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Timestamp:</span> <span className="text-white">{error.timestamp}</span>
+                  <span className="text-slate-400">Timestamp:</span> <span className="text-white">{error.context.timestamp}</span>
                 </div>
                 {error.context && Object.keys(error.context).length > 0 && (
                   <div>

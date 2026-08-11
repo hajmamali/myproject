@@ -792,10 +792,9 @@ Coverage is measured using the **P0 Critical Test Suite** (defined in
 
 | Scope | Coverage | Notes |
 |-------|----------|-------|
-| Overall (all production code) | **12.80%** | After excluding `self_improve` (per deactivation decision below) |
-| Excluding `self_improve` | +0.81% delta | The `self_improve` module (3882 LOC, 0% covered) is deprecated and inert |
+| Overall (all production code) | **12.80%** | Baseline coverage across production modules |
 
-### Critical Modules Coverage (Excluding self_improve)
+### Critical Modules Coverage
 The most security-sensitive modules have prioritized coverage:
 
 | Module | Coverage | Statements | Notes |
@@ -807,18 +806,6 @@ The most security-sensitive modules have prioritized coverage:
 | **reasoning** | 20.87% | 5093 | Verdict engine (large surface) |
 | **governance** | 0.00% | 558 | P0 suite does not import governance directly; verified via `gate_9_governance` |
 | **security** | 0.00% | 1083 | Out of P0 scope; verified via `gate_9` |
-
-### Self-Improvement Module Status: **PERMANENTLY DEACTIVATED**
-Per [`AGENTS.md` Part 1-H](file:///home/haji/Desktop/KingMahouN/AGENTS.md), the
-[`mahoun/self_improve/`](file:///home/haji/Desktop/KingMahouN/mahoun/self_improve/__init__.py)
-package is **disabled for release and will NOT be developed further or used in
-production**.
-
-- All symbols (`UltraSelfImprovementSystem`, `UltraRLAgent`, etc.) resolve to `None`
-- The package imports silently (no `ModuleNotFoundError` for `pandas`/`torch`)
-- An opt-in environment variable `MAHOUN_ENABLE_SELF_IMPROVE=1` exists for historical
-  audit runs only; default behavior is fully inert
-- All production callers already wrap imports in `try/except ImportError`
 
 Baseline coverage file: [`ci/coverage_baseline.json`](file:///home/haji/Desktop/KingMahouN/ci/coverage_baseline.json)
 

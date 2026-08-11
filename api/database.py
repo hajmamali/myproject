@@ -284,9 +284,12 @@ async def init_neo4j():
         # schema-apply step executed during DB bootstrap. After bootstrap the
         # runtime path is `Neo4jConnection.execute_query()` /
         # `governed_session()`. Documented in AGENTRULES.md governance section.
-        await _handshake_neo4j(
-            neo4j_driver,
-            timeout_sec=NEO4J_HANDSHAKE_TIMEOUT_SEC,
+        await asyncio.wait_for(
+            _handshake_neo4j(
+                neo4j_driver,
+                timeout_sec=NEO4J_HANDSHAKE_TIMEOUT_SEC,
+            ),
+            timeout=NEO4J_HANDSHAKE_TIMEOUT_SEC,
         )
     except (asyncio.TimeoutError,) as t_err:
         log.warning(

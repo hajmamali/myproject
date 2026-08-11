@@ -23,7 +23,7 @@ from mahoun.monitoring.legal_metrics import (
     MetricSnapshot,
     LegalQueryMetrics,
 )
-from mahoun.self_improve.ultra_performance_monitoring import AlertSeverity, Alert
+from mahoun.monitoring.alerting import AlertSeverity, Alert
 
 
 def _reset_collector():
@@ -148,7 +148,7 @@ class TestSLACompliance:
                 metric_name="test_metric",
                 target_value=0.5,
                 comparison="less_than",
-                severity=AlertSeverity.HIGH,
+                severity=AlertSeverity.ERROR,
                 description="Test metric must be under 0.5",
             )
         )
@@ -204,7 +204,7 @@ class TestSLACompliance:
         target = monitoring.sla_targets["test_metric"]
         assert target.target_value == 0.5
         assert target.comparison == "less_than"
-        assert target.severity == AlertSeverity.HIGH
+        assert target.severity == AlertSeverity.ERROR
 
 
 class TestPrometheusExport:

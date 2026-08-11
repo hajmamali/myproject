@@ -1,151 +1,90 @@
 /**
- * MAHOUN Logger Service
- * 
- * Centralized logging with levels and remote reporting
+ * Logger Service
+ * Centralized logging service for the application
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+  CRITICAL = 4,
+}
 
 export interface LogEntry {
   level: LogLevel;
+  timestamp: string;
   message: string;
   context?: Record<string, any>;
-  timestamp: string;
-  source: string;
+  stack?: string;
 }
 
 export class LoggerService {
   private static instance: LoggerService;
-  private isProduction: boolean = import.meta.env.PROD;
-  private logBuffer: LogEntry[] = [];
-  private readonly maxBufferSize = 100;
-  
-  private constructor() {
-    // Setup global error handling
-    this.setupGlobalErrorHandling();
-  }
-  
+  private logLevel: LogLevel = LogLevel.INFO;
+  private logs: LogEntry[] = [];
+  private maxLogs: number = 1000;
+
+  private constructor() {}
+
   public static getInstance(): LoggerService {
     if (!LoggerService.instance) {
       LoggerService.instance = new LoggerService();
     }
     return LoggerService.instance;
   }
-  
+
+  public setLogLevel(level: LogLevel): void {
+    this.logLevel = level;
+  }
+
   public debug(message: string, context?: Record<string, any>): void {
-    this.log('debug', message, context);
+    this.log(LogLevel.DEBUG, message, context);
   }
-  
+
   public info(message: string, context?: Record<string, any>): void {
-    this.log('info', message, context);
+    this.log(LogLevel.INFO, message, context);
   }
-  
+
   public warn(message: string, context?: Record<string, any>): void {
-    this.log('warn', message, context);
+    this.log(LogLevel.WARN, message, context);
   }
-  
-  public error(message: string, context?: Record<string, any>): void {
-    this.log('error', message, context);
+
+  public error(message: string, context?: Record<string, any>, error?: Error): void {
+    this.log(LogLevel.ERROR, message, { ...context, stack: error?.stack });
   }
-  
+
   public critical(message: string, context?: Record<string, any>): void {
-    this.log('critical', message, context);
+    this.log(LogLevel.CRITICAL, message, context);
   }
-  
+
   private log(level: LogLevel, message: string, context?: Record<string, any>): void {
+    if (level < this.logLevel) return;
+
     const entry: LogEntry = {
       level,
+      timestamp: new Date().toISOString(),
       message,
       context,
-      timestamp: new Date().toISOString(),
-      source: 'frontend',
     };
-    
-    // Add to buffer
-    this.addToBuffer(entry);
-    
-    // Console output (only in development or for critical errors)
-    if (!this.isProduction || level === 'critical') {
-      this.consoleOutput(entry);
+
+    this.logs.push(entry);
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
     }
-    
-    // Send to backend for error and critical levels
-    if (level === 'error' || level === 'critical') {
-      this.sendToBackend(entry).catch(() => {
-        // Fallback to console if backend fails
-        console.error('Failed to send log to backend:', entry);
-      });
+
+    // Also log to console in development
+    if (import.meta.env.DEV) {
+      const levelName = LogLevel[level];
+      console.log(`[${levelName}] ${message}`, context);
     }
   }
-  
-  private addToBuffer(entry: LogEntry): void {
-    this.logBuffer.push(entry);
-    
-    // Keep buffer size manageable
-    if (this.logBuffer.length > this.maxBufferSize) {
-      this.logBuffer.shift();
-    }
+
+  public getLogs(): LogEntry[] {
+    return [...this.logs];
   }
-  
-  private consoleOutput(entry: LogEntry): void {
-    const { level, message, context } = entry;
-    const logMethod = level === 'critical' ? 'error' : level;
-    
-    if (context) {
-      console[logMethod](`[${level.toUpperCase()}] ${message}`, context);
-    } else {
-      console[logMethod](`[${level.toUpperCase()}] ${message}`);
-    }
-  }
-  
-  private async sendToBackend(entry: LogEntry): Promise<void> {
-    try {
-      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      
-      await fetch(`${baseURL}/api/logs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(entry),
-      });
-    } catch (error) {
-      // Silently fail for logging - avoid infinite loops
-    }
-  }
-  
-  private setupGlobalErrorHandling(): void {
-    // Catch unhandled errors
-    window.addEventListener('error', (event) => {
-      this.error('Unhandled JavaScript error', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        stack: event.error?.stack,
-      });
-    });
-    
-    // Catch unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      this.error('Unhandled promise rejection', {
-        reason: event.reason,
-        promise: 'Promise rejected',
-      });
-    });
-  }
-  
-  /**
-   * Get recent logs for debugging
-   */
-  public getRecentLogs(count: number = 50): LogEntry[] {
-    return this.logBuffer.slice(-count);
-  }
-  
-  /**
-   * Clear log buffer
-   */
+
   public clearLogs(): void {
-    this.logBuffer = [];
+    this.logs = [];
   }
 }

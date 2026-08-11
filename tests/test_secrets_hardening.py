@@ -347,28 +347,6 @@ class TestSecretsHardening:
         )
     
     @pytest.mark.p2
-    def test_no_default_password_in_self_improve(self):
-        """تست 11: self_improve module نباید default password داشته باشد"""
-        self_improve_file = Path(__file__).parent.parent / "mahoun" / "self_improve" / "ultra_self_improvement_system.py"
-        
-        if not self_improve_file.exists():
-            pytest.skip("Self-improve module not found")
-        
-        content = self_improve_file.read_text()
-        
-        # Should NOT have default="password" or "neo4j_password": "password"
-        assert '"password"' not in content or 'neo4j_password": "password"' not in content, (
-            "❌ SECURITY VIOLATION: self_improve module has hardcoded 'password'"
-        )
-        
-        # Should use self.config["neo4j_password"] (KeyError if missing)
-        # NOT self.config.get("neo4j_password", "password")
-        assert 'self.config["neo4j_password"]' in content or \
-               "neo4j_password MUST be provided" in content, (
-            "❌ self_improve MUST raise error if neo4j_password missing"
-        )
-    
-    @pytest.mark.p2
     def test_env_example_exists(self):
         """تست 12: .env.example باید وجود داشته باشد"""
         env_example = Path(__file__).parent.parent / ".env.example"

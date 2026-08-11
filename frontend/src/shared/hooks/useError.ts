@@ -46,263 +46,154 @@ export interface UseErrorReturn {
   handleValidationError: (message: string, field?: string, value?: unknown, context?: ErrorContext) => void;
   handleApiError: (response: Response, context?: ErrorContext) => Promise<never>;
   handleGovernanceError: (message: string, policy?: string, rule?: string, context?: ErrorContext) => void;
-  
-  // Toast functions
-  showToast: (toast: Omit<ToastMessage, 'id' | 'createdAt'>) => string;
+  addToast: (toast: Omit<ToastMessage, 'id' | 'createdAt'>) => void;
   dismissToast: (id: string) => void;
-  clearToasts: () => void;
-  
-  // Utility functions
-  normalizeError: (error: unknown, context?: ErrorContext) => AppError;
-  getErrorMessage: (error: unknown) => string;
-  isRetryableError: (error: unknown) => boolean;
-  requiresAuth: (error: unknown) => boolean;
 }
 
 // ============================================================================
-// Default Toast Configuration
-// ============================================================================
-
-const DEFAULT_TOAST_DURATION = 5000;
-
-// ============================================================================
-// useError Hook Implementation
+// useError Hook
 // ============================================================================
 
 export function useError(): UseErrorReturn {
   const [error, setError] = useState<AppError | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const toastIdRef = useRef(0);
-
-  // Auto-dismiss toasts
-  useEffect(() => {
-    if (toasts.length === 0) return;
-    
-    const timers = toasts.map(toast => {
-      if (toast.dismissible === false) return null;
-      
-      const duration = toast.duration ?? DEFAULT_TOAST_DURATION;
-      return setTimeout(() => {
-        dismissToast(toast.id);
-      }, duration);
-    });
-    
-    return () => {
-      timers.forEach(timer => timer && clearTimeout(timer));
-    };
-  }, [toasts]);
-
-  // ============================================================================
-  // Error Handling Functions
-  // ============================================================================
+  const toastTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  const showToast = useCallback((toast: Omit<ToastMessage, 'id' | 'createdAt'>): string => {
-    const id = String(++toastIdRef.current);
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id' | 'createdAt'>) => {
+    const id = `toast_${Date.now()}_${Math.random()}`;
     const newToast: ToastMessage = {
+      ...toast,
       id,
       createdAt: Date.now(),
-      ...toast,
     };
-    setToasts(prev => [...prev, newToast]);
-    return id;
+
+    setToasts((prev) => [...prev, newToast]);
+
+    if (toast.duration !== undefined) {
+      const timeout = setTimeout(() => {
+        dismissToast(id);
+      }, toast.duration);
+      toastTimeouts.current.set(id, timeout);
+    }
   }, []);
 
   const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  const clearToasts = useCallback(() => {
-    setToasts([]);
-  }, []);
-
-  const normalizeError = useCallback((err: unknown, context: ErrorContext = {}): AppError => {
-    try {
-      if (err instanceof AppError) {
-        return err;
-      }
-      
-      if (err instanceof Error) {
-        // Check for specific error types
-        if (err.name === 'AbortError') {
-          return new AppError(ErrorCode.ABORT_ERROR, err.message, context);
-        }
-        
-        if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-          return new NetworkError(err.message, context);
-        }
-        
-        // Generic error
-        return AppError.fromUnknown(err, context);
-      }
-      
-      // Handle string errors
-      if (typeof err === 'string') {
-        return new AppError(ErrorCode.UNKNOWN_ERROR, err, context);
-      }
-      
-      // Handle objects with error properties
-      if (typeof err === 'object' && err !== null) {
-        const errorObj = err as Record<string, unknown>;
-        
-        // Handle API error responses
-        if ('error' in errorObj && typeof errorObj.error === 'object') {
-          const apiError = errorObj.error as Partial<SerializedError>;
-          return new AppError(
-            apiError.code as ErrorCode || ErrorCode.UNKNOWN_ERROR,
-            apiError.message,
-            { ...context, ...apiError.context }
-          );
-        }
-        
-        // Handle error with message
-        if ('message' in errorObj) {
-          return new AppError(
-            ErrorCode.UNKNOWN_ERROR,
-            errorObj.message as string,
-            context
-          );
-        }
-      }
-      
-      return new AppError(ErrorCode.UNKNOWN_ERROR, 'خطای ناشناخته‌ای رخ داد.', context);
-    } catch {
-      return new AppError(ErrorCode.UNKNOWN_ERROR, 'خطای ناشناخته‌ای رخ داد.', context);
+    const timeout = toastTimeouts.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      toastTimeouts.current.delete(id);
     }
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const handleError = useCallback((err: unknown, context: ErrorContext = {}) => {
-    const appError = normalizeError(err, context);
-    
-    // Log error to service
-    errorService.logError(appError);
-    
-    // Set error state
-    setError(appError);
-    
-    // Show toast for non-retryable or high severity errors
-    if (!appError.isRetryable() || appError.severity === ErrorSeverity.HIGH || appError.severity === ErrorSeverity.CRITICAL) {
-      showToast({
+  const handleError = useCallback(
+    (error: unknown, _context: ErrorContext = {}) => {
+      const appError = AppError.fromError(error);
+      setError(appError);
+      errorService.logError(appError.serialize());
+
+      addToast({
         type: 'error',
-        title: 'خطا',
-        message: appError.getUserMessage(),
+        title: 'Error',
+        message: appError.message,
         severity: appError.severity,
         domain: appError.domain,
         code: appError.code,
-        duration: appError.severity === ErrorSeverity.CRITICAL ? 10000 : DEFAULT_TOAST_DURATION,
+        duration: 5000,
+        dismissible: true,
       });
-    }
-  }, [normalizeError]);
+    },
+    [addToast]
+  );
 
-  const handleNetworkError = useCallback((err: unknown, context: ErrorContext = {}) => {
-    const error = NetworkError.fromError(
-      err instanceof Error ? err : new Error(String(err)),
-      context
-    );
-    handleError(error, context);
-  }, [handleError]);
+  const handleNetworkError = useCallback(
+    (error: unknown, context: ErrorContext = {}) => {
+      const appError = new NetworkError(
+        error instanceof Error ? error.message : 'Network error',
+        context
+      );
+      setError(appError);
+      errorService.logError(appError.serialize());
 
-  const handleValidationError = useCallback((
-    message: string,
-    field?: string,
-    value?: unknown,
-    context: ErrorContext = {}
-  ) => {
-    const error = new ValidationError(message, field, value, context);
-    handleError(error, context);
-  }, [handleError]);
+      addToast({
+        type: 'error',
+        title: 'Network Error',
+        message: appError.message,
+        severity: ErrorSeverity.HIGH,
+        domain: Domain.API,
+        duration: 5000,
+        dismissible: true,
+      });
+    },
+    [addToast]
+  );
 
-  const handleGovernanceError = useCallback((
-    message: string,
-    policy?: string,
-    rule?: string,
-    context: ErrorContext = {}
-  ) => {
-    const error = GovernanceError.forPolicyViolation(
-      policy || '',
-      rule || '',
-      message,
-      context
-    );
-    handleError(error, context);
-    
-    // Governance errors are critical - show persistent toast
-    showToast({
-      type: 'error',
-      title: 'نقص در انطباق با قوانین حکمرانی',
-      message: message,
-      severity: ErrorSeverity.CRITICAL,
-      domain: Domain.GOVERNANCE,
-      code: ErrorCode.GOVERNANCE_VIOLATION,
-      duration: 0, // Persistent
-      dismissible: true,
-    });
-  }, [handleError, showToast]);
+  const handleValidationError = useCallback(
+    (message: string, field?: string, value?: unknown, context: ErrorContext = {}) => {
+      const appError = new ValidationError(message, field, value, context);
+      setError(appError);
 
-  const handleApiError = useCallback(async (response: Response, context: ErrorContext = {}): Promise<never> => {
-    const status = response.status;
-    let message = 'خطای سرور';
-    
-    try {
+      addToast({
+        type: 'warning',
+        title: 'Validation Error',
+        message: appError.message,
+        severity: ErrorSeverity.MEDIUM,
+        domain: Domain.GENERAL,
+        duration: 4000,
+        dismissible: true,
+      });
+    },
+    [addToast]
+  );
+
+  const handleApiError = useCallback(
+    async (response: Response, context: ErrorContext = {}) => {
       const data = await response.json().catch(() => ({}));
-      if (data?.message) {
-        message = data.message;
-      } else if (data?.error?.message) {
-        message = data.error.message;
-      }
-    } catch {
-      // Ignore JSON parse errors
-    }
-    
-    const error = AppError.fromHttpStatus(status, message, context);
-    
-    // Log error
-    errorService.logError(error);
-    
-    // Set error state
-    setError(error);
-    
-    // Show toast for API errors
-    showToast({
-      type: 'error',
-      title: 'خطای سرور',
-      message: error.getUserMessage(),
-      severity: error.severity,
-      domain: error.domain,
-      code: error.code,
-      duration: status === 401 || status === 403 ? 0 : DEFAULT_TOAST_DURATION, // Persistent for auth errors
-      dismissible: true,
-    });
-    
-    // Throw error to stop execution
-    throw error;
-  }, [showToast, dismissToast]);
+      const appError = new NetworkError(
+        data.message || `API Error: ${response.status}`,
+        {
+          ...context,
+          statusCode: response.status,
+        }
+      );
+      throw appError;
+    },
+    []
+  );
 
-  // ============================================================================
-  // Utility Functions
-  // ============================================================================
+  const handleGovernanceError = useCallback(
+    (message: string, policy?: string, rule?: string, context: ErrorContext = {}) => {
+      const appError = new GovernanceError(message, {
+        ...context,
+        policy,
+        rule,
+      });
+      setError(appError);
+      errorService.logError(appError.serialize());
 
-  const getErrorMessage = useCallback((err: unknown): string => {
-    const error = normalizeError(err);
-    return error.getUserMessage();
-  }, [normalizeError]);
+      addToast({
+        type: 'error',
+        title: 'Governance Error',
+        message: appError.message,
+        severity: ErrorSeverity.CRITICAL,
+        domain: Domain.GOVERNANCE,
+        duration: 6000,
+        dismissible: true,
+      });
+    },
+    [addToast]
+  );
 
-  const isRetryableError = useCallback((err: unknown): boolean => {
-    const error = normalizeError(err);
-    return error.isRetryable();
-  }, [normalizeError]);
-
-  const requiresAuth = useCallback((err: unknown): boolean => {
-    const error = normalizeError(err);
-    return error.requiresAuthentication();
-  }, [normalizeError]);
-
-  // ============================================================================
-  // Return all functions and state
-  // ============================================================================
+  useEffect(() => {
+    return () => {
+      toastTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+      toastTimeouts.current.clear();
+    };
+  }, []);
 
   return {
     error,
@@ -314,13 +205,8 @@ export function useError(): UseErrorReturn {
     handleValidationError,
     handleApiError,
     handleGovernanceError,
-    showToast,
+    addToast,
     dismissToast,
-    clearToasts,
-    normalizeError,
-    getErrorMessage,
-    isRetryableError,
-    requiresAuth,
   };
 }
 
@@ -338,7 +224,7 @@ export function normalizeError(err: unknown, context: ErrorContext = {}): AppErr
   
   if (err instanceof Error) {
     if (err.name === 'AbortError') {
-      return new AppError(ErrorCode.ABORT_ERROR, err.message, context);
+      return new AppError(err.message, ErrorCode.ABORT_ERROR, ErrorSeverity.MEDIUM, Domain.GENERAL, context);
     }
     
     if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
@@ -349,7 +235,7 @@ export function normalizeError(err: unknown, context: ErrorContext = {}): AppErr
   }
   
   if (typeof err === 'string') {
-    return new AppError(ErrorCode.UNKNOWN_ERROR, err, context);
+    return new AppError(err, ErrorCode.UNKNOWN_ERROR, ErrorSeverity.MEDIUM, Domain.GENERAL, context);
   }
   
   if (typeof err === 'object' && err !== null) {
@@ -358,22 +244,26 @@ export function normalizeError(err: unknown, context: ErrorContext = {}): AppErr
     if ('error' in errorObj && typeof errorObj.error === 'object') {
       const apiError = errorObj.error as Partial<SerializedError>;
       return new AppError(
+        apiError.message || 'Unknown error',
         apiError.code as ErrorCode || ErrorCode.UNKNOWN_ERROR,
-        apiError.message,
+        ErrorSeverity.MEDIUM,
+        Domain.API,
         { ...context, ...apiError.context }
       );
     }
     
     if ('message' in errorObj) {
       return new AppError(
-        ErrorCode.UNKNOWN_ERROR,
         errorObj.message as string,
+        ErrorCode.UNKNOWN_ERROR,
+        ErrorSeverity.MEDIUM,
+        Domain.GENERAL,
         context
       );
     }
   }
   
-  return new AppError(ErrorCode.UNKNOWN_ERROR, 'خطای ناشناخته‌ای رخ داد.', context);
+  return new AppError('خطای ناشناخته‌ای رخ داد.', ErrorCode.UNKNOWN_ERROR, ErrorSeverity.MEDIUM, Domain.GENERAL, context);
 }
 
 /**

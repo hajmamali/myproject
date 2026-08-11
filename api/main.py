@@ -460,6 +460,15 @@ try:
 except ImportError as e:
     logger.warning(f"Governance router not available: {e}")
 
+# Register Chat router (Legal AI Assistant)
+try:
+    from api.routers import chat as chat_router
+
+    app.include_router(chat_router.router)
+    logger.info("✓ Chat router registered at /api/v1/chat")
+except ImportError as e:
+    logger.warning(f"Chat router not available: {e}")
+
 # ============================================================================
 # Monitoring Endpoints (MUST be registered BEFORE metrics router
 # because the router has a /{metric_name:path} catch-all that would

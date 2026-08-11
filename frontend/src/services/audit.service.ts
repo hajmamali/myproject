@@ -6,7 +6,7 @@
 
 import { BaseAPIService } from './api.service';
 import { LoggerService } from './logger.service';
-import { IdGenerator } from '../utils/id.generator.ts';
+import { IdGenerator } from '../utils/id.generator';
 
 export interface AuditEvent {
   id: string;
@@ -48,7 +48,7 @@ export class AuditService extends BaseAPIService {
   public async logEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<void> {
     const fullEvent: AuditEvent = {
       ...event,
-      id: IdGenerator.generate('audit'),
+      id: IdGenerator.generateUUID(),
       timestamp: new Date().toISOString(),
     };
     
@@ -72,7 +72,7 @@ export class AuditService extends BaseAPIService {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
-        'X-Request-ID': IdGenerator.generate('req'),
+        'X-Request-ID': IdGenerator.generateRequestId(),
       },
     });
   }

@@ -6,7 +6,7 @@
  */
 
 import { AppError } from '../errors/AppError';
-import { ErrorCode, ErrorSeverity, ErrorContext, DEFAULT_ERROR_CONFIG, ErrorHandlerConfig } from '../errors/types';
+import { ErrorCode, ErrorSeverity, ErrorContext, Domain, DEFAULT_ERROR_CONFIG, ErrorHandlerConfig, SerializedError } from '../errors/types';
 
 // ============================================================================
 // Sentry Configuration
@@ -239,14 +239,28 @@ export class ErrorService {
   /**
    * Log an error
    */
-  logError(error: AppError | Error): void {
+  logError(error: AppError | Error | SerializedError): void {
     if (!this.isInitialized) {
       this.init();
     }
-    
+
     // Normalize to AppError
-    const appError = error instanceof AppError ? error : AppError.fromUnknown(error);
-    
+    let appError: AppError;
+    if (error instanceof AppError) {
+      appError = error;
+    } else if (error instanceof Error) {
+      appError = AppError.fromError(error);
+    } else {
+      // Handle SerializedError
+      appError = new AppError(
+        (error as any).message || 'Unknown error',
+        (error as any).code || ErrorCode.UNKNOWN_ERROR,
+        (error as any).severity || ErrorSeverity.MEDIUM,
+        (error as any).domain || Domain.GENERAL,
+        (error as any).context || {}
+      );
+    }
+
     // Log to console if configured
     if (this.config.logToConsole) {
       this.logAppError(appError);
@@ -294,7 +308,7 @@ ${error.message}`;
               code: error.code,
               domain: error.domain,
               severity: error.severity,
-              timestamp: error.timestamp,
+              timestamp: error.context.timestamp,
               isRetryable: error.isRetryable(),
               requiresAuth: error.requiresAuthentication(),
               isGovernance: error.isGovernanceError(),
@@ -416,40 +430,48 @@ ${level}] ${message}`;
     if (error instanceof AppError) {
       return error;
     }
-    
+
     if (error instanceof Error) {
       // Network errors
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         return new AppError(
+          'Failed to connect to server',
           ErrorCode.NETWORK_ERROR,
-          'خطا در اتصال به شبکه',
+          ErrorSeverity.HIGH,
+          Domain.API,
           { ...context, url }
         );
       }
-      
+
       // Abort errors
       if (error.name === 'AbortError') {
         return new AppError(
+          'Request was cancelled',
           ErrorCode.ABORT_ERROR,
-          'عملیات توسط کاربر لغو شد',
+          ErrorSeverity.MEDIUM,
+          Domain.API,
           { ...context, url }
         );
       }
-      
+
       // Timeout errors
       if (error.message.includes('timeout') || error.message.includes('Time out')) {
         return new AppError(
+          'Request timeout',
           ErrorCode.TIMEOUT_ERROR,
-          'زمان انتظار برای پاسخ سرور به پایان رسید',
+          ErrorSeverity.HIGH,
+          Domain.API,
           { ...context, url }
         );
       }
     }
-    
+
     // Generic network error
     return new AppError(
+      'Network error',
       ErrorCode.NETWORK_ERROR,
-      'خطا در اتصال به سرور',
+      ErrorSeverity.HIGH,
+      Domain.API,
       { ...context, url }
     );
   }
@@ -458,11 +480,10 @@ ${level}] ${message}`;
    * Transform HTTP response to AppError
    */
   fromHttpResponse(response: Response, context: ErrorContext = {}): AppError {
-    return AppError.fromHttpStatus(
-      response.status,
-      response.statusText || `HTTP ${response.status}`,
-      { ...context, url: response.url }
-    );
+    return AppError.fromHttpStatus(response.status, response.statusText || `HTTP ${response.status}`, {
+      ...context,
+      url: response.url,
+    });
   }
 
   // ============================================================================
@@ -522,7 +543,7 @@ ${level}] ${message}`;
       window.onerror = (message, source, lineno, colno, error) => {
         const appError = error 
           ? AppError.fromUnknown(error, { source, line: String(lineno), column: String(colno) })
-          : new AppError(ErrorCode.UNKNOWN_ERROR, String(message), { source, line: String(lineno), column: String(colno) });
+          : new AppError(String(message), ErrorCode.UNKNOWN_ERROR, ErrorSeverity.HIGH, Domain.GENERAL, { source, line: String(lineno), column: String(colno) });
         
         this.logError(appError);
         this.trackError(appError);

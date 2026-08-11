@@ -93,7 +93,6 @@ async def test_health_checker_all():
     assert "core" in results
     assert "graph" in results
     assert "agents" in results
-    assert "self_improve" in results
     
     # Check overall status
     assert results["status"] in ["HEALTHY", "DEGRADED", "FAILED"]

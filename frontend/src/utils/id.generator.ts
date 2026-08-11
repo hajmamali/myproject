@@ -1,27 +1,34 @@
 /**
  * ID Generator Utility
- * 
- * Generates unique IDs for various purposes
+ * Generates unique identifiers for various entities
  */
 
 export class IdGenerator {
-  private static counter: Record<string, number> = {};
-
-  static generate(prefix: string = 'id'): string {
-    const count = (this.counter[prefix] || 0) + 1;
-    this.counter[prefix] = count;
-    
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 8);
-    
-    return `${prefix}_${timestamp}_${random}_${count}`;
+  static generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 
-  static reset(prefix?: string): void {
-    if (prefix) {
-      delete this.counter[prefix];
-    } else {
-      this.counter = {};
-    }
+  static generateRequestId(): string {
+    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  static generateTraceId(): string {
+    return `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  static generateJobId(): string {
+    return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  static generateDocumentId(): string {
+    return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  static generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

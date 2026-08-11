@@ -9,7 +9,7 @@ import {
   ToastContainer,
   registerToastContainer,
 } from "./shared/errors";
-import CommandPalette, { useCommandPalette } from "./components/CommandPalette";
+import CommandPalette from "./components/CommandPalette";
 import AppLayout from "./components/AppLayout";
 import StudioLayout from "./components/StudioLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -35,6 +35,11 @@ const KnowledgeGraphCenter = lazy(() => import("./pages/KnowledgeGraphCenter"));
 
 // Governance Center - The heart of MahouN!
 const GovernanceCenter = lazy(() => import("./pages/GovernanceCenter"));
+const AuditCenter = lazy(() => import("./components/AuditCenter"));
+const FailClosedMonitor = lazy(() => import("./components/FailClosedMonitor"));
+const MutationAuthorization = lazy(() => import("./components/MutationAuthorization"));
+const DatasetBrowser = lazy(() => import("./components/DatasetBrowser"));
+const DatasetUploader = lazy(() => import("./components/DatasetUploader"));
 
 // Create React Query client with governance integration
 const queryClient = new QueryClient({
@@ -60,7 +65,7 @@ const queryClient = new QueryClient({
 // Enhanced loading fallback with governance context
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-955">
+    <div className="flex items-center justify-center min-h-screen bg-slate-950">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-700 mx-auto mb-4"></div>
         <p className="text-slate-400">بارگذاری سیستم ماحون...</p>
@@ -100,7 +105,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
 function App() {
-  const commandPalette = useCommandPalette();
+  // const commandPalette = useCommandPalette();
 
   // Initialize error handling service
   useEffect(() => {
@@ -152,7 +157,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <CommandPalette isOpen={commandPalette.isOpen} onClose={commandPalette.close} />
+            <CommandPalette />
             <ToastContainer ref={toastContainerRef} position="top-right" maxToasts={5} />
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
@@ -260,14 +265,22 @@ function App() {
                     } 
                   />
 
-                  {/* Dummy placeholder for Dataset Engineering */}
+                  {/* Dataset Engineering */}
                   <Route 
                     path="datasets" 
                     element={
-                      <div className="p-8 text-slate-300">
-                        <h2 className="text-2xl font-bold mb-4 text-white">Dataset Engineering</h2>
-                        <p className="text-slate-400">پنل مدیریت دیتاست‌ها و تولید خودکار داده‌های آموزشی در حال توسعه...</p>
-                      </div>
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <DatasetBrowser />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="datasets/upload" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.WRITE]}>
+                        <DatasetUploader />
+                      </ProtectedRoute>
                     } 
                   />
                   
@@ -286,7 +299,7 @@ function App() {
                     path="training" 
                     element={
                       <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
-                        <TrainingDashboard onStartTraining={async () => {}} />
+                        <TrainingDashboard />
                       </ProtectedRoute>
                     } 
                   />
@@ -327,6 +340,34 @@ function App() {
                     element={
                       <ProtectedRoute requiredPermissions={[Permission.READ]}>
                         <GovernanceCenter />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Governance Sub-routes */}
+                  <Route 
+                    path="governance/audit" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <AuditCenter />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="governance/fail-closed" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <FailClosedMonitor />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="governance/mutations" 
+                    element={
+                      <ProtectedRoute requiredPermissions={[Permission.READ]}>
+                        <MutationAuthorization />
                       </ProtectedRoute>
                     } 
                   />
