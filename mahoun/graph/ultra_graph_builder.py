@@ -64,9 +64,8 @@ def _get_graph_quality_validator():
     return None, None
 
 
-# Ensure _VALIDATION_AVAILABLE is initialized as a boolean for backward compatibility
-# This must be called at module level to ensure the flag is set
-_check_validation_available()
+# Note: _VALIDATION_AVAILABLE is initialized lazily via _check_validation_available()
+# when first accessed. No module-level call to avoid circular import warnings.
 
 try:
     import numpy as np
@@ -553,7 +552,7 @@ class UltraGraphBuilder:
         }
 
         # Run validation if enabled and available
-        if enable_validation and _VALIDATION_AVAILABLE:
+        if enable_validation and _check_validation_available():
             if governance_context is None:
                 error_msg = "Validation requested but no governance_context provided. Governance context is required for graph validation to ensure audit trail and compliance."
                 logger.error(f"❌ {error_msg}")
