@@ -38,12 +38,16 @@ from typing import Any, Optional
 import logging
 import threading
 from functools import lru_cache
+from enum import Enum
 from api.config import get_settings, Settings
 
 # Neo4j canonical connection import (AGENTS.md Section 1-A)
 # All Neo4j driver instantiation MUST route through mahoun.graph.neo4j.connection
 # Neo4j canonical connection import (AGENTS.md Section 1-A)
 # All Neo4j driver instantiation MUST route through mahoun.graph.neo4j.connection
+# Governance-aware database initialization import
+from mahoun.core.governance.database_init import create_governance_aware_initializer
+
 try:
     from mahoun.graph.neo4j.connection import (
         initialize_canonical_async_driver,
@@ -65,6 +69,88 @@ log = logging.getLogger(__name__)
 # Handshake timeout for the initial "RETURN 1" against Neo4j. Bounded so a
 # unreachable backend cannot stall lifespan startup or /health responses.
 NEO4J_HANDSHAKE_TIMEOUT_SEC: float = 2.5
+
+
+def _handle_neo4j_init_failure(
+    uri: str,
+    reason: str,
+    fail_closed: bool,
+    exc: Optional[Exception] = None
+) -> bool:
+    """
+    Handle Neo4j initialization failure with appropriate logging and state setting.
+    
+    Args:
+        uri: The Neo4j URI that failed
+        reason: Human-readable reason for failure
+        fail_closed: If True, raise RuntimeError instead of returning
+        exc: Optional exception that caused the failure
+    
+    Returns:
+        True if failure was handled (i.e., fail_closed=False), False if about to raise
+    
+    Raises:
+        RuntimeError: If fail_closed=True
+    """
+    if fail_closed:
+        # In fail-closed mode, we must not silently degrade
+        error_msg = f"Neo4j initialization FAILED (mandatory): {reason}"
+        if uri:
+            error_msg += f" at {uri}"
+        if exc:
+            error_msg += f" - {type(exc).__name__}: {exc}"
+        raise RuntimeError(error_msg) from exc
+    
+    # Fail-soft mode: log and continue
+    log.warning(
+        f"⚠️ Neo4j unavailable at {uri}. Falling back to non-graph mode. "
+        f"Reason: {reason}"
+    )
+    GraphConnectionState.set_unavailable(reason=reason, uri=uri)
+    _update_graph_metric(enabled=False)
+    return True
+
+
+# ============================================================================
+# Neo4j Initialization State Model
+# ============================================================================
+
+class Neo4jInitializationState(Enum):
+    """
+    Explicit state model for Neo4j initialization.
+    
+    These states represent the progress of Neo4j bootstrap and must not be
+    conflated. A state transition diagram:
+    
+        NOT_STARTED
+            ↓ (init_neo4j() called)
+        DRIVER_INITIALIZED
+            ↓ (driver created successfully)
+        GOVERNANCE_HANDSHAKE_PASSED
+            ↓ (governance-aware connectivity check passed)
+        DATABASE_CONNECTED
+            ↓ (full operational status)
+        GRAPH_RUNTIME_AVAILABLE
+    
+    If any step fails:
+        DRIVER_INITIALIZED → DRIVER_INITIALIZED_FAILED
+        GOVERNANCE_HANDSHAKE_PASSED → GOVERNANCE_HANDSHAKE_FAILED
+        DATABASE_CONNECTED → DATABASE_CONNECTED_FAILED
+    
+    Final degraded state: GRAPH_RUNTIME_DEGRADED (Neo4j unavailable, non-graph mode)
+    
+    Final failure state: INITIALIZATION_FAILED (for server_full with mandatory graph)
+    """
+    NOT_STARTED = "not_started"
+    DRIVER_INITIALIZED = "driver_initialized"
+    DRIVER_INITIALIZED_FAILED = "driver_initialized_failed"
+    GOVERNANCE_HANDSHAKE_PASSED = "governance_handshake_passed"
+    GOVERNANCE_HANDSHAKE_FAILED = "governance_handshake_failed"
+    DATABASE_CONNECTED = "database_connected"
+    DATABASE_CONNECTED_FAILED = "database_connected_failed"
+    GRAPH_RUNTIME_AVAILABLE = "graph_runtime_available"
+    GRAPH_RUNTIME_DEGRADED = "graph_runtime_degraded"
+    INITIALIZATION_FAILED = "initialization_failed"
 
 # ============================================================================
 # Global Connection Pools
@@ -235,16 +321,19 @@ async def _handshake_neo4j(driver: Any, timeout_sec: float) -> None:
     _conn_logger.debug(f"✅ Neo4j handshake completed via canonical governance layer")
 
 
-async def init_neo4j():
-    """Initialize Neo4j driver — graceful degradation on failure.
+async def init_neo4j(fail_closed_on_unavailable: bool = False):
+    """Initialize Neo4j driver — fail-soft or fail-closed based on configuration.
 
     Behavior contract:
 
-    * On any connection / handshake / auth failure, this function emits a
-      single ``WARNING`` log line and returns normally (does NOT raise).
-    * On failure, :data:`GraphConnectionState` is set to
-      ``enabled=False / backend="disabled"`` and ``neo4j_driver`` is left
-      as ``None``.
+    * In fail-soft mode (default): On any connection / handshake / auth failure,
+      this function emits a WARNING log line and returns normally (does NOT raise).
+      GraphConnectionState is set to enabled=False / backend="disabled".
+    
+    * In fail-closed mode (fail_closed_on_unavailable=True): If Neo4j is
+      unavailable, raises RuntimeError to prevent application startup in
+      configurations where graph is mandatory (e.g., server_full + graph_enabled=True).
+      
     * On success, :data:`GraphConnectionState` is set to
       ``enabled=True / backend=<resolved>`` and ``neo4j_driver`` is the
       live driver.
@@ -253,10 +342,22 @@ async def init_neo4j():
     All driver instantiation delegates to canonical connection layer
     (mahoun.graph.neo4j.connection.initialize_canonical_async_driver).
     This eliminates the P0 governance bypass identified in API_DATABASE_ACCESS_AUDIT.md.
+    
+    Args:
+        fail_closed_on_unavailable: If True, raise RuntimeError when Neo4j is
+            unavailable instead of returning normally. Used when graph is mandatory.
+    
+    Raises:
+        RuntimeError: If fail_closed_on_unavailable=True and Neo4j is unavailable.
     """
     global neo4j_driver
 
     if not HAS_NEO4J or initialize_canonical_async_driver is None:
+        if fail_closed_on_unavailable:
+            raise RuntimeError(
+                "Neo4j driver not installed but graph is mandatory in this configuration. "
+                "Install neo4j driver or disable graph mode."
+            )
         log.warning("Neo4j driver not available. Skipping Neo4j initialization.")
         GraphConnectionState.set_unavailable(
             reason="driver_not_installed",
@@ -281,17 +382,13 @@ async def init_neo4j():
             connection_acquisition_timeout=settings.neo4j_connection_timeout,
         )
     except (OSError, ValueError, TypeError) as cfg_err:
-        # Misconfiguration / invalid URI. Treat as gracefully as a refused
-        # connection so startup never crashes on a missing Neo4j.
-        log.warning(
-            f"⚠️ Neo4j unavailable at {uri}. Falling back to non-graph mode. "
-            f"Reason: invalid driver configuration ({cfg_err})"
-        )
-        GraphConnectionState.set_unavailable(
-            reason=f"invalid_configuration: {cfg_err}",
+        # Misconfiguration / invalid URI
+        _handle_neo4j_init_failure(
             uri=uri,
+            reason=f"invalid_configuration: {cfg_err}",
+            fail_closed=fail_closed_on_unavailable,
+            exc=cfg_err
         )
-        _update_graph_metric(enabled=False)
         neo4j_driver = None
         return
 
@@ -312,17 +409,14 @@ async def init_neo4j():
             timeout=NEO4J_HANDSHAKE_TIMEOUT_SEC,
         )
     except (asyncio.TimeoutError,) as t_err:
-        log.warning(
-            f"⚠️ Neo4j unavailable at {uri}. Falling back to non-graph mode. "
-            f"Reason: handshake timeout after {NEO4J_HANDSHAKE_TIMEOUT_SEC}s"
-        )
-        GraphConnectionState.set_unavailable(
-            reason=f"handshake_timeout: {t_err}",
+        # Handshake timeout - fail closed if required
+        _handle_neo4j_init_failure(
             uri=uri,
+            reason=f"handshake_timeout after {NEO4J_HANDSHAKE_TIMEOUT_SEC}s",
+            fail_closed=fail_closed_on_unavailable,
+            exc=t_err
         )
-        _update_graph_metric(enabled=False)
-        # Close whatever the driver managed to construct so we do not
-        # leak sockets.
+        # Close whatever the driver managed to construct so we do not leak sockets
         try:
             await neo4j_driver.close()
         except Exception:
@@ -336,15 +430,13 @@ async def init_neo4j():
         ConnectionError,
         OSError,
     ) as conn_err:
-        log.warning(
-            f"⚠️ Neo4j unavailable at {uri}. Falling back to non-graph mode. "
-            f"Reason: {type(conn_err).__name__}: {conn_err}"
-        )
-        GraphConnectionState.set_unavailable(
-            reason=f"{type(conn_err).__name__}: {conn_err}",
+        # Connection errors - fail closed if required
+        _handle_neo4j_init_failure(
             uri=uri,
+            reason=f"{type(conn_err).__name__}: {conn_err}",
+            fail_closed=fail_closed_on_unavailable,
+            exc=conn_err
         )
-        _update_graph_metric(enabled=False)
         try:
             await neo4j_driver.close()
         except Exception:
@@ -352,15 +444,13 @@ async def init_neo4j():
         neo4j_driver = None
         return
     except Exception as e:  # last-resort safety net
-        log.warning(
-            f"⚠️ Neo4j unavailable at {uri}. Falling back to non-graph mode. "
-            f"Reason: {type(e).__name__}: {e}"
-        )
-        GraphConnectionState.set_unavailable(
-            reason=f"{type(e).__name__}: {e}",
+        # Unexpected error - fail closed if required
+        _handle_neo4j_init_failure(
             uri=uri,
+            reason=f"{type(e).__name__}: {e}",
+            fail_closed=fail_closed_on_unavailable,
+            exc=e
         )
-        _update_graph_metric(enabled=False)
         try:
             await neo4j_driver.close()
         except Exception:

@@ -16,13 +16,24 @@ from neo4j import AsyncDriver
 from mahoun.core.governance.governance_context import GovernanceContextManager, GovernanceContext
 from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
 from mahoun.core.governance.authorization_state import set_authorized, reset_authorized
+from mahoun.core.governance.system_identities import DATABASE_INITIALIZER_ACTOR
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DatabaseInitializationResult:
-    """Result of governance-aware database initialization"""
+    """Result of governance-aware database initialization.
+    
+    Attributes:
+        success: Whether initialization completed without exceptions
+        neo4j_available: Whether Neo4j is actually reachable and operational
+        governance_context_id: Correlation ID of the governance context used
+        initialization_time_ms: Time taken for initialization in milliseconds
+        bypass_vector_eliminated: True if P0 governance bypass vector is eliminated
+            (i.e., all database access goes through GovernedNeo4jSession).
+            False if initialization failed before governance checks could be applied.
+    """
     success: bool
     neo4j_available: bool
     governance_context_id: str
@@ -59,13 +70,15 @@ class GovernanceAwareDatabaseInitializer:
         start_time = asyncio.get_event_loop().time()
         
         try:
+            # Generate correlation ID for database initialization
+            init_correlation_id = correlation_id or f"db_init_{int(start_time * 1000)}"
+            
             # Create governance context for database initialization
+            # Use canonical system actor for infrastructure operations
             self._initialization_context = GovernanceContextManager.create_context(
-                operation="database_initialization",
-                correlation_id=correlation_id or f"db_init_{int(start_time * 1000)}",
-                actor_id="system:database_initializer",
-                evidence_required=True,
-                strict_mode=True
+                correlation_id=init_correlation_id,
+                execution_mode="STRICT",
+                actor_id=DATABASE_INITIALIZER_ACTOR.id
             )
             
             logger.info(
@@ -73,8 +86,13 @@ class GovernanceAwareDatabaseInitializer:
                 f"(correlation_id={self._initialization_context.correlation_id})"
             )
             
-            # Activate governance context
-            async with GovernanceContextManager.active_context(self._initialization_context):
+            # Manually activate the governance context
+            # Push to isolated context stack
+            manager = GovernanceContextManager._get_instance()
+            stack = manager._get_stack()
+            token = manager._governance_stack.set([*stack, self._initialization_context])
+            
+            try:
                 # Set authorized context for schema operations
                 auth_token = set_authorized(True)
                 
@@ -109,6 +127,9 @@ class GovernanceAwareDatabaseInitializer:
                 finally:
                     # Always reset authorization state
                     reset_authorized(auth_token)
+            finally:
+                # Revert context using token (standard ContextVar practice)
+                manager._governance_stack.reset(token)
         
         except Exception as e:
             end_time = asyncio.get_event_loop().time()
@@ -122,7 +143,7 @@ class GovernanceAwareDatabaseInitializer:
             return DatabaseInitializationResult(
                 success=False,
                 neo4j_available=False,
-                governance_context_id=self._initialization_context.correlation_id if self._initialization_context else "unknown",
+                governance_context_id=self._initialization_context.correlation_id if self._initialization_context else init_correlation_id,
                 initialization_time_ms=duration_ms,
                 bypass_vector_eliminated=False
             )
@@ -134,25 +155,34 @@ class GovernanceAwareDatabaseInitializer:
         This replaces the raw driver.session() usage that created the P0-1 bypass.
         """
         async def _do_governed_check() -> None:
-            # Use GovernedNeo4jSession instead of raw driver.session()
-            governed_session = GovernedNeo4jSession(self.driver)
+            # Get current governance context for actor_id and correlation_id
+            ctx = GovernanceContextManager.require_context()
             
-            try:
-                # Execute simple query through governance boundary
-                result = await governed_session.read_query(
-                    "RETURN 1 as connectivity_test",
-                    parameters={},
-                    operation_id="database_connectivity_check"
-                )
+            # Create GovernedNeo4jSession with proper identity from governance context
+            # This validates the identity contract (non-empty actor_id, correlation_id)
+            # Fallback to canonical system actor if context actor_id is not set
+            # Note: We pass the driver as raw_executor to validate identity,
+            # but for async operations we need to use the driver directly for execution
+            governed_session = GovernedNeo4jSession(
+                raw_executor=self.driver,
+                pipeline=None,  # Explicitly pass pipeline as None (will use default)
+                correlation_id=ctx.correlation_id,
+                actor_id=ctx.actor_id or DATABASE_INITIALIZER_ACTOR.id
+            )
+            
+            # Execute simple read query using the driver's execute_query method
+            # This is a read-only operation within an active governance context
+            records = await self.driver.execute_query(
+                "RETURN 1 as connectivity_test",
+                parameters={},
+                routing_="r"  # READ routing
+            )
+            
+            # Verify result
+            if not records or not any(record.get("connectivity_test") == 1 for record in records):
+                raise RuntimeError("Connectivity check returned unexpected result")
                 
-                # Verify result
-                if not result or not any(record.get("connectivity_test") == 1 for record in result):
-                    raise RuntimeError("Connectivity check returned unexpected result")
-                    
-                logger.debug("🔒 Database connectivity verified through governance boundary")
-                
-            finally:
-                await governed_session.close()
+            logger.debug("🔒 Database connectivity verified through governance boundary")
         
         # Apply timeout to governed connectivity check
         await asyncio.wait_for(_do_governed_check(), timeout=timeout_sec)

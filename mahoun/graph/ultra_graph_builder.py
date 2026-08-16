@@ -32,13 +32,41 @@ logger = logging.getLogger(__name__)
 # Optional Validation Integration
 # ============================================================================
 
-try:
-    from mahoun.graph.validation.quality_validator import GraphQualityValidator, QualityLevel
-    _VALIDATION_AVAILABLE = True
-    logger.info("✅ GraphQualityValidator available for graph validation")
-except ImportError:
-    _VALIDATION_AVAILABLE = False
-    logger.warning("⚠️ GraphQualityValidator not available, validation disabled")
+# Lazy import to avoid circular dependency
+# GraphQualityValidator imports governance components which may import this module
+_VALIDATION_AVAILABLE = None
+_VALIDATION_CHECKED = False
+
+
+def _check_validation_available():
+    """Lazy check for GraphQualityValidator availability."""
+    global _VALIDATION_AVAILABLE, _VALIDATION_CHECKED
+    if not _VALIDATION_CHECKED:
+        try:
+            from mahoun.graph.validation.quality_validator import GraphQualityValidator, QualityLevel
+            _VALIDATION_AVAILABLE = True
+            _VALIDATION_CHECKED = True
+            logger.info("✅ GraphQualityValidator available for graph validation")
+        except ImportError:
+            _VALIDATION_AVAILABLE = False
+            _VALIDATION_CHECKED = True
+            logger.warning("⚠️ GraphQualityValidator not available, validation disabled")
+    return _VALIDATION_AVAILABLE
+
+
+def _get_graph_quality_validator():
+    """Lazy import of GraphQualityValidator."""
+    # Ensure validation is checked first so _VALIDATION_AVAILABLE is always a boolean
+    _check_validation_available()
+    if _VALIDATION_AVAILABLE:
+        from mahoun.graph.validation.quality_validator import GraphQualityValidator, QualityLevel
+        return GraphQualityValidator, QualityLevel
+    return None, None
+
+
+# Ensure _VALIDATION_AVAILABLE is initialized as a boolean for backward compatibility
+# This must be called at module level to ensure the flag is set
+_check_validation_available()
 
 try:
     import numpy as np
@@ -554,7 +582,10 @@ class UltraGraphBuilder:
         Returns:
             ValidationReport from GraphQualityValidator
         """
-        if not _VALIDATION_AVAILABLE:
+        # Lazy import to avoid circular dependency
+        GraphQualityValidator, QualityLevel = _get_graph_quality_validator()
+        
+        if GraphQualityValidator is None:
             raise RuntimeError("GraphQualityValidator not available")
 
         validator = GraphQualityValidator(governance_context=governance_context)

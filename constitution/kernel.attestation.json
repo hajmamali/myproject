@@ -2,9 +2,9 @@
   "kernel_version": "1.0.0",
   "kernel_name": "mahoun_governance_kernel",
   "manifest_hash": "450a3505d324d6e199bdaa1be0f367cbf7f264263f1a98c9191712030caccb74",
-  "lock_hash": "a33afa9a3f263f559eff4f718e756257018bc57baa2aa6abdee6d1d80a27cfa8",
+  "lock_hash": "b3ebc66e0f86061769efb114c3d65f7a7a2c7e1ba401918d838f2b96797b0cc5",
   "changes_hash": "ea999aafc28a1d714ca953546fee9ce12b9dbf587112bfa77447b934261a5763",
-  "attested_at": "2026-08-14T00:19:47.493435Z",
+  "attested_at": "2026-08-16T12:35:02.538571Z",
   "approved": true,
   "verification": {
     "kernel_integrity": true,

@@ -233,10 +233,34 @@ async def lifespan(app: FastAPI):
                 logger.info("✅ PostgreSQL initialized")
 
             if enable_neo4j:
-                from api.database import init_neo4j
+                from api.database import init_neo4j, GraphConnectionState
+                from mahoun.core.runtime_config import get_runtime_settings
 
-                await init_neo4j()
-                logger.info("✅ Neo4j initialized")
+                # Determine if we should fail-closed on Neo4j unavailable
+                # In server_full mode with graph_enabled=True, graph is mandatory
+                runtime_settings = get_runtime_settings()
+                fail_closed = (
+                    runtime_settings.mode == "server_full" and
+                    runtime_settings.graph_enabled
+                )
+
+                try:
+                    await init_neo4j(fail_closed_on_unavailable=fail_closed)
+                except RuntimeError as e:
+                    # Neo4j is mandatory but unavailable - fail-closed
+                    logger.error(
+                        f"❌ Neo4j initialization FAILED (mandatory in {runtime_settings.mode} mode): {e}"
+                    )
+                    raise
+
+                # Check actual Neo4j state before logging
+                if GraphConnectionState.is_available():
+                    logger.info("✅ Neo4j initialized and operational")
+                else:
+                    logger.warning(
+                        "⚠️ Neo4j driver created but handshake failed - "
+                        "running in DEGRADED NON-GRAPH mode"
+                    )
 
             if enable_redis:
                 from api.database import init_redis
