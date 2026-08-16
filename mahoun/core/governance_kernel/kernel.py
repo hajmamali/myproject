@@ -66,9 +66,10 @@ class GovernanceViolationError(Exception):
 # MUTATION AUTHORIZATION BOUNDARY
 # ============================================================================
 # The ContextVar is owned canonically by
-# mahoun.core.governance.authorization_state (single source of truth
-# per AGENTRULES.md §1 and tests/test_authorization_state_singleton.py).
-from mahoun.core.governance.authorization_state import (
+# mahoun.core.governance_kernel.authorization_state (Tier-0, single source
+# of truth per kernel.manifest.yaml §tier_0 and glmreport.md Section F).
+# Importing from the same Tier-0 package is an intra-kernel import — allowed.
+from mahoun.core.governance_kernel.authorization_state import (
     _authorized_write_ctx,
     is_authorized as _is_authorized,
     set_authorized as _set_authorized,

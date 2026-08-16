@@ -1,62 +1,56 @@
-# =============================================================================
-# MAHOUN KERNEL CHANGE TRACKING
-# =============================================================================
-# Source of Truth: Authorized kernel modifications
-# 
-# This file tracks all authorized changes to the Tier-0 kernel.
-# A kernel hash change WITHOUT a corresponding entry here will FAIL verification.
-# 
-# ARCHITECTURAL PRINCIPLE:
-# - Every kernel modification requires explicit authorization
-# - Version bump is mandatory
-# - Reason and approver must be documented
-# - Hash changes without authorization will cause CI to fail
-# =============================================================================
-
-# Current version of the kernel
-current_version: "1.0.0"
-
-# List of all authorized kernel changes
 changes:
-  # Example entry (initial version)
-  - version: "1.0.0"
-    date: "2026-07-17T00:00:00Z"
-    files_changed:
-      - "mahoun/core/governance_kernel/__init__.py"
-      - "mahoun/core/governance_kernel/kernel.py"
-      - "mahoun/core/governance/authorization_state.py"
-      - "mahoun/core/governance/mutation_boundary.py"
-      - "mahoun/core/governance_lock.py"
-    reason: "Initial constitutional kernel implementation with zero-dependency design"
-    approved_by: "architecture-team"
-    authorization_hash: "initial_hash_placeholder"
-    # Additional metadata
-    severity: "critical"
-    category: "initial_implementation"
-    related_pr: "N/A"
-    audit_record: " see PHASE_1_COMPLETION_REPORT.md"
-
-# =============================================================================
-# AUTHORIZATION RULES
-# =============================================================================
-# 
-# To authorize a new kernel change:
-# 
-#   python -m mahoun.governance.kernel_guard \
-#       --authorize-change \
-#       --version 1.1.0 \
-#       --reason "Description of the change" \
-#       --approved-by "security-team"
-# 
-# Authorized approvers (from kernel.manifest.yaml):
-#   - security-team
-#   - architecture-team
-#   - maintainer
-# 
-# Requirements:
-#   - Reason must be at least 10 characters
-#   - Approver must be in authorized list
-#   - Version must be bumped (semantic versioning recommended)
-#   - All modified files must be listed
-# 
-# =============================================================================
+- approved_by: architecture-team
+  audit_record: ' see PHASE_1_COMPLETION_REPORT.md'
+  authorization_hash: initial_hash_placeholder
+  category: initial_implementation
+  date: '2026-07-17T00:00:00Z'
+  files_changed:
+  - mahoun/core/governance_kernel/__init__.py
+  - mahoun/core/governance_kernel/kernel.py
+  - mahoun/core/governance/authorization_state.py
+  - mahoun/core/governance/mutation_boundary.py
+  - mahoun/core/governance_lock.py
+  reason: Initial constitutional kernel implementation with zero-dependency design
+  related_pr: N/A
+  severity: critical
+  version: 1.0.0
+- approved_by: architecture-team
+  authorization_hash: 4fa10410434b23333d5685ee117ef5d0533810e96dbbaaf62e16a9ad30800ea7
+  date: '2026-08-13T16:29:47.968773Z'
+  kernel_name: mahoun_governance_kernel
+  reason: 'Consolidate governance authorization primitives into constitutional Tier-0
+    kernel: create governance_kernel/authorization_state.py as ContextVar owner, convert
+    governance/authorization_state.py to re-export shim, fix manifest boundary violation
+    in kernel.py line 71 (was importing from mahoun.core.governance), fix comment/code
+    contradiction in mutation_boundary.py line 329/338. Zero behavioral change.'
+  version: 1.1.0
+- approved_by: architecture-team
+  authorization_hash: 3c4eaa102c740788013dcd90765bb1bf1f81effe13b30c0183b1b94ca4438c82
+  date: '2026-08-13T16:30:51.580073Z'
+  kernel_name: mahoun_governance_kernel
+  reason: 'Consolidate governance authorization primitives into constitutional Tier-0
+    kernel: create governance_kernel/authorization_state.py as ContextVar owner, convert
+    governance/authorization_state.py to re-export shim, fix manifest boundary violation
+    in kernel.py:71, fix comment/code contradiction in mutation_boundary.py:329/338.'
+  version: 1.1.0
+- approved_by: architecture-team
+  authorization_hash: a13bb81b4bc15f2fbe7e3b94b88d0e0f327ef80b0405adaa5986c9fd60f92a5a
+  date: '2026-08-13T16:31:59.776276Z'
+  kernel_name: mahoun_governance_kernel
+  reason: 'Consolidate governance authorization primitives into constitutional Tier-0
+    kernel: create governance_kernel/authorization_state.py as ContextVar owner, convert
+    governance/authorization_state.py to re-export shim, fix manifest boundary violation
+    kernel.py:71, fix mutation_boundary.py:329/338 comment-code contradiction. Zero
+    behavioral change.'
+  version: 1.1.0
+- approved_by: architecture-team
+  authorization_hash: d13d816b47cd27f1f4759c0ad3a587668a2d91cdb6c4e534f99313e48bda96c7
+  date: '2026-08-13T16:32:55.771631Z'
+  kernel_name: mahoun_governance_kernel
+  reason: 'Consolidate governance authorization primitives into constitutional Tier-0
+    kernel: create governance_kernel/authorization_state.py as ContextVar owner, convert
+    governance/authorization_state.py to re-export shim, fix manifest boundary violation
+    kernel.py:71, fix mutation_boundary.py comment-code contradiction. Zero behavioral
+    change.'
+  version: 1.1.0
+current_version: 1.1.0

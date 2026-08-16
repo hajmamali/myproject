@@ -37,6 +37,52 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# ============================================================================
+# Optional Chunking Integration
+# ============================================================================
+
+try:
+    from mahoun.pipelines.ingestion.enhanced_chunker import EnhancedChunker, ChunkingConfig
+    _CHUNKER_AVAILABLE = True
+    logger.info("✅ EnhancedChunker available for document chunking")
+except ImportError:
+    _CHUNKER_AVAILABLE = False
+    logger.warning("⚠️ EnhancedChunker not available, chunking disabled")
+
+# ============================================================================
+# Optional Metadata Extraction Integration
+# ============================================================================
+
+try:
+    from mahoun.pipelines.ingestion.metadata_extractor import MetadataExtractor
+    _METADATA_EXTRACTOR_AVAILABLE = True
+    logger.info("✅ MetadataExtractor available for document metadata extraction")
+except ImportError:
+    _METADATA_EXTRACTOR_AVAILABLE = False
+    logger.warning("⚠️ MetadataExtractor not available, metadata extraction disabled")
+
+# ============================================================================
+# Optional Monitoring Integration
+# ============================================================================
+
+try:
+    from mahoun.graph.neo4j.monitoring import Neo4jMetrics
+    _MONITORING_AVAILABLE = True
+    logger.info("✅ Neo4jMetrics available for monitoring")
+except ImportError:
+    _MONITORING_AVAILABLE = False
+    logger.warning("⚠️ Neo4jMetrics not available, monitoring disabled")
+
+# Global monitoring instance (singleton)
+_global_metrics: Optional[Any] = None
+
+def get_global_metrics() -> Optional[Any]:
+    """Get or create global metrics instance"""
+    global _global_metrics
+    if _MONITORING_AVAILABLE and _global_metrics is None:
+        _global_metrics = Neo4jMetrics()
+    return _global_metrics
+
 
 # ============================================================================
 # Custom Exceptions for OCR Integrity Enforcement
@@ -91,6 +137,7 @@ class DocumentExtractionResult:
         error: Error message if extraction failed
         handler_used: Name of handler that processed the document
         integrity_verified: Whether cryptographic integrity was verified (production requirement)
+        chunks: Optional list of text chunks for processing (if chunking enabled)
     """
     success: bool
     text: str
@@ -98,6 +145,7 @@ class DocumentExtractionResult:
     error: Optional[str] = None
     handler_used: str = "unknown"
     integrity_verified: bool = False  # NEW: Track integrity verification status
+    chunks: Optional[List[Any]] = None  # NEW: Optional chunked text
 
 
 class BaseDocumentHandler:
@@ -621,6 +669,7 @@ class PdfHandler(BaseDocumentHandler):
             Exception: For any processing error
         """
         from mahoun.pipelines.ingestion.hardened_paddle_ocr import HardenedPaddleOCR
+        from mahoun.pipelines.ingestion.ocr_adapters import get_ocr_container, OCRContainerConfig
         from mahoun.core.environment import is_production
         
         # Generate document ID for checkpointing
@@ -629,6 +678,67 @@ class PdfHandler(BaseDocumentHandler):
             doc_hash = hashlib.sha256(f.read()).hexdigest()[:16]
         document_id = f"ocr_{doc_hash}"
         
+        # Get OCR container with ensemble enabled
+        ocr_config = OCRContainerConfig(
+            enable_ensemble=True,
+            ensemble_strategy="weighted",
+            min_engines=2,
+            enable_post_processor=True,
+            enable_pre_processor=True,
+            fail_closed=is_production()
+        )
+        ocr_container = get_ocr_container(ocr_config)
+        
+        # Try OCR Ensemble first (multi-engine voting)
+        if ocr_container.ocr_ensemble:
+            logger.info(f"🔐 Using OCR Ensemble (multi-engine voting) for doc_id: {document_id}")
+            
+            try:
+                ensemble_result = ocr_container.ocr_ensemble.process_images(
+                    images=images,
+                    document_id=document_id
+                )
+                
+                if ensemble_result and ensemble_result.success:
+                    logger.info(
+                        f"✓ OCR Ensemble successful: "
+                        f"strategy={ensemble_result.voting_strategy}, "
+                        f"confidence={ensemble_result.confidence:.2f}, "
+                        f"engines={len(ensemble_result.engine_results)}"
+                    )
+                    
+                    # Apply post-processor if available
+                    if ocr_container.post_processor:
+                        logger.info("Applying OCR post-processor")
+                        ensemble_result = ocr_container.post_processor.process(ensemble_result)
+                    
+                    # Extract text from ensemble result
+                    all_text_parts = []
+                    for page_num, text in enumerate(ensemble_result.text.split('\n=== صفحه ')):
+                        if text.strip():
+                            all_text_parts.append(f"=== صفحه {page_num + 1} ===\n{text.strip()}")
+                    
+                    full_text = "\n".join(all_text_parts)
+                    
+                    # Return with ensemble metadata
+                    return DocumentExtractionResult(
+                        text=full_text,
+                        source="ocr_ensemble",
+                        metadata={
+                            "method": "ensemble_ocr",
+                            "voting_strategy": ensemble_result.voting_strategy,
+                            "confidence": ensemble_result.confidence,
+                            "engines_used": [e.engine_name for e in ensemble_result.engine_results],
+                            "disagreements": len(ensemble_result.disagreements),
+                            "document_id": document_id
+                        }
+                    )
+                else:
+                    logger.warning(f"OCR Ensemble failed: {ensemble_result.error if ensemble_result else 'Unknown error'}")
+            except Exception as e:
+                logger.warning(f"OCR Ensemble execution failed: {e}, falling back to single-engine OCR")
+        
+        # Fallback to HardenedPaddleOCR (single-engine, production-grade)
         logger.info(f"🔐 Initializing HardenedPaddleOCR (doc_id: {document_id})")
         
         # Initialize HardenedPaddleOCR
@@ -1081,7 +1191,120 @@ class DocumentHandlerFactory:
 # Convenience Functions
 # ============================================================================
 
-def extract_document_text(file_path: str) -> DocumentExtractionResult:
+def chunk_document_text(
+    text: str,
+    doc_id: str,
+    enable_chunking: bool = True,
+    chunk_size: int = 512,
+    overlap: int = 50,
+    allow_failure: bool = False
+) -> Optional[List[Any]]:
+    """
+    Chunk document text using EnhancedChunker if available.
+    
+    Args:
+        text: Document text to chunk
+        doc_id: Document ID for chunk identification
+        enable_chunking: Whether to enable chunking
+        chunk_size: Target chunk size in characters
+        overlap: Overlap between chunks in characters
+        allow_failure: If True, return None on failure (silent failure). 
+                      If False (default), raise exception on failure (loud failure).
+        
+    Returns:
+        List of Chunk objects if chunking enabled and available, None if disabled or allow_failure=True
+        
+    Raises:
+        RuntimeError: If chunking fails and allow_failure=False
+    """
+    if not enable_chunking or not _CHUNKER_AVAILABLE:
+        return None
+    
+    try:
+        config = ChunkingConfig(
+            chunk_size=chunk_size,
+            overlap=overlap,
+            dynamic_size=True,
+            preserve_sentences=True,
+            preserve_paragraphs=True
+        )
+        chunker = EnhancedChunker(config=config)
+        chunks = chunker.chunk_document(text, doc_id)
+        logger.info(f"✅ Document {doc_id} chunked into {len(chunks)} chunks")
+        return chunks
+    except Exception as e:
+        logger.error(f"❌ Chunking failed for document {doc_id}: {e}")
+        if allow_failure:
+            # Silent failure mode - return None
+            return None
+        else:
+            # Loud failure mode - raise exception
+            raise RuntimeError(f"Chunking failed for document {doc_id}: {e}") from e
+
+
+def extract_document_metadata(
+    text: str,
+    doc_type: str = "general",
+    enable_metadata_extraction: bool = True,
+    allow_failure: bool = False
+) -> Optional[Dict[str, Any]]:
+    """
+    Extract document metadata using MetadataExtractor if available.
+    
+    Args:
+        text: Document text to extract metadata from
+        doc_type: Document type (contract, letter, report, verdict, law, etc.)
+        enable_metadata_extraction: Whether to enable metadata extraction
+        allow_failure: If True, return None on failure (silent failure).
+                      If False (default), raise exception on failure (loud failure).
+        
+    Returns:
+        Dictionary of extracted metadata if enabled and available, None if disabled or allow_failure=True
+        
+    Raises:
+        RuntimeError: If metadata extraction fails and allow_failure=False
+    """
+    if not enable_metadata_extraction or not _METADATA_EXTRACTOR_AVAILABLE:
+        return None
+    
+    try:
+        extractor = MetadataExtractor()
+        # Note: MetadataExtractor.extract is async, but we'll call it synchronously
+        # For simplicity, we'll use a simple wrapper
+        import asyncio
+        
+        def run_async_extract():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(extractor.extract(text, doc_type))
+            finally:
+                loop.close()
+        
+        metadata = run_async_extract()
+        logger.info(f"✅ Metadata extracted for document type: {doc_type}")
+        return metadata
+    except Exception as e:
+        logger.error(f"❌ Metadata extraction failed: {e}")
+        if allow_failure:
+            # Silent failure mode - return None
+            return None
+        else:
+            # Loud failure mode - raise exception
+            raise RuntimeError(f"Metadata extraction failed: {e}") from e
+
+
+def extract_document_text(
+    file_path: str,
+    enable_chunking: bool = False,
+    chunk_size: int = 512,
+    chunk_overlap: int = 50,
+    enable_metadata_extraction: bool = False,
+    doc_type: str = "general",
+    enable_monitoring: bool = True,
+    allow_chunking_failure: bool = False,
+    allow_metadata_failure: bool = False
+) -> DocumentExtractionResult:
     """
     Convenience function to extract text from any supported document format.
     
@@ -1093,19 +1316,101 @@ def extract_document_text(file_path: str) -> DocumentExtractionResult:
     
     Args:
         file_path: Path to document file
+        enable_chunking: Whether to chunk the extracted text
+        chunk_size: Target chunk size in characters
+        chunk_overlap: Overlap between chunks in characters
+        enable_metadata_extraction: Whether to extract document metadata
+        doc_type: Document type for metadata extraction (contract, letter, report, verdict, law, etc.)
+        enable_monitoring: Whether to enable performance monitoring
+        allow_chunking_failure: If True, chunking failures are silent (return None). 
+                                 If False (default), chunking failures raise exceptions (loud failure).
+        allow_metadata_failure: If True, metadata extraction failures are silent (return None).
+                                   If False (default), metadata extraction failures raise exceptions (loud failure).
         
     Returns:
         DocumentExtractionResult with extracted text and metadata
         
+    Raises:
+        RuntimeError: If chunking or metadata extraction fails and corresponding allow_*_failure=False
+        
     Example:
-        >>> result = extract_document_text("verdict.pdf")
+        >>> result = extract_document_text("verdict.pdf", enable_chunking=True, enable_metadata_extraction=True)
         >>> if result.success:
         ...     print(result.text)
         ...     print(f"Used: {result.handler_used}")
         ...     print(f"Method: {result.metadata.get('extraction_method')}")
+        ...     if result.chunks:
+        ...         print(f"Chunks: {len(result.chunks)}")
+        ...     if result.metadata.get("metadata_extracted"):
+        ...         print(f"Document number: {result.metadata.get('document_number')}")
     """
-    factory = DocumentHandlerFactory()
-    return factory.extract_text(file_path)
+    import time
+    
+    # Start monitoring if enabled
+    metrics = get_global_metrics() if enable_monitoring else None
+    start_time = time.time() if metrics else None
+    
+    try:
+        factory = DocumentHandlerFactory()
+        result = factory.extract_text(file_path)
+        
+        # Record extraction time
+        if metrics and start_time:
+            extraction_time = time.time() - start_time
+            metrics.record_query(extraction_time)
+            result.metadata["extraction_time_ms"] = extraction_time * 1000
+        
+        # Add chunking if enabled and extraction succeeded
+        if enable_chunking and result.success and result.text:
+            chunk_start = time.time() if metrics else None
+            doc_id = Path(file_path).stem
+            chunks = chunk_document_text(
+                result.text,
+                doc_id,
+                enable_chunking=True,
+                chunk_size=chunk_size,
+                overlap=chunk_overlap,
+                allow_failure=allow_chunking_failure
+            )
+            result.chunks = chunks
+            # Only set chunking metadata if chunking actually succeeded (chunks generated and not None)
+            if chunks is not None and len(chunks) > 0:
+                result.metadata["chunking_enabled"] = True
+                result.metadata["chunk_count"] = len(chunks)
+                result.metadata["chunk_size"] = chunk_size
+                result.metadata["chunk_overlap"] = chunk_overlap
+                
+                # Record chunking time
+                if metrics and chunk_start:
+                    chunking_time = time.time() - chunk_start
+                    result.metadata["chunking_time_ms"] = chunking_time * 1000
+        
+        # Add metadata extraction if enabled and extraction succeeded
+        if enable_metadata_extraction and result.success and result.text:
+            metadata_start = time.time() if metrics else None
+            extracted_metadata = extract_document_metadata(
+                result.text,
+                doc_type=doc_type,
+                enable_metadata_extraction=True,
+                allow_failure=allow_metadata_failure
+            )
+            if extracted_metadata:
+                result.metadata.update(extracted_metadata)
+                result.metadata["metadata_extracted"] = True
+                result.metadata["metadata_doc_type"] = doc_type
+            
+            # Record metadata extraction time
+            if metrics and metadata_start:
+                metadata_time = time.time() - metadata_start
+                result.metadata["metadata_extraction_time_ms"] = metadata_time * 1000
+        
+        return result
+        
+    except Exception as e:
+        # Record error if monitoring enabled
+        if metrics:
+            metrics.record_error()
+        raise
 
 
 def check_handler_availability() -> Dict[str, Dict[str, Any]]:

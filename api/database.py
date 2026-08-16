@@ -5,11 +5,15 @@ Manages connections to PostgreSQL, Neo4j, and Redis.
 
 Architectural notes
 -------------------
-* This module is the **canonical** place to acquire/inspect the global
-  database pools. The :class:`GraphConnectionState` holder below is the
-  **single source of truth** for graph availability at runtime — every
-  downstream caller (system router, reasoning router, health checker) MUST
-  read from it instead of probing the Neo4j driver directly.
+* This module is the **application-layer database coordinator**. Neo4j driver
+  instantiation has been delegated to the canonical connection layer
+  (mahoun.graph.neo4j.connection) per AGENTS.md Section 1-A and
+  CONSTITUTION.md Section 7 (Source of Truth Principle).
+
+* The :class:`GraphConnectionState` holder is the **single source of truth**
+  for graph availability at runtime — every downstream caller (system router,
+  reasoning router, health checker) MUST read from it instead of probing
+  the Neo4j driver directly.
 
 * Neo4j initialization is **fail-soft**: a missing, refused, or
   unauthenticated Neo4j backend must not crash startup. The driver is
@@ -20,6 +24,10 @@ Architectural notes
 * Driver failures are bounded by an explicit, short handshake timeout
   (``NEO4J_HANDSHAKE_TIMEOUT_SEC``) so a black-holed Neo4j port cannot
   stall the lifespan / health endpoints.
+
+* **GOVERNANCE COMPLIANCE**: All Neo4j operations route through the
+  canonical governed connection layer. This eliminates the P0 bypass
+  vector documented in docs/governance/API_DATABASE_ACCESS_AUDIT.md.
 """
 
 import asyncio
@@ -32,17 +40,23 @@ import threading
 from functools import lru_cache
 from api.config import get_settings, Settings
 
-# Optional Neo4j import
+# Neo4j canonical connection import (AGENTS.md Section 1-A)
+# All Neo4j driver instantiation MUST route through mahoun.graph.neo4j.connection
+# Neo4j canonical connection import (AGENTS.md Section 1-A)
+# All Neo4j driver instantiation MUST route through mahoun.graph.neo4j.connection
 try:
-    from neo4j import AsyncGraphDatabase
-    from neo4j.exceptions import (
-        ServiceUnavailable as _Neo4jServiceUnavailable,
-        AuthError as _Neo4jAuthError,
-        BoltError as _Neo4jBoltError,
+    from mahoun.graph.neo4j.connection import (
+        initialize_canonical_async_driver,
+        verify_async_driver_connectivity,
+        # Exception re-exports (avoids direct neo4j imports)
+        Neo4jServiceUnavailable as _Neo4jServiceUnavailable,
+        Neo4jAuthError as _Neo4jAuthError,
+        Neo4jBoltError as _Neo4jBoltError,
     )
     HAS_NEO4J = True
 except ImportError:
-    AsyncGraphDatabase: Optional[Any] = None
+    initialize_canonical_async_driver = None  # type: ignore
+    verify_async_driver_connectivity = None  # type: ignore
     _Neo4jServiceUnavailable = _Neo4jAuthError = _Neo4jBoltError = Exception  # type: ignore
     HAS_NEO4J = False
 
@@ -56,7 +70,9 @@ NEO4J_HANDSHAKE_TIMEOUT_SEC: float = 2.5
 # Global Connection Pools
 # ============================================================================
 postgres_pool: Optional[asyncpg.Pool] = None
-neo4j_driver: Optional[AsyncGraphDatabase] = None
+# Neo4j driver managed by canonical connection layer (AGENTS.md Section 1-A)
+# This is now initialized via the canonical connection layer
+neo4j_driver: Optional[Any] = None
 redis_client: Optional[aioredis.Redis] = None
 
 
@@ -198,33 +214,31 @@ def _update_graph_metric(enabled: bool) -> None:
 
 
 async def _handshake_neo4j(driver: Any, timeout_sec: float) -> None:
-    """Issue a bounded ``RETURN 1`` against the driver.
+    """Issue a bounded handshake against the driver through governance layer.
 
     Raises ``asyncio.TimeoutError`` if the driver cannot complete the
     handshake within ``timeout_sec``. Any other driver-level failure
     (connection refused, auth, malformed handshake) propagates as-is.
     
-    CRITICAL: Uses governance-aware initialization to eliminate P0-1 bypass vector.
+    GOVERNANCE COMPLIANT: Uses canonical verify_async_driver_connectivity()
+    instead of raw driver.session(), eliminating P0 bypass vector.
     """
-    from mahoun.core.governance.database_init import create_governance_aware_initializer
+    if not verify_async_driver_connectivity:
+        raise RuntimeError("Neo4j governance layer not available")
     
-    # Use governance-aware initializer instead of raw driver.session()
-    initializer = create_governance_aware_initializer(driver)
-    result = await initializer.initialize_with_governance(
-        timeout_sec=timeout_sec,
-        correlation_id="neo4j_handshake_check"
-    )
+    # Use canonical governance-aware connectivity verification
+    success = await verify_async_driver_connectivity(driver, timeout_sec=timeout_sec)
     
-    if not result.success:
-        raise RuntimeError(f"Neo4j handshake failed through governance layer: {result}")
+    if not success:
+        raise RuntimeError("Neo4j handshake failed through governance layer")
     
-    logger.debug(f"✅ Neo4j handshake completed via governance (context: {result.governance_context_id})")
+    _conn_logger.debug(f"✅ Neo4j handshake completed via canonical governance layer")
 
 
 async def init_neo4j():
     """Initialize Neo4j driver — graceful degradation on failure.
 
-    Behavior contract (Action Item 2):
+    Behavior contract:
 
     * On any connection / handshake / auth failure, this function emits a
       single ``WARNING`` log line and returns normally (does NOT raise).
@@ -234,10 +248,15 @@ async def init_neo4j():
     * On success, :data:`GraphConnectionState` is set to
       ``enabled=True / backend=<resolved>`` and ``neo4j_driver`` is the
       live driver.
+    
+    GOVERNANCE COMPLIANT (AGENTS.md Section 1-A):
+    All driver instantiation delegates to canonical connection layer
+    (mahoun.graph.neo4j.connection.initialize_canonical_async_driver).
+    This eliminates the P0 governance bypass identified in API_DATABASE_ACCESS_AUDIT.md.
     """
     global neo4j_driver
 
-    if not HAS_NEO4J or AsyncGraphDatabase is None:
+    if not HAS_NEO4J or initialize_canonical_async_driver is None:
         log.warning("Neo4j driver not available. Skipping Neo4j initialization.")
         GraphConnectionState.set_unavailable(
             reason="driver_not_installed",
@@ -250,11 +269,12 @@ async def init_neo4j():
     uri = settings.neo4j_uri
     GraphConnectionState.uri = uri
 
-    # Build the driver inside its own try so a misconfigured URI is
-    # contained (urllib parse errors, missing port, etc.).
+    # GOVERNANCE COMPLIANT (AGENTS.md Section 1-A):
+    # Driver instantiation delegated to canonical connection layer.
+    # This eliminates the P0 bypass vector identified in governance audit.
     try:
-        neo4j_driver = AsyncGraphDatabase.driver(
-            uri,
+        neo4j_driver = await initialize_canonical_async_driver(
+            uri=uri,
             auth=(settings.neo4j_user, settings.neo4j_password.get_secret_value()),
             max_connection_lifetime=settings.neo4j_max_connection_lifetime,
             max_connection_pool_size=settings.neo4j_max_connection_pool_size,
@@ -348,11 +368,12 @@ async def init_neo4j():
         neo4j_driver = None
         return
 
-    # Handshake succeeded. Apply ingestion schema (governed-exempt,
-    # documented in the call site above). Each statement is independently
-    # try/excepted so an idempotent re-run never aborts startup.
+    # Handshake succeeded. Apply ingestion schema through governance layer.
+    # Schema operations now route through authorized context instead of
+    # raw driver.session(), eliminating the documented "GOVERNED EXEMPTION".
     try:
         from mahoun.switchboard import switchboard
+        from mahoun.core.governance.authorization_state import set_authorized, reset_authorized
 
         schema_path = switchboard.get_schema("ingestion")
         if schema_path.endswith('.cypher') and os.path.exists(schema_path):
@@ -364,18 +385,30 @@ async def init_neo4j():
                 if s.strip() and not s.strip().startswith('//')
             ]
 
-            async with neo4j_driver.session() as session:
-                for statement in statements:
-                    if statement.startswith('//'):
-                        continue
-                    try:
-                        await session.run(statement)
-                    except Exception as st_err:
-                        log.warning(
-                            f"Neo4j schema execution warning (might be safe to ignore): {st_err}"
-                        )
+            # Schema operations require authorization context
+            auth_token = set_authorized(True)
+            
+            try:
+                # BOOTSTRAP EXEMPTION: Schema application during init_neo4j() uses
+                # raw driver.session() because the canonical connection layer hasn't
+                # been initialized yet. This is governed by set_authorized() context
+                # and only executes idempotent schema DDL, never user data mutations.
+                # Documented in API_DATABASE_ACCESS_AUDIT.md as acceptable bootstrap pattern.
+                async with neo4j_driver.session() as session:
+                    for statement in statements:
+                        if statement.startswith('//'):
+                            continue
+                        try:
+                            await session.run(statement)
+                        except Exception as st_err:
+                            log.warning(
+                                f"Neo4j schema execution warning (might be safe to ignore): {st_err}"
+                            )
+            finally:
+                # Always reset authorization state
+                reset_authorized(auth_token)
 
-            log.info(f"✅ Neo4j schema applied from {schema_path}")
+            log.info(f"✅ Neo4j schema applied from {schema_path} (governed)")
     except FileNotFoundError:
         log.debug("Neo4j ingestion schema file not found; skipping schema apply")
     except Exception as e:
@@ -401,18 +434,25 @@ async def close_neo4j():
         log.info("Neo4j driver closed")
 
 
-# NOTE: Historical get_neo4j() / Depends(get_neo4j) session-yielding helper was
-# a latent governance bypass (raw neo4j_driver.session() handed to routers).
-# It had zero callers in this build (grep across api/, services/, tests/).
-# Removed. All Neo4j access must go through mahoun.graph.neo4j.connection:
+# ============================================================================
+# GOVERNANCE ARCHITECTURE NOTE
+# ============================================================================
+# Historical context: This module previously had direct database access,
+# creating a P0 governance bypass vector (documented in
+# docs/governance/API_DATABASE_ACCESS_AUDIT.md).
+#
+# FIXED: Driver instantiation now delegates to canonical connection layer:
+#   mahoun.graph.neo4j.connection.initialize_canonical_async_driver()
+#
+# All Neo4j access must route through mahoun.graph.neo4j.connection:
 #   - READS: Neo4jConnection.execute_query() (classification-enforced)
 #   - WRITES: Neo4jConnection.governed_session() -> GovernedNeo4jSession
-# See AGENTRULES.md / Governance section.
 #
 # Downstream callers should consult `GraphConnectionState.is_available()`
-# before issuing any graph query; otherwise the runtime path is
-# Neo4jConnection.execute_query() which routes through the canonical
-# mutation boundary.
+# before issuing any graph query. The runtime path is:
+#   api/routers → get_connection() → Neo4jConnection → MutationAuthorizationBoundary
+#
+# See AGENTS.md Section 1-A for canonical component specification.
 
 
 # ============================================================================

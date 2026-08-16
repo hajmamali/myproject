@@ -103,8 +103,7 @@ async def get_system_health() -> Dict[str, Any]:
             connection = get_connection()
             if connection is not None:
                 # GOVERNED PATH: Neo4jConnection.execute_query() is read-only and
-                # enforces MutationAuthorizationBoundary. Replaces the previous
-                # raw neo4j_driver.session() bypass.
+                # enforces MutationAuthorizationBoundary. Uses canonical connection layer.
                 result = connection.execute_query("RETURN 1 AS test")
                 if result and result[0].get("test") == 1:
                     neo4j_status = "healthy"

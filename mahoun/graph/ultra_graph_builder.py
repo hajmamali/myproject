@@ -26,6 +26,20 @@ from datetime import datetime
 from collections import defaultdict, deque, Counter
 from types import MappingProxyType
 
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Optional Validation Integration
+# ============================================================================
+
+try:
+    from mahoun.graph.validation.quality_validator import GraphQualityValidator, QualityLevel
+    _VALIDATION_AVAILABLE = True
+    logger.info("✅ GraphQualityValidator available for graph validation")
+except ImportError:
+    _VALIDATION_AVAILABLE = False
+    logger.warning("⚠️ GraphQualityValidator not available, validation disabled")
+
 try:
     import numpy as np
 
@@ -434,6 +448,8 @@ class UltraGraphBuilder:
         entities: List[Dict],
         relationships: List[Dict],
         source_id: Optional[str] = None,
+        enable_validation: bool = False,
+        governance_context: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Build graph from entities and relationships
@@ -442,9 +458,11 @@ class UltraGraphBuilder:
             entities: List of entities
             relationships: List of relationships
             source_id: Source document/dataset ID
+            enable_validation: Whether to enable graph quality validation
+            governance_context: Governance context for validation (required if enable_validation=True)
 
         Returns:
-            Graph build result
+            Graph build result with optional validation report
         """
         # Desktop-Minimal mode: Fail-fast to prevent semantic degradation
         try:
@@ -499,12 +517,71 @@ class UltraGraphBuilder:
             f"Graph built in {build_time:.2f}s - Nodes: {metrics.total_nodes}, Edges: {metrics.total_edges}"
         )
 
-        return {
+        result = {
             "nodes": list(self.nodes.values()),
             "edges": self.edges,
             "metrics": metrics,
             "build_time": build_time,
         }
+
+        # Run validation if enabled and available
+        if enable_validation and _VALIDATION_AVAILABLE:
+            if governance_context is None:
+                error_msg = "Validation requested but no governance_context provided. Governance context is required for graph validation to ensure audit trail and compliance."
+                logger.error(f"❌ {error_msg}")
+                raise ValueError(error_msg)
+            else:
+                try:
+                    validation_report = self._validate_graph(governance_context)
+                    result["validation"] = validation_report
+                    logger.info(
+                        f"✅ Graph validation complete - Quality: {validation_report.quality_level.value}, "
+                        f"Score: {validation_report.quality_score}, Issues: {validation_report.total_issues}"
+                    )
+                except Exception as validation_error:
+                    logger.error(f"❌ Graph validation failed: {validation_error}")
+                    raise RuntimeError(f"Graph validation failed: {validation_error}") from validation_error
+
+        return result
+
+    def _validate_graph(self, governance_context: Any) -> Any:
+        """
+        Validate graph quality using GraphQualityValidator
+
+        Args:
+            governance_context: Governance context for validation
+
+        Returns:
+            ValidationReport from GraphQualityValidator
+        """
+        if not _VALIDATION_AVAILABLE:
+            raise RuntimeError("GraphQualityValidator not available")
+
+        validator = GraphQualityValidator(governance_context=governance_context)
+        
+        # Convert internal graph to format expected by validator
+        nodes_data = [
+            {
+                "id": node.id,
+                "label": node.label,
+                "node_type": node.node_type,
+                "properties": node.properties,
+            }
+            for node in self.nodes.values()
+        ]
+        
+        edges_data = [
+            {
+                "source_id": edge.source_id,
+                "target_id": edge.target_id,
+                "relationship_type": edge.relationship_type,
+                "properties": edge.properties,
+            }
+            for edge in self.edges
+        ]
+        
+        # Run validation
+        return validator.validate_graph(nodes_data, edges_data)
 
     def _process_entities(self, entities: List[Dict], source_id: Optional[str]):
         """Process entities into graph nodes"""

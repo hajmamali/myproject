@@ -144,6 +144,14 @@ export class GovernanceError extends AppError {
   }
 }
 
+export class GovernanceViolationError extends AppError {
+  constructor(message: string, context: ErrorContext = {}) {
+    super(message, ErrorCode.GOVERNANCE_VIOLATION, ErrorSeverity.CRITICAL, Domain.GOVERNANCE, context);
+    this.name = 'GovernanceViolationError';
+    Object.setPrototypeOf(this, GovernanceViolationError.prototype);
+  }
+}
+
 export class AuthenticationError extends AppError {
   constructor(message: string, context: ErrorContext = {}) {
     super(message, ErrorCode.AUTHENTICATION_ERROR, ErrorSeverity.HIGH, Domain.AUTH, context);

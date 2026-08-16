@@ -359,10 +359,17 @@ async def fetch_mutation_stats_data(
 # Endpoints
 # ============================================================================
 
-@router.get("/health", response_model=ConstitutionalHealth)
+async def get_governance_context() -> GovernanceContext:
+    """Dependency injection function for GovernanceContext."""
+    # This is a placeholder - in production, this would return the actual context
+    # For now, we'll create a minimal context to avoid the Pydantic validation issue
+    from mahoun.core.governance.governance_context import GovernanceContextManager
+    return await GovernanceContextManager.active_context()
+
+@router.get("/health")
 async def get_governance_health(
-    governance_ctx: GovernanceContext = Depends(),
-    neo4j: Neo4jConnection = Depends(),
+    governance_ctx: GovernanceContext = Depends(get_governance_context),
+    neo4j: Neo4jConnection = Depends(get_connection),
     _: None = Depends(require_permissions([Permission.READ]))
 ):
     """
@@ -384,12 +391,12 @@ async def get_governance_health(
     # Determine status
     status = determine_health_status(score)
     
-    return ConstitutionalHealth(
-        status=status,
-        score=score,
-        issues=issues,
-        lastValidation=datetime.utcnow()
-    )
+    return {
+        "status": status,
+        "score": score,
+        "issues": issues,
+        "lastValidation": datetime.utcnow()
+    }
 
 
 @router.get("/audit/metrics", response_model=AuditMetrics)

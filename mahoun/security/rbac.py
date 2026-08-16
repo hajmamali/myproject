@@ -9,6 +9,7 @@ import logging
 from typing import Dict, List, Optional, Set
 from enum import Enum
 from datetime import datetime
+from fastapi import Depends
 
 logger = logging.getLogger(__name__)
 
@@ -376,6 +377,35 @@ def require_permission(permission: Permission):
             # Check permission
             rbac = RBACManager()
             rbac.require_permission(username, permission)
+            
+            # Call function
+            return func(*args, **kwargs)
+        
+        return wrapper
+    return decorator
+
+
+def require_permissions(permissions: List[Permission]):
+    """
+    Decorator to require multiple permissions for a function
+    
+    Usage:
+        @require_permissions([Permission.READ, Permission.WRITE])
+        def update_graph(username, data):
+            ...
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Get username from kwargs or first arg
+            username = kwargs.get('username') or (args[0] if args else None)
+            
+            if not username:
+                raise ValueError("Username required for permission check")
+            
+            # Check all permissions
+            rbac = RBACManager()
+            for permission in permissions:
+                rbac.require_permission(username, permission)
             
             # Call function
             return func(*args, **kwargs)

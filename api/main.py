@@ -34,6 +34,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
 
+# Import governance context middleware (CRITICAL: creates GovernanceContext at API boundary)
+from api.middleware.governance_context import GovernanceContextMiddleware
+
 # Import authentication middleware
 from api.middleware.auth import (
     JWTAuthMiddleware,
@@ -82,6 +85,34 @@ async def lifespan(app: FastAPI):
     mode_info = f"ULTRA_MODE={'enabled' if switchboard.ultra_mode_enabled else 'disabled'}, hardware_ready={switchboard.hardware_ready}"
     logger.info(f"🔰 Switchboard initialized: {len(registered_modules)} modules registered ({mode_info})")
     logger.debug(f"🔰 Registered modules: {', '.join(registered_modules)}")
+    
+    # ============================================================================
+    # SCHEMA MIGRATION - LOW RISK
+    # ============================================================================
+    # Run schema migrations during application startup.
+    # This is a low-risk operation that can be safely executed on startup.
+    # Migrations are idempotent and can be rolled back if needed.
+    # ============================================================================
+    try:
+        from mahoun.graph.schema.migration_runner import run_schema_migrations
+        
+        # Check if migrations should be run (can be controlled via env var)
+        run_migrations = os.getenv("MAHOUN_RUN_MIGRATIONS", "false").lower() == "true"
+        
+        if run_migrations:
+            logger.info("🔄 Running schema migrations on startup...")
+            migration_results = run_schema_migrations(dry_run=False)
+            logger.info(
+                f"📊 Migration results: "
+                f"Total={migration_results['total_migrations']}, "
+                f"Applied={migration_results['applied']}, "
+                f"Failed={migration_results['failed']}"
+            )
+        else:
+            logger.info("⏭️  Schema migrations skipped (MAHOUN_RUN_MIGRATIONS=false)")
+    except Exception as migration_error:
+        logger.warning(f"⚠️ Schema migration failed (non-critical): {migration_error}")
+        # Continue startup even if migrations fail
     
     # ============================================================================
     # STARTUP VALIDATION - CRITICAL
@@ -306,6 +337,11 @@ if os.getenv("MAHOUN_ENABLE_RATE_LIMIT", "true").lower() == "true":
     window_seconds = int(os.getenv("MAHOUN_RATE_LIMIT_WINDOW", "60"))
     app.add_middleware(RateLimitMiddleware, max_requests=max_requests, window_seconds=window_seconds)
     logger.info(f"✓ Rate limiting enabled: {max_requests} requests per {window_seconds}s")
+
+# Governance context middleware (CRITICAL - creates GovernanceContext at API boundary)
+gov_execution_mode = os.getenv("MAHOUN_GOVERNANCE_EXECUTION_MODE", "STRICT")
+app.add_middleware(GovernanceContextMiddleware, execution_mode=gov_execution_mode)
+logger.info(f"✓ Governance context middleware enabled with mode: {gov_execution_mode}")
 
 
 # ============================================================================

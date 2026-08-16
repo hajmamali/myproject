@@ -91,18 +91,39 @@ actual code when the stakes are high, not as infallible.
 ### 1-A. Neo4j Database Connection
 
 **Canonical:** `mahoun/graph/neo4j/connection.py`, entry point `get_connection()`.
-**Write path:** `Neo4jConnection._raw_execute()` is the ONLY method permitted
-to execute Cypher. It invokes `MutationAuthorizationBoundary.inspect()`
-(see 1-B) before any write proceeds.
 
-**FORBIDDEN:** instantiating `GraphDatabase.driver()` anywhere outside this
-file. This has been a confirmed, repeatedly-reintroduced bypass vector —
-grep for it before every governance-adjacent change:
+**Synchronous Access:**
+- Factory: `get_connection()` returns thread-safe singleton `Neo4jConnection`
+- Write path: `Neo4jConnection._raw_execute()` is the ONLY method permitted
+  to execute Cypher. It invokes `MutationAuthorizationBoundary.inspect()`
+  (see 1-B) before any write proceeds.
+
+**Asynchronous Access (API Layer Bootstrap):**
+- Factory: `initialize_canonical_async_driver(uri, auth, **config)` 
+- Verification: `verify_async_driver_connectivity(driver, timeout_sec)`
+- Wrapper: `AsyncDriverHandle` for governance-aware async operations
+- Exception re-exports: `Neo4jServiceUnavailable`, `Neo4jAuthError`, `Neo4jBoltError`
+  (eliminates need for direct `from neo4j import` in API layer)
+
+**Used by:**
+- `api/database.py`: Application bootstrap via `initialize_canonical_async_driver()`
+- All routers/services: Runtime access via `get_connection()`
+- Health checks: Via `verify_async_driver_connectivity()`
+
+**FORBIDDEN:** instantiating `GraphDatabase.driver()` or `AsyncGraphDatabase.driver()`
+anywhere outside this file. This has been a confirmed, repeatedly-reintroduced
+bypass vector — grep for it before every governance-adjacent change:
 ```bash
-grep -rn "GraphDatabase.driver(" --include="*.py" . | grep -v test | grep -v connection.py
+grep -rn "GraphDatabase.driver(\|AsyncGraphDatabase.driver(" --include="*.py" . | grep -v test | grep -v connection.py
 ```
 This must return zero results. If it does not, treat it as a P0 finding
 per `mahoun/constitutional/constitution/SECURITY.md`, not a style issue.
+
+**Enforcement:**
+- Static analysis: `ci/enforcement/api_database_firewall.py`
+- CI gate: `ci/gates/gate_api_database_firewall.sh` (runs on every push)
+- Tests: `tests/governance/test_api_database_firewall.py`
+- Documented: `docs/governance/API_DATABASE_ACCESS_AUDIT.md`
 
 ---
 

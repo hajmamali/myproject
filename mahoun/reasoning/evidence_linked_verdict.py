@@ -10,6 +10,7 @@ ALL reasoning MUST be grounded in Knowledge Graph nodes, edges, rules, precedent
 
 import asyncio
 import hashlib
+import os
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -288,6 +289,17 @@ class EvidenceLinkedVerdictEngine:
         # This maintains zero-hallucination guarantee while respecting boundaries
         log.info("ContradictionDetector will be injected via protocols if available")
 
+        # Optional: Symbolic reasoning engine (deterministic, LLM-free reasoning)
+        self.symbolic_engine = None
+        if self.container:
+            self.symbolic_engine = self.container.symbolic_reasoner
+            if self.symbolic_engine:
+                log.info("SymbolicReasoningEngine available for deterministic inference")
+            else:
+                log.info("SymbolicReasoningEngine not available - will use standard reasoning")
+        else:
+            log.info("No container provided - SymbolicReasoningEngine unavailable")
+
         # HARDENING PATCH P08: Edge counters removed from instance state
         # to prevent cross-call bleeding. Passed as local state dict.
         # HARDENING PATCH P06: _last_excluded_nodes removed from instance state.
@@ -446,10 +458,51 @@ class EvidenceLinkedVerdictEngine:
                 for e in case_graph_edges + rule_edges + precedent_edges
             ]
 
-            symbolic_facts = bridge.graph_to_facts(all_nodes_dict, all_edges_dict)
-            log.info(f"Generated {len(symbolic_facts)} symbolic facts from the grounded KG subset.")
-            # In a full implementation, these symbolic_facts are passed to the SymbolicReasoningEngine
-            # self.symbolic_engine.assert_facts(symbolic_facts)
+            # Use advanced bridge with enhanced capabilities
+            translation_result = bridge.graph_to_facts(
+                all_nodes_dict, all_edges_dict, include_metadata=False
+            )
+            symbolic_facts = translation_result.facts
+            stats = translation_result.statistics
+
+            log.info(
+                f"Advanced bridge generated {len(symbolic_facts)} symbolic facts: "
+                f"type={stats.get('type_facts', 0)}, temporal={stats.get('temporal_facts', 0)}, "
+                f"quantitative={stats.get('quantitative_facts', 0)}, legal={stats.get('legal_facts', 0)}, "
+                f"bidirectional={stats.get('bidirectional_facts', 0)}"
+            )
+
+            # Use SymbolicReasoningEngine for deterministic, LLM-free inference
+            if self.symbolic_engine:
+                try:
+                    # Convert symbolic facts to Clause format for SymbolicReasoningEngine
+                    from mahoun.reasoning.first_order_logic import create_fact, create_constant
+
+                    for fact in symbolic_facts:
+                        # Convert Atom to Clause (fact format)
+                        terms = [create_constant(t.name) for t in fact.terms]
+                        clause = create_fact(fact.predicate, *terms)
+                        self.symbolic_engine.add_fact(clause)
+
+                    # Perform forward chaining to derive new facts
+                    from mahoun.reasoning.first_order_logic import create_atom, create_variable
+                    goal = None  # No specific goal - derive all possible facts
+                    reasoning_result = self.symbolic_engine.reason_forward(goal=goal)
+
+                    if reasoning_result.success:
+                        log.info(
+                            f"Symbolic reasoning derived {len(reasoning_result.derived_facts)} additional facts. "
+                            f"Mode: {reasoning_result.mode.value}, "
+                            f"Iterations: {reasoning_result.statistics.get('iterations', 0)}"
+                        )
+                        # Note: Derived facts could be used for additional validation
+                        # or to enrich the verdict with logically inferred conclusions
+                    else:
+                        log.warning("Symbolic reasoning failed to derive new facts")
+                except Exception as e:
+                    log.warning(f"Symbolic reasoning execution failed: {e}")
+            else:
+                log.info("SymbolicReasoningEngine not available - skipping symbolic inference")
         except Exception as e:
             log.warning(f"Failed to generate symbolic facts: {e}")
 
@@ -683,17 +736,12 @@ class EvidenceLinkedVerdictEngine:
             case_id = hashlib.sha256(case_basis.encode()).hexdigest()[:16]
         # If case_id is provided, use it directly
 
-        # We add a timestamp hour bucket to verdict_id to allow the same case
-        # to produce different verdicts across major time boundaries, but
-        # remain deterministic within the same hour for replay testing.
-        # For testing, check if MAHOUN_DETERMINISTIC_TESTING env var is set
-        import os
-
-        # HIGH-008 FIX: Always use deterministic mode
-        # RULE 12: Determinism preserved - identical inputs must produce identical results
-        # Removed time-based differentiation (hour_bucket) which broke determinism
-        # verdict_basis is now always just case_id, ensuring deterministic verdict_id generation
-        verdict_basis = case_id
+        # For verdict_id, we want to incorporate the case_id along with the
+        # specific question and facts to ensure uniqueness per verdict.
+        # This ensures that the same case_id with different question/facts
+        # produces different verdict_ids, while maintaining determinism:
+        # identical inputs (same case_id, question, facts) produce same verdict_id.
+        verdict_basis = f"{case_id}|{question}|{'|'.join(sorted(fact_texts))}"
         verdict_id = f"verdict_{hashlib.sha256(verdict_basis.encode()).hexdigest()[:12]}"
         
         # Note: MAHOUN_DETERMINISTIC_TESTING env var is no longer needed but kept for compatibility
@@ -812,6 +860,16 @@ class EvidenceLinkedVerdictEngine:
                 "This would be BLOCKED in production (EL-I3)."
             )
 
+        # REQUIRE governance context - fail-closed per CONSTITUTION Section 10
+        # RULE 14: Every execution MUST occur inside GovernanceContext
+        from mahoun.core.governance import GovernanceContextManager
+        ctx = GovernanceContextManager.require_context()
+        correlation_id = ctx.correlation_id
+
+        # Generate execution context
+        execution_id = str(uuid.uuid4())
+        execution_timestamp = datetime.now(UTC)
+
         entry = LedgerEntry(
             verdict_id=verdict_id,
             case_id=case_id,
@@ -833,8 +891,8 @@ class EvidenceLinkedVerdictEngine:
             evidence_merkle_root=None,
             graph_state_hash=None,
             # Execution identifiers
-            execution_id=None,  # Will be set when creating VerdictExecutionResult
-            correlation_id=None,  # Will be set when creating VerdictExecutionResult
+            execution_id=execution_id,
+            correlation_id=correlation_id,
         )
 
         # Validate entry (but don't commit)
@@ -868,15 +926,8 @@ class EvidenceLinkedVerdictEngine:
         # PER RULE 3: No hidden transport
         # All execution artifacts travel through explicit VerdictExecutionResult contract
         #
-        # Generate execution context
-        execution_id = str(uuid.uuid4())
-        execution_timestamp = datetime.now(UTC)
-        
-        # REQUIRE governance context - fail-closed per CONSTITUTION Section 10
-        # RULE 14: Every execution MUST occur inside GovernanceContext
-        from mahoun.core.governance import GovernanceContextManager
-        ctx = GovernanceContextManager.require_context()
-        correlation_id = ctx.correlation_id
+        # Import VerdictExecutionResult here to avoid circular imports
+        from mahoun.contracts.verdict_execution import VerdictExecutionResult
 
         # Import VerdictExecutionResult here to avoid circular imports
         from mahoun.contracts.verdict_execution import VerdictExecutionResult

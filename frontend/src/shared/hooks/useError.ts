@@ -46,6 +46,7 @@ export interface UseErrorReturn {
   handleValidationError: (message: string, field?: string, value?: unknown, context?: ErrorContext) => void;
   handleApiError: (response: Response, context?: ErrorContext) => Promise<never>;
   handleGovernanceError: (message: string, policy?: string, rule?: string, context?: ErrorContext) => void;
+  handleGovernanceViolationError: (message: string, context?: ErrorContext) => void;
   addToast: (toast: Omit<ToastMessage, 'id' | 'createdAt'>) => void;
   dismissToast: (id: string) => void;
 }
@@ -188,6 +189,25 @@ export function useError(): UseErrorReturn {
     [addToast]
   );
 
+  const handleGovernanceViolationError = useCallback(
+    (message: string, context: ErrorContext = {}) => {
+      const appError = new GovernanceViolationError(message, context);
+      setError(appError);
+      errorService.logError(appError.serialize());
+
+      addToast({
+        type: 'error',
+        title: 'Governance Violation',
+        message: appError.message,
+        severity: ErrorSeverity.CRITICAL,
+        domain: Domain.GOVERNANCE,
+        duration: 6000,
+        dismissible: true,
+      });
+    },
+    [addToast]
+  );
+
   useEffect(() => {
     return () => {
       toastTimeouts.current.forEach((timeout) => clearTimeout(timeout));
@@ -205,6 +225,7 @@ export function useError(): UseErrorReturn {
     handleValidationError,
     handleApiError,
     handleGovernanceError,
+    handleGovernanceViolationError,
     addToast,
     dismissToast,
   };

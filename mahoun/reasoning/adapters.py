@@ -28,7 +28,7 @@ Architecture:
 import logging
 import threading
 from functools import lru_cache
-from typing import Optional
+from typing import Any, Optional
 
 from mahoun.core.protocols import (
     ContradictionDetectorProtocol,
@@ -71,6 +71,8 @@ class ReasoningDependencyContainer:
         self._model_orchestrator: ModelOrchestratorProtocol | None = None
         self._reasoning_engine: ReasoningEngineProtocol | None = None
         self._contradiction_detector: ContradictionDetectorProtocol | None = None
+        self._symbolic_reasoner: Optional[Any] = None
+        self._reasoning_recorder: Optional[Any] = None
 
         # Thread locks for safe lazy initialization
         self._router_lock = threading.Lock()
@@ -78,6 +80,8 @@ class ReasoningDependencyContainer:
         self._orchestrator_lock = threading.Lock()
         self._engine_lock = threading.Lock()
         self._detector_lock = threading.Lock()
+        self._symbolic_lock = threading.Lock()
+        self._recorder_lock = threading.Lock()
 
         # Initialization flags for observability
         self._initialized: dict[str, bool] = {
@@ -86,6 +90,8 @@ class ReasoningDependencyContainer:
             "model_orchestrator": False,
             "reasoning_engine": False,
             "contradiction_detector": False,
+            "symbolic_reasoner": False,
+            "reasoning_recorder": False,
         }
 
         logger.info("ReasoningDependencyContainer initialized")
@@ -208,6 +214,62 @@ class ReasoningDependencyContainer:
                         self._contradiction_detector = None
 
         return self._contradiction_detector
+
+    @property
+    def symbolic_reasoner(self) -> Optional[Any]:
+        """
+        Get SymbolicReasoner instance (lazy singleton, optional).
+
+        Returns:
+            SymbolicReasoner instance or None if not available
+
+        SymbolicReasoner provides deterministic, LLM-free reasoning using
+        forward/backward chaining for high-stakes decisions.
+        """
+        if self._symbolic_reasoner is None:
+            with self._symbolic_lock:
+                if self._symbolic_reasoner is None:
+                    logger.info("Attempting to initialize SymbolicReasoner (lazy)")
+                    try:
+                        self._symbolic_reasoner = self._create_symbolic_reasoner()
+                        if self._symbolic_reasoner is not None:
+                            self._initialized["symbolic_reasoner"] = True
+                            logger.info("SymbolicReasoner initialized successfully")
+                        else:
+                            logger.info("SymbolicReasoner not available (optional)")
+                    except Exception as e:
+                        logger.warning(f"SymbolicReasoner initialization failed: {e}")
+                        self._symbolic_reasoner = None
+
+        return self._symbolic_reasoner
+
+    @property
+    def reasoning_recorder(self) -> Optional[Any]:
+        """
+        Get ReasoningRecorder instance (lazy singleton, optional).
+
+        Returns:
+            ReasoningRecorder instance or None if not available
+
+        ReasoningRecorder provides immutable audit trail for reasoning steps
+        with cryptographic hash-chain verification.
+        """
+        if self._reasoning_recorder is None:
+            with self._recorder_lock:
+                if self._reasoning_recorder is None:
+                    logger.info("Attempting to initialize ReasoningRecorder (lazy)")
+                    try:
+                        self._reasoning_recorder = self._create_reasoning_recorder()
+                        if self._reasoning_recorder is not None:
+                            self._initialized["reasoning_recorder"] = True
+                            logger.info("ReasoningRecorder initialized successfully")
+                        else:
+                            logger.info("ReasoningRecorder not available (optional)")
+                    except Exception as e:
+                        logger.warning(f"ReasoningRecorder initialization failed: {e}")
+                        self._reasoning_recorder = None
+
+        return self._reasoning_recorder
 
     # ========================================================================
     # Factory Methods (Override in tests for mocking)
@@ -338,6 +400,38 @@ class ReasoningDependencyContainer:
 
         return create_contradiction_detector()
 
+    def _create_symbolic_reasoner(self) -> Optional[Any]:
+        """
+        Factory method for SymbolicReasoningEngine (optional).
+
+        Returns None if not available (graceful degradation).
+
+        SymbolicReasoningEngine provides deterministic, LLM-free reasoning using
+        first-order logic, forward chaining, and backward chaining.
+        """
+        try:
+            from mahoun.reasoning.symbolic_reasoner import SymbolicReasoningEngine
+            return SymbolicReasoningEngine()
+        except ImportError as e:
+            logger.warning(f"SymbolicReasoningEngine not available: {e}")
+            return None
+
+    def _create_reasoning_recorder(self) -> Optional[Any]:
+        """
+        Factory method for ReasoningRecorder (optional).
+
+        Returns None if not available (graceful degradation).
+
+        ReasoningRecorder provides immutable audit trail for reasoning steps
+        with cryptographic hash-chain verification.
+        """
+        try:
+            from mahoun.reasoning.reasoning_recorder import ReasoningRecorder
+            return ReasoningRecorder()
+        except ImportError as e:
+            logger.warning(f"ReasoningRecorder not available: {e}")
+            return None
+
     # ========================================================================
     # Observability and Management
     # ========================================================================
@@ -364,12 +458,14 @@ class ReasoningDependencyContainer:
         """
         logger.warning("Resetting ReasoningDependencyContainer (test mode)")
 
-        with self._router_lock, self._rag_lock, self._orchestrator_lock, self._engine_lock, self._detector_lock:
+        with self._router_lock, self._rag_lock, self._orchestrator_lock, self._engine_lock, self._detector_lock, self._symbolic_lock, self._recorder_lock:
             self._query_router = None
             self._rag_service = None
             self._model_orchestrator = None
             self._reasoning_engine = None
             self._contradiction_detector = None
+            self._symbolic_reasoner = None
+            self._reasoning_recorder = None
 
             self._initialized = {k: False for k in self._initialized}
 
@@ -481,6 +577,26 @@ def get_reasoning_engine() -> ReasoningEngineProtocol:
         ReasoningEngineProtocol implementation
     """
     return get_reasoning_dependencies().reasoning_engine
+
+
+def get_symbolic_reasoner() -> Optional[Any]:
+    """
+    Get SymbolicReasoner instance (convenience accessor).
+
+    Returns:
+        SymbolicReasoner instance or None if not available
+    """
+    return get_reasoning_dependencies().symbolic_reasoner
+
+
+def get_reasoning_recorder() -> Optional[Any]:
+    """
+    Get ReasoningRecorder instance (convenience accessor).
+
+    Returns:
+        ReasoningRecorder instance or None if not available
+    """
+    return get_reasoning_dependencies().reasoning_recorder
 
 
 # ============================================================================
