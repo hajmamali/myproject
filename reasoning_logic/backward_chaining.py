@@ -222,6 +222,70 @@ class BackwardChaining:
             self._rule_index[key].append(rule)
         
         logger.debug(f"Built rule index with {len(self._rule_index)} predicate/arity combinations")
+
+    def _standardize_apart(self, rule: Rule) -> Rule:
+        """
+        Standardize apart a rule's variables to avoid name clashes.
+        
+        Creates a fresh copy of the rule with all variables renamed to unique names.
+        Uses an incrementing counter to ensure each rule application gets
+        completely fresh variable names, preventing clashes across sibling
+        rule applications in the proof tree.
+        
+        Args:
+            rule: Rule to standardize apart
+            
+        Returns:
+            New Rule with fresh variable names
+        """
+        # Increment counter for unique naming
+        self._std_counter = getattr(self, '_std_counter', 0) + 1
+        suffix = f"_std{self._std_counter}"
+        
+        # Collect all variables from conclusion and premises
+        all_vars: Dict[str, Term] = {}
+        
+        # Process conclusion
+        conclusion = self._to_atom(rule.conclusion)
+        for term in conclusion.terms:
+            if term.is_variable() and term.name not in all_vars:
+                all_vars[term.name] = term
+        
+        # Process premises
+        for premise in rule.premise:
+            premise_atom = self._to_atom(premise)
+            for term in premise_atom.terms:
+                if term.is_variable() and term.name not in all_vars:
+                    all_vars[term.name] = term
+        
+        # Generate fresh names for each variable
+        fresh_names: Dict[str, str] = {}
+        for idx, var_name in enumerate(sorted(all_vars.keys())):
+            fresh_names[var_name] = f"{var_name}{suffix}{idx}"
+        
+        # Helper to rename terms
+        def rename_term(term: Term) -> Term:
+            if term.is_variable() and term.name in fresh_names:
+                return Term(fresh_names[term.name], term.term_type, term.args)
+            return term
+        
+        # Rename conclusion terms
+        new_conclusion_terms = tuple(rename_term(t) for t in conclusion.terms)
+        new_conclusion = Atom(conclusion.predicate, new_conclusion_terms)
+        
+        # Rename premise terms
+        new_premises = []
+        for premise in rule.premise:
+            premise_atom = self._to_atom(premise)
+            new_terms = tuple(rename_term(t) for t in premise_atom.terms)
+            new_premises.append(Atom(premise_atom.predicate, new_terms))
+        
+        # Create new rule with standardized variables
+        return Rule(
+            premise=new_premises,
+            conclusion=new_conclusion,
+            metadata=rule.metadata.copy() if rule.metadata else {}
+        )
     
     def query(self, goal) -> bool:
         """
@@ -392,7 +456,9 @@ class BackwardChaining:
                 self._stats['index_misses'] += 1
             
             for rule in candidate_rules:
-                conclusion_atom = self._to_atom(rule.conclusion)
+                # Standardize apart variables to avoid name clashes between rules
+                standardized_rule = self._standardize_apart(rule)
+                conclusion_atom = self._to_atom(standardized_rule.conclusion)
                 
                 # Try to unify goal with rule conclusion
                 unified_bindings = self._unify_atoms(instantiated_goal, conclusion_atom, bindings.copy())
@@ -403,7 +469,7 @@ class BackwardChaining:
                     child_nodes = []
                     current_bindings = unified_bindings
                     
-                    for premise in rule.premise:
+                    for premise in standardized_rule.premise:
                         premise_atom = self._to_atom(premise)
                         # Apply current bindings to premise before proving
                         instantiated_premise = UnificationEngine.apply_bindings(premise_atom, current_bindings)

@@ -25,7 +25,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 # Import symbolic reasoning (our fixed FOL engine)
 from reasoning_logic import (
@@ -37,6 +37,21 @@ from reasoning_logic import (
     ParseError,
     Rule,
 )
+
+# Import Rete manager for optional high-performance reasoning
+try:
+    from mahoun.reasoning.rete_manager import (
+        SafeForwardChaining,
+        ReteManager,
+        ReteConfig,
+        ReteExecutionMetrics,
+    )
+    RETE_MANAGER_AVAILABLE = True
+except ImportError as e:
+    logger.debug(f"ReteManager not available: {e}")
+    RETE_MANAGER_AVAILABLE = False
+    SafeForwardChaining = None
+    ReteManager = None
 
 guardrails_enforcement = importlib.import_module("mahoun.guardrails.enforcement")
 guard = guardrails_enforcement.guard
@@ -76,6 +91,56 @@ except ImportError:
     NEURAL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Rete Integration Helper
+# ============================================================================
+
+def _create_forward_chaining_engine(
+    kb: KnowledgeBase, 
+    max_iterations: int = 1000, 
+    timeout_seconds: int = 0
+) -> Tuple[Any, Any]:
+    """
+    Create and run forward chaining engine with optional Rete support.
+    
+    Returns:
+        Tuple of (engine, stats_or_metrics) for backward compatibility
+    """
+    # Use SafeForwardChaining if available
+    if RETE_MANAGER_AVAILABLE and SafeForwardChaining is not None:
+        try:
+            engine = SafeForwardChaining(kb, max_iterations=max_iterations)
+            metrics = engine.run(timeout_seconds=timeout_seconds)
+            
+            # Create compatible ForwardChainingStats
+            stats = ForwardChainingStats(
+                iterations=metrics.iterations,
+                rules_fired=metrics.rules_fired,
+                facts_derived=metrics.facts_derived,
+                execution_time_ms=metrics.execution_time_ms,
+            )
+            
+            # Log Rete usage
+            if metrics.algorithm == "rete":
+                logger.debug(
+                    "Rete algorithm used",
+                    extra={
+                        "facts_derived": metrics.facts_derived,
+                        "execution_time_ms": metrics.execution_time_ms,
+                    }
+                )
+            
+            return engine, stats
+            
+        except Exception as e:
+            logger.debug(f"SafeForwardChaining failed, using traditional: {e}")
+    
+    # Fallback to traditional
+    engine = ForwardChaining(kb, max_iterations=max_iterations, use_rete=False)
+    stats = engine.run(timeout_seconds=timeout_seconds)
+    return engine, stats
 
 
 class ReasoningMode(str, Enum):
@@ -1617,10 +1682,14 @@ class UnifiedReasoningService:
             )
 
     async def _forward_inference(self, kb: KnowledgeBase, request: ReasoningRequest) -> ReasoningResponse:
-        """Forward chaining inference"""
-        engine = ForwardChaining(kb, max_iterations=1000)
-        stats = engine.run(timeout_seconds=request.timeout_seconds)
-
+        """Forward chaining inference with optional Rete algorithm support"""
+        # Use helper function for Rete integration
+        engine, stats = _create_forward_chaining_engine(
+            kb, 
+            max_iterations=1000, 
+            timeout_seconds=request.timeout_seconds
+        )
+        
         derived_facts = [str(fact) for fact in engine.derived_facts]
 
         # Build proof tree if requested
@@ -1834,8 +1903,7 @@ class UnifiedReasoningService:
             # 4. Check for unsatisfiable rule combinations
             # Run forward chaining to see if we derive contradictions
             try:
-                engine = ForwardChaining(kb, max_iterations=100)
-                engine.run(timeout_seconds=5)  # Short timeout for consistency check
+                engine, _ = _create_forward_chaining_engine(kb, max_iterations=100, timeout_seconds=5)
 
                 # Check if any derived facts contradict existing facts
                 derived_predicates = set()
@@ -2143,8 +2211,7 @@ class UnifiedReasoningService:
                     continue  # Skip unparseable rules
 
             # Run symbolic forward chaining
-            engine = ForwardChaining(kb, max_iterations=100)
-            engine.run(timeout_seconds=5)
+            engine, _ = _create_forward_chaining_engine(kb, max_iterations=100, timeout_seconds=5)
 
             # Check if neural facts are symbolically derivable
             symbolic_facts = set(str(fact) for fact in engine.derived_facts)

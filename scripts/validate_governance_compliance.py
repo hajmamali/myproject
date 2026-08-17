@@ -71,6 +71,9 @@ class GovernanceValidator:
             "node_modules/",
             ".pytest_cache/",
             "/examples/",  # Example files don't enforce governance
+            "archived_modules/",  # Archived historical examples
+            "ci/enforcement/",  # Static AST scanners that contain regex patterns
+            "ci/gates/",  # CI gates
             ".kilo/worktrees/",  # Agent Manager worktree copies (legacy path)
             ".worktrees/",  # git worktree copies (current path)
             ".test_classification_backup/",  # Backup directories

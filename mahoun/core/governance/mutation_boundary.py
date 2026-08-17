@@ -737,6 +737,7 @@ class GovernedNeo4jSession:
                 f"MATCH (n:{label} {{id: $id}}) "
                 f"SET n._deleted = true, n._deletion_timestamp = datetime(), "
                 f"n._deleted_reason = $deleted_reason, n._deleted_by = $actor_id, "
+                f"n._source_event = $_source_event, "
                 f"n.updated_at = datetime()"
             )
         else:
@@ -746,6 +747,7 @@ class GovernedNeo4jSession:
             "id": node_id,
             "deleted_reason": deleted_reason,
             "actor_id": self._actor_id,
+            "_source_event": source_event_id,
         }
 
         audit_entry = {
@@ -759,6 +761,7 @@ class GovernedNeo4jSession:
             "entity_id": node_id,
             "soft_delete": soft_delete,
             "deleted_reason": deleted_reason,
+            "source_event_id": source_event_id,
         }
         _append_governance_audit(audit_entry)
 
@@ -769,7 +772,7 @@ class GovernedNeo4jSession:
             label=label,
             entity_id=node_id,
             correlation_id=self._correlation_id,
-            payload={"id": node_id, "deleted_reason": deleted_reason},
+            payload={"id": node_id, "deleted_reason": deleted_reason, "source_event_id": source_event_id},
             pipeline_hash="delete-op",
         )
         self._ledger.append(receipt)

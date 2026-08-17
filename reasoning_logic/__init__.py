@@ -72,6 +72,18 @@ from reasoning_logic.profiler import (
     RuleProfile,
 )
 
+# Rete Algorithm - High-performance pattern matching
+from reasoning_logic.rete import (
+    ReteNetwork,
+    ReteForwardChaining,
+    ReteNode,
+    RootNode,
+    AlphaNode,
+    BetaNode,
+    ProductionNode,
+    Token,
+)
+
 
 __all__ = [
     # Core types
@@ -89,6 +101,16 @@ __all__ = [
     'BackwardChaining',
     'BackwardChainingResult',
     'UnificationEngine',
+    
+    # Rete Algorithm
+    'ReteNetwork',
+    'ReteForwardChaining',
+    'ReteNode',
+    'RootNode',
+    'AlphaNode',
+    'BetaNode',
+    'ProductionNode',
+    'Token',
     
     # Parser
     'FOLConverter',

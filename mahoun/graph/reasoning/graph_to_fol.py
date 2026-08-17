@@ -64,7 +64,7 @@ from enum import Enum
 from mahoun.reasoning.first_order_logic import Atom, Term, TermType
 
 # Import graph components
-from mahoun.graph.ultra_graph_builder import GraphNode, GraphEdge
+from mahoun.graph.ultra_graph_builder import GraphNode, GraphEdge, UltraGraphBuilder
 from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 
 logger = logging.getLogger(__name__)

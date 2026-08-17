@@ -6,6 +6,7 @@ Tests that verify the governance firewall prevents bypass attempts.
 These tests ensure that the refactored architecture remains secure.
 
 Classification: P0 - CRITICAL GOVERNANCE
+VIOLATION_INVENTORY: Tests database access firewall patterns
 """
 
 import pytest
@@ -327,8 +328,8 @@ class TestConstitutionalCompliance:
         ]
         
         for py_file in workspace.rglob('*.py'):
-            # Skip tests, virtual env, and git worktrees
-            if any(skip in str(py_file) for skip in ['test', 'venv', '.pyc', '.kilo/worktrees']):
+            # Skip tests, virtual env, git worktrees, and CI enforcement scanner definitions
+            if any(skip in str(py_file) for skip in ['test', 'venv', '.pyc', '.kilo/worktrees', 'ci/enforcement']):
                 continue
             
             # Check if this is canonical location

@@ -166,10 +166,18 @@ class OutboxWorker:
             logger.info(f"Projected Chunk {aggregate_id} ({action})")
             
         elif action == 'DELETE':
-            # Idempotent DELETE
-            session.run(
-                "MATCH (n:Chunk {id: $id}) DETACH DELETE n",
-                {"id": aggregate_id}
+            # Idempotent DELETE via canonical governed boundary.
+            # CRITICAL: session.delete_node() enforces the full governance chain:
+            #   require_context() → require_provenance() → _append_governance_audit()
+            #   → _execute_authorized() (sets/resets _authorized_write_ctx)
+            # Previous code used session.run() which does NOT exist on
+            # GovernedNeo4jSession — causing AttributeError at runtime.
+            session.delete_node(
+                label="Chunk",
+                node_id=aggregate_id,
+                soft_delete=True,
+                deleted_reason="outbox_worker_projection",
+                source_event_id=event['event_id'],
             )
             logger.info(f"Projected Chunk {aggregate_id} (DELETE)")
             

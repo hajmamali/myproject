@@ -64,7 +64,7 @@ class ReasoningDependencyContainer:
         engine = container.reasoning_engine
     """
 
-    def __init__(self):
+    def __init__(self, use_rete: bool = False):
         """Initialize container with empty state."""
         self._query_router: QueryRouterProtocol | None = None
         self._rag_service: RAGServiceProtocol | None = None
@@ -73,6 +73,7 @@ class ReasoningDependencyContainer:
         self._contradiction_detector: ContradictionDetectorProtocol | None = None
         self._symbolic_reasoner: Optional[Any] = None
         self._reasoning_recorder: Optional[Any] = None
+        self._use_rete = use_rete
 
         # Thread locks for safe lazy initialization
         self._router_lock = threading.Lock()
@@ -411,7 +412,7 @@ class ReasoningDependencyContainer:
         """
         try:
             from mahoun.reasoning.symbolic_reasoner import SymbolicReasoningEngine
-            return SymbolicReasoningEngine()
+            return SymbolicReasoningEngine(use_rete=self._use_rete)
         except ImportError as e:
             logger.warning(f"SymbolicReasoningEngine not available: {e}")
             return None

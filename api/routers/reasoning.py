@@ -18,6 +18,7 @@ Architecture:
 """
 
 import hashlib
+import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any, Dict
@@ -267,7 +268,9 @@ def get_verdict_engine() -> EvidenceLinkedVerdictEngine:
             graph_builder=graph_builder,
             knowledge_graph=knowledge_graph,
             ledger_writer=ledger_writer,
-            container=ReasoningDependencyContainer(),
+            container=ReasoningDependencyContainer(
+                use_rete=os.environ.get("MAHOUN_USE_RETE", "").lower() in ("true", "1", "enabled")
+            ),
         )
 
         log.info("Evidence-Linked Verdict Engine initialized with LedgerCommitService")
