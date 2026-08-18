@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
     from mahoun.ai.profile_manager import ProfileManager
     from mahoun.core.governance.governance_context import GovernanceContext
-    from mahoun.core.governance_kernel.kernel import (
+    from mahoun.core.governance import (
         KernelMutationBoundary,
         QueryType,
     )
@@ -264,8 +264,8 @@ class UnifiedGovernanceController:
         self.enable_audit_logging = enable_audit_logging
         self.strict_mode = strict_mode
         
-        # Import Kernel components (lazy to prevent circular deps)
-        from mahoun.core.governance_kernel.kernel import (
+        # Import Kernel components via canonical public governance package
+        from mahoun.core.governance import (
             KernelMutationBoundary,
             QueryType,
         )
@@ -331,7 +331,7 @@ class UnifiedGovernanceController:
         query_type = self.kernel_boundary.classify_query(query)
         
         # Check if mutation is authorized (Kernel context)
-        from mahoun.core.governance_kernel.kernel import is_governance_authorized
+        from mahoun.core.governance import is_governance_authorized
         mutation_authorized = is_governance_authorized()
         
         # Kernel decision

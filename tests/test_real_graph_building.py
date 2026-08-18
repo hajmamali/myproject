@@ -17,6 +17,7 @@ sys.path.insert(0, str(project_root))
 class TestRealGraphBuilder:
     """تست واقعی Graph Builder"""
     
+    @pytest.mark.p2
     def test_graph_builder_exists(self):
         """تست اینکه UltraGraphBuilder واقعاً وجود دارد"""
 
@@ -25,6 +26,7 @@ class TestRealGraphBuilder:
         assert hasattr(UltraGraphBuilder, 'build_graph')
         print("✓ UltraGraphBuilder class exists")
     
+    @pytest.mark.p2
     def test_graph_builder_can_be_created(self):
         """تست اینکه می‌توان GraphBuilder را ساخت"""
 
@@ -35,6 +37,7 @@ class TestRealGraphBuilder:
         assert hasattr(builder, 'build_graph')
         print("✓ UltraGraphBuilder can be instantiated")
     
+    @pytest.mark.p2
     def test_graph_builder_has_storage(self):
         """تست اینکه GraphBuilder storage دارد"""
 
@@ -50,6 +53,7 @@ class TestRealGraphBuilder:
 class TestRealGraphConstruction:
     """تست واقعی ساخت گراف"""
     
+    @pytest.mark.p2
     def test_can_build_simple_graph(self):
         """تست اینکه می‌توان یک گراف ساده ساخت"""
 
@@ -107,6 +111,7 @@ class TestRealGraphConstruction:
         assert len(builder.get_edges()) > 0, "Edges باید اضافه شده باشند"
         print(f"✓ Graph has {len(builder.get_edges())} edges")
     
+    @pytest.mark.p2
     def test_graph_contains_nodes(self):
         """تست اینکه گراف واقعاً nodes دارد"""
 
@@ -131,6 +136,7 @@ class TestRealGraphConstruction:
         assert node1.label == "Node 1"
         print("✓ Graph nodes are properly stored")
     
+    @pytest.mark.p2
     def test_graph_contains_edges(self):
         """تست اینکه گراف واقعاً edges دارد"""
 
@@ -156,6 +162,7 @@ class TestRealGraphConstruction:
         assert edge.relationship_type == "CONNECTS"
         print("✓ Graph edges are properly stored")
     
+    @pytest.mark.p2
     def test_graph_build_returns_metrics(self):
         """تست اینکه build_graph metrics برمی‌گرداند"""
 
@@ -175,6 +182,7 @@ class TestRealGraphConstruction:
         assert "metrics" in result or "nodes_added" in result or "total_nodes" in str(result)
         print("✓ Graph build returns metrics")
     
+    @pytest.mark.p2
     def test_graph_can_handle_multiple_entities(self):
         """تست اینکه گراف می‌تواند entities متعدد را handle کند"""
 
@@ -202,6 +210,7 @@ class TestRealGraphConstruction:
 class TestRealGraphQuery:
     """تست واقعی Query کردن گراف"""
     
+    @pytest.mark.p2
     def test_can_query_nodes(self):
         """تست اینکه می‌توان nodes را query کرد"""
 
@@ -225,6 +234,7 @@ class TestRealGraphQuery:
         assert node.label == "Query Node 1"
         print("✓ Can query nodes from graph")
     
+    @pytest.mark.p2
     def test_can_query_edges(self):
         """تست اینکه می‌توان edges را query کرد"""
 
@@ -246,6 +256,7 @@ class TestRealGraphQuery:
         assert edges[0].relationship_type == "TEST_EDGE"
         print("✓ Can query edges from graph")
     
+    @pytest.mark.p2
     def test_can_find_neighbors(self):
         """تست اینکه می‌توان neighbors یک node را پیدا کرد"""
 
@@ -274,6 +285,7 @@ class TestRealGraphQuery:
 class TestRealGraphMetrics:
     """تست واقعی Graph Metrics"""
     
+    @pytest.mark.p2
     def test_graph_has_metrics(self):
         """تست اینکه گراف metrics دارد"""
 
@@ -305,6 +317,7 @@ class TestRealGraphMetrics:
 class TestRealGraphBuildPipeline:
     """تست واقعی Graph Build Pipeline"""
     
+    @pytest.mark.p2
     def test_graph_build_pipeline_exists(self):
         """تست اینکه GraphBuildPipeline وجود دارد"""
         try:
@@ -315,6 +328,7 @@ class TestRealGraphBuildPipeline:
         except ImportError:
             pytest.skip("GraphBuildPipeline not available")
     
+    @pytest.mark.p2
     def test_graph_build_pipeline_can_be_created(self):
         """تست اینکه می‌توان GraphBuildPipeline را ساخت"""
         try:
@@ -329,6 +343,7 @@ class TestRealGraphBuildPipeline:
 class TestRealCitationGraph:
     """تست واقعی Citation Graph"""
     
+    @pytest.mark.p2
     def test_citation_graph_exists(self):
         """تست اینکه DocumentCitationGraph وجود دارد"""
         try:
@@ -339,6 +354,7 @@ class TestRealCitationGraph:
         except ImportError:
             pytest.skip("DocumentCitationGraph not available")
     
+    @pytest.mark.p2
     def test_citation_graph_can_be_created(self):
         """تست اینکه می‌توان CitationGraph را ساخت"""
         try:
@@ -353,6 +369,7 @@ class TestRealCitationGraph:
 class TestRealGraphIntegration:
     """تست واقعی Integration گراف با سایر کامپوننت‌ها"""
     
+    @pytest.mark.p2
     def test_graph_builder_integration(self):
         """تست اینکه GraphBuilder با سایر کامپوننت‌ها integrate می‌شود"""
 
@@ -399,6 +416,7 @@ class TestRealGraphIntegration:
 class TestRealGraphPersistence:
     """تست واقعی Persistence گراف"""
     
+    @pytest.mark.p2
     def test_graph_data_structure_persists(self):
         """تست اینکه داده‌های گراف persist می‌مانند"""
 

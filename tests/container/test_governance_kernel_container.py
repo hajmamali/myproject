@@ -47,6 +47,7 @@ def wait_for_kernel():
 class TestGovernanceKernelHealth:
     """Health and readiness tests"""
     
+    @pytest.mark.p2
     def test_health_endpoint_responds(self, wait_for_kernel):
         """Health endpoint should return 200 OK"""
         response = requests.get(f"{KERNEL_BASE_URL}/health", timeout=TIMEOUT)
@@ -58,6 +59,7 @@ class TestGovernanceKernelHealth:
         assert "governance_enabled" in data
         assert "version" in data
     
+    @pytest.mark.p2
     def test_health_contains_governance_info(self, wait_for_kernel):
         """Health should include governance lock status"""
         response = requests.get(f"{KERNEL_BASE_URL}/health", timeout=TIMEOUT)
@@ -67,6 +69,7 @@ class TestGovernanceKernelHealth:
         assert isinstance(data["governance_enabled"], bool)
         assert data["version"] == "1.0.0"
     
+    @pytest.mark.p2
     def test_metrics_endpoint_responds(self, wait_for_kernel):
         """Metrics endpoint should return Prometheus format"""
         response = requests.get(f"{KERNEL_BASE_URL}/metrics", timeout=TIMEOUT)
@@ -82,6 +85,7 @@ class TestGovernanceKernelHealth:
 class TestGovernanceEnforcement:
     """Governance enforcement via HTTP API"""
     
+    @pytest.mark.p2
     def test_enforce_read_query_allowed(self, wait_for_kernel):
         """READ queries should be allowed without auth"""
         payload = {
@@ -101,6 +105,7 @@ class TestGovernanceEnforcement:
         assert data["status"] == "allowed"
         assert data["query_type"] == "READ"
     
+    @pytest.mark.p2
     def test_enforce_write_query_requires_auth(self, wait_for_kernel):
         """WRITE queries without auth should be denied"""
         payload = {
@@ -120,6 +125,7 @@ class TestGovernanceEnforcement:
         assert data["status"] == "denied"
         assert data["error"] == "GovernanceError"
     
+    @pytest.mark.p2
     def test_enforce_write_query_with_auth_allowed(self, wait_for_kernel):
         """WRITE queries with proper auth should be allowed"""
         payload = {
@@ -144,6 +150,7 @@ class TestGovernanceEnforcement:
 class TestGovernanceContext:
     """Governance context management"""
     
+    @pytest.mark.p2
     def test_create_context(self, wait_for_kernel):
         """Should create governance context"""
         payload = {
@@ -170,6 +177,7 @@ class TestGovernanceContext:
 class TestValidation:
     """Response validation endpoint"""
     
+    @pytest.mark.p2
     def test_validate_endpoint_responds(self, wait_for_kernel):
         """Validation endpoint should respond (placeholder)"""
         payload = {
@@ -191,6 +199,7 @@ class TestValidation:
 class TestSecurityHardening:
     """Verify security hardening is active"""
     
+    @pytest.mark.p2
     def test_container_runs_as_non_root(self, wait_for_kernel):
         """Container should not run as root"""
         # This is verified by docker inspect, but we check the service responds
@@ -198,6 +207,7 @@ class TestSecurityHardening:
         assert response.status_code == 200
         # If it responds, container is running with proper user
     
+    @pytest.mark.p2
     def test_unknown_endpoints_return_404(self, wait_for_kernel):
         """Unknown endpoints should return 404"""
         response = requests.get(
@@ -210,6 +220,7 @@ class TestSecurityHardening:
 class TestPerformance:
     """Basic performance checks"""
     
+    @pytest.mark.p2
     def test_health_check_latency(self, wait_for_kernel):
         """Health check should respond quickly"""
         start = time.time()
@@ -219,6 +230,7 @@ class TestPerformance:
         assert response.status_code == 200
         assert latency < 100, f"Health check took {latency:.2f}ms (expected < 100ms)"
     
+    @pytest.mark.p2
     def test_enforcement_latency(self, wait_for_kernel):
         """Enforcement should be fast"""
         payload = {

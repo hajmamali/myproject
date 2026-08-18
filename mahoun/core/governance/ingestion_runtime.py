@@ -19,8 +19,8 @@ import logging
 from typing import Any
 
 from mahoun.core.exceptions import MahounError
+from mahoun.core.governance.governance_context import GovernanceContextManager
 from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
-from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,14 @@ class GovernedIngestionRuntime:
         """
         logger.info("[RUNTIME] Commencing atomic ingestion sequence for %s", doc_id)
 
-        # 1. Establish Immutable Provenance Identity
-        provenance = ProvenanceMetadata.create_evidence(
+        # 1. Establish Immutable Provenance Identity via the canonical factory.
+        #    ProvenanceMetadata.create_evidence() does not exist; the only
+        #    canonical path is GovernanceContextManager.require_provenance(),
+        #    which extracts governance_scope_id / runtime_attestation_id from
+        #    the active context and produces a fully-attested record.
+        provenance = GovernanceContextManager.require_provenance(
             source=metadata.get("source", "api_ingestion"),
-            correlation_id=doc_id,
             author=author_id,
-            evidence_hash=doc_id,  # In reality, hash of the text
         )
 
         # 2. Begin Transaction

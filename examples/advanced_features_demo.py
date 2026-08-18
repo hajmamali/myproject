@@ -86,7 +86,7 @@ def demo_ontology_gate():
     print("="*70)
     
     from mahoun.core.governance.ontology_enforcer import OntologyEnforcer
-    from mahoun.core.governance.ontology_gate_adapter import OntologyGateAdapter
+    from mahoun.infrastructure.adapters.ontology_gate_adapter import OntologyGateAdapter
     
     # ایجاد ontology gate
     enforcer = OntologyEnforcer()

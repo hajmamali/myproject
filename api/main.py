@@ -5,6 +5,11 @@ MAHOUN Self-Improvement REST API
 FastAPI-based REST API for the self-improvement system.
 """
 
+# Load .env file BEFORE any other imports so that all modules
+# (especially runtime_config / config_validator) see the env vars.
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import time
 from contextlib import asynccontextmanager
@@ -28,6 +33,17 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 # Import validation middleware
 from api.middleware.validation import InputValidationMiddleware, RateLimitMiddleware
+
+# Import governance context middleware (CRITICAL: creates GovernanceContext at API boundary)
+from api.middleware.governance_context import GovernanceContextMiddleware
+
+# Import authentication middleware
+from api.middleware.auth import (
+    JWTAuthMiddleware,
+    RequestLoggingMiddleware,
+    CORSConfigMiddleware,
+    blacklist_manager,
+)
 
 # Import search router for legal verdict search
 from api.routers import search as search_router
@@ -57,6 +73,47 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown"""
+    # ============================================================================
+    # SWITCHBOARD INITIALIZATION - CRITICAL
+    # ============================================================================
+    # Initialize Switchboard to enable BASE/ULTRA mode switching for all modules.
+    # This MUST happen before any service instantiation.
+    # ============================================================================
+    from mahoun.switchboard import switchboard
+    
+    registered_modules = list(switchboard._registry.keys())
+    mode_info = f"ULTRA_MODE={'enabled' if switchboard.ultra_mode_enabled else 'disabled'}, hardware_ready={switchboard.hardware_ready}"
+    logger.info(f"🔰 Switchboard initialized: {len(registered_modules)} modules registered ({mode_info})")
+    logger.debug(f"🔰 Registered modules: {', '.join(registered_modules)}")
+    
+    # ============================================================================
+    # SCHEMA MIGRATION - LOW RISK
+    # ============================================================================
+    # Run schema migrations during application startup.
+    # This is a low-risk operation that can be safely executed on startup.
+    # Migrations are idempotent and can be rolled back if needed.
+    # ============================================================================
+    try:
+        from mahoun.graph.schema.migration_runner import run_schema_migrations
+        
+        # Check if migrations should be run (can be controlled via env var)
+        run_migrations = os.getenv("MAHOUN_RUN_MIGRATIONS", "false").lower() == "true"
+        
+        if run_migrations:
+            logger.info("🔄 Running schema migrations on startup...")
+            migration_results = run_schema_migrations(dry_run=False)
+            logger.info(
+                f"📊 Migration results: "
+                f"Total={migration_results['total_migrations']}, "
+                f"Applied={migration_results['applied']}, "
+                f"Failed={migration_results['failed']}"
+            )
+        else:
+            logger.info("⏭️  Schema migrations skipped (MAHOUN_RUN_MIGRATIONS=false)")
+    except Exception as migration_error:
+        logger.warning(f"⚠️ Schema migration failed (non-critical): {migration_error}")
+        # Continue startup even if migrations fail
+    
     # ============================================================================
     # STARTUP VALIDATION - CRITICAL
     # ============================================================================
@@ -113,6 +170,52 @@ async def lifespan(app: FastAPI):
     # Startup
     app.state.start_time = time.time()
 
+    # ============================================================================
+    # BOOTSTRAP RUNTIME - CRITICAL (P0)
+    # ============================================================================
+    # Initialize SERVICE_REGISTRY with all required services.
+    # This MUST happen before any endpoint handling to ensure graph_retriever
+    # and other critical services are available for RAG-augmented reasoning.
+    # ============================================================================
+    try:
+        from mahoun.bootstrap.runtime import bootstrap_runtime
+        from mahoun.core.governance.mutation_boundary import set_audit_sink
+        from mahoun.infrastructure.audit.filesink import compose_default_filesystem_sink
+
+        # Wire audit sink BEFORE bootstrap — governance validation gate requires it
+        set_audit_sink(compose_default_filesystem_sink())
+        
+        bootstrap_start = time.time()
+        registry = bootstrap_runtime()
+        bootstrap_duration = time.time() - bootstrap_start
+        
+        logger.info(
+            f"✅ Runtime bootstrap completed in {bootstrap_duration*1000:.1f}ms",
+            extra={"phase": "startup", "component": "bootstrap"}
+        )
+        
+        # Verify critical services are present (fail-closed principle)
+        critical_services = ["graph_retriever", "query", "gnn"]
+        missing = [s for s in critical_services if s not in registry]
+        if missing:
+            raise RuntimeError(
+                f"FATAL: Critical services not registered: {missing}. "
+                f"Available: {list(registry.keys())}"
+            )
+        
+        # Store registry in app.state for health checks and observability
+        app.state.service_registry = registry
+        logger.info(f"📋 Registered services: {', '.join(registry.keys())}")
+        
+    except Exception as e:
+        logger.error(
+            f"❌ FATAL: Runtime bootstrap failed: {e}",
+            exc_info=True,
+            extra={"phase": "startup", "critical": True}
+        )
+        # Fail-fast: Do not start application with incomplete bootstrap
+        raise RuntimeError(f"MAHOUN bootstrap failed: {e}") from e
+
     # Check if databases are enabled
     enable_postgres = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
     enable_neo4j = os.getenv("ENABLE_NEO4J", "false").lower() == "true"
@@ -130,20 +233,54 @@ async def lifespan(app: FastAPI):
                 logger.info("✅ PostgreSQL initialized")
 
             if enable_neo4j:
-                from api.database import init_neo4j
+                from api.database import init_neo4j, GraphConnectionState
+                from mahoun.core.runtime_config import get_runtime_settings
 
-                await init_neo4j()
-                logger.info("✅ Neo4j initialized")
+                # Determine if we should fail-closed on Neo4j unavailable
+                # In server_full mode with graph_enabled=True, graph is mandatory
+                runtime_settings = get_runtime_settings()
+                fail_closed = (
+                    runtime_settings.mode == "server_full" and
+                    runtime_settings.graph_enabled
+                )
+
+                try:
+                    await init_neo4j(fail_closed_on_unavailable=fail_closed)
+                except RuntimeError as e:
+                    # Neo4j is mandatory but unavailable - fail-closed
+                    logger.error(
+                        f"❌ Neo4j initialization FAILED (mandatory in {runtime_settings.mode} mode): {e}"
+                    )
+                    raise
+
+                # Check actual Neo4j state before logging
+                if GraphConnectionState.is_available():
+                    logger.info("✅ Neo4j initialized and operational")
+                else:
+                    logger.warning(
+                        "⚠️ Neo4j driver created but handshake failed - "
+                        "running in DEGRADED NON-GRAPH mode"
+                    )
 
             if enable_redis:
                 from api.database import init_redis
 
                 await init_redis()
                 logger.info("✅ Redis initialized")
+                
+                # Initialize token blacklist with Redis
+                from api.database import redis_client
+                await blacklist_manager.initialize(redis_client)
+                logger.info("✅ Token blacklist manager initialized with Redis")
 
         except Exception as e:
             logger.error(f"❌ Failed to initialize databases: {e}")
             # Don't raise - allow app to start even if DB is unavailable
+    
+    # Initialize token blacklist manager (without Redis if not available)
+    if not enable_redis:
+        await blacklist_manager.initialize(None)
+        logger.info("✅ Token blacklist manager initialized (in-memory mode)")
 
     yield  # Application runs here
 
@@ -184,13 +321,17 @@ SECURITY_SETTINGS = load_security_settings()
 
 
 def apply_security_middleware(application):
+    # Get CORS config from helper
+    cors_config = CORSConfigMiddleware.get_cors_config()
+    
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=SECURITY_SETTINGS.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
-        expose_headers=["X-Request-ID"],
+        allow_origins=cors_config["allow_origins"],
+        allow_credentials=cors_config["allow_credentials"],
+        allow_methods=cors_config["allow_methods"],
+        allow_headers=cors_config["allow_headers"],
+        expose_headers=cors_config["expose_headers"],
+        max_age=cors_config.get("max_age", 600),
     )
 
     # Skip trusted host middleware in test environment
@@ -200,6 +341,15 @@ def apply_security_middleware(application):
 
 # Security middleware
 apply_security_middleware(app)
+
+# Request logging middleware (before auth for better debugging)
+app.add_middleware(RequestLoggingMiddleware)
+logger.info("✓ Request logging middleware enabled")
+
+# JWT Authentication middleware (if enabled)
+if os.getenv("ENABLE_JWT_AUTH", "false").lower() == "true":
+    app.add_middleware(JWTAuthMiddleware)
+    logger.info("✓ JWT authentication middleware enabled")
 
 # Input validation middleware (PR-7)
 app.add_middleware(InputValidationMiddleware)
@@ -211,6 +361,11 @@ if os.getenv("MAHOUN_ENABLE_RATE_LIMIT", "true").lower() == "true":
     window_seconds = int(os.getenv("MAHOUN_RATE_LIMIT_WINDOW", "60"))
     app.add_middleware(RateLimitMiddleware, max_requests=max_requests, window_seconds=window_seconds)
     logger.info(f"✓ Rate limiting enabled: {max_requests} requests per {window_seconds}s")
+
+# Governance context middleware (CRITICAL - creates GovernanceContext at API boundary)
+gov_execution_mode = os.getenv("MAHOUN_GOVERNANCE_EXECUTION_MODE", "STRICT")
+app.add_middleware(GovernanceContextMiddleware, execution_mode=gov_execution_mode)
+logger.info(f"✓ Governance context middleware enabled with mode: {gov_execution_mode}")
 
 
 # ============================================================================
@@ -311,6 +466,24 @@ try:
 except ImportError as e:
     logger.warning(f"Fine-tuning router not available: {e}")
 
+# Register Authentication router (CRITICAL - User authentication)
+try:
+    from api.routers import auth as auth_router
+
+    app.include_router(auth_router.router)
+    logger.info("✓ Authentication router registered at /api/v1/auth")
+except ImportError as e:
+    logger.warning(f"Authentication router not available: {e}")
+
+# Register Dashboard router (Studio + Portal dashboards)
+try:
+    from api.routers import dashboard as dashboard_router
+
+    app.include_router(dashboard_router.router)
+    logger.info("✓ Dashboard router registered at /api/v1/dashboard")
+except ImportError as e:
+    logger.warning(f"Dashboard router not available: {e}")
+
 # Register Reasoning router (CRITICAL - Core reasoning API)
 try:
     from api.routers import reasoning as reasoning_router
@@ -337,6 +510,24 @@ try:
     logger.info("✓ Enhanced health check router registered at /health/v2")
 except ImportError as e:
     logger.warning(f"Health V2 router not available: {e}")
+
+# Register Governance Center router (CRITICAL - Constitutional Compliance)
+try:
+    from api.routers import governance as governance_router
+
+    app.include_router(governance_router.router)
+    logger.info("✓ Governance Center router registered at /api/v1/governance")
+except ImportError as e:
+    logger.warning(f"Governance router not available: {e}")
+
+# Register Chat router (Legal AI Assistant)
+try:
+    from api.routers import chat as chat_router
+
+    app.include_router(chat_router.router)
+    logger.info("✓ Chat router registered at /api/v1/chat")
+except ImportError as e:
+    logger.warning(f"Chat router not available: {e}")
 
 # ============================================================================
 # Monitoring Endpoints (MUST be registered BEFORE metrics router
@@ -527,13 +718,16 @@ class RollbackRequest(BaseModel):
 
 # Health check
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     """Health check endpoint connected to the internal health system"""
     from datetime import datetime
 
     from mahoun.infrastructure.health_checker import HealthChecker
 
-    checker = HealthChecker()
+    # Pass ``app.state`` and the canonical SwitchboardRegistry so the
+    # checker can inspect pre-existing service singletons instead of
+    # constructing new ones on every /health hit (see Action Item 1).
+    checker = HealthChecker(app_state=request.app.state)
     results = await checker.check_all()
 
     # Normalize status to lowercase for consistency with test expectations
@@ -858,11 +1052,11 @@ async def get_system_status():
 
 
 @app.get("/api/v1/status/health")
-async def get_health_status():
+async def get_health_status(request: Request):
     """Get detailed health status from the internal health system"""
     from mahoun.infrastructure.health_checker import HealthChecker
 
-    checker = HealthChecker()
+    checker = HealthChecker(app_state=request.app.state)
     results = await checker.check_all()
     return results
 

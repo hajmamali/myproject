@@ -44,6 +44,8 @@ def clean_env():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_super_extreme_concurrent_contradictory_adversarial_attack(
     clean_env, tmp_path
 ):
@@ -256,6 +258,8 @@ async def test_super_extreme_concurrent_contradictory_adversarial_attack(
 
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_super_extreme_deterministic_replay_under_concurrency(tmp_path):
     """
     Test 4.2: SUPER EXTREME - Deterministic Replay Under Concurrency
@@ -372,6 +376,8 @@ async def test_super_extreme_deterministic_replay_under_concurrency(tmp_path):
 
 
 @pytest.mark.asyncio
+@pytest.mark.p1
+@pytest.mark.p2
 async def test_super_extreme_ledger_integrity_under_chaos(tmp_path):
     """
     Test 4.3: SUPER EXTREME - Ledger Integrity Under Chaos

@@ -1,135 +1,100 @@
 /**
- * AppLayout - Main Application Layout
- * 
- * Enterprise-grade layout with:
- * - Responsive sidebar navigation
- * - Mobile menu support
- * - Active route highlighting
- * - Nested routing with Outlet
+ * App Layout Component
+ * Main application layout wrapper for the user portal.
+ *
+ * Renders a responsive sidebar + header shell and surfaces nested routes
+ * through <Outlet />. Falling back to the optional children/sidebar/header
+ * props when provided directly (kept for test/fixture reuse).
  */
 
-import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import {
-  Bars3Icon,
-  XMarkIcon,
-  HomeIcon,
-  ArrowUpTrayIcon,
-  MagnifyingGlassIcon,
-  ChartBarIcon,
-  AcademicCapIcon,
-  BeakerIcon,
-  CpuChipIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+import type { ReactNode } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../store/authStore';
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
+interface AppLayoutProps {
+  children?: ReactNode;
+  sidebar?: ReactNode;
+  header?: ReactNode;
 }
 
-const navigation: NavItem[] = [
-  { name: "داشبورد", href: "/dashboard", icon: HomeIcon },
-  { name: "آپلود مدارک", href: "/upload", icon: ArrowUpTrayIcon },
-  { name: "جستجو", href: "/search", icon: MagnifyingGlassIcon },
-  { name: "تحلیل تأخیر", href: "/delay", icon: ChartBarIcon },
-  { name: "آموزش مدل", href: "/training", icon: AcademicCapIcon },
-  { name: "فاین‌تیونینگ", href: "/finetuning", icon: BeakerIcon },
-  { name: "مانیتورینگ", href: "/monitoring", icon: CpuChipIcon },
-  { name: "آزمایش‌ها", href: "/experiments", icon: Cog6ToothIcon },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: string;
+}
+
+const PORTAL_NAV: NavItem[] = [
+  { to: '/app/portal/dashboard', label: 'داشبورد', icon: '🏠' },
+  { to: '/app/portal/search', label: 'جستجوی حقوقی', icon: '🔍' },
+  { to: '/app/portal/chat', label: 'گفتگو با هوش مصنوعی', icon: '💬' },
+  { to: '/app/portal/upload', label: 'بارگذاری سند', icon: '📄' },
+  { to: '/app/portal/delay', label: 'تحلیل تأخیر', icon: '⏱' },
+  { to: '/app/portal/timeline', label: 'خط زمانی', icon: '📅' },
+  { to: '/app/portal/contract-qa', label: 'پرسش قرارداد', icon: '📑' },
 ];
 
-export default function AppLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+function SidebarNav() {
+  return (
+    <nav className="flex flex-col gap-1 p-4" aria-label="پیمایش پورتال">
+      {PORTAL_NAV.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? 'bg-primary-50 font-medium text-primary-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`
+          }
+        >
+          <span aria-hidden="true">{item.icon}</span>
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
 
-  const isActive = (href: string) => {
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+function HeaderBar({ onLogout }: { onLogout: () => void }) {
+  const { user } = useAuth();
+  return (
+    <div className="flex items-center justify-between px-4 py-3" aria-label="نوار بالا">
+      <div className="text-sm font-semibold text-slate-800">
+        {user?.name ?? user?.email ?? 'کاربر ماحون'}
+      </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+      >
+        خروج
+      </button>
+    </div>
+  );
+}
+
+export default function AppLayout({ children, sidebar, header }: AppLayoutProps) {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    void navigate('/login');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 border-l border-slate-700
-          transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0
-          ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
-        `}
-      >
-        {/* Sidebar header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold text-slate-100">ماحون</h1>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6 text-slate-400" />
-          </button>
+    <div className="flex h-screen bg-slate-50">
+      <aside className="flex w-64 flex-col border-l border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-4 py-4">
+          <h1 className="text-lg font-bold text-primary-700">ماحون</h1>
+          <p className="text-xs text-slate-500">پورتال کاربری</p>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          {navigation.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${
-                    active
-                      ? "bg-primary-700 text-white shadow-lg shadow-primary-700/50"
-                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-                  }
-                `}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar footer */}
-        <div className="p-4 border-t border-slate-700">
-          <div className="px-4 py-3 bg-slate-800 rounded-lg">
-            <p className="text-xs text-slate-400">نسخه 1.0.0</p>
-            <p className="text-xs text-slate-500 mt-1">Zero-Hallucination AI</p>
-          </div>
-        </div>
+        <div className="flex-1 overflow-auto">{sidebar ?? <SidebarNav />}</div>
       </aside>
-
-      {/* Main content */}
-      <div className="lg:mr-64">
-        {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-slate-900/95 backdrop-blur border-b border-slate-700">
-          <h1 className="text-lg font-bold text-slate-100">ماحون</h1>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Bars3Icon className="h-6 w-6 text-slate-400" />
-          </button>
-        </header>
-
-        {/* Page content */}
-        <main className="min-h-screen">
-          <Outlet />
-        </main>
+      <div className="flex flex-1 flex-col">
+        <header className="border-b border-slate-200 bg-white">{header ?? <HeaderBar onLogout={handleLogout} />}</header>
+        <main className="flex-1 overflow-auto">{children ?? <Outlet />}</main>
       </div>
     </div>
   );

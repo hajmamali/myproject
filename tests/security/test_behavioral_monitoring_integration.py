@@ -53,6 +53,7 @@ class TestMutationRateSpikeDetection:
     """Test detection of sudden spikes in mutation rate"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_normal_mutation_rate_no_alert(self, behavioral_monitor):
         """Normal mutation rate (1-2 per minute) should not trigger alert"""
         actor_id = "test-actor-1"
@@ -72,6 +73,7 @@ class TestMutationRateSpikeDetection:
             await asyncio.sleep(0.01)
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_mutation_rate_spike_triggers_alert(self, behavioral_monitor):
         """Rapid mutations (>10 per minute) should trigger anomaly"""
         actor_id = "test-actor-spike"
@@ -113,6 +115,7 @@ class TestBulkOperationDetection:
     """Test detection of bulk operations (mass delete, mass export)"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_small_operation_no_alert(self, behavioral_monitor):
         """Small operations (<10 entities) should not trigger alert"""
         anomaly = await behavioral_monitor.observe_mutation(
@@ -125,6 +128,7 @@ class TestBulkOperationDetection:
         assert anomaly is None, "Small operation should not trigger anomaly"
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_bulk_operation_triggers_medium_threat(self, behavioral_monitor):
         """Bulk operation (11-99 entities) should trigger MEDIUM threat"""
         anomaly = await behavioral_monitor.observe_mutation(
@@ -140,6 +144,7 @@ class TestBulkOperationDetection:
         assert anomaly.observed_value == 50.0
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_mass_operation_triggers_high_threat(self, behavioral_monitor):
         """Mass operation (100+ entities) should trigger HIGH threat"""
         anomaly = await behavioral_monitor.observe_mutation(
@@ -163,6 +168,7 @@ class TestOffHoursActivityDetection:
     """Test detection of suspicious off-hours activity"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_business_hours_activity_no_alert(self, behavioral_monitor):
         """Activity during business hours (9-17 UTC) should not trigger alert"""
         # Mock datetime to business hours (12:00 UTC)
@@ -185,6 +191,7 @@ class TestOffHoursActivityDetection:
             # This test validates time-of-day logic
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_off_hours_activity_with_high_rate_triggers_alert(
         self,
         behavioral_monitor,
@@ -224,6 +231,7 @@ class TestFailedAuthorizationTracking:
     """Test tracking of failed authorization attempts (privilege escalation)"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_single_auth_failure_no_alert(self, behavioral_monitor):
         """Single auth failure should not trigger anomaly"""
         anomaly = await behavioral_monitor.observe_auth_failure(
@@ -235,6 +243,7 @@ class TestFailedAuthorizationTracking:
         assert anomaly is None, "Single auth failure should not trigger anomaly"
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_multiple_auth_failures_trigger_alert(self, behavioral_monitor):
         """Multiple rapid auth failures should trigger MEDIUM+ threat"""
         actor_id = "test-actor-authfail"
@@ -261,6 +270,7 @@ class TestBehavioralProfileBuilding:
     """Test actor behavioral profile baseline construction"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_profile_created_on_first_activity(self, behavioral_monitor):
         """First activity should create behavioral profile"""
         actor_id = "test-actor-profile"
@@ -279,6 +289,7 @@ class TestBehavioralProfileBuilding:
         assert profile.total_mutations == 1
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_profile_updated_with_activity(self, behavioral_monitor):
         """Ongoing activity should update behavioral profile"""
         actor_id = "test-actor-update"
@@ -307,6 +318,7 @@ class TestIntegrationHooks:
     """Test integration hooks for governance layer"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_observe_mutation_async_hook(self):
         """Test async mutation observation hook"""
         anomaly = await observe_mutation_async(
@@ -323,6 +335,7 @@ class TestIntegrationHooks:
         )
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_observe_auth_failure_async_hook(self):
         """Test async auth failure observation hook"""
         anomaly = await observe_auth_failure_async(
@@ -334,6 +347,7 @@ class TestIntegrationHooks:
         # First failure should not trigger anomaly
         assert anomaly is None
     
+    @pytest.mark.p1
     def test_should_block_operation_logic(self):
         """Test operation blocking logic"""
         # CRITICAL threat should be blocked
@@ -371,6 +385,7 @@ class TestGracefulDegradation:
     """Test that monitoring failures do not block operations"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_disabled_monitor_returns_none(self):
         """Disabled monitor should return None (no blocking)"""
         disabled_monitor = GovernanceBehavioralMonitor(enable_monitoring=False)
@@ -385,6 +400,7 @@ class TestGracefulDegradation:
         assert anomaly is None, "Disabled monitor should not detect anomalies"
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_monitoring_exception_does_not_raise(self, behavioral_monitor):
         """Monitoring exceptions should be caught (graceful degradation)"""
         # Patch detector to raise exception

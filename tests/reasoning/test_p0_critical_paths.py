@@ -82,6 +82,7 @@ def chain_of_thought_reasoner(knowledge_graph):
 class TestEvidenceLinkedVerdictP0:
     """Test evidence linking in verdict generation."""
     
+    @pytest.mark.p0
     def test_verdict_requires_evidence_linking(self, knowledge_graph, governance_context):
         """P0: Verdict generation MUST link all conclusions to evidence."""
         engine = EvidenceLinkedVerdictEngine(knowledge_graph=knowledge_graph)
@@ -109,6 +110,7 @@ class TestEvidenceLinkedVerdictP0:
             assert step.evidence_references is not None, f"Step {step.id} missing evidence references"
             assert len(step.evidence_references) > 0, f"Step {step.id} must reference evidence"
     
+    @pytest.mark.p0
     def test_verdict_rejects_missing_evidence(self, knowledge_graph, governance_context):
         """P0: Verdict generation must REJECT when evidence is missing."""
         engine = EvidenceLinkedVerdictEngine(knowledge_graph=knowledge_graph)
@@ -124,6 +126,7 @@ class TestEvidenceLinkedVerdictP0:
                 governance_context=governance_context
             )
     
+    @pytest.mark.p0
     def test_verdict_evidence_references_resolve(self, knowledge_graph, governance_context):
         """P0: All evidence references in verdict must resolve to actual evidence."""
         engine = EvidenceLinkedVerdictEngine(knowledge_graph=knowledge_graph)
@@ -146,6 +149,7 @@ class TestEvidenceLinkedVerdictP0:
                 resolved = any(node["id"] == ref for node in evidence_nodes)
                 assert resolved, f"Evidence reference {ref} does not resolve"
     
+    @pytest.mark.p0
     def test_verdict_contradiction_detection(self, knowledge_graph, governance_context):
         """P0: Verdict engine must detect contradictions in evidence."""
         engine = EvidenceLinkedVerdictEngine(knowledge_graph=knowledge_graph)
@@ -179,6 +183,7 @@ class TestEvidenceLinkedVerdictP0:
 class TestSymbolicNeuralAgreementP0:
     """Test agreement score boundaries (RedLines.yaml: >= 0.85)."""
     
+    @pytest.mark.p0
     def test_agreement_score_below_threshold_rejected(self, fortress_validator):
         """P0: Agreement score < 0.85 must be REJECTED."""
         # Agreement score 0.84 should fail
@@ -194,6 +199,7 @@ class TestSymbolicNeuralAgreementP0:
         assert not result.is_valid, "Score 0.82 should fail validation"
         assert "agreement" in result.validation_errors
     
+    @pytest.mark.p0
     def test_agreement_score_at_threshold_accepted(self, fortress_validator):
         """P0: Agreement score == 0.85 must be ACCEPTED."""
         response = ReasoningResponse(
@@ -207,6 +213,7 @@ class TestSymbolicNeuralAgreementP0:
         result = fortress_validator.validate_reasoning_response(response)
         assert result.is_valid, "Score 0.85 (exactly) must pass"
     
+    @pytest.mark.p0
     def test_agreement_score_above_threshold_accepted(self, fortress_validator):
         """P0: Agreement score > 0.85 must be ACCEPTED."""
         response = ReasoningResponse(
@@ -220,6 +227,7 @@ class TestSymbolicNeuralAgreementP0:
         result = fortress_validator.validate_reasoning_response(response)
         assert result.is_valid, "Score 0.91 must pass"
     
+    @pytest.mark.p0
     def test_boundary_cases_0p84_0p85_0p86(self, fortress_validator):
         """P0: Test exact boundaries (0.84, 0.85, 0.86)."""
         boundary_scores = [0.84, 0.85, 0.86]
@@ -244,6 +252,7 @@ class TestSymbolicNeuralAgreementP0:
 class TestChainOfThoughtValidationP0:
     """Test chain-of-thought step validation."""
     
+    @pytest.mark.p0
     def test_chain_of_thought_requires_complete_steps(self, chain_of_thought_reasoner):
         """P0: Each step must have: premise, rule, conclusion."""
         steps = [
@@ -267,6 +276,7 @@ class TestChainOfThoughtValidationP0:
                 with pytest.raises(ValueError):
                     chain_of_thought_reasoner.validate_step(step)
     
+    @pytest.mark.p0
     def test_chain_of_thought_detects_logical_gaps(self, chain_of_thought_reasoner):
         """P0: Must detect logical gaps (conclusion doesn't follow premise+rule)."""
         step = {
@@ -280,6 +290,7 @@ class TestChainOfThoughtValidationP0:
         result = chain_of_thought_reasoner.validate_step(step)
         assert not result.is_valid, "Logical gap should be detected"
     
+    @pytest.mark.p0
     def test_chain_of_thought_ordering(self, chain_of_thought_reasoner):
         """P0: Chain steps must be in logical order."""
         steps = [
@@ -317,6 +328,7 @@ class TestChainOfThoughtValidationP0:
 class TestProofTreeConstructionP0:
     """Test proof tree structure and completeness."""
     
+    @pytest.mark.p0
     def test_proof_tree_required_by_redlines(self, fortress_validator):
         """P0: RedLines.yaml requires proof_tree: true."""
         # Response WITHOUT proof tree
@@ -329,6 +341,7 @@ class TestProofTreeConstructionP0:
         result = fortress_validator.validate_reasoning_response(response)
         assert not result.is_valid, "Missing proof tree must fail"
     
+    @pytest.mark.p0
     def test_proof_tree_must_be_valid(self, fortress_validator):
         """P0: Proof tree must have valid structure."""
         invalid_proof_tree = {
@@ -345,6 +358,7 @@ class TestProofTreeConstructionP0:
         result = fortress_validator.validate_reasoning_response(response)
         assert not result.is_valid, "Invalid proof tree structure must fail"
     
+    @pytest.mark.p0
     def test_proof_tree_leaf_nodes_have_evidence(self):
         """P0: All leaf nodes in proof tree must reference evidence."""
         proof_tree = {
@@ -391,6 +405,7 @@ class TestProofTreeConstructionP0:
 class TestFortressValidatorIntegrationP0:
     """Test FortressValidator integration with reasoning service."""
     
+    @pytest.mark.p0
     def test_fortress_validator_called_before_response(self, fortress_validator):
         """P0: Every reasoning response must pass FortressValidator."""
         responses = [
@@ -417,6 +432,7 @@ class TestFortressValidatorIntegrationP0:
         assert not results[1].is_valid, "Low agreement must fail"
         assert not results[2].is_valid, "Missing proof tree must fail"
     
+    @pytest.mark.p0
     def test_fortress_validator_error_handling(self, fortress_validator):
         """P0: Validator must handle edge cases gracefully."""
         edge_cases = [
@@ -438,6 +454,7 @@ class TestFortressValidatorIntegrationP0:
 class TestReasoningP0Integration:
     """Integration tests for complete P0 flow."""
     
+    @pytest.mark.p0
     def test_end_to_end_p0_flow(self, knowledge_graph, governance_context, fortress_validator):
         """P0: Complete reasoning flow from question to validated verdict."""
         question = "Is contract enforceable?"

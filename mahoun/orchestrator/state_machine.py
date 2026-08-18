@@ -1,6 +1,6 @@
 """
-Advanced State Machine for Self-Improvement Lifecycle
-======================================================
+State Machine
+=============
 
 Production-grade state machine with:
 - Comprehensive state management
@@ -18,18 +18,9 @@ from threading import Lock, RLock
 from collections import defaultdict, deque
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from enum import Enum
+import logging
 
-try:
-    from logging_utils import get_logger, log_metric
-except ImportError:
-    try:
-        from mahoun.self_improve.logging_utils import get_logger, log_metric
-    except ImportError:
-        import logging
-        def get_logger(name): return logging.getLogger(name)
-        def log_metric(*args, **kwargs): pass
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class SystemState(Enum):
@@ -152,8 +143,8 @@ class StateMetrics:
 
 class StateMachine:
     """
-    Advanced State Machine for Self-Improvement Lifecycle
-    
+    State Machine
+
     Features:
     - Thread-safe state transitions
     - Transition guards and conditions
@@ -379,17 +370,12 @@ class StateMachine:
             )
             
             # Log metrics
-            log_metric(
-                measurement="state_transition",
-                fields={
-                    "duration": duration,
-                    "total_transitions": self.total_transitions,
-                },
-                tags={
-                    "from_state": self.previous_state.value,
-                    "to_state": target_state.value,
-                    "trigger": trigger.value,
-                }
+            logger.info(
+                "State transition: %s → %s (trigger: %s, duration: %.2fs)",
+                self.previous_state.value,
+                target_state.value,
+                trigger.value,
+                duration,
             )
             
             return True, None

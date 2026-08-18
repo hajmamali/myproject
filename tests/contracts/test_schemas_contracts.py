@@ -36,6 +36,7 @@ from mahoun.schemas.contracts.schemas_contracts import (
 class TestSchemaValidationInput:
     """Test SchemaValidationInput contract."""
     
+    @pytest.mark.p2
     def test_valid_schema_validation_input(self):
         """Test valid schema validation input accepted."""
         input_data = SchemaValidationInput(
@@ -46,6 +47,7 @@ class TestSchemaValidationInput:
         assert input_data.schema_name == "VerdictStruct"
         assert input_data.strict is True
     
+    @pytest.mark.p2
     def test_empty_schema_name_rejected(self):
         """Test empty schema name rejected."""
         with pytest.raises(ValidationError):
@@ -54,6 +56,7 @@ class TestSchemaValidationInput:
                 data={}
             )
     
+    @pytest.mark.p2
     def test_missing_data_rejected(self):
         """Test missing data rejected."""
         with pytest.raises(ValidationError):
@@ -61,6 +64,7 @@ class TestSchemaValidationInput:
                 schema_name="TestSchema"
             )
     
+    @pytest.mark.p2
     def test_strict_defaults_to_false(self):
         """Test strict defaults to False."""
         input_data = SchemaValidationInput(
@@ -73,6 +77,7 @@ class TestSchemaValidationInput:
 class TestSchemaValidationOutput:
     """Test SchemaValidationOutput contract."""
     
+    @pytest.mark.p2
     def test_valid_schema_validation_output(self):
         """Test valid schema validation output accepted."""
         output = SchemaValidationOutput(
@@ -84,6 +89,7 @@ class TestSchemaValidationOutput:
         assert output.is_valid is True
         assert len(output.warnings) == 1
     
+    @pytest.mark.p2
     def test_invalid_with_errors(self):
         """Test invalid output with errors."""
         output = SchemaValidationOutput(
@@ -95,6 +101,7 @@ class TestSchemaValidationOutput:
         assert output.is_valid is False
         assert len(output.errors) == 1
     
+    @pytest.mark.p2
     def test_validated_data_optional(self):
         """Test validated_data is optional."""
         output = SchemaValidationOutput(
@@ -104,6 +111,7 @@ class TestSchemaValidationOutput:
         )
         assert output.validated_data is None
     
+    @pytest.mark.p2
     def test_immutability(self):
         """Test output is immutable."""
         output = SchemaValidationOutput(
@@ -122,6 +130,7 @@ class TestSchemaValidationOutput:
 class TestFieldValidationRule:
     """Test FieldValidationRule contract."""
     
+    @pytest.mark.p2
     def test_valid_field_validation_rule(self):
         """Test valid field validation rule accepted."""
         rule = FieldValidationRule(
@@ -133,6 +142,7 @@ class TestFieldValidationRule:
         assert rule.field_name == "case_number"
         assert rule.rule_type == "required"
     
+    @pytest.mark.p2
     def test_empty_field_name_rejected(self):
         """Test empty field name rejected."""
         with pytest.raises(ValidationError):
@@ -142,6 +152,7 @@ class TestFieldValidationRule:
                 rule_value=True
             )
     
+    @pytest.mark.p2
     def test_empty_rule_type_rejected(self):
         """Test empty rule type rejected."""
         with pytest.raises(ValidationError):
@@ -151,6 +162,7 @@ class TestFieldValidationRule:
                 rule_value=True
             )
     
+    @pytest.mark.p2
     def test_error_message_optional(self):
         """Test error message is optional."""
         rule = FieldValidationRule(
@@ -164,6 +176,7 @@ class TestFieldValidationRule:
 class TestFieldConstraints:
     """Test FieldConstraints contract."""
     
+    @pytest.mark.p2
     def test_valid_field_constraints(self):
         """Test valid field constraints accepted."""
         constraints = FieldConstraints(
@@ -178,6 +191,7 @@ class TestFieldConstraints:
         assert constraints.min_value == 0.0
         assert constraints.max_value == 1.0
     
+    @pytest.mark.p2
     def test_empty_field_name_rejected(self):
         """Test empty field name rejected."""
         with pytest.raises(ValidationError):
@@ -186,6 +200,7 @@ class TestFieldConstraints:
                 required=True
             )
     
+    @pytest.mark.p2
     def test_all_constraints_optional_except_field_name(self):
         """Test all constraints optional except field_name."""
         constraints = FieldConstraints(
@@ -195,6 +210,7 @@ class TestFieldConstraints:
         assert constraints.min_value is None
         assert constraints.max_value is None
     
+    @pytest.mark.p2
     def test_pattern_validation(self):
         """Test pattern constraint."""
         constraints = FieldConstraints(
@@ -203,6 +219,7 @@ class TestFieldConstraints:
         )
         assert constraints.pattern == r"^\d{4}-\d{4}$"
     
+    @pytest.mark.p2
     def test_allowed_values_validation(self):
         """Test allowed values constraint."""
         constraints = FieldConstraints(
@@ -219,6 +236,7 @@ class TestFieldConstraints:
 class TestSchemaMetadata:
     """Test SchemaMetadata contract."""
     
+    @pytest.mark.p2
     def test_valid_schema_metadata(self):
         """Test valid schema metadata accepted."""
         metadata = SchemaMetadata(
@@ -233,6 +251,7 @@ class TestSchemaMetadata:
         assert metadata.version == "1.0.0"
         assert len(metadata.fields) == 3
     
+    @pytest.mark.p2
     def test_empty_schema_name_rejected(self):
         """Test empty schema name rejected."""
         with pytest.raises(ValidationError):
@@ -245,6 +264,7 @@ class TestSchemaMetadata:
                 optional_fields=[]
             )
     
+    @pytest.mark.p2
     def test_invalid_version_format_rejected(self):
         """Test invalid version format rejected."""
         with pytest.raises(ValidationError):
@@ -257,6 +277,7 @@ class TestSchemaMetadata:
                 optional_fields=[]
             )
     
+    @pytest.mark.p2
     def test_valid_version_formats(self):
         """Test valid version formats accepted."""
         valid_versions = ["1.0.0", "2.1.3", "0.0.1", "10.20.30"]
@@ -271,6 +292,7 @@ class TestSchemaMetadata:
             )
             assert metadata.version == version
     
+    @pytest.mark.p2
     def test_empty_fields_allowed(self):
         """Test empty fields list allowed."""
         metadata = SchemaMetadata(
@@ -287,6 +309,7 @@ class TestSchemaMetadata:
 class TestSchemaVersion:
     """Test SchemaVersion contract."""
     
+    @pytest.mark.p2
     def test_valid_schema_version(self):
         """Test valid schema version accepted."""
         version = SchemaVersion(
@@ -298,6 +321,7 @@ class TestSchemaVersion:
         assert version.version == "2.0.0"
         assert version.breaking_changes is False
     
+    @pytest.mark.p2
     def test_invalid_version_format_rejected(self):
         """Test invalid version format rejected."""
         with pytest.raises(ValidationError):
@@ -307,6 +331,7 @@ class TestSchemaVersion:
                 changes=[]
             )
     
+    @pytest.mark.p2
     def test_empty_changes_allowed(self):
         """Test empty changes list allowed."""
         version = SchemaVersion(
@@ -316,6 +341,7 @@ class TestSchemaVersion:
         )
         assert len(version.changes) == 0
     
+    @pytest.mark.p2
     def test_breaking_changes_defaults_to_false(self):
         """Test breaking_changes defaults to False."""
         version = SchemaVersion(
@@ -333,6 +359,7 @@ class TestSchemaVersion:
 class TestSchemaValidationError:
     """Test SchemaValidationError contract."""
     
+    @pytest.mark.p2
     def test_valid_validation_error(self):
         """Test valid validation error accepted."""
         error = SchemaValidationError(
@@ -344,6 +371,7 @@ class TestSchemaValidationError:
         assert error.error_type == "ValidationError"
         assert error.field_name == "case_number"
     
+    @pytest.mark.p2
     def test_valid_schema_not_found_error(self):
         """Test valid SchemaNotFound error accepted."""
         error = SchemaValidationError(
@@ -352,6 +380,7 @@ class TestSchemaValidationError:
         )
         assert error.error_type == "SchemaNotFound"
     
+    @pytest.mark.p2
     def test_valid_incompatible_version_error(self):
         """Test valid IncompatibleVersion error accepted."""
         error = SchemaValidationError(
@@ -360,6 +389,7 @@ class TestSchemaValidationError:
         )
         assert error.error_type == "IncompatibleVersion"
     
+    @pytest.mark.p2
     def test_invalid_error_type_rejected(self):
         """Test invalid error type rejected."""
         with pytest.raises(ValidationError):
@@ -368,6 +398,7 @@ class TestSchemaValidationError:
                 message="Test"
             )
     
+    @pytest.mark.p2
     def test_empty_message_rejected(self):
         """Test empty message rejected."""
         with pytest.raises(ValidationError):
@@ -376,6 +407,7 @@ class TestSchemaValidationError:
                 message=""
             )
     
+    @pytest.mark.p2
     def test_field_name_optional(self):
         """Test field_name is optional."""
         error = SchemaValidationError(
@@ -384,6 +416,7 @@ class TestSchemaValidationError:
         )
         assert error.field_name is None
     
+    @pytest.mark.p2
     def test_details_optional(self):
         """Test details is optional."""
         error = SchemaValidationError(
@@ -400,22 +433,26 @@ class TestSchemaValidationError:
 class TestContractCompleteness:
     """Test that all contracts are complete and consistent."""
     
+    @pytest.mark.p2
     def test_all_validation_contracts_defined(self):
         """Test all validation contracts defined."""
         assert SchemaValidationInput is not None
         assert SchemaValidationOutput is not None
         assert SchemaValidationError is not None
     
+    @pytest.mark.p2
     def test_all_field_contracts_defined(self):
         """Test all field contracts defined."""
         assert FieldValidationRule is not None
         assert FieldConstraints is not None
     
+    @pytest.mark.p2
     def test_all_metadata_contracts_defined(self):
         """Test all metadata contracts defined."""
         assert SchemaMetadata is not None
         assert SchemaVersion is not None
     
+    @pytest.mark.p2
     def test_all_error_types_covered(self):
         """Test all error types are covered."""
         error_types = ["ValidationError", "SchemaNotFound", "IncompatibleVersion"]
@@ -426,6 +463,7 @@ class TestContractCompleteness:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_version_format_consistency(self):
         """Test version format is consistent across contracts."""
         # SchemaMetadata version

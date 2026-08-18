@@ -465,6 +465,92 @@ class OCREnsemble:
             }
         )
     
+    def process_images(
+        self,
+        images: List[Any],
+        document_id: str,
+        engines: Optional[List[str]] = None
+    ) -> EnsembleResult:
+        """
+        Perform ensemble OCR on multiple images (e.g., PDF pages).
+        
+        Args:
+            images: List of PIL Image objects
+            document_id: Document identifier for tracking
+            engines: Optional list of engines to use (overrides config)
+        
+        Returns:
+            EnsembleResult with combined text from all pages and metadata
+        """
+        if self.ocr_engine_class is None:
+            return EnsembleResult(
+                success=False,
+                text="",
+                confidence=0.0,
+                engine_results=[],
+                error="OCR engine not available"
+            )
+        
+        import tempfile
+        import os
+        
+        all_page_texts = []
+        all_engine_results = []
+        all_disagreements = []
+        total_confidence = 0.0
+        successful_pages = 0
+        
+        # Process each image
+        for page_num, image in enumerate(images):
+            try:
+                # Save image temporarily
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                    temp_path = tmp.name
+                    image.save(temp_path)
+                
+                # Run ensemble OCR on this page
+                page_result = self.ocr_image(temp_path, engines)
+                
+                # Clean up temp file
+                os.unlink(temp_path)
+                
+                if page_result.success:
+                    all_page_texts.append(f"=== صفحه {page_num + 1} ===\n{page_result.text}")
+                    all_engine_results.extend(page_result.engine_results)
+                    all_disagreements.extend(page_result.disagreements)
+                    total_confidence += page_result.confidence
+                    successful_pages += 1
+                else:
+                    logger.warning(f"Page {page_num + 1} failed: {page_result.error}")
+                    all_page_texts.append(f"=== صفحه {page_num + 1} ===\n[OCR FAILED]")
+                    
+            except Exception as e:
+                logger.error(f"Error processing page {page_num + 1}: {e}")
+                all_page_texts.append(f"=== صفحه {page_num + 1} ===\n[ERROR: {str(e)}]")
+        
+        # Combine all page texts
+        combined_text = "\n".join(all_page_texts)
+        
+        # Calculate average confidence
+        avg_confidence = total_confidence / successful_pages if successful_pages > 0 else 0.0
+        
+        return EnsembleResult(
+            success=successful_pages > 0,
+            text=combined_text,
+            confidence=avg_confidence,
+            engine_results=all_engine_results,
+            disagreements=all_disagreements,
+            voting_strategy=self.config.voting_strategy.value,
+            metadata={
+                'document_id': document_id,
+                'total_pages': len(images),
+                'successful_pages': successful_pages,
+                'failed_pages': len(images) - successful_pages,
+                'engines_used': len(set(r.engine_name for r in all_engine_results)),
+                'parallel_execution': self.config.parallel_execution
+            }
+        )
+    
     def _run_engines(
         self,
         image_path: str,

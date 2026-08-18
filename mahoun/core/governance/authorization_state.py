@@ -1,41 +1,48 @@
 """
-Canonical Authorization State
-==============================
+Authorization State — Re-export Shim (Tier-1 compatibility layer)
+=================================================================
 
-Classification: KERNEL / CONSTITUTIONAL / SINGLE SOURCE OF TRUTH
+Classification: TIER-1 / RE-EXPORT SHIM / DO NOT REDEFINE
 
-This module is the ONE canonical definition of the mutation authorization
-ContextVar. Both kernel.py and mutation_boundary.py import from here.
+The CANONICAL OWNER of _authorized_write_ctx is:
+    mahoun.core.governance_kernel.authorization_state  (Tier-0)
 
-Invariant: There exists exactly one _authorized_write_ctx object in the
-           entire process. Any module that needs to read or write mutation
-           authorization state MUST import from this module.
+This module is a pure re-export shim that preserves backward compatibility
+for all existing Tier-1/Tier-2 importers. It MUST NOT redefine the ContextVar
+— the identity invariant requires exactly one object in the process:
 
-A is B == True is enforced by tests/test_authorization_state_singleton.py
-and by the CI gate in scripts/validate_governance_compliance.py.
+    governance_kernel.authorization_state._authorized_write_ctx
+        is
+    governance.authorization_state._authorized_write_ctx  <- this module
+
+Any importer of this module gets the same object as an importer of
+governance_kernel.authorization_state. This is enforced at test time by
+tests/test_authorization_context_canonical.py and
+tests/test_authorization_state_singleton.py.
+
+Change record: kernel_changes.yaml v1.1.0 (approved: architecture-team)
+Migration documented: glmreport.md Section F, Section K Phase 1
 """
 
-from contextvars import ContextVar, Token
-
-# Single authoritative ContextVar for mutation authorization.
-# Name kept as "authorized_write" (not "_authorized_write_ctx") to avoid
-# confusion with the module-level names in legacy callers.
-_authorized_write_ctx: ContextVar[bool] = ContextVar(
-    "authorized_write",
-    default=False,
+from mahoun.core.governance_kernel.authorization_state import (
+    _authorized_write_ctx,
+    is_authorized,
+    set_authorized,
+    reset_authorized,
+    authorize_write,
+    _assert_no_duplicate_contextvar,
 )
 
+# Canonical alias
+is_governance_authorized = is_authorized
 
-def is_authorized() -> bool:
-    """Return True only when executing inside GovernedNeo4jSession."""
-    return _authorized_write_ctx.get()
+__all__ = [
+    "_authorized_write_ctx",
+    "is_authorized",
+    "is_governance_authorized",
+    "set_authorized",
+    "reset_authorized",
+    "authorize_write",
+    "_assert_no_duplicate_contextvar",
+]
 
-
-def set_authorized(state: bool) -> Token:
-    """Set authorization state and return token for reset."""
-    return _authorized_write_ctx.set(state)
-
-
-def reset_authorized(token: Token) -> None:
-    """Reset authorization state to previous value via token."""
-    _authorized_write_ctx.reset(token)

@@ -32,7 +32,6 @@ from mahoun.core.governance.violations import (
 from mahoun.core.governance.policies import (
     GovernancePolicy,
     PolicyRegistry,
-    load_redlines_policies,
 )
 from mahoun.core.governance.validator_pipeline import ValidatorPipeline
 from mahoun.core.governance.provenance_tracker import (
@@ -48,6 +47,9 @@ from mahoun.core.governance.mutation_boundary import (
     GovernedWriteTransaction,
     MutationReceipt,
     MutationType,
+    KernelMutationBoundary,
+    QueryType,
+    is_governance_authorized,
 )
 from mahoun.core.governance.governance_context import (
     GovernanceContext,
@@ -63,7 +65,6 @@ __all__ = [
     # Policies
     "GovernancePolicy",
     "PolicyRegistry",
-    "load_redlines_policies",
     # Runtime Governance
     "ValidatorPipeline",
     "ProvenanceTracker",
@@ -81,4 +82,8 @@ __all__ = [
     "GovernedWriteTransaction",
     "MutationReceipt",
     "MutationType",
+    "KernelMutationBoundary",
+    "QueryType",
+    "is_governance_authorized",
 ]
+

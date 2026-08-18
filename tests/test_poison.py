@@ -69,6 +69,7 @@ class TestDestructionCore:
         reset = "\033[0m"
         logger.info(f"[{name}] | Latency: {latency:.4f}s | Status: {color}{status}{reset} | Obs: {observation}")
 
+    @pytest.mark.p2
     def test_attack_race_condition_ingestion(self):
         """Scenario 1: Concurrency Stress (10 simultaneous upserts of same Verdict)"""
         if not self.connected: pytest.skip("Neo4j offline")
@@ -98,6 +99,7 @@ class TestDestructionCore:
         self.log_attack_result("Race Condition", latency, status, obs)
         assert count == 1, obs
 
+    @pytest.mark.p2
     def test_attack_deep_path_bomb(self):
         """Scenario 2: Memory Bomb (1,000 nodes chain recursion)"""
         if not self.connected: pytest.skip("Neo4j offline")
@@ -127,6 +129,7 @@ class TestDestructionCore:
             latency = time.time() - query_start
             self.log_attack_result("Deep Path Bomb", latency, "PASSED", f"Query blocked/crashed safely: {str(e)[:50]}...")
 
+    @pytest.mark.p2
     def test_attack_schizophrenic_entity(self):
         """Scenario 3: Read-Write Inconsistency (100 rapid updates vs concurrent query)"""
         if not self.connected: pytest.skip("Neo4j offline")
@@ -158,6 +161,7 @@ class TestDestructionCore:
         latency = time.time() - start_time
         self.log_attack_result("Schizophrenic Entity", latency, "PASSED", "Node remained consistent during rapid mutation.")
 
+    @pytest.mark.p2
     def test_attack_illegal_character_injection(self):
         """Scenario 4: Encoding Sabotage (Null bytes, control characters)"""
         if not self.connected: pytest.skip("Neo4j offline")
@@ -182,6 +186,7 @@ class TestDestructionCore:
         obs = f"Injected {len(poison_payloads)} payloads. Errors caught: {len(errors)}"
         self.log_attack_result("Encoding Sabotage", latency, status, obs)
 
+    @pytest.mark.p2
     def test_attack_batch_poison_pill(self):
         """Scenario 5: Batch Partial Success (Constraint violation at index 2500)"""
         if not self.connected: pytest.skip("Neo4j offline")
@@ -220,6 +225,7 @@ class TestDestructionCore:
         self.log_attack_result("Batch Poison Pill", latency, status, obs)
         assert count == 1, obs
 
+    @pytest.mark.p2
     def test_corruption_meter_final(self):
         """Final sanity check: The Corruption Meter"""
         total, distinct = self.get_corruption_metrics()

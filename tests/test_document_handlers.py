@@ -32,6 +32,7 @@ def _check_ocr_available() -> bool:
 class TestDocumentHandlerAvailability:
     """Test handler availability checks"""
     
+    @pytest.mark.p2
     def test_check_handler_availability(self):
         """Test that availability check returns proper structure"""
         from mahoun.pipelines.ingestion.document_handlers import check_handler_availability
@@ -47,6 +48,7 @@ class TestDocumentHandlerAvailability:
         # TXT should always be available
         assert result['TxtHandler']['available'] is True
     
+    @pytest.mark.p2
     def test_txt_handler_always_available(self):
         """TXT handler should always be available"""
         from mahoun.pipelines.ingestion.document_handlers import TxtHandler
@@ -58,6 +60,7 @@ class TestDocumentHandlerAvailability:
 class TestTxtHandler:
     """Test TXT file handling"""
     
+    @pytest.mark.p2
     def test_extract_utf8_text(self):
         """Test extracting UTF-8 text"""
         from mahoun.pipelines.ingestion.document_handlers import TxtHandler
@@ -79,6 +82,7 @@ class TestTxtHandler:
         finally:
             os.unlink(temp_path)
     
+    @pytest.mark.p2
     def test_extract_persian_text(self):
         """Test extracting Persian legal text"""
         from mahoun.pipelines.ingestion.document_handlers import TxtHandler
@@ -109,6 +113,7 @@ class TestTxtHandler:
         finally:
             os.unlink(temp_path)
     
+    @pytest.mark.p2
     def test_supports_txt_and_md(self):
         """Test that handler supports .txt and .md files"""
         from mahoun.pipelines.ingestion.document_handlers import TxtHandler
@@ -124,6 +129,7 @@ class TestTxtHandler:
 class TestDocxHandler:
     """Test DOCX file handling"""
     
+    @pytest.mark.p2
     def test_docx_handler_init(self):
         """Test DOCX handler initialization"""
         from mahoun.pipelines.ingestion.document_handlers import DocxHandler
@@ -132,6 +138,7 @@ class TestDocxHandler:
         # May or may not be available depending on python-docx installation
         assert isinstance(handler.available, bool)
     
+    @pytest.mark.p2
     def test_supports_docx_only(self):
         """Test that handler only supports .docx files"""
         from mahoun.pipelines.ingestion.document_handlers import DocxHandler
@@ -147,6 +154,7 @@ class TestDocxHandler:
         not _check_docx_available(),
         reason="python-docx not installed"
     )
+    @pytest.mark.p2
     def test_extract_docx_text(self):
         """Test extracting text from DOCX (requires python-docx)"""
         from mahoun.pipelines.ingestion.document_handlers import DocxHandler
@@ -178,6 +186,7 @@ class TestDocxHandler:
 class TestPdfHandler:
     """Test PDF file handling"""
     
+    @pytest.mark.p2
     def test_pdf_handler_init(self):
         """Test PDF handler initialization"""
         from mahoun.pipelines.ingestion.document_handlers import PdfHandler
@@ -187,6 +196,7 @@ class TestPdfHandler:
         assert isinstance(handler.pdfplumber_available, bool)
         assert isinstance(handler.pypdf2_available, bool)
     
+    @pytest.mark.p2
     def test_supports_pdf_only(self):
         """Test that handler only supports .pdf files"""
         from mahoun.pipelines.ingestion.document_handlers import PdfHandler
@@ -202,6 +212,7 @@ class TestPdfHandler:
 class TestImageHandler:
     """Test Image/OCR handling"""
     
+    @pytest.mark.p2
     def test_image_handler_init(self):
         """Test Image handler initialization"""
         from mahoun.pipelines.ingestion.document_handlers import ImageHandler
@@ -209,6 +220,7 @@ class TestImageHandler:
         handler = ImageHandler()
         assert isinstance(handler.available, bool)
     
+    @pytest.mark.p2
     def test_supports_image_formats(self):
         """Test that handler supports various image formats"""
         from mahoun.pipelines.ingestion.document_handlers import ImageHandler
@@ -229,6 +241,7 @@ class TestImageHandler:
 class TestDocumentHandlerFactory:
     """Test DocumentHandlerFactory"""
     
+    @pytest.mark.p2
     def test_factory_initialization(self):
         """Test factory initializes all handlers"""
         from mahoun.pipelines.ingestion.document_handlers import DocumentHandlerFactory
@@ -237,6 +250,7 @@ class TestDocumentHandlerFactory:
         
         assert len(factory.handlers) >= 3  # At least TXT, DOCX, PDF
     
+    @pytest.mark.p2
     def test_get_handler_for_txt(self):
         """Test getting handler for TXT file"""
         from mahoun.pipelines.ingestion.document_handlers import DocumentHandlerFactory, TxtHandler
@@ -247,6 +261,7 @@ class TestDocumentHandlerFactory:
         assert handler is not None
         assert isinstance(handler, TxtHandler)
     
+    @pytest.mark.p2
     def test_extract_text_convenience(self):
         """Test extract_document_text convenience function"""
         from mahoun.pipelines.ingestion.document_handlers import extract_document_text
@@ -264,6 +279,7 @@ class TestDocumentHandlerFactory:
         finally:
             os.unlink(temp_path)
     
+    @pytest.mark.p2
     def test_file_not_found(self):
         """Test handling of non-existent file"""
         from mahoun.pipelines.ingestion.document_handlers import extract_document_text
@@ -277,6 +293,7 @@ class TestDocumentHandlerFactory:
 class TestOCRHandler:
     """Test OCR functionality"""
     
+    @pytest.mark.p2
     def test_ocr_availability_check(self):
         """Test OCR availability check"""
         from mahoun.pipelines.ingestion.ocr_handler import check_ocr_availability
@@ -289,6 +306,7 @@ class TestOCRHandler:
         assert 'active_engine' in result
         assert 'recommendations' in result
     
+    @pytest.mark.p2
     def test_ocr_engine_init(self):
         """Test OCR engine initialization"""
         from mahoun.pipelines.ingestion.ocr_handler import OCREngine
@@ -302,6 +320,7 @@ class TestOCRHandler:
         not _check_ocr_available(),
         reason="No OCR engine available"
     )
+    @pytest.mark.p2
     def test_ocr_simple_image(self):
         """Test OCR on a simple image (requires OCR engine)"""
         from mahoun.pipelines.ingestion.ocr_handler import ocr_image
@@ -331,6 +350,7 @@ class TestOCRHandler:
 class TestIntegration:
     """Integration tests"""
     
+    @pytest.mark.p2
     def test_full_pipeline_txt(self):
         """Test full pipeline with TXT file"""
         from mahoun.pipelines.ingestion.document_handlers import extract_document_text

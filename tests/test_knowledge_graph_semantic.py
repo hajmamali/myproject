@@ -135,6 +135,7 @@ def persian_precedents(kg_with_semantic):
 class TestSemanticRuleMatching:
     """Test semantic rule matching"""
     
+    @pytest.mark.p2
     def test_semantic_rule_matching_enabled(self, persian_legal_rules):
         """Test rule matching with semantic search"""
         facts = [
@@ -157,6 +158,7 @@ class TestSemanticRuleMatching:
         assert all("match_type" in r for r in results)
         assert results[0]["match_type"] == "semantic"
     
+    @pytest.mark.p2
     def test_semantic_vs_keyword_accuracy(self, persian_legal_rules):
         """Test that semantic search is more accurate than keyword"""
         # Query with synonyms (not exact keywords)
@@ -184,6 +186,7 @@ class TestSemanticRuleMatching:
         if semantic_results and keyword_results:
             assert semantic_results[0]["match_score"] >= keyword_results[0]["match_score"]
     
+    @pytest.mark.p2
     def test_semantic_threshold(self, persian_legal_rules):
         """Test semantic threshold filtering"""
         facts = ["قرارداد"]
@@ -204,6 +207,7 @@ class TestSemanticRuleMatching:
         
         assert len(high_threshold_results) <= len(low_threshold_results)
     
+    @pytest.mark.p2
     def test_semantic_with_complex_query(self, persian_legal_rules):
         """Test semantic search with complex query"""
         facts = [
@@ -226,6 +230,7 @@ class TestSemanticRuleMatching:
 class TestSemanticPrecedentSearch:
     """Test semantic precedent search"""
     
+    @pytest.mark.p2
     def test_semantic_precedent_search(self, persian_precedents):
         """Test precedent search with semantic similarity"""
         current_facts = [
@@ -250,6 +255,7 @@ class TestSemanticPrecedentSearch:
         # Should have match_type
         assert results[0]["match_type"] == "semantic"
     
+    @pytest.mark.p2
     def test_semantic_precedent_ranking(self, persian_precedents):
         """Test that precedents are ranked by similarity"""
         current_facts = [
@@ -271,6 +277,7 @@ class TestSemanticPrecedentSearch:
         # Top result should have high similarity
         assert results[0]["similarity"] > 0.5
     
+    @pytest.mark.p2
     def test_semantic_vs_jaccard_precedents(self, persian_precedents):
         """Test semantic vs Jaccard for precedent search"""
         current_facts = [
@@ -299,6 +306,7 @@ class TestSemanticPrecedentSearch:
 class TestHybridSearch:
     """Test hybrid search (semantic + keyword fallback)"""
     
+    @pytest.mark.p2
     def test_fallback_to_keyword_on_error(self, kg_without_semantic):
         """Test fallback to keyword when semantic not available"""
         # Add rules without semantic search
@@ -321,6 +329,7 @@ class TestHybridSearch:
         # Should use keyword matching
         assert results[0]["match_type"] == "keyword"
     
+    @pytest.mark.p2
     def test_semantic_disabled_explicitly(self, persian_legal_rules):
         """Test disabling semantic search explicitly"""
         facts = ["قرارداد فسخ شد"]
@@ -337,6 +346,7 @@ class TestHybridSearch:
 class TestPersianLanguageHandling:
     """Test Persian language specific features"""
     
+    @pytest.mark.p2
     def test_persian_synonyms(self, persian_legal_rules):
         """Test handling of Persian synonyms"""
         # Different words for "contract"
@@ -353,6 +363,7 @@ class TestPersianLanguageHandling:
         assert len(results_2) > 0
         assert len(results_3) > 0
     
+    @pytest.mark.p2
     def test_persian_arabic_variants(self, persian_legal_rules):
         """Test handling of Persian/Arabic character variants"""
         # Persian 'ی' vs Arabic 'ي'
@@ -374,6 +385,7 @@ class TestPersianLanguageHandling:
 class TestPerformance:
     """Test performance characteristics"""
     
+    @pytest.mark.p2
     def test_semantic_search_performance(self, persian_legal_rules):
         """Test semantic search performance"""
         import time
@@ -392,6 +404,7 @@ class TestPerformance:
         # Should be reasonably fast (<1 second for 10 queries)
         assert semantic_time < 1.0
     
+    @pytest.mark.p2
     def test_caching_improves_performance(self, persian_legal_rules):
         """Test that caching improves performance"""
         import time
@@ -415,6 +428,7 @@ class TestPerformance:
 class TestStatistics:
     """Test statistics and monitoring"""
     
+    @pytest.mark.p2
     def test_usage_count_incremented(self, persian_legal_rules):
         """Test that usage count is incremented"""
         facts = ["قرارداد فسخ شد"]
@@ -430,6 +444,7 @@ class TestStatistics:
         rule = persian_legal_rules.get_rule("RULE_001")
         assert rule.usage_count > initial_count
     
+    @pytest.mark.p2
     def test_relevance_score_updated(self, persian_precedents):
         """Test that relevance score is updated"""
         facts = ["فسخ قرارداد"]
@@ -449,6 +464,7 @@ class TestStatistics:
 class TestEdgeCases:
     """Test edge cases"""
     
+    @pytest.mark.p2
     def test_empty_facts(self, persian_legal_rules):
         """Test with empty facts"""
         results = persian_legal_rules.find_applicable_rules(
@@ -459,6 +475,7 @@ class TestEdgeCases:
         # Should return empty or handle gracefully
         assert isinstance(results, list)
     
+    @pytest.mark.p2
     def test_very_long_facts(self, persian_legal_rules):
         """Test with very long facts"""
         long_fact = " ".join(["قرارداد"] * 1000)
@@ -471,6 +488,7 @@ class TestEdgeCases:
         # Should handle without error
         assert isinstance(results, list)
     
+    @pytest.mark.p2
     def test_special_characters_in_facts(self, persian_legal_rules):
         """Test with special characters"""
         facts = [
@@ -490,6 +508,7 @@ class TestEdgeCases:
 class TestEndToEnd:
     """End-to-end integration tests"""
     
+    @pytest.mark.p2
     def test_complete_legal_reasoning_workflow(self, persian_legal_rules, persian_precedents):
         """Test complete workflow: rules + precedents"""
         # Case facts

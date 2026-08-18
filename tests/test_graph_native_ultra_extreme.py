@@ -166,6 +166,7 @@ class TestUltraExtremeGraphNative:
         return question, context
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_1_full_graph_torture_topology_multi_layer_contradictions(self):
         """
         TEST 1 — Full Graph Torture (Topology + Multi-layer contradictions)
@@ -337,6 +338,7 @@ class TestUltraExtremeGraphNative:
             f"confidence in trace must be in [0,1]. Got: {trace_json['confidence']}"
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_2_edge_removal_cut_breaks_one_conclusion_only(self):
         """
         TEST 2 — Edge Removal Cut (Remove one critical edge breaks one conclusion ONLY)
@@ -421,6 +423,7 @@ class TestUltraExtremeGraphNative:
             f"Baseline had: {(N3, N4A) in baseline_edges}, Modified has: {(N3, N4A) in modified_edges}"
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_3_path_swap_topology_determines_precedent_reachability(self):
         """
         TEST 3 — Path Swap (Topology determines which precedent is reachable)
@@ -508,6 +511,7 @@ class TestUltraExtremeGraphNative:
             f"Run2 answer: {result_run2.final_answer[:100]}"
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_4_partial_ablation_edges_removed_degraded_mode(self):
         """
         TEST 4 — Partial Ablation (Edges removed but nodes exist => degraded multi-step)
@@ -618,6 +622,7 @@ class TestUltraExtremeGraphNative:
             "limitations must be present in trace for ablated mode"
     
     @pytest.mark.graph_native
+    @pytest.mark.p2
     def test_5_audit_trace_replay_invariant_internal_consistency(self):
         """
         TEST 5 — Audit Trace Replay Invariant (Trace must be internally consistent)

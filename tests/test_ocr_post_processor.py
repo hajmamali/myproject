@@ -24,6 +24,7 @@ from mahoun.pipelines.ingestion.ocr_post_processor import (
 class TestPersianNormalizer:
     """Test Persian/Arabic text normalization"""
     
+    @pytest.mark.p3
     def test_arabic_to_persian_conversion(self):
         """Test Arabic character conversion to Persian"""
         text = "اين ماده مربوط به قانون است"  # Contains Arabic Ya (ي)
@@ -33,6 +34,7 @@ class TestPersianNormalizer:
         assert 'ی' in result or 'ي' not in result  # Either already Persian or converted
         assert len(corrections) >= 0  # May have corrections
     
+    @pytest.mark.p3
     def test_diacritic_removal(self):
         """Test removal of Arabic diacritics"""
         text = "مَادَّة"  # With diacritics
@@ -45,6 +47,7 @@ class TestPersianNormalizer:
         if len(result) < len(text):
             assert len(diacritic_corrections) > 0
     
+    @pytest.mark.p3
     def test_whitespace_normalization(self):
         """Test whitespace normalization"""
         text = "ماده  ۱۲:    قانون"  # Multiple spaces
@@ -58,6 +61,7 @@ class TestPersianNormalizer:
 class TestLegalTermCorrector:
     """Test legal terminology correction"""
     
+    @pytest.mark.p3
     def test_article_correction(self):
         """Test correction of 'ماده' variants"""
         text = "ماد ه ۱۲ از قانون"  # Broken 'ماده'
@@ -70,6 +74,7 @@ class TestLegalTermCorrector:
             legal_corrections = [c for c in corrections if c.correction_type == CorrectionType.LEGAL_TERM_CORRECTION]
             assert len(legal_corrections) > 0
     
+    @pytest.mark.p3
     def test_verdict_term_correction(self):
         """Test correction of verdict terms"""
         text = "رای دادگاه"  # May need correction to 'رأی'
@@ -82,6 +87,7 @@ class TestLegalTermCorrector:
 class TestStatisticalValidator:
     """Test statistical quality validation"""
     
+    @pytest.mark.p3
     def test_persian_ratio_calculation(self):
         """Test Persian/Arabic character ratio calculation"""
         persian_text = "این یک متن فارسی است"
@@ -90,6 +96,7 @@ class TestStatisticalValidator:
         # Should have high Persian ratio
         assert ratio > 0.5
     
+    @pytest.mark.p3
     def test_garbage_ratio_calculation(self):
         """Test garbage character ratio calculation"""
         clean_text = "ماده ۱۲: قانون"
@@ -101,6 +108,7 @@ class TestStatisticalValidator:
         # Clean text should have lower garbage ratio
         assert clean_ratio < garbage_ratio
     
+    @pytest.mark.p3
     def test_quality_validation_pass(self):
         """Test quality validation with good text"""
         good_text = "ماده ۱۲: این ماده مربوط به قانون مدنی است"
@@ -111,6 +119,7 @@ class TestStatisticalValidator:
         assert stats['persian_ratio'] > 0
         assert stats['garbage_ratio'] < 1.0
     
+    @pytest.mark.p3
     def test_quality_validation_fail_low_persian(self):
         """Test quality validation failure with low Persian ratio"""
         bad_text = "abc def ghi jkl mno"  # No Persian
@@ -127,6 +136,7 @@ class TestStatisticalValidator:
 class TestOCRPostProcessor:
     """Test main OCR post-processor"""
     
+    @pytest.mark.p3
     def test_basic_processing(self):
         """Test basic post-processing"""
         text = "ماده ۱۲: اين قانون"
@@ -139,6 +149,7 @@ class TestOCRPostProcessor:
         assert result.quality_score >= 0.0
         assert result.quality_score <= 1.0
     
+    @pytest.mark.p3
     def test_empty_text_handling(self):
         """Test handling of empty text"""
         processor = OCRPostProcessor()
@@ -148,6 +159,7 @@ class TestOCRPostProcessor:
         assert not result.success
         assert result.error is not None
     
+    @pytest.mark.p3
     def test_confidence_filtering(self):
         """Test confidence-based filtering"""
         text = "ماده ۱۲"
@@ -167,6 +179,7 @@ class TestOCRPostProcessor:
                               if c.correction_type == CorrectionType.CONFIDENCE_FILTER]
             assert len(conf_corrections) >= 0  # May have filtered some lines
     
+    @pytest.mark.p3
     def test_audit_trail(self):
         """Test audit trail generation"""
         text = "ماد ه ۱۲: اين قانون"  # Has corrections
@@ -179,6 +192,7 @@ class TestOCRPostProcessor:
             assert isinstance(result.corrections, list)
             # May have corrections depending on text
     
+    @pytest.mark.p3
     def test_quality_score_calculation(self):
         """Test quality score calculation"""
         good_text = "ماده ۱۲: این ماده مربوط به قانون مدنی است"
@@ -192,6 +206,7 @@ class TestOCRPostProcessor:
         if good_result.success and bad_result.success:
             assert good_result.quality_score > bad_result.quality_score
     
+    @pytest.mark.p3
     def test_disabled_features(self):
         """Test with all features disabled"""
         text = "ماده ۱۲"
@@ -211,6 +226,7 @@ class TestOCRPostProcessor:
 class TestConvenienceFunction:
     """Test convenience function"""
     
+    @pytest.mark.p3
     def test_post_process_ocr_function(self):
         """Test post_process_ocr convenience function"""
         text = "ماده ۱۲: قانون"
@@ -230,6 +246,7 @@ class TestConvenienceFunction:
 class TestIntegration:
     """Integration tests with realistic scenarios"""
     
+    @pytest.mark.p3
     def test_realistic_legal_text(self):
         """Test with realistic legal text"""
         text = """
@@ -246,6 +263,7 @@ class TestIntegration:
         assert 'ماده' in result.corrected_text
         assert 'دادگاه' in result.corrected_text
     
+    @pytest.mark.p3
     def test_mixed_quality_text(self):
         """Test with mixed quality text (some good, some bad)"""
         text = "ماده ۱۲: قانون\n@#$%^&*\nبند الف"
@@ -266,6 +284,7 @@ class TestIntegration:
 class TestPerformance:
     """Performance tests"""
     
+    @pytest.mark.p3
     def test_large_text_processing(self):
         """Test processing of large text"""
         # Generate large text
@@ -277,6 +296,7 @@ class TestPerformance:
         # Should complete without timeout
         assert result is not None
     
+    @pytest.mark.p3
     def test_many_corrections(self):
         """Test text with many corrections needed"""
         # Text with many Arabic characters

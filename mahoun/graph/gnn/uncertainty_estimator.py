@@ -13,17 +13,30 @@ Features:
 """
 
 import torch
-import gpytorch
-from gpytorch.models import ExactGP
-from gpytorch.means import ConstantMean
-from gpytorch.kernels import ScaleKernel, RBFKernel
-from gpytorch.distributions import MultivariateNormal
 from typing import Tuple, Optional, List, Dict
 
-from core.models import UncertaintyEstimate
+from mahoun.core.models import UncertaintyEstimate
 from mahoun.core.logging import setup_logger
 
 log = setup_logger("uncertainty_estimator")
+
+# Try to import gpytorch (optional dependency)
+try:
+    import gpytorch
+    from gpytorch.models import ExactGP
+    from gpytorch.means import ConstantMean
+    from gpytorch.kernels import ScaleKernel, RBFKernel
+    from gpytorch.distributions import MultivariateNormal
+    HAS_GPYTORCH = True
+except ImportError:
+    log.warning("⚠️  gpytorch not available - uncertainty estimation will use fallback methods")
+    HAS_GPYTORCH = False
+    # Fallback placeholders
+    ExactGP = object
+    ConstantMean = None
+    ScaleKernel = None
+    RBFKernel = None
+    MultivariateNormal = None
 
 
 class LegalGaussianProcess(ExactGP):

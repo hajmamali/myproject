@@ -109,6 +109,7 @@ class TestFullGovernanceFlow:
     """Tests for complete governance flow"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_complete_governance_flow(self):
         """Test complete governance flow from lock to API"""
         # 1. GovernanceLock initialized
@@ -145,6 +146,7 @@ class TestFullGovernanceFlow:
             assert ctx.contradiction_hooks_active is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_flow_with_provenance_chain(self):
         """Test governance flow with provenance chain"""
         # Create provenance chain
@@ -188,6 +190,7 @@ class TestFullGovernanceFlow:
             assert chain_list[2].attestation.lineage_parent == chain_list[1].attestation.provenance_hash
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_flow_with_inference_provenance(self):
         """Test governance flow with inference provenance"""
         async with GovernanceContextManager.active_context(
@@ -220,6 +223,7 @@ class TestConcurrentGovernanceOperations:
     """Tests for concurrent governance operations"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_reasoning_with_governance(self):
         """Test concurrent reasoning operations with governance"""
         mock_service = MockReasoningService(valid_response=True)
@@ -245,6 +249,7 @@ class TestConcurrentGovernanceOperations:
         assert mock_service.call_count == 10
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_provenance_creation(self):
         """Test concurrent provenance creation"""
         chain = ProvenanceChain()
@@ -272,6 +277,7 @@ class TestConcurrentGovernanceOperations:
         assert len(chain_list) == 10
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_nested_governance_contexts(self):
         """Test nested governance contexts"""
         async with GovernanceContextManager.active_context(
@@ -303,6 +309,7 @@ class TestPerformanceUnderGovernance:
     """Tests for performance under governance"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_overhead_acceptable(self):
         """Test that governance overhead is acceptable"""
         import time
@@ -329,6 +336,7 @@ class TestPerformanceUnderGovernance:
         assert avg_time < 0.1  # < 100ms per operation
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_provenance_chain_performance(self):
         """Test provenance chain performance"""
         import time
@@ -357,6 +365,7 @@ class TestPerformanceUnderGovernance:
         assert chain.verify_chain_integrity() is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_concurrent_performance(self):
         """Test concurrent performance"""
         import time
@@ -397,6 +406,7 @@ class TestErrorPropagation:
     """Tests for error propagation through governance layers"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_validation_error_propagates(self):
         """Test that validation errors propagate correctly"""
         mock_service = MockReasoningService(valid_response=False)
@@ -409,6 +419,7 @@ class TestErrorPropagation:
                 )
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_context_error_propagates(self):
         """Test that governance context errors propagate"""
         from mahoun.core.governance.violations import GovernanceViolationError
@@ -418,6 +429,7 @@ class TestErrorPropagation:
             GovernanceContextManager.require_context()
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_provenance_error_propagates(self):
         """Test that provenance errors propagate"""
         from mahoun.core.governance.violations import GovernanceViolationError
@@ -427,6 +439,7 @@ class TestErrorPropagation:
             GovernanceContextManager.require_provenance(source="test", author="system")
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_governance_lock_error_propagates(self):
         """Test that governance lock errors propagate"""
         # Try to change mode after initialization
@@ -443,6 +456,7 @@ class TestEndToEndScenarios:
     """Tests for end-to-end governance scenarios"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_complete_reasoning_flow_with_governance(self):
         """Test complete reasoning flow with full governance"""
         # 1. Initialize governance
@@ -506,6 +520,7 @@ class TestEndToEndScenarios:
             assert inference is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_multi_step_reasoning_with_governance(self):
         """Test multi-step reasoning with governance"""
         chain = ProvenanceChain()

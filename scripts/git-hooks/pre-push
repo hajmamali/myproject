@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# MahouN Pre-Push Enforcement Hook
+# ==================================
+# Runs the full heavy enforcement suite before push.
+# This is the local enforcement layer (bypassable with --no-verify).
+# The CI platform provides the authoritative merge-blocking layer.
+#
+# Invocation chain (each gate runs independently; violations accumulate):
+#   1. gate_9_governance.sh        (governance test suite)
+#   2. validate_governance_compliance.py  (backend structural check)
+#   3. gate_md_count.sh             (root markdown clutter)
+#   4. gate_10_constitutional_integrity.sh  (constitutional change detection)
+#   5. gate_4b_frontend_antimock.sh  (frontend fabrication check)
+#   6. check_api_contracts.py        (frontend/backend API contract match)
+#   7. check_enforcement_integrity.py (enforcement surface self-protection)
+#
+# Exit codes:
+#   0 - All gates passed
+#   1 - One or more gates failed
+#
+# Setup:
+#   ln -sf ../../scripts/git-hooks/pre-push .git/hooks/pre-push
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo "================================================"
+echo "🛡️  MahouN Pre-Push Enforcement Suite"
+echo "================================================"
+echo ""
+
+cd "${PROJECT_ROOT}"
+
+VIOLATIONS=0
+GATES_RUN=0
+
+run_gate() {
+    local name="$1"
+    local cmd="$2"
+    local tmpout="/tmp/prepush_${name}_$$.txt"
+    echo "================================================"
+    echo "🔍 ${name}"
+    echo "================================================"
+    GATES_RUN=$((GATES_RUN + 1))
+    if eval "$cmd" > "$tmpout" 2>&1; then
+        echo -e "${GREEN}✓ ${name}: PASSED${NC}"
+    else
+        echo -e "${RED}❌ ${name}: FAILED${NC}"
+        tail -5 "$tmpout" | sed 's/^/    /'
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+    echo ""
+}
+
+# Activate venv if available
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+
+# Run each gate independently (violations counter, not early exit)
+run_gate "Gate 9: Governance" "bash ci/first_step/gate_9_governance.sh"
+run_gate "Governance Compliance" "python3 scripts/validate_governance_compliance.py"
+run_gate "Gate md-count" "bash ci/gate_md_count.sh"
+run_gate "Gate 10: Constitutional Integrity" "bash ci/first_step/gate_10_constitutional_integrity.sh"
+run_gate "Gate 4b: Frontend Antimock" "bash ci/first_step/gate_4b_frontend_antimock.sh"
+run_gate "API Contracts" "python3 scripts/check_api_contracts.py"
+run_gate "Enforcement Integrity" "python3 scripts/check_enforcement_integrity.py"
+
+echo "================================================"
+echo "📊 Pre-Push Summary: ${GATES_RUN} gates run, ${VIOLATIONS} failures"
+echo "================================================"
+
+if [ "${VIOLATIONS}" -eq 0 ]; then
+    echo -e "${GREEN}✅ All pre-push gates passed. Safe to push.${NC}"
+    exit 0
+else
+    echo -e "${RED}❌ ${VIOLATIONS} gate(s) failed. Push blocked.${NC}"
+    echo ""
+    echo "To bypass (not recommended): git push --no-verify"
+    echo "Fix the failures above and re-push."
+    exit 1
+fi

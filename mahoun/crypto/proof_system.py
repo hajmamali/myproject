@@ -49,12 +49,17 @@ class ProofSystem:
         verdict_id: str,
         case_id: str,
         confidence: float,
-        private_key: str
+        private_key: str,
+        key_version: str = "1.0.0",
+        public_key: str = ""
     ) -> 'CryptographicProof':
         """
         Generate cryptographic proof
         
         Delegates to module-level generate_proof function
+        
+        PER RULE 5: Evidence binding
+        - key_version and public_key are passed through for verification
         """
         return generate_proof(
             graph_nodes=graph_nodes,
@@ -64,7 +69,9 @@ class ProofSystem:
             verdict_id=verdict_id,
             case_id=case_id,
             confidence=confidence,
-            private_key=private_key
+            private_key=private_key,
+            key_version=key_version,
+            public_key=public_key
         )
 
 
@@ -85,6 +92,10 @@ class CryptographicProof:
     - Non-repudiable: Signature proves authorship
     - Verifiable: Anyone with public key can verify
     - Timestamped: Proves temporal ordering
+    
+    PER RULE 5: Evidence binding
+    - key_version: Tracks which key was used for signing
+    - public_key: The public key for verification (stored in ledger)
     """
     
     graph_state_hash: str
@@ -97,6 +108,10 @@ class CryptographicProof:
     verdict_id: str
     case_id: str
     confidence: float
+    
+    # Key information for verification (RULE 5, RULE 6)
+    key_version: str = "1.0.0"
+    public_key: str = ""
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
@@ -147,7 +162,7 @@ class CryptographicProof:
         Reconstruct message that was signed
         
         Message format:
-        graph_hash|reasoning_hash|merkle_root|timestamp|verdict_id|case_id|confidence
+        graph_hash|reasoning_hash|merkle_root|timestamp|verdict_id|case_id|confidence|key_version
         """
         return (
             f"{self.graph_state_hash}|"
@@ -156,7 +171,8 @@ class CryptographicProof:
             f"{self.timestamp}|"
             f"{self.verdict_id}|"
             f"{self.case_id}|"
-            f"{self.confidence}"
+            f"{self.confidence}|"
+            f"{self.key_version}"
         )
     
     def __repr__(self) -> str:
@@ -176,7 +192,9 @@ def generate_proof(
     verdict_id: str,
     case_id: str,
     confidence: float,
-    private_key: str
+    private_key: str,
+    key_version: str = "1.0.0",
+    public_key: str = ""
 ) -> CryptographicProof:
     """
     Generate cryptographic proof of reasoning
@@ -190,6 +208,8 @@ def generate_proof(
         case_id: Case identifier
         confidence: Confidence score [0, 1]
         private_key: Ed25519 private key in PEM format
+        key_version: Key version identifier (for tracking and verification)
+        public_key: Public key in PEM format (for verification storage)
     
     Returns:
         CryptographicProof object
@@ -197,16 +217,28 @@ def generate_proof(
     Raises:
         ValueError: If inputs are invalid
         RuntimeError: If cryptography operations fail
+    
+    PER RULE 5: Evidence binding
+    - evidence_refs must be actual evidence, not empty list
+    - key_version and public_key enable independent verification
     """
     # Validate inputs
+    # HIGH-005 FIX: Validate evidence_refs is not empty (RULE 5)
     if not graph_nodes:
         raise ValueError("graph_nodes cannot be empty")
     if not reasoning_steps:
         raise ValueError("reasoning_steps cannot be empty")
+    if not evidence_refs:
+        raise ValueError(
+            "RULE 5 VIOLATION: evidence_refs cannot be empty. "
+            "Proof must be cryptographically bound to actual evidence."
+        )
     if not (0.0 <= confidence <= 1.0):
         raise ValueError(f"confidence must be in [0, 1], got {confidence}")
     if not verdict_id or not case_id:
         raise ValueError("verdict_id and case_id must not be empty")
+    if not private_key:
+        raise ValueError("private_key must not be empty")
     
     # 1. Hash graph state (deterministic)
     graph_hash = _hash_graph_state(graph_nodes, graph_edges)
@@ -220,7 +252,7 @@ def generate_proof(
     # 4. Generate timestamp
     timestamp = datetime.now(timezone.utc).isoformat()
     
-    # 5. Create message to sign
+    # 5. Create message to sign (includes key_version for determinism)
     message = (
         f"{graph_hash}|"
         f"{reasoning_hash}|"
@@ -228,13 +260,14 @@ def generate_proof(
         f"{timestamp}|"
         f"{verdict_id}|"
         f"{case_id}|"
-        f"{confidence}"
+        f"{confidence}|"
+        f"{key_version}"
     )
     
     # 6. Sign message
     signature = sign_message(message, private_key)
     
-    # 7. Create proof
+    # 7. Create proof with key information
     return CryptographicProof(
         graph_state_hash=graph_hash,
         reasoning_chain_hash=reasoning_hash,
@@ -243,7 +276,9 @@ def generate_proof(
         signature=signature,
         verdict_id=verdict_id,
         case_id=case_id,
-        confidence=confidence
+        confidence=confidence,
+        key_version=key_version,
+        public_key=public_key
     )
 
 

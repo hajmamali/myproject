@@ -73,6 +73,7 @@ class TestUltraRecorderHashChain:
     """Test cryptographic hash-chain integrity."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_hash_chain_sequential_integrity(self):
         """Hash chain must link all steps correctly."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -128,6 +129,7 @@ class TestUltraRecorderHashChain:
                 GovernanceContextManager._governance_stack.set(stack[:-1] or ())
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_tampered_hash_detection(self):
         """Tampered hash must be detected."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -180,6 +182,7 @@ class TestUltraRecorderGovernance:
     """Test governance context enforcement."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_production_requires_audit_mode(self):
         """Production must enforce audit_mode."""
         from mahoun.reasoning.reasoning_recorder_ultra import UltraReasoningRecorder
@@ -192,6 +195,7 @@ class TestUltraRecorderGovernance:
             assert "audit_mode" in str(exc_info.value).lower()
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_requires_governance_context(self):
         """Recording must require active governance context."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -215,6 +219,7 @@ class TestUltraRecorderGovernance:
             )
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_correlation_id_validation(self):
         """Correlation ID must match governance context."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -253,6 +258,7 @@ class TestUltraRecorderMerkle:
     """Test Merkle tree batch verification."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_merkle_checkpoint_creation(self):
         """Merkle checkpoints must be created at intervals."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -295,6 +301,7 @@ class TestPolicyManagerRBAC:
     """Test RBAC protection for policy changes."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_policy_change_requires_context(self):
         """Policy change must require governance context."""
         from mahoun.reasoning.policies import PolicyManager, PolicyType
@@ -310,6 +317,7 @@ class TestPolicyManagerRBAC:
             )
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_actor_id_validation(self):
         """Actor ID must match governance context."""
         from mahoun.reasoning.policies import PolicyManager, PolicyType
@@ -331,6 +339,7 @@ class TestPolicyManagerRBAC:
                 )
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_aggressive_policy_requires_approval(self):
         """Aggressive policy should require approval (warning logged)."""
         from mahoun.reasoning.policies import PolicyManager, PolicyType
@@ -361,6 +370,7 @@ class TestPolicyManagerAudit:
     """Test audit logging for policy changes."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_policy_change_is_audited(self):
         """Every policy change must be audited."""
         from mahoun.reasoning.policies import PolicyManager, PolicyType
@@ -398,6 +408,7 @@ class TestConcurrentStress:
     
     @pytest.mark.integration
     @pytest.mark.slow
+    @pytest.mark.p3
     def test_concurrent_recording_isolated(self):
         """Concurrent recordings must not interfere."""
         from mahoun.reasoning.reasoning_recorder_ultra import (
@@ -440,6 +451,7 @@ class TestByzantineFaults:
     """Test Byzantine fault resistance."""
     
     @pytest.mark.integration
+    @pytest.mark.p3
     def test_corrupted_previous_hash_detected(self):
         """Corrupted previous hash must be detected."""
         from mahoun.reasoning.reasoning_recorder_ultra import (

@@ -25,7 +25,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Callable, Tuple
 
 # Import symbolic reasoning (our fixed FOL engine)
 from reasoning_logic import (
@@ -37,6 +37,21 @@ from reasoning_logic import (
     ParseError,
     Rule,
 )
+
+# Import Rete manager for optional high-performance reasoning
+try:
+    from mahoun.reasoning.rete_manager import (
+        SafeForwardChaining,
+        ReteManager,
+        ReteConfig,
+        ReteExecutionMetrics,
+    )
+    RETE_MANAGER_AVAILABLE = True
+except ImportError as e:
+    logger.debug(f"ReteManager not available: {e}")
+    RETE_MANAGER_AVAILABLE = False
+    SafeForwardChaining = None
+    ReteManager = None
 
 guardrails_enforcement = importlib.import_module("mahoun.guardrails.enforcement")
 guard = guardrails_enforcement.guard
@@ -76,6 +91,56 @@ except ImportError:
     NEURAL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Rete Integration Helper
+# ============================================================================
+
+def _create_forward_chaining_engine(
+    kb: KnowledgeBase, 
+    max_iterations: int = 1000, 
+    timeout_seconds: int = 0
+) -> Tuple[Any, Any]:
+    """
+    Create and run forward chaining engine with optional Rete support.
+    
+    Returns:
+        Tuple of (engine, stats_or_metrics) for backward compatibility
+    """
+    # Use SafeForwardChaining if available
+    if RETE_MANAGER_AVAILABLE and SafeForwardChaining is not None:
+        try:
+            engine = SafeForwardChaining(kb, max_iterations=max_iterations)
+            metrics = engine.run(timeout_seconds=timeout_seconds)
+            
+            # Create compatible ForwardChainingStats
+            stats = ForwardChainingStats(
+                iterations=metrics.iterations,
+                rules_fired=metrics.rules_fired,
+                facts_derived=metrics.facts_derived,
+                execution_time_ms=metrics.execution_time_ms,
+            )
+            
+            # Log Rete usage
+            if metrics.algorithm == "rete":
+                logger.debug(
+                    "Rete algorithm used",
+                    extra={
+                        "facts_derived": metrics.facts_derived,
+                        "execution_time_ms": metrics.execution_time_ms,
+                    }
+                )
+            
+            return engine, stats
+            
+        except Exception as e:
+            logger.debug(f"SafeForwardChaining failed, using traditional: {e}")
+    
+    # Fallback to traditional
+    engine = ForwardChaining(kb, max_iterations=max_iterations, use_rete=False)
+    stats = engine.run(timeout_seconds=timeout_seconds)
+    return engine, stats
 
 
 class ReasoningMode(str, Enum):
@@ -143,6 +208,15 @@ class ReasoningResponse:
     derived_facts: list[str] = field(default_factory=list)
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    # ========================================================================
+    # EXECUTION LIFECYCLE CONTRACT FIELDS (RULE 3: Explicit, not hidden)
+    # ========================================================================
+    # PER RULE 3: Execution artifacts MUST travel through explicit contracts,
+    # NOT through response.metadata. This field carries the VerdictExecutionResult
+    # for FortressProtectedReasoningService to commit the ledger AFTER validation.
+    execution_result: Any = None
+    """VerdictExecutionResult from EvidenceLinkedVerdictEngine (RULE 3: Explicit contract)"""
 
     # ========================================================================
     # PROOF-CARRYING CONTRACT FIELDS (MANDATORY for successful responses)
@@ -249,6 +323,12 @@ class UnifiedReasoningService:
     Provides a single API for all reasoning tasks with automatic
     mode selection and fallback mechanisms.
     """
+
+    # Type annotations for fortress-protected method attributes
+    _symbolic_reasoning: Callable[[ReasoningRequest], ReasoningResponse]
+    _neural_reasoning_with_validation: Callable[[ReasoningRequest], ReasoningResponse]
+    _hybrid_reasoning_with_enforcement: Callable[[ReasoningRequest], ReasoningResponse]
+    _select_mode: Callable[[ReasoningRequest], ReasoningMode]
 
     def __init__(self, enable_neural: bool = True):
         """
@@ -1494,6 +1574,53 @@ class UnifiedReasoningService:
             },
         }
 
+    async def _neural_reasoning(self, request: ReasoningRequest) -> ReasoningResponse:
+        """
+        Neural reasoning dispatcher that routes to appropriate neural method
+        and returns a ReasoningResponse.
+        """
+        import time
+        start_time = time.perf_counter()
+
+        try:
+            # Route to appropriate neural service based on task
+            neural_result = None
+            if request.task == ReasoningTask.QUESTION_ANSWERING:
+                neural_result = await self._neural_question_answering(request)
+            elif request.task == ReasoningTask.EXPLANATION:
+                neural_result = await self._neural_explanation(request)
+            elif request.task in [ReasoningTask.FORWARD_INFERENCE, ReasoningTask.BACKWARD_PROOF]:
+                neural_result = await self._neural_deep_reasoning(request)
+            else:
+                neural_result = await self._neural_general_reasoning(request)
+
+            execution_time = (time.perf_counter() - start_time) * 1000
+            neural_confidence = neural_result.get("confidence", 0.0)
+            neural_explanation = neural_result.get("explanation", None)
+            neural_derived_facts = neural_result.get("derived_facts", [])
+            neural_result_data = neural_result.get("result", None)
+
+            return ReasoningResponse(
+                success=True,
+                result=neural_result_data,
+                confidence=neural_confidence,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                explanation=neural_explanation,
+                derived_facts=neural_derived_facts,
+                metadata={"neural_result": neural_result}
+            )
+        except Exception as e:
+            execution_time = (time.perf_counter() - start_time) * 1000
+            return ReasoningResponse(
+                success=False,
+                result=None,
+                confidence=0.0,
+                reasoning_mode=ReasoningMode.NEURAL,
+                execution_time_ms=execution_time,
+                error=f"Neural reasoning failed: {e}",
+            )
+
     async def _neural_general_fallback(self, request: ReasoningRequest, patterns: dict[str, Any]) -> dict[str, Any]:
         """General neural fallback for other reasoning tasks"""
 
@@ -1555,10 +1682,14 @@ class UnifiedReasoningService:
             )
 
     async def _forward_inference(self, kb: KnowledgeBase, request: ReasoningRequest) -> ReasoningResponse:
-        """Forward chaining inference"""
-        engine = ForwardChaining(kb, max_iterations=1000)
-        stats = engine.run(timeout_seconds=request.timeout_seconds)
-
+        """Forward chaining inference with optional Rete algorithm support"""
+        # Use helper function for Rete integration
+        engine, stats = _create_forward_chaining_engine(
+            kb, 
+            max_iterations=1000, 
+            timeout_seconds=request.timeout_seconds
+        )
+        
         derived_facts = [str(fact) for fact in engine.derived_facts]
 
         # Build proof tree if requested
@@ -1772,8 +1903,7 @@ class UnifiedReasoningService:
             # 4. Check for unsatisfiable rule combinations
             # Run forward chaining to see if we derive contradictions
             try:
-                engine = ForwardChaining(kb, max_iterations=100)
-                engine.run(timeout_seconds=5)  # Short timeout for consistency check
+                engine, _ = _create_forward_chaining_engine(kb, max_iterations=100, timeout_seconds=5)
 
                 # Check if any derived facts contradict existing facts
                 derived_predicates = set()
@@ -2045,7 +2175,7 @@ class UnifiedReasoningService:
 
         ENFORCEMENT MECHANISM: Neural facts must be symbolically derivable
         """
-        validation_result = {"valid": True, "issues": [], "validated_facts": 0, "invalid_facts": 0}
+        validation_result: dict[str, Any] = {"valid": True, "issues": [], "validated_facts": 0, "invalid_facts": 0}
 
         if not neural_response.derived_facts:
             return validation_result
@@ -2081,8 +2211,7 @@ class UnifiedReasoningService:
                     continue  # Skip unparseable rules
 
             # Run symbolic forward chaining
-            engine = ForwardChaining(kb, max_iterations=100)
-            engine.run(timeout_seconds=5)
+            engine, _ = _create_forward_chaining_engine(kb, max_iterations=100, timeout_seconds=5)
 
             # Check if neural facts are symbolically derivable
             symbolic_facts = set(str(fact) for fact in engine.derived_facts)
@@ -2119,7 +2248,7 @@ class UnifiedReasoningService:
 
         ENFORCEMENT MECHANISM: Cross-layer results must be logically consistent
         """
-        consistency_result = {"consistent": True, "issues": [], "agreement_score": 0.0}
+        consistency_result: dict[str, Any] = {"consistent": True, "issues": [], "agreement_score": 0.0}
 
         try:
             # Check confidence agreement
@@ -2175,5 +2304,10 @@ async def prove_goal(goal: str, facts: list[str], rules: list[str], **kwargs) ->
 async def answer_question(question: str, context: dict[str, Any] = None, **kwargs) -> ReasoningResponse:
     """Convenience function for question answering"""
     service = UnifiedReasoningService()
-    request = ReasoningRequest(task=ReasoningTask.QUESTION_ANSWERING, query=question, context=context or {}, **kwargs)
+    request = ReasoningRequest(
+        task=ReasoningTask.QUESTION_ANSWERING,
+        query=question,
+        context=context or {},
+        **kwargs,
+    )
     return await service.reason(request)

@@ -42,6 +42,7 @@ class TestTaskD11_NetworkIsolationTesting:
     """Task D.1.1: Network isolation testing"""
     
     @patch('socket.gethostbyname')
+    @pytest.mark.p2
     def test_dns_resolution_blocking(self, mock_gethostbyname):
         """Test DNS resolution is blocked in air-gap mode"""
         # Mock DNS resolution failure (expected in air-gap)
@@ -60,6 +61,7 @@ class TestTaskD11_NetworkIsolationTesting:
             assert "blocked" in test.details.lower()
     
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_http_connection_blocking(self, mock_urlopen):
         """Test HTTP connections are blocked in air-gap mode"""
         # Mock HTTP connection failure (expected in air-gap)
@@ -79,6 +81,7 @@ class TestTaskD11_NetworkIsolationTesting:
     
     @patch('socket.gethostbyname')
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_network_isolation_violation_detection(self, mock_urlopen, mock_gethostbyname):
         """Test detection of network isolation violations"""
         # Mock successful network access (VIOLATION)
@@ -103,6 +106,7 @@ class TestTaskD11_NetworkIsolationTesting:
 class TestTaskD12_LocalFilesOnlyEnforcement:
     """Task D.1.2: local_files_only enforcement validation"""
     
+    @pytest.mark.p2
     def test_local_files_only_enforcement_check(self):
         """Test local_files_only enforcement validation"""
         validator = AirGapValidator()
@@ -113,6 +117,7 @@ class TestTaskD12_LocalFilesOnlyEnforcement:
         assert isinstance(enforced, bool)
     
     @patch.dict('os.environ', {'HF_HUB_OFFLINE': '1', 'TRANSFORMERS_OFFLINE': '1'})
+    @pytest.mark.p2
     def test_huggingface_offline_mode_configured(self):
         """Test HuggingFace offline mode environment variables"""
         validator = AirGapValidator()
@@ -126,6 +131,7 @@ class TestTaskD12_LocalFilesOnlyEnforcement:
         assert len(hf_warnings) == 0
     
     @patch.dict('os.environ', {}, clear=True)
+    @pytest.mark.p2
     def test_huggingface_offline_mode_not_configured(self):
         """Test detection of missing HuggingFace offline configuration"""
         validator = AirGapValidator()
@@ -144,6 +150,7 @@ class TestTaskD12_LocalFilesOnlyEnforcement:
 class TestTaskD13_ModelIntegrityVerification:
     """Task D.1.3: Model integrity verification system"""
     
+    @pytest.mark.p2
     def test_sha256_checksum_calculation(self):
         """Test SHA-256 checksum calculation"""
         # Create temporary file with known content
@@ -163,6 +170,7 @@ class TestTaskD13_ModelIntegrityVerification:
         finally:
             temp_path.unlink()
     
+    @pytest.mark.p2
     def test_model_integrity_verification_success(self):
         """Test successful model integrity verification"""
         # Create temporary model file
@@ -184,6 +192,7 @@ class TestTaskD13_ModelIntegrityVerification:
             assert results[0].verified == True
             assert results[0].actual_hash == expected_hash
     
+    @pytest.mark.p2
     def test_model_integrity_verification_failure(self):
         """Test detection of corrupted models"""
         # Create temporary model file
@@ -204,6 +213,7 @@ class TestTaskD13_ModelIntegrityVerification:
             assert results[0].verified == False
             assert len(validator._violations) > 0
     
+    @pytest.mark.p2
     def test_missing_model_file_detection(self):
         """Test detection of missing model files"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -229,6 +239,7 @@ class TestTaskD14_AirGapDeploymentTesting:
     
     @patch('socket.gethostbyname')
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_comprehensive_compliance_report(self, mock_urlopen, mock_gethostbyname):
         """Test comprehensive air-gap compliance report generation"""
         # Mock air-gap environment (network isolated)
@@ -248,6 +259,7 @@ class TestTaskD14_AirGapDeploymentTesting:
     
     @patch('socket.gethostbyname')
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_compliant_system_report(self, mock_urlopen, mock_gethostbyname):
         """Test report for fully compliant air-gap system"""
         # Mock perfect air-gap environment
@@ -265,6 +277,7 @@ class TestTaskD14_AirGapDeploymentTesting:
             assert test.isolated == True
     
     @patch('socket.gethostbyname')
+    @pytest.mark.p2
     def test_violation_system_report(self, mock_gethostbyname):
         """Test report for system with violations"""
         # Mock network access (VIOLATION)
@@ -291,6 +304,7 @@ class TestAirGapValidatorIntegration:
     
     @patch('socket.gethostbyname')
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_validate_airgap_compliance_function(self, mock_urlopen, mock_gethostbyname):
         """Test convenience function for compliance validation"""
         # Mock air-gap environment
@@ -304,6 +318,7 @@ class TestAirGapValidatorIntegration:
     
     @patch('socket.gethostbyname')
     @patch('urllib.request.urlopen')
+    @pytest.mark.p2
     def test_is_airgap_compliant_function(self, mock_urlopen, mock_gethostbyname):
         """Test quick compliance check function"""
         # Mock air-gap environment

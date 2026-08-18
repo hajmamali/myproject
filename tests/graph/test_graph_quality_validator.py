@@ -65,6 +65,7 @@ def mock_connection():
 class TestOrphanNodeDetection:
     """Test orphan node detection"""
     
+    @pytest.mark.p2
     def test_no_orphans(self, validator, mock_connection):
         """Test graph with no orphan nodes"""
         conn, session = mock_connection
@@ -78,6 +79,7 @@ class TestOrphanNodeDetection:
         assert len(result.orphans_by_type) == 0
         assert len(validator.issues) == 0
     
+    @pytest.mark.p2
     def test_orphans_detected_warning_level(self, validator, mock_connection):
         """Test detection of small number of orphans (warning)"""
         conn, session = mock_connection
@@ -106,6 +108,7 @@ class TestOrphanNodeDetection:
         assert issue.entity_label == 'Article'
         assert issue.count == 10
     
+    @pytest.mark.p2
     def test_orphans_detected_error_level(self, validator, mock_connection):
         """Test detection of many orphans (error)"""
         conn, session = mock_connection
@@ -132,6 +135,7 @@ class TestOrphanNodeDetection:
 class TestDuplicateDetection:
     """Test duplicate node detection"""
     
+    @pytest.mark.p2
     def test_no_duplicates(self, validator, mock_connection):
         """Test graph with no duplicate IDs"""
         conn, session = mock_connection
@@ -144,6 +148,7 @@ class TestDuplicateDetection:
         assert not result.has_duplicates
         assert len(validator.issues) == 0
     
+    @pytest.mark.p2
     def test_duplicates_detected_critical(self, validator, mock_connection):
         """Test duplicate ID detection (CRITICAL severity)"""
         conn, session = mock_connection
@@ -171,6 +176,7 @@ class TestDuplicateDetection:
 class TestRequiredProperties:
     """Test required property validation"""
     
+    @pytest.mark.p2
     def test_no_missing_properties(self, validator, mock_connection):
         """Test all required properties present"""
         conn, session = mock_connection
@@ -183,6 +189,7 @@ class TestRequiredProperties:
         assert not result.has_missing
         assert len(validator.issues) == 0
     
+    @pytest.mark.p2
     def test_missing_id_property_error(self, validator, mock_connection):
         """Test missing 'id' property (ERROR severity)"""
         conn, session = mock_connection
@@ -206,6 +213,7 @@ class TestRequiredProperties:
         assert issue.severity == IssueSeverity.ERROR
         assert issue.metadata['property'] == 'id'
     
+    @pytest.mark.p2
     def test_missing_non_id_property_warning(self, validator, mock_connection):
         """Test missing non-id property (WARNING severity)"""
         conn, session = mock_connection
@@ -226,6 +234,7 @@ class TestRequiredProperties:
 class TestIntegrityChecks:
     """Test relationship integrity"""
     
+    @pytest.mark.p2
     def test_no_incomplete_relationships(self, validator, mock_connection):
         """Test all relationships have metadata"""
         conn, session = mock_connection
@@ -238,6 +247,7 @@ class TestIntegrityChecks:
         assert not result.has_broken
         assert len(validator.issues) == 0
     
+    @pytest.mark.p2
     def test_incomplete_relationships_detected(self, validator, mock_connection):
         """Test detection of relationships missing metadata"""
         conn, session = mock_connection
@@ -265,6 +275,7 @@ class TestIntegrityChecks:
 class TestConsistencyRules:
     """Test domain consistency rules"""
     
+    @pytest.mark.p2
     def test_articles_without_law_error(self, validator, mock_connection):
         """Test Articles must belong to Law (domain rule)"""
         conn, session = mock_connection
@@ -291,6 +302,7 @@ class TestConsistencyRules:
         assert val_issue.severity == IssueSeverity.ERROR
         assert val_issue.entity_label == 'Article'
     
+    @pytest.mark.p2
     def test_all_consistency_rules(self, validator, mock_connection):
         """Test all domain consistency rules"""
         conn, session = mock_connection
@@ -314,12 +326,14 @@ class TestConsistencyRules:
 class TestQualityScoring:
     """Test deterministic quality scoring"""
     
+    @pytest.mark.p2
     def test_perfect_score(self, validator):
         """Test perfect graph (score 100)"""
         validator.issues = []
         score = validator._calculate_quality_score()
         assert score == 100
     
+    @pytest.mark.p2
     def test_score_with_warnings(self, validator):
         """Test score calculation with warnings"""
         validator.issues = [
@@ -336,6 +350,7 @@ class TestQualityScoring:
         # 100 - (10 warnings * 1 point) = 90
         assert score == 90
     
+    @pytest.mark.p2
     def test_score_with_errors(self, validator):
         """Test score calculation with errors"""
         validator.issues = [
@@ -352,6 +367,7 @@ class TestQualityScoring:
         # 100 - (5 errors * 5 points) = 75
         assert score == 75
     
+    @pytest.mark.p2
     def test_score_with_critical(self, validator):
         """Test score calculation with critical issues"""
         validator.issues = [
@@ -368,6 +384,7 @@ class TestQualityScoring:
         # 100 - (3 critical * 10 points) = 70
         assert score == 70
     
+    @pytest.mark.p2
     def test_score_floor_at_zero(self, validator):
         """Test score cannot go below 0"""
         validator.issues = [
@@ -387,26 +404,31 @@ class TestQualityScoring:
 class TestQualityLevels:
     """Test quality level determination"""
     
+    @pytest.mark.p2
     def test_excellent_level(self, validator):
         """Test EXCELLENT quality level (90-100)"""
         level = validator._determine_quality_level(95, False)
         assert level == QualityLevel.EXCELLENT
     
+    @pytest.mark.p2
     def test_good_level(self, validator):
         """Test GOOD quality level (75-89)"""
         level = validator._determine_quality_level(80, False)
         assert level == QualityLevel.GOOD
     
+    @pytest.mark.p2
     def test_fair_level(self, validator):
         """Test FAIR quality level (50-74)"""
         level = validator._determine_quality_level(60, False)
         assert level == QualityLevel.FAIR
     
+    @pytest.mark.p2
     def test_poor_level(self, validator):
         """Test POOR quality level (0-49)"""
         level = validator._determine_quality_level(30, False)
         assert level == QualityLevel.POOR
     
+    @pytest.mark.p2
     def test_critical_overrides_score(self, validator):
         """Test CRITICAL level overrides high score"""
         level = validator._determine_quality_level(95, True)  # has_critical=True
@@ -416,6 +438,7 @@ class TestQualityLevels:
 class TestValidateAll:
     """Test comprehensive validation"""
     
+    @pytest.mark.p2
     def test_validate_all_creates_report(self, validator, mock_connection):
         """Test validate_all returns frozen report"""
         conn, session = mock_connection
@@ -431,6 +454,7 @@ class TestValidateAll:
         assert report.quality_level == QualityLevel.EXCELLENT
         assert report.total_issues == 0
     
+    @pytest.mark.p2
     def test_validate_all_immutable_results(self, validator, mock_connection):
         """Test validation report is immutable"""
         conn, session = mock_connection
@@ -450,6 +474,7 @@ class TestValidateAll:
 class TestProductionReadiness:
     """Test production readiness assessment"""
     
+    @pytest.mark.p2
     def test_production_ready_excellent(self):
         """Test EXCELLENT quality is production ready"""
         report = ValidationReport(
@@ -472,6 +497,7 @@ class TestProductionReadiness:
         
         assert report.is_production_ready()
     
+    @pytest.mark.p2
     def test_not_production_ready_critical(self):
         """Test CRITICAL issues block production"""
         report = ValidationReport(
@@ -494,6 +520,7 @@ class TestProductionReadiness:
         
         assert not report.is_production_ready()
     
+    @pytest.mark.p2
     def test_not_production_ready_many_errors(self):
         """Test too many errors block production"""
         report = ValidationReport(
@@ -520,6 +547,7 @@ class TestProductionReadiness:
 class TestConvenienceFunction:
     """Test convenience function"""
     
+    @pytest.mark.p2
     def test_validate_graph_quality_function(self, governance_context, mock_connection):
         """Test quick validation function"""
         conn, session = mock_connection
@@ -540,6 +568,7 @@ class TestConvenienceFunction:
 class TestValidationIntegration:
     """Integration tests (require real Neo4j)"""
     
+    @pytest.mark.p2
     def test_validation_with_real_connection(self, governance_context):
         """Smoke test with real connection (requires Neo4j running)"""
         # This will only run if Neo4j is available

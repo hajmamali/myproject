@@ -60,6 +60,7 @@ def sample_workspace(tmp_path):
 class TestForbiddenPatternMatch:
     """Test ForbiddenPatternMatch dataclass."""
     
+    @pytest.mark.p1
     def test_pattern_match_creation(self):
         """Test creating pattern match."""
         match = ForbiddenPatternMatch(
@@ -81,6 +82,7 @@ class TestForbiddenPatternMatch:
 class TestSecurityHardeningValidator:
     """Test SecurityHardeningValidator."""
     
+    @pytest.mark.p1
     def test_initialization(self, mock_evidence_collector, tmp_path):
         """Test validator initialization."""
         validator = SecurityHardeningValidator(
@@ -91,6 +93,7 @@ class TestSecurityHardeningValidator:
         assert validator.name == "security-hardening-validator"
         assert validator.workspace_root == tmp_path
     
+    @pytest.mark.p1
     def test_dependencies(self, mock_evidence_collector, tmp_path):
         """Test validator has no dependencies."""
         validator = SecurityHardeningValidator(mock_evidence_collector, tmp_path)
@@ -98,6 +101,7 @@ class TestSecurityHardeningValidator:
         
         assert deps == []
     
+    @pytest.mark.p1
     def test_neo4j_allowlist_constants(self):
         """Test Neo4j allowlist is properly defined."""
         allowlist = SecurityHardeningValidator.NEO4J_ALLOWLIST
@@ -107,6 +111,7 @@ class TestSecurityHardeningValidator:
         assert "api/database.py" in allowlist
         assert "tests/fixtures/seed_data.py" in allowlist
     
+    @pytest.mark.p1
     def test_required_security_tests_constants(self):
         """Test required security tests are defined."""
         required = SecurityHardeningValidator.REQUIRED_SECURITY_TESTS
@@ -116,6 +121,7 @@ class TestSecurityHardeningValidator:
         assert "tests/security/test_rbac_permission_matrix.py" in required
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_neo4j_governance_no_violations(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test Neo4j governance check when no violations."""
         # Mock grep finding nothing (return code 1 = no matches)
@@ -130,6 +136,7 @@ class TestSecurityHardeningValidator:
         assert "no unauthorized driver usage" in info_findings[0].message.lower()
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_neo4j_governance_violation_detected(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test Neo4j governance check detects violations."""
         # Mock grep finding violation in non-allowlisted file
@@ -145,6 +152,7 @@ class TestSecurityHardeningValidator:
         assert "outside allowlist" in p0_findings[0].message.lower()
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_neo4j_allowlisted_file_not_flagged(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test that allowlisted files are not flagged."""
         # Mock grep finding usage in allowlisted file
@@ -159,6 +167,7 @@ class TestSecurityHardeningValidator:
         assert len(p0_findings) == 0
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_governance_context_singleton_check_pass(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test GovernanceContext singleton check passes."""
         # Mock grep finding only canonical definition
@@ -183,6 +192,7 @@ class TestSecurityHardeningValidator:
         assert len(info_findings) >= 2  # One for GovernanceContext, one for _authorized_write_ctx
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_governance_context_duplication_detected(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test detection of GovernanceContext duplication."""
         # Mock grep finding duplicate definition
@@ -201,6 +211,7 @@ class TestSecurityHardeningValidator:
         assert len(p0_findings) > 0
         assert "non-canonical" in p0_findings[0].message.lower()
     
+    @pytest.mark.p1
     def test_security_test_coverage_all_present(self, mock_evidence_collector, sample_workspace):
         """Test security test coverage when all tests present."""
         validator = SecurityHardeningValidator(mock_evidence_collector, sample_workspace)
@@ -212,6 +223,7 @@ class TestSecurityHardeningValidator:
         assert "all" in info_findings[0].message.lower()
         assert "required security test files exist" in info_findings[0].message.lower()
     
+    @pytest.mark.p1
     def test_security_test_coverage_missing_tests(self, mock_evidence_collector, tmp_path):
         """Test security test coverage when tests missing."""
         # Only create partial structure
@@ -228,6 +240,7 @@ class TestSecurityHardeningValidator:
         assert "missing" in p0_findings[0].message.lower()
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_forbidden_patterns_exec_detected(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test detection of exec() in production code."""
         # Mock grep finding exec() usage
@@ -242,6 +255,7 @@ class TestSecurityHardeningValidator:
         assert len(p0_findings) > 0
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_forbidden_patterns_in_tests_not_flagged(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test that forbidden patterns in tests/ are not flagged."""
         # Mock grep finding exec() in test file
@@ -257,6 +271,7 @@ class TestSecurityHardeningValidator:
         assert True  # Test structure validation
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_forbidden_patterns_none_found(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test when no forbidden patterns found."""
         # Mock grep finding nothing
@@ -270,6 +285,7 @@ class TestSecurityHardeningValidator:
         assert len(info_findings) > 0
         assert "no forbidden" in info_findings[0].message.lower()
     
+    @pytest.mark.p1
     def test_authorization_boundary_tests_check(self, mock_evidence_collector, sample_workspace):
         """Test authorization boundary test checking."""
         # Create some governance test files
@@ -283,6 +299,7 @@ class TestSecurityHardeningValidator:
         info_findings = [f for f in findings if f.severity == FindingSeverity.INFO]
         assert len(info_findings) > 0
     
+    @pytest.mark.p1
     def test_calculate_security_compliance_score_perfect(self, mock_evidence_collector, sample_workspace):
         """Test compliance score calculation with no findings."""
         validator = SecurityHardeningValidator(mock_evidence_collector, sample_workspace)
@@ -292,6 +309,7 @@ class TestSecurityHardeningValidator:
         
         assert score == 100.0
     
+    @pytest.mark.p1
     def test_calculate_security_compliance_score_with_findings(self, mock_evidence_collector, sample_workspace):
         """Test compliance score calculation with findings."""
         validator = SecurityHardeningValidator(mock_evidence_collector, sample_workspace)
@@ -313,6 +331,7 @@ class TestSecurityHardeningValidator:
         
         assert score == 65.0  # 100 - 25 - 10
     
+    @pytest.mark.p1
     def test_calculate_security_compliance_score_minimum_zero(self, mock_evidence_collector, sample_workspace):
         """Test compliance score never goes below zero."""
         validator = SecurityHardeningValidator(mock_evidence_collector, sample_workspace)
@@ -331,6 +350,7 @@ class TestSecurityHardeningValidator:
         assert score == 0.0  # Minimum is 0
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_full_validation_workflow(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test full validation workflow."""
         # Mock all subprocess calls to return no violations
@@ -350,6 +370,7 @@ class TestIntegrationScenarios:
     """Integration test scenarios."""
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_multiple_violations_produce_fail_status(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test that multiple P0 violations produce FAIL status."""
         # Mock multiple violations
@@ -378,6 +399,7 @@ class TestIntegrationScenarios:
         assert result.evidence["security_compliance_score"] < 100.0
     
     @patch("mahoun.preproduction.validators.security_validator.subprocess.run")
+    @pytest.mark.p1
     def test_clean_codebase_produces_pass(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test that clean codebase produces PASS status."""
         # Mock all checks returning clean

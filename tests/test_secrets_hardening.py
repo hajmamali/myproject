@@ -13,11 +13,13 @@ from unittest.mock import patch
 
 
 class TestSecretsRuntimeValidation:
+    @pytest.mark.p2
     def test_dev_placeholder_detection_empty(self):
         from mahoun.core.secrets import _is_dev_placeholder
         assert _is_dev_placeholder("")
         assert _is_dev_placeholder("   ")
 
+    @pytest.mark.p2
     def test_dev_placeholder_detection_known_values(self):
         from mahoun.core.secrets import _is_dev_placeholder, DEV_PLACEHOLDERS
         for placeholder in DEV_PLACEHOLDERS:
@@ -25,6 +27,7 @@ class TestSecretsRuntimeValidation:
             assert _is_dev_placeholder(placeholder.upper())
             assert _is_dev_placeholder(f"  {placeholder}  ")
 
+    @pytest.mark.p2
     def test_dev_placeholder_detection_safe_values(self):
         from mahoun.core.secrets import _is_dev_placeholder
         safe_values = [
@@ -36,6 +39,7 @@ class TestSecretsRuntimeValidation:
             assert not _is_dev_placeholder(value)
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "dev"})
+    @pytest.mark.p2
     def test_require_secret_dev_allows_placeholders_with_warning(self, caplog):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"TEST_SECRET": "dev_password_change_me"}):
@@ -44,6 +48,7 @@ class TestSecretsRuntimeValidation:
             assert "dev placeholder" in caplog.text.lower()
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "dev"})
+    @pytest.mark.p2
     def test_require_secret_dev_allows_strong_secrets(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"TEST_SECRET": "strong_secret_12345"}):
@@ -51,6 +56,7 @@ class TestSecretsRuntimeValidation:
             assert result == "strong_secret_12345"
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "dev"})
+    @pytest.mark.p2
     def test_require_secret_dev_fallback_if_missing(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {}, clear=True):
@@ -59,6 +65,7 @@ class TestSecretsRuntimeValidation:
             assert result == "dev_password_change_me"
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_require_secret_prod_rejects_missing(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "prod"}, clear=True):
@@ -66,6 +73,7 @@ class TestSecretsRuntimeValidation:
                 require_secret("MISSING_SECRET")
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_require_secret_prod_rejects_dev_placeholders(self):
         from mahoun.core.secrets import require_secret
         for placeholder in ["dev_password_change_me", "CHANGE_ME", "password"]:
@@ -74,6 +82,7 @@ class TestSecretsRuntimeValidation:
                     require_secret("TEST_SECRET")
     
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_require_secret_prod_rejects_empty_string(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "prod", "TEST_SECRET": ""}):
@@ -81,6 +90,7 @@ class TestSecretsRuntimeValidation:
                 require_secret("TEST_SECRET")
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_require_secret_prod_allows_strong_secrets(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "prod", "TEST_SECRET": "SuperSecure123!@#"}):
@@ -88,6 +98,7 @@ class TestSecretsRuntimeValidation:
             assert result == "SuperSecure123!@#"
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "staging"})
+    @pytest.mark.p2
     def test_require_secret_staging_rejects_missing(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "staging"}, clear=True):
@@ -95,6 +106,7 @@ class TestSecretsRuntimeValidation:
                 require_secret("MISSING_SECRET")
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "staging"})
+    @pytest.mark.p2
     def test_require_secret_staging_rejects_placeholders(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "staging", "TEST_SECRET": "dev_password_change_me"}):
@@ -102,6 +114,7 @@ class TestSecretsRuntimeValidation:
                 require_secret("TEST_SECRET")
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "staging"})
+    @pytest.mark.p2
     def test_require_secret_staging_allows_strong_secrets(self):
         from mahoun.core.secrets import require_secret
         with patch.dict(os.environ, {"MAHOUN_ENV": "staging", "TEST_SECRET": "StrongSecret2024!"}):
@@ -109,6 +122,7 @@ class TestSecretsRuntimeValidation:
             assert result == "StrongSecret2024!"
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "dev"})
+    @pytest.mark.p2
     def test_validate_all_required_secrets_dev_allows_placeholders(self):
         from mahoun.core.secrets import validate_all_required_secrets
         with patch.dict(
@@ -123,6 +137,7 @@ class TestSecretsRuntimeValidation:
             validate_all_required_secrets()
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_validate_all_required_secrets_prod_rejects_any_placeholder(self):
         from mahoun.core.secrets import validate_all_required_secrets
         with patch.dict(
@@ -138,6 +153,7 @@ class TestSecretsRuntimeValidation:
                 validate_all_required_secrets()
 
     @patch.dict(os.environ, {"MAHOUN_ENV": "prod"})
+    @pytest.mark.p2
     def test_validate_all_required_secrets_prod_passes_with_strong_secrets(self):
         from mahoun.core.secrets import validate_all_required_secrets
         with patch.dict(
@@ -151,12 +167,14 @@ class TestSecretsRuntimeValidation:
         ):
             validate_all_required_secrets()
 
+    @pytest.mark.p2
     def test_required_secrets_canonical_names_defined(self):
         from mahoun.core.secrets import REQUIRED_SECRETS
         assert "DB_NEO4J_PASSWORD" in REQUIRED_SECRETS
         assert "DB_POSTGRES_PASSWORD" in REQUIRED_SECRETS
         assert "SECURITY_JWT_SECRET" in REQUIRED_SECRETS
 
+    @pytest.mark.p2
     def test_dev_placeholders_frozenset_defined(self):
         from mahoun.core.secrets import DEV_PLACEHOLDERS
         assert "dev_password_change_me" in DEV_PLACEHOLDERS
@@ -167,6 +185,7 @@ class TestSecretsRuntimeValidation:
 class TestSecretsHardening:
     """سخت‌ترین تست‌های امنیتی برای PR-2"""
     
+    @pytest.mark.p2
     def test_no_default_password_changeme_anywhere(self):
         """تست 1: هیچ‌جا نباید کلمه 'changeme' وجود داشته باشد"""
         result = subprocess.run(
@@ -184,6 +203,7 @@ class TestSecretsHardening:
             f"Matches:\n{result.stdout}"
         )
     
+    @pytest.mark.p2
     def test_no_default_password_in_compose(self):
         """تست 2: docker-compose.yml نباید default password داشته باشد"""
         compose_file = Path(__file__).parent.parent / "docker-compose.yml"
@@ -210,6 +230,7 @@ class TestSecretsHardening:
             f"All passwords MUST use :? syntax to fail when not set"
         )
     
+    @pytest.mark.p2
     def test_compose_requires_neo4j_password(self):
         """تست 3: docker-compose باید NEO4J_PASSWORD را require کند"""
         compose_file = Path(__file__).parent.parent / "docker-compose.yml"
@@ -220,6 +241,7 @@ class TestSecretsHardening:
             "❌ docker-compose.yml MUST require NEO4J_PASSWORD with :? syntax"
         )
     
+    @pytest.mark.p2
     def test_compose_requires_postgres_password(self):
         """تست 4: docker-compose باید POSTGRES_PASSWORD را require کند"""
         compose_file = Path(__file__).parent.parent / "docker-compose.yml"
@@ -230,6 +252,7 @@ class TestSecretsHardening:
             "❌ docker-compose.yml MUST require POSTGRES_PASSWORD with :? syntax"
         )
     
+    @pytest.mark.p2
     def test_compose_requires_jwt_secret(self):
         """تست 5: docker-compose باید JWT_SECRET_KEY را require کند"""
         compose_file = Path(__file__).parent.parent / "docker-compose.yml"
@@ -239,6 +262,7 @@ class TestSecretsHardening:
             "❌ docker-compose.yml MUST require JWT_SECRET_KEY with :? syntax"
         )
     
+    @pytest.mark.p2
     def test_no_default_password_in_api_config(self):
         """تست 6: api/config.py نباید default password داشته باشد"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -263,6 +287,7 @@ class TestSecretsHardening:
             f"All password fields MUST use Field(...) to require env vars"
         )
     
+    @pytest.mark.p2
     def test_config_requires_postgres_password(self):
         """تست 7: api/config.py باید postgres_password را require کند"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -274,6 +299,7 @@ class TestSecretsHardening:
             "❌ api/config.py MUST require postgres_password with Field(...)"
         )
     
+    @pytest.mark.p2
     def test_config_requires_neo4j_password(self):
         """تست 8: api/config.py باید neo4j_password را require کند"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -284,6 +310,7 @@ class TestSecretsHardening:
             "❌ api/config.py MUST require neo4j_password with Field(...)"
         )
     
+    @pytest.mark.p2
     def test_config_requires_jwt_secret(self):
         """تست 9: api/config.py باید jwt_secret را require کند"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -294,6 +321,7 @@ class TestSecretsHardening:
             "❌ api/config.py MUST require jwt_secret with Field(...)"
         )
     
+    @pytest.mark.p2
     def test_jwt_secret_min_length_enforced(self):
         """تست 10: jwt_secret باید minimum 32 کاراکتر باشد"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -318,27 +346,7 @@ class TestSecretsHardening:
             "❌ jwt_secret MUST enforce min_length=32 for security"
         )
     
-    def test_no_default_password_in_self_improve(self):
-        """تست 11: self_improve module نباید default password داشته باشد"""
-        self_improve_file = Path(__file__).parent.parent / "mahoun" / "self_improve" / "ultra_self_improvement_system.py"
-        
-        if not self_improve_file.exists():
-            pytest.skip("Self-improve module not found")
-        
-        content = self_improve_file.read_text()
-        
-        # Should NOT have default="password" or "neo4j_password": "password"
-        assert '"password"' not in content or 'neo4j_password": "password"' not in content, (
-            "❌ SECURITY VIOLATION: self_improve module has hardcoded 'password'"
-        )
-        
-        # Should use self.config["neo4j_password"] (KeyError if missing)
-        # NOT self.config.get("neo4j_password", "password")
-        assert 'self.config["neo4j_password"]' in content or \
-               "neo4j_password MUST be provided" in content, (
-            "❌ self_improve MUST raise error if neo4j_password missing"
-        )
-    
+    @pytest.mark.p2
     def test_env_example_exists(self):
         """تست 12: .env.example باید وجود داشته باشد"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -346,6 +354,7 @@ class TestSecretsHardening:
             "❌ .env.example file MUST exist to document required secrets"
         )
     
+    @pytest.mark.p2
     def test_env_example_has_required_vars(self):
         """تست 13: .env.example باید تمام متغیرهای ضروری را داشته باشد"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -370,6 +379,7 @@ class TestSecretsHardening:
             f"Missing: {missing}"
         )
     
+    @pytest.mark.p2
     def test_env_example_has_generation_instructions(self):
         """تست 14: .env.example باید دستورالعمل تولید password داشته باشد"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -388,6 +398,7 @@ class TestSecretsHardening:
             "❌ .env.example MUST show 'openssl rand -hex 32' for JWT secret"
         )
     
+    @pytest.mark.p2
     def test_env_example_has_placeholders_not_real_secrets(self):
         env_example = Path(__file__).parent.parent / ".env.example"
         content = env_example.read_text()
@@ -403,6 +414,7 @@ class TestSecretsHardening:
             f"❌ .env.example contains actual password-like values: {violations}"
         )
     
+    @pytest.mark.p2
     def test_env_example_not_ignored_by_git(self):
         """تست 16: .env.example نباید توسط git ignore شود"""
         gitignore = Path(__file__).parent.parent / ".gitignore"
@@ -413,6 +425,7 @@ class TestSecretsHardening:
             "❌ .env.example MUST be tracked by git (add !.env.example to .gitignore)"
         )
     
+    @pytest.mark.p2
     def test_actual_env_file_is_ignored(self):
         """تست 17: .env باید توسط git ignore شود"""
         gitignore = Path(__file__).parent.parent / ".gitignore"
@@ -426,6 +439,7 @@ class TestSecretsHardening:
         os.getenv("SKIP_DOCKER_TESTS") == "1",
         reason="Docker tests skipped"
     )
+    @pytest.mark.p2
     def test_docker_compose_fails_without_neo4j_password(self):
         """تست 18: docker-compose باید بدون NEO4J_PASSWORD fail کند"""
         # This is an integration test - only run if docker available
@@ -453,6 +467,7 @@ class TestSecretsHardening:
         os.getenv("SKIP_DOCKER_TESTS") == "1",
         reason="Docker tests skipped"
     )
+    @pytest.mark.p2
     def test_docker_compose_fails_without_postgres_password(self):
         """تست 19: docker-compose باید بدون POSTGRES_PASSWORD fail کند"""
         env = os.environ.copy()
@@ -471,6 +486,7 @@ class TestSecretsHardening:
             "❌ docker-compose MUST fail when POSTGRES_PASSWORD not set"
         )
     
+    @pytest.mark.p2
     def test_no_todo_deferred_for_secrets(self):
         """تست 20: نباید TODO-DEFERRED برای secrets وجود داشته باشد"""
         result = subprocess.run(
@@ -488,6 +504,7 @@ class TestSecretsHardening:
             f"{result.stdout}"
         )
     
+    @pytest.mark.p2
     def test_grep_for_any_hardcoded_credentials(self):
         """تست 21: جستجوی سخت‌گیرانه برای هرگونه credentials"""
         patterns_to_check = [
@@ -526,6 +543,7 @@ class TestSecretsHardening:
             for v in filtered_violations[:10]:  # Show first 10
                 print(f"  {v}")
     
+    @pytest.mark.p2
     def test_all_secrets_use_secretstr_type(self):
         """تست 22: تمام passwords باید از SecretStr استفاده کنند"""
         config_file = Path(__file__).parent.parent / "api" / "config.py"
@@ -549,6 +567,7 @@ class TestSecretsHardening:
 class TestSecurityRegression:
     """تست‌های regression برای اطمینان از عدم بازگشت مشکلات"""
     
+    @pytest.mark.p2
     def test_count_changeme_occurrences(self):
         """شمارش دقیق تعداد 'changeme' - باید صفر باشد"""
         result = subprocess.run(
@@ -573,6 +592,7 @@ class TestSecurityRegression:
             f"❌ Found {total} occurrences of 'changeme' in codebase"
         )
     
+    @pytest.mark.p2
     def test_security_checklist_all_pass(self):
         """چک‌لیست نهایی امنیت - همه باید pass شوند"""
         checklist = {

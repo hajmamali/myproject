@@ -21,6 +21,7 @@ from mahoun.graph.builders.entity_extractor import (
 class TestEntity:
     """Test Entity dataclass"""
 
+    @pytest.mark.p2
     def test_entity_creation(self):
         """Test creating an entity"""
         entity = Entity(
@@ -32,6 +33,7 @@ class TestEntity:
         assert entity.score == 0.95
         assert entity.normalized_text is not None
 
+    @pytest.mark.p2
     def test_entity_normalization(self):
         """Test entity text normalization"""
         entity = Entity(
@@ -45,6 +47,7 @@ class TestEntity:
         # Should normalize Persian digits and spaces
         assert "10" in entity.normalized_text or "۱۰" in entity.normalized_text
 
+    @pytest.mark.p2
     def test_entity_equality(self):
         """Test entity equality for deduplication"""
         entity1 = Entity(text="ماده 10", label="ARTICLE", start=0, end=7, score=0.95)
@@ -75,11 +78,13 @@ class TestEntityExtractor:
         """Create extractor with NER"""
         return EntityExtractor(use_ner=True, min_score=0.7)
 
+    @pytest.mark.p2
     def test_extractor_initialization(self, extractor):
         """Test extractor initialization"""
         assert extractor.min_score == 0.7
         assert extractor.use_ner == False
 
+    @pytest.mark.p2
     def test_extract_entities_empty_text(self, extractor):
         """Test extraction from empty text"""
         entities = extractor.extract_entities("")
@@ -88,6 +93,7 @@ class TestEntityExtractor:
         entities = extractor.extract_entities("   ")
         assert len(entities) == 0
 
+    @pytest.mark.p2
     def test_extract_entities_with_articles(self, extractor):
         """Test extraction of article references"""
         text = "به استناد ماده 10 قانون مدنی و ماده 20 قانون مجازات"
@@ -102,6 +108,7 @@ class TestEntityExtractor:
         assert any("10" in text for text in article_texts)
         assert any("20" in text for text in article_texts)
 
+    @pytest.mark.p2
     def test_extract_entities_with_case_numbers(self, extractor):
         """Test extraction of case numbers"""
         text = "پرونده شماره 1234/98 و پرونده 5678/99"
@@ -111,6 +118,7 @@ class TestEntityExtractor:
         case_entities = [e for e in entities if e.label == "CASE_NO"]
         assert len(case_entities) >= 2
 
+    @pytest.mark.p2
     def test_extract_entities_with_dates(self, extractor):
         """Test extraction of dates"""
         text = "دادنامه مورخ 1400/05/15 صادر شد"
@@ -120,6 +128,7 @@ class TestEntityExtractor:
         date_entities = [e for e in entities if e.label == "DATE"]
         assert len(date_entities) >= 1
 
+    @pytest.mark.p2
     def test_extract_entities_complex_text(self, extractor):
         """Test extraction from complex legal text"""
         text = """
@@ -138,6 +147,7 @@ class TestEntityExtractor:
         labels = set(e.label for e in entities)
         assert "ARTICLE" in labels or "LAW_NAME" in labels or "CASE_NO" in labels
 
+    @pytest.mark.p2
     def test_normalize_entity(self, extractor):
         """Test entity normalization"""
         entity = Entity(
@@ -151,6 +161,7 @@ class TestEntityExtractor:
         # Should be lowercase
         assert normalized.normalized_text == normalized.normalized_text.lower()
 
+    @pytest.mark.p2
     def test_merge_duplicates_same_entity(self, extractor):
         """Test merging duplicate entities"""
         entities = [
@@ -189,6 +200,7 @@ class TestEntityExtractor:
         # Should combine sources
         assert "+" in merged[0].source or len(merged[0].source) > 5
 
+    @pytest.mark.p2
     def test_merge_duplicates_different_labels(self, extractor):
         """Test that different labels are not merged"""
         entities = [
@@ -201,12 +213,14 @@ class TestEntityExtractor:
         # Should NOT merge (different labels)
         assert len(merged) == 2
 
+    @pytest.mark.p2
     def test_validate_entity_valid(self, extractor):
         """Test validation of valid entity"""
         entity = Entity(text="ماده 10", label="ARTICLE", start=0, end=7, score=0.95)
 
         assert extractor.validate_entity(entity) == True
 
+    @pytest.mark.p2
     def test_validate_entity_low_score(self, extractor):
         """Test validation rejects low score"""
         entity = Entity(
@@ -219,6 +233,7 @@ class TestEntityExtractor:
 
         assert extractor.validate_entity(entity) == False
 
+    @pytest.mark.p2
     def test_validate_entity_short_text(self, extractor):
         """Test validation rejects short text"""
         entity = Entity(
@@ -231,12 +246,14 @@ class TestEntityExtractor:
 
         assert extractor.validate_entity(entity) == False
 
+    @pytest.mark.p2
     def test_validate_entity_empty_text(self, extractor):
         """Test validation rejects empty text"""
         entity = Entity(text="", label="ARTICLE", start=0, end=0, score=0.95)
 
         assert extractor.validate_entity(entity) == False
 
+    @pytest.mark.p2
     def test_filter_entities(self, extractor):
         """Test filtering entities"""
         entities = [
@@ -261,6 +278,7 @@ class TestEntityExtractor:
         assert all(e.score >= 0.7 for e in filtered)
         assert all(len(e.text) >= 2 for e in filtered)
 
+    @pytest.mark.p2
     def test_get_entity_statistics(self, extractor):
         """Test entity statistics"""
         entities = [
@@ -294,6 +312,7 @@ class TestEntityExtractor:
         assert stats["by_source"]["nlp"] == 2
         assert 0.85 <= stats["avg_score"] <= 0.95
 
+    @pytest.mark.p2
     def test_extract_and_validate(self, extractor):
         """Test combined extraction and validation"""
         text = "به استناد ماده 10 قانون مدنی"
@@ -312,6 +331,7 @@ class TestAccuracy:
         """Create extractor instance"""
         return EntityExtractor(use_ner=False, min_score=0.7)
 
+    @pytest.mark.p2
     def test_article_extraction_accuracy(self, extractor):
         """Test article extraction accuracy"""
         # Test cases with known articles
@@ -344,6 +364,7 @@ class TestAccuracy:
             f"Article extraction accuracy {accuracy:.2%} is below 90%"
         )
 
+    @pytest.mark.p2
     def test_case_number_extraction_accuracy(self, extractor):
         """Test case number extraction accuracy"""
         test_cases = [
@@ -375,6 +396,7 @@ class TestAccuracy:
 class TestConvenienceFunctions:
     """Test convenience functions"""
 
+    @pytest.mark.p2
     def test_extract_entities_from_text(self):
         """Test convenience function"""
         text = "به استناد ماده 10 قانون مدنی"
@@ -394,6 +416,7 @@ class TestRealData:
         """Create extractor instance"""
         return EntityExtractor(use_ner=False, min_score=0.7)
 
+    @pytest.mark.p2
     def test_real_verdict_text(self, extractor):
         """Test extraction from real verdict text"""
         text = """

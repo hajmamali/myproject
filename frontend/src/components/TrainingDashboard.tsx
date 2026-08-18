@@ -1,408 +1,381 @@
 /**
  * Training Dashboard Component
  *
- * Advanced interface for configuring and starting model fine-tuning jobs
+ * A form to configure and start a training job.
+ * Receives an onStartTraining callback to handle the actual API call.
+ * Accepts an isTraining prop to show loading state.
  */
 
-import { useState } from "react";
-import {
-  PlayIcon,
-  Cog6ToothIcon,
-  DocumentTextIcon,
-  CpuChipIcon,
-  ClockIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
-import ModelSelector, { ModelOption } from "./ModelSelector";
+import { useState, useEffect } from 'react';
+import { listAvailableModels } from '../api/trainingClient';
 
-export interface TrainingConfig {
+interface ModelOption {
+  id: string;
+  name: string;
+  provider: string;
+  version: string;
+}
+
+interface TrainingConfig {
   model_name: string;
-  training_mode: "full_finetune" | "lora" | "qlora" | "dora" | "adalora";
-  quantization_mode?: "none" | "int8" | "int4" | "fp8";
+  training_mode: string; // 'lora' | 'qlora' | 'full'
   num_train_epochs: number;
-  per_device_train_batch_size: number;
-  per_device_eval_batch_size: number;
-  gradient_accumulation_steps: number;
+  batch_size: number;
   learning_rate: number;
-  weight_decay: number;
-  warmup_ratio: number;
-  max_grad_norm: number;
-  dataset_name?: string;
-  output_dir?: string;
-  run_name?: string;
-  seed?: number;
+  dataset_name: string;
+  run_name: string;
+  quantization?: 'INT8' | 'INT4' | null;
 }
 
-interface TrainingDashboardProps {
-  onStartTraining: (config: TrainingConfig) => Promise<void>;
+export interface TrainingDashboardProps {
+  onStartTraining: (config: TrainingConfig) => void;
   isTraining?: boolean;
-  className?: string;
 }
 
-const TRAINING_MODES = [
-  {
-    id: "lora" as const,
-    name: "LoRA",
-    description: "Low-Rank Adaptation - سریع و کارآمد",
-    recommended: true,
-  },
-  {
-    id: "qlora" as const,
-    name: "QLoRA",
-    description: "Quantized LoRA - برای مدل‌های بزرگ",
-  },
-  {
-    id: "full_finetune" as const,
-    name: "Full Fine-tune",
-    description: "فاین‌تیون کامل - کند اما دقیق",
-  },
-  {
-    id: "dora" as const,
-    name: "DoRA",
-    description: "Weight-Decomposed LoRA",
-  },
-  {
-    id: "adalora" as const,
-    name: "AdaLoRA",
-    description: "Adaptive LoRA",
-  },
-];
+export default function TrainingDashboard({ onStartTraining, isTraining = false }: TrainingDashboardProps) {
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const QUANTIZATION_MODES = [
-  { id: "none" as const, name: "بدون quantization" },
-  { id: "int8" as const, name: "INT8" },
-  { id: "int4" as const, name: "INT4" },
-  { id: "fp8" as const, name: "FP8" },
-];
-
-export default function TrainingDashboard({
-  onStartTraining,
-  isTraining = false,
-  className = "",
-}: TrainingDashboardProps) {
-  const [selectedModel, setSelectedModel] = useState<ModelOption | null>(null);
-  const [config, setConfig] = useState<Partial<TrainingConfig>>({
-    training_mode: "lora",
-    quantization_mode: "none",
-    num_train_epochs: 3,
-    per_device_train_batch_size: 4,
-    per_device_eval_batch_size: 8,
-    gradient_accumulation_steps: 4,
-    learning_rate: 0.0002,
-    weight_decay: 0.01,
-    warmup_ratio: 0.03,
-    max_grad_norm: 1.0,
-    seed: 42,
+  const [form, setForm] = useState({
+    model_id: '',
+    training_mode: 'lora' as 'lora' | 'qlora' | 'full',
+    epochs: 3,
+    batch_size: 4,
+    learning_rate: 2e-5,
+    dataset_name: '',
+    run_name: '',
+    quantization: null as 'INT8' | 'INT4' | null,
   });
 
-  const handleStartTraining = async () => {
-    if (!selectedModel) {
-      alert("لطفاً ابتدا یک مدل انتخاب کنید");
+  // Fetch available models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setIsLoadingModels(true);
+        setError(null);
+        const modelList = await listAvailableModels();
+        setModels(
+          (modelList.models ?? []).map((model) => ({
+            id: model.id,
+            name: model.name,
+            provider: model.provider,
+            version: model.size || '',
+          }))
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'بارگذاری مدل‌ها ناموفق بود');
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    void fetchModels();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    setForm(prev => {
+      if (type === 'checkbox') {
+        return { ...prev, [name]: (e.target as HTMLInputElement).checked };
+      }
+      if (name === 'epochs' || name === 'batch_size') {
+        return { ...prev, [name]: parseInt(value, 10) };
+      }
+      if (name === 'learning_rate') {
+        return { ...prev, [name]: parseFloat(value) };
+      }
+      return { ...prev, [name]: value };
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.model_id) {
+      setError('لطفاً یک مدل را انتخاب کنید');
+      return;
+    }
+    if (!form.dataset_name) {
+      setError('لطفاً نام dataset را وارد کنید');
+      return;
+    }
+    if (!form.run_name) {
+      setError('لطفاً نام اجرا را وارد کنید');
       return;
     }
 
-    const fullConfig: TrainingConfig = {
+    const selectedModel = models.find(m => m.id === form.model_id);
+    if (!selectedModel) {
+      setError('مدل انتخاب شده نامعتبر است');
+      return;
+    }
+
+    const config: TrainingConfig = {
       model_name: selectedModel.id,
-      training_mode: config.training_mode || "lora",
-      quantization_mode: config.quantization_mode,
-      num_train_epochs: config.num_train_epochs || 3,
-      per_device_train_batch_size: config.per_device_train_batch_size || 4,
-      per_device_eval_batch_size: config.per_device_eval_batch_size || 8,
-      gradient_accumulation_steps: config.gradient_accumulation_steps || 4,
-      learning_rate: config.learning_rate || 0.0002,
-      weight_decay: config.weight_decay || 0.01,
-      warmup_ratio: config.warmup_ratio || 0.03,
-      max_grad_norm: config.max_grad_norm || 1.0,
-      dataset_name: config.dataset_name,
-      output_dir: config.output_dir,
-      run_name: config.run_name,
-      seed: config.seed,
+      training_mode: form.training_mode,
+      num_train_epochs: form.epochs,
+      batch_size: form.batch_size,
+      learning_rate: form.learning_rate,
+      dataset_name: form.dataset_name,
+      run_name: form.run_name,
+      quantization: form.quantization,
     };
 
-    try {
-      await onStartTraining(fullConfig);
-    } catch (error) {
-      console.error("Training failed:", error);
-      alert("خطا در شروع آموزش: " + String(error));
-    }
+    onStartTraining(config);
   };
 
-  const updateConfig = (key: keyof TrainingConfig, value: any) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
-  };
+  if (isLoadingModels && models.length === 0) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-4">آموزش مدل</h1>
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-4">آموزش مدل</h1>
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          <p className="font-medium">خطا</p>
+          <p className="mt-1 text-sm">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            setError(null);
+            setIsLoadingModels(true);
+            try {
+              const modelList = await listAvailableModels();
+              setModels((modelList.models ?? []).map((model) => ({
+                id: model.id,
+                name: model.name,
+                provider: model.provider,
+                version: model.size || '',
+              })));
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'خطا در بارگذاری');
+            } finally {
+              setIsLoadingModels(false);
+            }
+          }}
+          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          تلاش مجدد
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`max-w-6xl mx-auto p-6 ${className}`}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">آموزش مدل</h1>
-        <p className="text-gray-600">
-          تنظیمات پیشرفته برای فاین‌تیون کردن مدل‌های هوش مصنوعی
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Model Selection */}
-        <div className="lg:col-span-1">
-          <ModelSelector
-            selectedModel={selectedModel || undefined}
-            onSelect={setSelectedModel}
-            className="h-fit"
-          />
+    <div className="p-8 bg-slate-900 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white">آموزش مدل</h1>
+          <p className="mt-2 text-slate-400">پیکربندی و شروع یک کار‌آموزش جدید</p>
         </div>
 
-        {/* Training Configuration */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Training Mode */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Cog6ToothIcon className="h-6 w-6 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">حالت آموزش</h2>
+        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-6">
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
+                انتخاب مدل
+              </label>
+              <select
+                value={form.model_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">یک مدل را انتخاب کنید</option>
+                {models.map(model => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({model.provider} {model.version})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {TRAINING_MODES.map((mode) => (
-                <label
-                  key={mode.id}
-                  className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none ${
-                    config.training_mode === mode.id
-                      ? "border-blue-600 ring-2 ring-blue-600"
-                      : "border-gray-300"
-                  }`}
-                >
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
+                حالت آموزش
+              </label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
                   <input
                     type="radio"
-                    name="training-mode"
-                    value={mode.id}
-                    checked={config.training_mode === mode.id}
-                    onChange={(e) => updateConfig("training_mode", e.target.value)}
-                    className="sr-only"
+                    name="training_mode"
+                    value="lora"
+                    checked={form.training_mode === 'lora'}
+                    onChange={e => setForm(prev => ({ ...prev, training_mode: e.target.value as 'lora' | 'qlora' | 'full' }))}
+                    className="h-4 w-4 text-primary-600"
                   />
-                  <span className="flex flex-1">
-                    <span className="flex flex-col">
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {mode.name}
-                        </span>
-                        {mode.recommended && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
-                            پیشنهادی
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-sm text-gray-500 mt-1">
-                        {mode.description}
-                      </span>
-                    </span>
-                  </span>
-                  <span
-                    className={`absolute -inset-px rounded-lg border-2 pointer-events-none ${
-                      config.training_mode === mode.id ? "border-blue-600" : "border-transparent"
-                    }`}
-                    aria-hidden="true"
-                  />
+                  LoRA
                 </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Quantization */}
-          {(config.training_mode === "qlora" || config.training_mode === "lora") && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <CpuChipIcon className="h-6 w-6 text-purple-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Quantization</h2>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="training_mode"
+                    value="qlora"
+                    checked={form.training_mode === 'qlora'}
+                    onChange={e => setForm(prev => ({ ...prev, training_mode: e.target.value as 'lora' | 'qlora' | 'full' }))}
+                    className="h-4 w-4 text-primary-600"
+                  />
+                  QLoRA
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="training_mode"
+                    value="full"
+                    checked={form.training_mode === 'full'}
+                    onChange={e => setForm(prev => ({ ...prev, training_mode: e.target.value as 'lora' | 'qlora' | 'full' }))}
+                    className="h-4 w-4 text-primary-600"
+                  />
+                  Full Fine-tune
+                </label>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {QUANTIZATION_MODES.map((mode) => (
-                  <label
-                    key={mode.id}
-                    className={`relative flex cursor-pointer rounded-lg border p-3 text-center shadow-sm focus:outline-none ${
-                      config.quantization_mode === mode.id
-                        ? "border-purple-600 ring-2 ring-purple-600"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="quantization-mode"
-                      value={mode.id}
-                      checked={config.quantization_mode === mode.id}
-                      onChange={(e) => updateConfig("quantization_mode", e.target.value)}
-                      className="sr-only"
-                    />
-                    <span className="text-sm font-medium text-gray-900">{mode.name}</span>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
+                پارامترهای آموزش
+              </label>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-slate-400">تعداد epochs</label>
+                  <input
+                    name="epochs"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.epochs}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-slate-400">Batch size (train)</label>
+                  <input
+                    name="batch_size"
+                    type="number"
+                    min={1}
+                    max={128}
+                    value={form.batch_size}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-slate-400">Learning rate</label>
+                  <input
+                    name="learning_rate"
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.00001}
+                    value={form.learning_rate}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quantization options - only show when QLoRA is selected */}
+            {form.training_mode === 'qlora' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-300">
+                    کمیتیزاسیون
                   </label>
-                ))}
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="quantization"
+                        value="INT8"
+                        checked={form.quantization === 'INT8'}
+                        onChange={e => setForm(prev => ({ ...prev, quantization: e.target.value as 'INT8' | 'INT4' | null }))}
+                        className="h-4 w-4 text-primary-600"
+                      />
+                      INT8
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="quantization"
+                        value="INT4"
+                        checked={form.quantization === 'INT4'}
+                        onChange={e => setForm(prev => ({ ...prev, quantization: e.target.value as 'INT8' | 'INT4' | null }))}
+                        className="h-4 w-4 text-primary-600"
+                      />
+                      INT4
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="quantization"
+                        value=""
+                        checked={form.quantization === null}
+                        onChange={() => setForm(prev => ({ ...prev, quantization: null as 'INT8' | 'INT4' | null }))}
+                        className="h-4 w-4 text-primary-600"
+                      />
+                      なし
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Training Parameters */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <ChartBarIcon className="h-6 w-6 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">پارامترهای آموزش</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  تعداد epochs
-                </label>
-                <input
-                  type="number"
-                  value={config.num_train_epochs}
-                  onChange={(e) => updateConfig("num_train_epochs", parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                  max="50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Batch size (train)
-                </label>
-                <input
-                  type="number"
-                  value={config.per_device_train_batch_size}
-                  onChange={(e) => updateConfig("per_device_train_batch_size", parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                  max="32"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Learning rate
-                </label>
-                <input
-                  type="number"
-                  value={config.learning_rate}
-                  onChange={(e) => updateConfig("learning_rate", parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  step="0.000001"
-                  min="0.000001"
-                  max="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gradient accumulation steps
-                </label>
-                <input
-                  type="number"
-                  value={config.gradient_accumulation_steps}
-                  onChange={(e) => updateConfig("gradient_accumulation_steps", parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                  max="16"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Weight decay
-                </label>
-                <input
-                  type="number"
-                  value={config.weight_decay}
-                  onChange={(e) => updateConfig("weight_decay", parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  step="0.001"
-                  min="0"
-                  max="0.1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Seed
-                </label>
-                <input
-                  type="number"
-                  value={config.seed}
-                  onChange={(e) => updateConfig("seed", parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  max="999999"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dataset & Output */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <DocumentTextIcon className="h-6 w-6 text-orange-600" />
-              <h2 className="text-lg font-semibold text-gray-900">داده‌ها و خروجی</h2>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
+                نام dataset
+              </label>
+              <input
+                name="dataset_name"
+                value={form.dataset_name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="نام dataset را وارد کنید..."
+                required
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  نام dataset
-                </label>
-                <input
-                  type="text"
-                  value={config.dataset_name || ""}
-                  onChange={(e) => updateConfig("dataset_name", e.target.value)}
-                  placeholder="مثال: legal-contracts-v1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  نام run
-                </label>
-                <input
-                  type="text"
-                  value={config.run_name || ""}
-                  onChange={(e) => updateConfig("run_name", e.target.value)}
-                  placeholder="مثال: legal-finetune-v1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">
+                نام اجرا
+              </label>
+              <input
+                name="run_name"
+                value={form.run_name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="نام اجرا را وارد کنید..."
+                required
+              />
             </div>
-          </div>
 
-          {/* Start Training Button */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">آماده شروع آموزش</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  پس از کلیک روی دکمه شروع، فرآیند آموزش شروع خواهد شد
-                </p>
-              </div>
+            <div className="flex justify-end">
               <button
-                onClick={handleStartTraining}
-                disabled={!selectedModel || isTraining}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  !selectedModel || isTraining
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-                }`}
+                type="submit"
+                disabled={isTraining}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-medium rounded-lg transition-colors"
               >
                 {isTraining ? (
                   <>
-                    <ClockIcon className="h-5 w-5 animate-spin" />
+                    <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
                     در حال آموزش...
                   </>
                 ) : (
-                  <>
-                    <PlayIcon className="h-5 w-5" />
-                    شروع آموزش
-                  </>
+                  'شروع آموزش'
                 )}
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

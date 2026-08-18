@@ -98,22 +98,22 @@ async def get_system_health() -> Dict[str, Any]:
     if settings.graph_enabled and settings.graph_backend != "disabled_fallback":
         try:
             neo4j_start = time.time()
-            from api.database import neo4j_driver
-            
-            if neo4j_driver:
-                # ACTUAL CYPHER QUERY - NOT FAKE!
-                async with neo4j_driver.session() as session:
-                    result = await session.run("RETURN 1 AS test")
-                    record = await result.single()
-                    if record and record["test"] == 1:
-                        neo4j_status = "healthy"
-                        neo4j_latency = (time.time() - neo4j_start) * 1000
-                    else:
-                        neo4j_status = "unhealthy"
-                        neo4j_error = "Query returned unexpected result"
+            from mahoun.graph.neo4j.connection import get_connection
+
+            connection = get_connection()
+            if connection is not None:
+                # GOVERNED PATH: Neo4jConnection.execute_query() is read-only and
+                # enforces MutationAuthorizationBoundary. Uses canonical connection layer.
+                result = connection.execute_query("RETURN 1 AS test")
+                if result and result[0].get("test") == 1:
+                    neo4j_status = "healthy"
+                    neo4j_latency = (time.time() - neo4j_start) * 1000
+                else:
+                    neo4j_status = "unhealthy"
+                    neo4j_error = "Query returned unexpected result"
             else:
                 neo4j_status = "unhealthy"
-                neo4j_error = "Driver not initialized"
+                neo4j_error = "Connection not initialized"
                 
         except Exception as e:
             neo4j_status = "unhealthy"

@@ -6,6 +6,8 @@ Tests for architecture stabilization layer.
 import pytest
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_no_circular_imports():
     """Verify no circular imports between core modules."""
     import importlib
@@ -21,6 +23,8 @@ def test_no_circular_imports():
         importlib.import_module(m)
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_bootstrap_initialization():
     """Verify bootstrap creates service registry correctly."""
     from mahoun.bootstrap.runtime import bootstrap_runtime, SERVICE_REGISTRY, clear_registry
@@ -34,6 +38,8 @@ def test_bootstrap_initialization():
     assert registry["query"] is not None
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_governance_kernel_isolated():
     """Verify governance kernel has no external dependencies."""
     import ast
@@ -48,6 +54,8 @@ def test_governance_kernel_isolated():
     assert len(imports) == 0, "classify_query should have zero imports"
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_import_firewall_blocks_yaml():
     """Verify import firewall blocks yaml."""
     from mahoun.core.security.import_firewall import validate_import
@@ -56,6 +64,8 @@ def test_import_firewall_blocks_yaml():
         validate_import("yaml")
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_import_firewall_blocks_torch():
     """Verify import firewall blocks torch."""
     from mahoun.core.security.import_firewall import validate_import
@@ -64,6 +74,8 @@ def test_import_firewall_blocks_torch():
         validate_import("torch")
 
 
+@pytest.mark.p1
+@pytest.mark.p2
 def test_query_service_imports_governance_kernel():
     """Verify GraphQueryService imports from governance kernel."""
     import inspect

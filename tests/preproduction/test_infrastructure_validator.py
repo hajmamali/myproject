@@ -47,6 +47,7 @@ def sample_workspace(tmp_path):
 class TestDockerImageMetrics:
     """Test DockerImageMetrics dataclass."""
     
+    @pytest.mark.p2
     def test_image_metrics_creation(self):
         """Test creating image metrics."""
         metrics = DockerImageMetrics(
@@ -59,6 +60,7 @@ class TestDockerImageMetrics:
         assert metrics.full_name == "mahoun/backend:latest"
         assert metrics.size_mb == 1200.5
     
+    @pytest.mark.p2
     def test_full_name_property(self):
         """Test full_name property."""
         metrics = DockerImageMetrics(
@@ -73,6 +75,7 @@ class TestDockerImageMetrics:
 class TestSecurityVulnerability:
     """Test SecurityVulnerability dataclass."""
     
+    @pytest.mark.p2
     def test_vulnerability_creation(self):
         """Test creating vulnerability."""
         vuln = SecurityVulnerability(
@@ -92,6 +95,7 @@ class TestSecurityVulnerability:
 class TestInfrastructureValidator:
     """Test InfrastructureValidator."""
     
+    @pytest.mark.p2
     def test_initialization(self, mock_evidence_collector, tmp_path):
         """Test validator initialization."""
         validator = InfrastructureValidator(
@@ -103,6 +107,7 @@ class TestInfrastructureValidator:
         assert validator.workspace_root == tmp_path
         assert validator.dockerignore_path == tmp_path / ".dockerignore"
     
+    @pytest.mark.p2
     def test_dependencies(self, mock_evidence_collector, tmp_path):
         """Test validator has no dependencies."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -110,6 +115,7 @@ class TestInfrastructureValidator:
         
         assert deps == []
     
+    @pytest.mark.p2
     def test_target_sizes_constants(self):
         """Test target sizes are properly defined."""
         targets = InfrastructureValidator.TARGET_SIZES
@@ -119,6 +125,7 @@ class TestInfrastructureValidator:
         assert targets["mahoun/api"] == 350
         assert targets["mahoun/kernel"] == 200
     
+    @pytest.mark.p2
     def test_required_dockerignore_patterns(self):
         """Test required .dockerignore patterns."""
         patterns = InfrastructureValidator.REQUIRED_DOCKERIGNORE_PATTERNS
@@ -128,6 +135,7 @@ class TestInfrastructureValidator:
         assert "*.pyc" in patterns
         assert "tests/" in patterns
     
+    @pytest.mark.p2
     def test_dockerignore_missing(self, mock_evidence_collector, tmp_path):
         """Test detection of missing .dockerignore."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -138,6 +146,7 @@ class TestInfrastructureValidator:
         assert len(p0_findings) > 0
         assert "missing" in p0_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_dockerignore_complete(self, mock_evidence_collector, tmp_path):
         """Test complete .dockerignore passes."""
         # Create complete .dockerignore
@@ -152,6 +161,7 @@ class TestInfrastructureValidator:
         assert len(info_findings) > 0
         assert "all critical patterns" in info_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_dockerignore_incomplete(self, mock_evidence_collector, tmp_path):
         """Test incomplete .dockerignore detected."""
         # Create partial .dockerignore
@@ -166,6 +176,7 @@ class TestInfrastructureValidator:
         assert len(p1_findings) > 0
         assert "missing" in p1_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_parse_size_to_mb_gb(self, mock_evidence_collector, tmp_path):
         """Test parsing GB size to MB."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -173,6 +184,7 @@ class TestInfrastructureValidator:
         size_mb = validator._parse_size_to_mb("1.2GB")
         assert size_mb == 1228.8  # 1.2 * 1024
     
+    @pytest.mark.p2
     def test_parse_size_to_mb_mb(self, mock_evidence_collector, tmp_path):
         """Test parsing MB size."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -180,6 +192,7 @@ class TestInfrastructureValidator:
         size_mb = validator._parse_size_to_mb("450MB")
         assert size_mb == 450.0
     
+    @pytest.mark.p2
     def test_parse_size_to_mb_kb(self, mock_evidence_collector, tmp_path):
         """Test parsing KB size to MB."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -188,6 +201,7 @@ class TestInfrastructureValidator:
         assert size_mb == 2.0  # 2048 / 1024
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_measure_image_sizes(self, mock_run, mock_evidence_collector, tmp_path):
         """Test measuring Docker image sizes."""
         # Mock docker images command output
@@ -207,6 +221,7 @@ class TestInfrastructureValidator:
         assert images[1].size_mb == 890.0
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_measure_image_sizes_no_images(self, mock_run, mock_evidence_collector, tmp_path):
         """Test when no mahoun images found."""
         # Mock docker returning other images only
@@ -222,6 +237,7 @@ class TestInfrastructureValidator:
         assert len(images) == 0
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_measure_image_sizes_docker_not_found(self, mock_run, mock_evidence_collector, tmp_path):
         """Test handling when Docker not installed."""
         mock_run.side_effect = FileNotFoundError()
@@ -233,6 +249,7 @@ class TestInfrastructureValidator:
         # Should have added finding
         assert len(validator.findings) > 0
     
+    @pytest.mark.p2
     def test_analyze_image_sizes_no_images(self, mock_evidence_collector, tmp_path):
         """Test analyzing when no images."""
         validator = InfrastructureValidator(mock_evidence_collector, tmp_path)
@@ -243,6 +260,7 @@ class TestInfrastructureValidator:
         assert len(p2_findings) > 0
         assert "no" in p2_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_analyze_image_sizes_within_target(self, mock_evidence_collector, tmp_path):
         """Test analysis when images within target."""
         images = [
@@ -258,6 +276,7 @@ class TestInfrastructureValidator:
         assert len(info_findings) > 0
         assert "within target" in info_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_analyze_image_sizes_oversized(self, mock_evidence_collector, tmp_path):
         """Test analysis when images oversized."""
         images = [
@@ -273,6 +292,7 @@ class TestInfrastructureValidator:
         assert len(p1_findings) > 0
         assert "exceed target" in p1_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_analyze_dockerfiles_single_stage(self, mock_evidence_collector, sample_workspace):
         """Test analyzing single-stage Dockerfile."""
         validator = InfrastructureValidator(mock_evidence_collector, sample_workspace)
@@ -286,6 +306,7 @@ class TestInfrastructureValidator:
         assert len(multistage_findings) > 0
         assert multistage_findings[0].severity == FindingSeverity.P1_HIGH
     
+    @pytest.mark.p2
     def test_analyze_dockerfiles_copy_dot_dot(self, mock_evidence_collector, sample_workspace):
         """Test detection of COPY . . anti-pattern."""
         validator = InfrastructureValidator(mock_evidence_collector, sample_workspace)
@@ -298,6 +319,7 @@ class TestInfrastructureValidator:
         ]
         assert len(copy_findings) > 0
     
+    @pytest.mark.p2
     def test_analyze_dockerfiles_multistage(self, mock_evidence_collector, tmp_path):
         """Test analyzing multi-stage Dockerfile."""
         # Create multi-stage Dockerfile
@@ -319,6 +341,7 @@ class TestInfrastructureValidator:
         assert len(multistage_findings) == 0
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_security_scan_trivy_not_installed(self, mock_run, mock_evidence_collector, tmp_path):
         """Test security scan when Trivy not installed."""
         mock_run.side_effect = FileNotFoundError()
@@ -334,6 +357,7 @@ class TestInfrastructureValidator:
         assert "trivy" in p3_findings[0].message.lower()
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_security_scan_with_vulnerabilities(self, mock_run, mock_evidence_collector, tmp_path):
         """Test security scan finding vulnerabilities."""
         # Mock trivy --version
@@ -386,6 +410,7 @@ class TestInfrastructureValidator:
         assert "critical" in p0_findings[0].message.lower()
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_security_scan_clean(self, mock_run, mock_evidence_collector, tmp_path):
         """Test security scan with no vulnerabilities."""
         trivy_output = {"Results": []}
@@ -411,6 +436,7 @@ class TestInfrastructureValidator:
         info_findings = [f for f in findings if f.severity == FindingSeverity.INFO]
         assert len(info_findings) > 0
     
+    @pytest.mark.p2
     def test_generate_optimizations_oversized_image(self, mock_evidence_collector, tmp_path):
         """Test generating optimizations for oversized image."""
         images = [DockerImageMetrics("mahoun/backend", "latest", 1200.0)]
@@ -422,6 +448,7 @@ class TestInfrastructureValidator:
         size_recs = [r for r in recs if r.category == "size"]
         assert len(size_recs) > 0
     
+    @pytest.mark.p2
     def test_generate_optimizations_missing_dockerignore(self, mock_evidence_collector, tmp_path):
         """Test generating optimizations for missing .dockerignore."""
         from mahoun.preproduction.models import Finding
@@ -442,6 +469,7 @@ class TestInfrastructureValidator:
         assert len(build_recs) > 0
     
     @patch("mahoun.preproduction.validators.infrastructure_validator.subprocess.run")
+    @pytest.mark.p2
     def test_full_validation_workflow(self, mock_run, mock_evidence_collector, sample_workspace):
         """Test full validation workflow."""
         # Create .dockerignore
@@ -475,6 +503,7 @@ class TestInfrastructureValidator:
 class TestImageOptimizationRecommendation:
     """Test ImageOptimizationRecommendation dataclass."""
     
+    @pytest.mark.p2
     def test_recommendation_creation(self):
         """Test creating optimization recommendation."""
         rec = ImageOptimizationRecommendation(

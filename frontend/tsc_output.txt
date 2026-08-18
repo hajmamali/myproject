@@ -1,0 +1,2 @@
+src/components/AppLayout.tsx(28,1): error TS1109: Expression expected.
+src/components/AppLayout.tsx(28,3): error TS1434: Unexpected keyword or identifier.

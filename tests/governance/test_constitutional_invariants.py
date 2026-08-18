@@ -33,6 +33,7 @@ class TestOntologyInjectionDefense:
     They must reject all malicious inputs BEFORE any query builder is reached.
     """
 
+    @pytest.mark.p0
     def test_label_injection_cypher_comment_blocked(self):
         """
         Attack A: label = "Case) DELETE n //"
@@ -57,6 +58,7 @@ class TestOntologyInjectionDefense:
         )
         assert v.severity == ViolationSeverity.CRITICAL
 
+    @pytest.mark.p0
     def test_label_unicode_homoglyph_blocked(self):
         """
         Attack B: label = "Ａrticle" (Unicode full-width Ａ U+FF21)
@@ -79,6 +81,7 @@ class TestOntologyInjectionDefense:
         assert v.category == ViolationCategory.ONTOLOGY_VIOLATION
         assert v.severity == ViolationSeverity.CRITICAL
 
+    @pytest.mark.p0
     def test_property_key_injection_brace_escape_blocked(self):
         """
         Attack C: property key = "name} DETACH DELETE n //"
@@ -105,6 +108,7 @@ class TestOntologyInjectionDefense:
         assert v.category == ViolationCategory.ONTOLOGY_VIOLATION
         assert v.severity == ViolationSeverity.CRITICAL
 
+    @pytest.mark.p0
     def test_reserved_kernel_key_created_at_blocked(self):
         """
         Attack D: property key = "created_at"
@@ -133,6 +137,7 @@ class TestOntologyInjectionDefense:
         )
         assert v.severity == ViolationSeverity.CRITICAL
 
+    @pytest.mark.p0
     def test_unknown_label_not_in_allowlist_blocked(self):
         """
         Extra: label not in ALLOWED_NODE_LABELS must be rejected.
@@ -150,6 +155,7 @@ class TestOntologyInjectionDefense:
         v = exc_info.value.violation
         assert v.category == ViolationCategory.ONTOLOGY_VIOLATION
 
+    @pytest.mark.p0
     def test_valid_label_passes(self):
         """Sanity: a canonical label must not be rejected."""
         from mahoun.core.governance.validator_pipeline import validate_node_label
@@ -197,6 +203,7 @@ class TestTemporalReconstructionIntegrity:
             pipeline_hash="pipe-hash-001",
         )
 
+    @pytest.mark.p0
     def test_three_receipt_replay_reconstructs_state(self):
         """
         Scenario: Article 220
@@ -225,6 +232,7 @@ class TestTemporalReconstructionIntegrity:
             "entity_hashes must contain 'article_220'"
         )
 
+    @pytest.mark.p0
     def test_empty_receipts_returns_empty_status(self):
         """
         Empty sequence → ReplayStatus.EMPTY.
@@ -239,6 +247,7 @@ class TestTemporalReconstructionIntegrity:
         assert result.mutation_count == 0
         assert result.applied_count == 0
 
+    @pytest.mark.p0
     def test_create_then_merge_state_changes(self):
         """
         After CREATE(hash_a) then MERGE(hash_b), state hash must change.
@@ -261,6 +270,7 @@ class TestTemporalReconstructionIntegrity:
             "State after CREATE only must differ from state after CREATE+MERGE"
         )
 
+    @pytest.mark.p0
     def test_tombstone_node_is_soft_deleted_not_removed(self):
         """
         NODE_DELETE must soft-delete (tombstone) the node — not hard remove it.
@@ -296,6 +306,7 @@ class TestIdentityMandatoryMutation:
             raise AssertionError("Raw executor was called — identity check did not block it")
         return executor
 
+    @pytest.mark.p0
     def test_empty_actor_id_rejected(self):
         """Scenario A: actor_id="" — must raise AUDIT_INTEGRITY_VIOLATION."""
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -318,6 +329,7 @@ class TestIdentityMandatoryMutation:
         )
         assert v.severity == ViolationSeverity.CRITICAL
 
+    @pytest.mark.p0
     def test_empty_correlation_id_rejected(self):
         """
         Scenario B: correlation_id="" with no active GovernanceContext.
@@ -348,6 +360,7 @@ class TestIdentityMandatoryMutation:
             ViolationCategory.GOVERNANCE_BYPASS,
         ), f"Expected identity violation, got {v.category}"
 
+    @pytest.mark.p0
     def test_whitespace_actor_id_rejected(self):
         """Scenario C: actor_id=" " — whitespace-only must be rejected."""
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -365,6 +378,7 @@ class TestIdentityMandatoryMutation:
 
         assert exc_info.value.violation.category == ViolationCategory.AUDIT_INTEGRITY_VIOLATION
 
+    @pytest.mark.p0
     def test_whitespace_correlation_id_rejected(self):
         """
         Scenario C (mirror): correlation_id="   " — both AUDIT_INTEGRITY_VIOLATION
@@ -389,6 +403,7 @@ class TestIdentityMandatoryMutation:
             ViolationCategory.GOVERNANCE_BYPASS,
         ), f"Expected identity violation, got {v.category}"
 
+    @pytest.mark.p0
     def test_valid_identity_allows_session_construction(self):
         """
         Sanity: non-empty actor_id + correlation_id must not raise on construction.
@@ -411,7 +426,7 @@ class TestIdentityMandatoryMutation:
             execution_mode="STRICT",
         )
         token = GovernanceContextManager._governance_stack.set(
-            GovernanceContextManager._get_stack() + (ctx,)
+            GovernanceContextManager._get_stack() + [ctx]
         )
         try:
             session = GovernedNeo4jSession(
@@ -440,6 +455,7 @@ class TestUncertaintyAbstentionEnforcement:
                 must return passed=False with correct violation types.
     """
 
+    @pytest.mark.p0
     def test_empty_facts_raises_runtime_error(self):
         """
         Scenario A: generate_verdict with empty facts list must raise RuntimeError
@@ -477,6 +493,7 @@ class TestUncertaintyAbstentionEnforcement:
         )
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validator_fails_on_missing_proof_tree(self):
         """
         Scenario B: A response without proof_tree, with agreement_score=0.60,
@@ -541,6 +558,7 @@ class TestUncertaintyAbstentionEnforcement:
         )
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validator_passes_for_valid_response(self):
         """
         Sanity check: A well-formed response with proof tree and high agreement

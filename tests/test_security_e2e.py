@@ -99,6 +99,7 @@ def api_key_manager():
 class TestAuthenticationFlow:
     """Test complete authentication flow with audit logging."""
     
+    @pytest.mark.p1
     def test_jwt_authentication_flow(self, jwt_auth, audit_logger):
         """Test JWT token generation, validation, and refresh."""
         user_id = "test_user_123"
@@ -166,6 +167,7 @@ class TestAuthenticationFlow:
         assert len(events) >= 4
         assert all(e.result == "success" for e in events)
     
+    @pytest.mark.p1
     def test_failed_authentication(self, jwt_auth, audit_logger):
         """Test failed authentication attempts are logged."""
         # Invalid token
@@ -187,6 +189,7 @@ class TestAuthenticationFlow:
         assert failed_events[0].severity == EventSeverity.WARNING
 
 
+    @pytest.mark.p1
     def test_oauth2_flow(self, audit_logger):
         """Test OAuth2 authorization code flow."""
         oauth = OAuth2Handler(
@@ -236,6 +239,7 @@ class TestAuthenticationFlow:
 class TestRateLimitingFlow:
     """Test rate limiting across multiple requests."""
     
+    @pytest.mark.p1
     def test_rate_limit_enforcement(self, rate_limiter, audit_logger):
         """Test rate limit enforcement and logging."""
         user_id = "test_user_456"
@@ -273,6 +277,7 @@ class TestRateLimitingFlow:
         assert len(rate_limit_events) >= 1
         assert rate_limit_events[0].result == "blocked"
     
+    @pytest.mark.p1
     def test_concurrent_rate_limiting(self, rate_limiter, audit_logger):
         """Test rate limiting under concurrent access."""
         user_id = "concurrent_user"
@@ -319,6 +324,7 @@ class TestRateLimitingFlow:
         assert len(events) == 20
 
 
+    @pytest.mark.p1
     def test_custom_rate_limits(self, rate_limiter, audit_logger):
         """Test custom rate limits per user."""
         premium_user = "premium_user"
@@ -355,6 +361,7 @@ class TestRateLimitingFlow:
 class TestPromptInjectionFlow:
     """Test prompt injection detection in real scenarios."""
     
+    @pytest.mark.p1
     def test_safe_input_processing(self, prompt_defender, audit_logger):
         """Test safe input passes through."""
         safe_inputs = [
@@ -378,6 +385,7 @@ class TestPromptInjectionFlow:
                 }
             )
     
+    @pytest.mark.p1
     def test_injection_attack_detection(self, prompt_defender, audit_logger):
         """Test injection attacks are detected and logged."""
         attack_inputs = [
@@ -411,6 +419,7 @@ class TestPromptInjectionFlow:
         assert len(violations) >= 3, f"Expected at least 3 violations, got {len(violations)}. Detected {detected_count} threats."
         assert all(v.severity == EventSeverity.CRITICAL for v in violations)
     
+    @pytest.mark.p1
     def test_sanitization_flow(self, prompt_defender, audit_logger):
         """Test input sanitization."""
         malicious_input = (
@@ -441,6 +450,7 @@ class TestPromptInjectionFlow:
 class TestAPIKeyLifecycle:
     """Test complete API key lifecycle with audit logging."""
     
+    @pytest.mark.p1
     def test_key_generation_and_usage(self, api_key_manager, audit_logger):
         """Test key generation, validation, and usage tracking."""
         # Step 1: Generate key
@@ -484,6 +494,7 @@ class TestAPIKeyLifecycle:
         assert api_key.last_used is not None
 
     
+    @pytest.mark.p1
     def test_key_rotation(self, api_key_manager, audit_logger):
         """Test key rotation."""
         # Generate initial key
@@ -517,6 +528,7 @@ class TestAPIKeyLifecycle:
         # New key should work
         assert api_key_manager.validate_key(new_key) is not None
     
+    @pytest.mark.p1
     def test_key_revocation(self, api_key_manager, audit_logger):
         """Test key revocation."""
         # Generate key
@@ -548,6 +560,7 @@ class TestAPIKeyLifecycle:
             result="denied"
         )
     
+    @pytest.mark.p1
     def test_key_permissions(self, api_key_manager, audit_logger):
         """Test permission checking."""
         # Generate key with limited permissions
@@ -590,6 +603,7 @@ class TestAPIKeyLifecycle:
 class TestIntegratedSecurityFlow:
     """Test all security components working together."""
     
+    @pytest.mark.p1
     def test_complete_request_flow(
         self,
         jwt_auth,
@@ -650,6 +664,7 @@ class TestIntegratedSecurityFlow:
         assert "rate_limit_checked" in actions
         assert "request_processed" in actions
     
+    @pytest.mark.p1
     def test_security_failure_cascade(
         self,
         jwt_auth,
@@ -719,6 +734,7 @@ class TestIntegratedSecurityFlow:
 class TestAuditLogAnalysis:
     """Test audit log querying and analysis."""
     
+    @pytest.mark.p1
     def test_audit_log_statistics(self, audit_logger):
         """Test audit log statistics generation."""
         # Generate various events
@@ -752,6 +768,7 @@ class TestAuditLogAnalysis:
         assert stats["by_result"]["success"] >= 12
         assert stats["by_result"]["failure"] >= 3
     
+    @pytest.mark.p1
     def test_time_range_queries(self, audit_logger):
         """Test querying events by time range."""
         user_id = "time_test_user"
@@ -790,6 +807,7 @@ class TestAuditLogAnalysis:
         assert len(events) == 1
         assert events[0].action == "query"
     
+    @pytest.mark.p1
     def test_audit_log_persistence(self, temp_log_dir):
         """Test audit logs are persisted to files."""
         logger = SecurityAuditLogger(
@@ -825,6 +843,7 @@ class TestAuditLogAnalysis:
             assert "timestamp" in event
             assert "category" in event
     
+    @pytest.mark.p1
     def test_audit_log_cleanup(self, temp_log_dir):
         """Test old log file cleanup."""
         logger = SecurityAuditLogger(
@@ -855,6 +874,7 @@ class TestAuditLogAnalysis:
 class TestSecurityPerformance:
     """Test security components under load."""
     
+    @pytest.mark.p1
     def test_high_volume_authentication(self, jwt_auth, audit_logger):
         """Test authentication under high volume."""
         start_time = time.time()
@@ -892,6 +912,7 @@ class TestSecurityPerformance:
             }
         )
     
+    @pytest.mark.p1
     def test_concurrent_audit_logging(self, audit_logger):
         """Test audit logger under concurrent writes."""
         event_count = 1000
@@ -941,6 +962,7 @@ class TestSecurityPerformance:
             }
         )
     
+    @pytest.mark.p1
     def test_rate_limiter_performance(self, rate_limiter):
         """Test rate limiter performance."""
         user_count = 100
@@ -969,6 +991,7 @@ class TestSecurityPerformance:
 class TestSecurityErrorHandling:
     """Test error handling and recovery scenarios."""
     
+    @pytest.mark.p1
     def test_expired_token_handling(self, audit_logger):
         """Test handling of expired tokens."""
         # Create authenticator with very short expiry
@@ -994,6 +1017,7 @@ class TestSecurityErrorHandling:
             details={"reason": "token_expired"}
         )
     
+    @pytest.mark.p1
     def test_invalid_api_key_handling(self, api_key_manager, audit_logger):
         """Test handling of invalid API keys."""
         # Try to validate non-existent key
@@ -1007,6 +1031,7 @@ class TestSecurityErrorHandling:
             details={"reason": "key_not_found"}
         )
     
+    @pytest.mark.p1
     def test_malformed_input_handling(self, prompt_defender, audit_logger):
         """Test handling of malformed inputs."""
         # Very long input
@@ -1031,6 +1056,7 @@ class TestSecurityErrorHandling:
 class TestSecurityEventCorrelation:
     """Test correlation of security events across components."""
     
+    @pytest.mark.p1
     def test_attack_pattern_detection(
         self,
         jwt_auth,

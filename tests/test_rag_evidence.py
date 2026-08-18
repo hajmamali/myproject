@@ -52,6 +52,7 @@ def _make_kwargs(**overrides) -> dict:
 
 
 class TestConstruction:
+    @pytest.mark.p2
     def test_minimal_valid_construction(self):
         node = RAGEvidenceNode(**_make_kwargs())
         assert node.fact_index == 0
@@ -60,6 +61,7 @@ class TestConstruction:
         assert node.is_sensitive is False
         assert node.confidence_threshold == _DEFAULT_CONFIDENCE_THRESHOLD
 
+    @pytest.mark.p2
     def test_metadata_default_is_empty_dict(self):
         # Each instance must get its own dict, not a shared mutable default
         n1 = RAGEvidenceNode(**_make_kwargs())
@@ -67,6 +69,7 @@ class TestConstruction:
         n1.metadata["k"] = "v"
         assert n2.metadata == {}
 
+    @pytest.mark.p2
     def test_frozen_dataclass_rejects_mutation(self):
         node = RAGEvidenceNode(**_make_kwargs())
         with pytest.raises(Exception):  # FrozenInstanceError
@@ -79,47 +82,58 @@ class TestConstruction:
 
 
 class TestPostInitValidation:
+    @pytest.mark.p2
     def test_negative_fact_index_rejected(self):
         with pytest.raises(ValueError, match="fact_index must be >= 0"):
             RAGEvidenceNode(**_make_kwargs(fact_index=-1))
 
+    @pytest.mark.p2
     def test_negative_retrieval_rank_rejected(self):
         with pytest.raises(ValueError, match="retrieval_rank must be >= 0"):
             RAGEvidenceNode(**_make_kwargs(retrieval_rank=-1))
 
+    @pytest.mark.p2
     def test_score_above_one_rejected(self):
         with pytest.raises(ValueError, match="score must be in"):
             RAGEvidenceNode(**_make_kwargs(score=1.5))
 
+    @pytest.mark.p2
     def test_score_below_zero_rejected(self):
         with pytest.raises(ValueError, match="score must be in"):
             RAGEvidenceNode(**_make_kwargs(score=-0.1))
 
+    @pytest.mark.p2
     def test_confidence_threshold_out_of_range_rejected(self):
         with pytest.raises(ValueError, match="confidence_threshold must be in"):
             RAGEvidenceNode(**_make_kwargs(confidence_threshold=2.0))
 
+    @pytest.mark.p2
     def test_string_source_rejected_must_be_enum(self):
         with pytest.raises(ValueError, match="source must be RAGSource"):
             RAGEvidenceNode(**_make_kwargs(source="rag"))  # type: ignore[arg-type]
 
+    @pytest.mark.p2
     def test_string_authority_rejected_must_be_enum(self):
         with pytest.raises(ValueError, match="authority must be SourceAuthority"):
             RAGEvidenceNode(**_make_kwargs(authority="trusted_internal"))  # type: ignore[arg-type]
 
+    @pytest.mark.p2
     def test_empty_correlation_id_rejected(self):
         with pytest.raises(ValueError, match="correlation_id is required"):
             RAGEvidenceNode(**_make_kwargs(correlation_id=""))
 
+    @pytest.mark.p2
     def test_short_content_hash_rejected(self):
         with pytest.raises(ValueError, match="content_hash must be a 64-char"):
             RAGEvidenceNode(**_make_kwargs(content_hash="abc123"))
 
+    @pytest.mark.p2
     def test_non_hex_content_hash_rejected(self):
         bad = "z" * 64
         with pytest.raises(ValueError, match="content_hash must be a 64-char"):
             RAGEvidenceNode(**_make_kwargs(content_hash=bad))
 
+    @pytest.mark.p2
     def test_uppercase_hex_content_hash_rejected(self):
         # Contract: lowercase hex only. Uppercase breaks cross-process equality
         # and deterministic JSON serialization.
@@ -134,11 +148,13 @@ class TestPostInitValidation:
 
 
 class TestIdentity:
+    @pytest.mark.p2
     def test_stable_id_deterministic(self):
         a = RAGEvidenceNode(**_make_kwargs())
         b = RAGEvidenceNode(**_make_kwargs())
         assert a.stable_id == b.stable_id
 
+    @pytest.mark.p2
     def test_stable_id_independent_of_rank_drift(self):
         # Two retrievals of the same doc in the same correlation must
         # produce the same stable_id even if rank differs (rank drift
@@ -149,16 +165,19 @@ class TestIdentity:
         assert a == b
         assert hash(a) == hash(b)
 
+    @pytest.mark.p2
     def test_stable_id_independent_of_score_drift(self):
         a = RAGEvidenceNode(**_make_kwargs(score=0.91))
         b = RAGEvidenceNode(**_make_kwargs(score=0.74))
         assert a.stable_id == b.stable_id
 
+    @pytest.mark.p2
     def test_stable_id_changes_with_different_doc(self):
         a = RAGEvidenceNode(**_make_kwargs(doc_id="doc-A"))
         b = RAGEvidenceNode(**_make_kwargs(doc_id="doc-B"))
         assert a.stable_id != b.stable_id
 
+    @pytest.mark.p2
     def test_stable_id_changes_with_different_correlation(self):
         a = RAGEvidenceNode(**_make_kwargs(correlation_id="corr-1"))
         b = RAGEvidenceNode(**_make_kwargs(correlation_id="corr-2"))
@@ -171,22 +190,27 @@ class TestIdentity:
 
 
 class TestClassification:
+    @pytest.mark.p2
     def test_is_high_confidence_at_threshold(self):
         node = RAGEvidenceNode(**_make_kwargs(score=_DEFAULT_CONFIDENCE_THRESHOLD))
         assert node.is_high_confidence() is True
 
+    @pytest.mark.p2
     def test_is_high_confidence_below_threshold(self):
         node = RAGEvidenceNode(**_make_kwargs(score=_DEFAULT_CONFIDENCE_THRESHOLD - 0.01))
         assert node.is_high_confidence() is False
 
+    @pytest.mark.p2
     def test_is_audit_eligible_requires_high_confidence(self):
         node = RAGEvidenceNode(**_make_kwargs(score=0.3))
         assert node.is_audit_eligible() is False
 
+    @pytest.mark.p2
     def test_is_audit_eligible_blocks_sensitive(self):
         node = RAGEvidenceNode(**_make_kwargs(score=0.9, is_sensitive=True))
         assert node.is_audit_eligible() is False
 
+    @pytest.mark.p2
     def test_is_audit_eligible_allows_safe_high_confidence(self):
         node = RAGEvidenceNode(**_make_kwargs(score=0.9, is_sensitive=False))
         assert node.is_audit_eligible() is True
@@ -198,6 +222,7 @@ class TestClassification:
 
 
 class TestSerialization:
+    @pytest.mark.p2
     def test_to_ledger_provenance_contains_all_fields(self):
         node = RAGEvidenceNode(**_make_kwargs())
         payload = node.to_ledger_provenance()
@@ -209,11 +234,13 @@ class TestSerialization:
         }
         assert set(payload.keys()) == expected_keys
 
+    @pytest.mark.p2
     def test_to_ledger_provenance_is_deterministic(self):
         a = RAGEvidenceNode(**_make_kwargs())
         b = RAGEvidenceNode(**_make_kwargs())
         assert a.to_ledger_provenance() == b.to_ledger_provenance()
 
+    @pytest.mark.p2
     def test_to_ledger_provenance_enums_serialized_as_strings(self):
         node = RAGEvidenceNode(**_make_kwargs(
             source=RAGSource.HYBRID,
@@ -223,6 +250,7 @@ class TestSerialization:
         assert payload["source"] == "hybrid"
         assert payload["authority"] == "untrusted_external"
 
+    @pytest.mark.p2
     def test_to_ledger_provenance_metadata_is_copy(self):
         node = RAGEvidenceNode(**_make_kwargs(metadata={"k": "v"}))
         payload = node.to_ledger_provenance()
@@ -237,6 +265,7 @@ class TestSerialization:
 
 
 class TestFactory:
+    @pytest.mark.p2
     def test_factory_minimal_dict(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "fact text", "source": "rag", "score": 0.7, "metadata": {}},
@@ -254,6 +283,7 @@ class TestFactory:
         # content_hash is SHA-256 of the fact text
         assert node.content_hash == hashlib.sha256(b"fact text").hexdigest()
 
+    @pytest.mark.p2
     def test_factory_picks_up_authority_from_metadata(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "x", "metadata": {"authority": "trusted_partner"}},
@@ -263,6 +293,7 @@ class TestFactory:
         )
         assert node.authority == SourceAuthority.TRUSTED_PARTNER
 
+    @pytest.mark.p2
     def test_factory_unknown_authority_falls_back_to_default(self):
         # If metadata carries a garbage authority, default to UNTRUSTED_EXTERNAL
         node = RAGEvidenceNode.from_evidence_dict(
@@ -273,6 +304,7 @@ class TestFactory:
         )
         assert node.authority == SourceAuthority.UNTRUSTED_EXTERNAL
 
+    @pytest.mark.p2
     def test_factory_unknown_source_falls_back_to_rag(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "x", "source": "weird-source"},
@@ -282,6 +314,7 @@ class TestFactory:
         )
         assert node.source == RAGSource.RAG
 
+    @pytest.mark.p2
     def test_factory_picks_up_doc_id_from_metadata(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "x", "metadata": {"doc_id": "meta-doc"}},
@@ -291,6 +324,7 @@ class TestFactory:
         )
         assert node.doc_id == "meta-doc"
 
+    @pytest.mark.p2
     def test_factory_is_sensitive_propagates(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "x"},
@@ -302,6 +336,7 @@ class TestFactory:
         assert node.is_sensitive is True
         assert node.is_audit_eligible() is False
 
+    @pytest.mark.p2
     def test_factory_handles_missing_keys(self):
         # Empty dict must not crash — all fields must have defaults
         node = RAGEvidenceNode.from_evidence_dict(
@@ -314,6 +349,7 @@ class TestFactory:
         assert node.doc_id == ""
         assert node.content_hash == hashlib.sha256(b"").hexdigest()
 
+    @pytest.mark.p2
     def test_factory_confidence_threshold_override(self):
         node = RAGEvidenceNode.from_evidence_dict(
             {"value": "x", "score": 0.4},

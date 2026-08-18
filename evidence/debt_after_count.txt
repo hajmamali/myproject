@@ -1,0 +1,15 @@
+Test count after duplicate removal:
+- 3 duplicate files successfully removed via git rm
+- Canonical files verified to exist:
+  * tests/test_legal_reasoning.py (exists)
+  * tests/test_nightmare_aml.py (exists)
+  * tests/test_aml_detection.py (exists)
+  
+Git commit: 8395fc69
+Files removed:
+  * tests/legal_reasoning_test.py
+  * tests/nightmare_aml_test.py
+  * tests/aml_detection_test.py
+
+Note: These files contained no pytest test functions (standalone demonstration scripts),
+so test collection count remains unchanged.

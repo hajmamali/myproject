@@ -36,6 +36,7 @@ class TestQueryRouterContract:
     """Verify QueryRouterProtocol contract compliance."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_route_returns_routed_query_result(self):
         """Contract: route() must return RoutedQueryResult."""
         router = Mock(spec=QueryRouterProtocol)
@@ -65,6 +66,7 @@ class TestQueryRouterContract:
         assert result.query == "test"
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_classify_returns_classification_result(self):
         """Contract: classify() must return QueryClassificationResult."""
         router = Mock(spec=QueryRouterProtocol)
@@ -84,6 +86,7 @@ class TestQueryRouterContract:
         assert isinstance(result, QueryClassificationResult)
         assert 0.0 <= result.confidence <= 1.0
 
+    @pytest.mark.p2
     def test_get_stats_returns_dict(self):
         """Contract: get_stats() must return Dict[str, Any]."""
         router = Mock(spec=QueryRouterProtocol)
@@ -102,6 +105,7 @@ class TestQueryRouterContract:
 class TestModelDriverContract:
     """Verify ModelDriverProtocol contract compliance."""
 
+    @pytest.mark.p2
     def test_model_name_is_string(self):
         """Contract: model_name must be a string."""
         driver = Mock(spec=ModelDriverProtocol)
@@ -110,6 +114,7 @@ class TestModelDriverContract:
         assert isinstance(driver.model_name, str)
         assert len(driver.model_name) > 0
 
+    @pytest.mark.p2
     def test_generate_returns_string(self):
         """Contract: generate() must return string."""
         driver = Mock(spec=ModelDriverProtocol)
@@ -118,6 +123,7 @@ class TestModelDriverContract:
         result = driver.generate("test prompt")
         assert isinstance(result, str)
 
+    @pytest.mark.p2
     def test_is_loaded_returns_bool(self):
         """Contract: is_loaded() must return bool."""
         driver = Mock(spec=ModelDriverProtocol)
@@ -136,6 +142,7 @@ class TestModelOrchestratorContract:
     """Verify ModelOrchestratorProtocol contract compliance."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_get_driver_returns_model_driver(self):
         """Contract: get_driver() must return ModelDriverProtocol."""
         orchestrator = Mock(spec=ModelOrchestratorProtocol)
@@ -161,6 +168,7 @@ class TestReasoningEngineContract:
     """Verify ReasoningEngineProtocol contract compliance."""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_process_query_returns_dict_with_required_keys(self):
         """Contract: process_query() must return dict with specific keys."""
         engine = Mock(spec=ReasoningEngineProtocol)
@@ -206,6 +214,7 @@ class TestReasoningEngineContract:
 class TestProtocolInvariants:
     """Test invariants that must hold for all protocol implementations."""
 
+    @pytest.mark.p2
     def test_query_classification_confidence_bounds(self):
         """Invariant: Classification confidence must be in [0, 1]."""
         # Valid
@@ -238,6 +247,7 @@ class TestProtocolInvariants:
                 metadata={},
             )
 
+    @pytest.mark.p2
     def test_query_cannot_be_empty(self):
         """Invariant: Query strings cannot be empty."""
         with pytest.raises(ValueError, match="Query cannot be empty"):
@@ -258,6 +268,7 @@ class TestProtocolInvariants:
                 metadata={},
             )
 
+    @pytest.mark.p2
     def test_routed_result_must_have_valid_classification(self):
         """Invariant: RoutedQueryResult must have valid classification."""
         classification = QueryClassificationResult(

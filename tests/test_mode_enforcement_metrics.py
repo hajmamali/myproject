@@ -26,6 +26,7 @@ from mahoun.metrics.mode_enforcement import (
 class TestModeEnforcementMetrics:
     """Test suite for mode enforcement metrics"""
 
+    @pytest.mark.p2
     def test_record_blocked_attempt(self):
         """Test: Recording blocked verdict generation attempts"""
         # Record blocked attempt
@@ -42,6 +43,7 @@ class TestModeEnforcementMetrics:
         
         print("✓ Blocked attempt recorded successfully")
 
+    @pytest.mark.p2
     def test_record_mode_check(self):
         """Test: Recording mode checks"""
         # Record passed check
@@ -61,6 +63,7 @@ class TestModeEnforcementMetrics:
         assert True  # Metrics recorded successfully
         print("✓ Mode checks recorded successfully")
 
+    @pytest.mark.p2
     def test_record_config_validation_failure(self):
         """Test: Recording configuration validation failures"""
         record_config_validation_failure(
@@ -71,6 +74,7 @@ class TestModeEnforcementMetrics:
         assert True  # Metric recorded successfully
         print("✓ Config validation failure recorded successfully")
 
+    @pytest.mark.p2
     def test_set_current_mode(self):
         """Test: Setting current mode gauge"""
         # Set desktop_minimal mode
@@ -82,6 +86,7 @@ class TestModeEnforcementMetrics:
         assert True  # Gauges set successfully
         print("✓ Current mode gauge set successfully")
 
+    @pytest.mark.p2
     def test_set_graph_enabled(self):
         """Test: Setting graph enabled gauge"""
         # Enable graph
@@ -93,6 +98,7 @@ class TestModeEnforcementMetrics:
         assert True  # Gauge set successfully
         print("✓ Graph enabled gauge set successfully")
 
+    @pytest.mark.p2
     def test_set_verdict_engine_initialized(self):
         """Test: Setting verdict engine initialized gauge"""
         # Mark as initialized
@@ -104,6 +110,7 @@ class TestModeEnforcementMetrics:
         assert True  # Gauge set successfully
         print("✓ Verdict engine initialized gauge set successfully")
 
+    @pytest.mark.p2
     def test_record_verdict_generation_duration(self):
         """Test: Recording verdict generation duration"""
         # Record successful generation
@@ -123,6 +130,7 @@ class TestModeEnforcementMetrics:
         assert True  # Histogram recorded successfully
         print("✓ Verdict generation duration recorded successfully")
 
+    @pytest.mark.p2
     def test_record_config_validation_duration(self):
         """Test: Recording configuration validation duration"""
         record_config_validation_duration(0.05)  # 50ms
@@ -130,6 +138,7 @@ class TestModeEnforcementMetrics:
         assert True  # Histogram recorded successfully
         print("✓ Config validation duration recorded successfully")
 
+    @pytest.mark.p2
     def test_metrics_integration(self):
         """Test: Full metrics integration scenario"""
         # Scenario: Startup validation

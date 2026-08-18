@@ -31,6 +31,7 @@ class TestDependencyDirection:
     - Reasoning can import from governance/core but not vice versa
     """
 
+    @pytest.mark.p2
     def test_kernel_no_reverse_dependencies(self):
         """
         **Setup**: Parse kernel.py source
@@ -57,6 +58,7 @@ class TestDependencyDirection:
         mahoun_imports = [imp for imp in imports if imp.startswith("mahoun")]
         assert len(mahoun_imports) == 0, f"Kernel has reverse dependencies: {mahoun_imports}"
 
+    @pytest.mark.p2
     def test_core_governance_no_reasoning_imports(self):
         """
         **Setup**: Scan core/governance_kernel and core/governance files
@@ -83,6 +85,7 @@ class TestDependencyDirection:
                     f"{py_file.name} imports from forbidden module: {pattern}"
                 )
 
+    @pytest.mark.p2
     def test_fortress_validator_dependency_chain(self):
         """
         **Setup**: Import fortress_validator
@@ -104,6 +107,7 @@ class TestDependencyDirection:
         # Should have core components
         assert "ExecutionMode" in module_attrs or "ValidationResult" in module_attrs
 
+    @pytest.mark.p2
     def test_governance_lock_imports(self):
         """
         **Setup**: Import governance_lock module
@@ -123,6 +127,7 @@ class TestDependencyDirection:
             # If import fails, verify it's not due to circular dependency
             assert "circular" not in str(e).lower(), f"Circular import detected: {e}"
 
+    @pytest.mark.p2
     def test_no_circular_imports_between_core_modules(self):
         """
         **Setup**: Import all core modules in various orders
@@ -161,6 +166,7 @@ class TestImportFirewall:
     - Proper error messages on violations
     """
 
+    @pytest.mark.p2
     def test_import_firewall_blocks_unsafe_imports(self):
         """
         **Setup**: Attempt unsafe imports (would normally fail)
@@ -186,6 +192,7 @@ class TestDependencyInjection:
     - Services/agents can depend on core for injection
     """
 
+    @pytest.mark.p2
     def test_runtime_config_no_service_dependency(self):
         """
         **Setup**: Import runtime_config
@@ -211,6 +218,7 @@ class TestLayerBoundaries:
     - Layer 3 (Agents): Can import from Kernel/Core/Services
     """
 
+    @pytest.mark.p2
     def test_layer_0_kernel_pure_stdlib(self):
         """Verify Kernel uses only stdlib."""
         kernel_file = Path(REPO_ROOT) / "mahoun" / "core" / "governance_kernel" / "kernel.py"
@@ -220,6 +228,7 @@ class TestLayerBoundaries:
         assert "from mahoun" not in source
         assert "import mahoun" not in source
 
+    @pytest.mark.p2
     def test_layer_1_core_only_kernel_imports(self):
         """
         Verify Core modules only import from Kernel (if any).
@@ -249,6 +258,7 @@ class TestLayerBoundaries:
                     f"{py_file.name} violates layer boundary by importing {pattern}"
                 )
 
+    @pytest.mark.p2
     def test_core_can_import_from_governance_kernel(self):
         """Verify core modules can import from governance_kernel."""
         core_file = Path(REPO_ROOT) / "mahoun" / "core" / "governance_lock.py"
@@ -267,6 +277,7 @@ class TestModuleInterdependence:
     - Dependency graph is a DAG (directed acyclic graph)
     """
 
+    @pytest.mark.p2
     def test_no_module_circular_references(self):
         """
         **Setup**: Build dependency graph of mahoun modules
@@ -290,6 +301,7 @@ class TestModuleInterdependence:
                 if "circular" in str(e).lower():
                     pytest.fail(f"Circular import in {module_name}: {e}")
 
+    @pytest.mark.p2
     def test_lazy_imports_prevent_circular_deps(self):
         """
         **Setup**: Check for local imports in __init__.py

@@ -24,6 +24,7 @@ class TestGraphToolIntegration:
         return GraphTool()
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_get_graph_summary(self, graph_tool):
         """Test getting graph summary."""
         result = await graph_tool.get_graph_summary()
@@ -36,6 +37,7 @@ class TestGraphToolIntegration:
         assert result["status"] in ["connected", "no_connection", "error"]
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_get_neighbors_no_connection(self, graph_tool):
         """Test get_neighbors handles missing connection."""
         result = await graph_tool.get_neighbors("test_doc", limit=5)
@@ -46,6 +48,7 @@ class TestGraphToolIntegration:
         assert "count" in result
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_get_related_docs(self, graph_tool):
         """Test related documents query."""
         result = await graph_tool.get_related_docs("test_doc", depth=2)
@@ -57,6 +60,7 @@ class TestGraphToolIntegration:
         assert result["depth"] == 2
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_search_graph(self, graph_tool):
         """Test graph search."""
         result = await graph_tool.search_graph("test query", limit=10)
@@ -67,6 +71,7 @@ class TestGraphToolIntegration:
         assert "count" in result
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_error_handling(self, graph_tool):
         """Test that errors are handled gracefully."""
         # These should not raise exceptions
@@ -84,6 +89,7 @@ class TestGraphToolWithMockNeo4j:
     """Tests with mocked Neo4j for specific scenarios."""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_handles_connection_failure(self):
         """Test graceful handling of connection failures."""
         tool = GraphTool()
@@ -93,6 +99,7 @@ class TestGraphToolWithMockNeo4j:
         assert "error" in result or "status" in result
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_concurrent_requests(self):
         """Test handling multiple concurrent requests."""
         tool = GraphTool()

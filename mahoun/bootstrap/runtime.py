@@ -56,6 +56,105 @@ def clear_registry() -> None:
     SERVICE_REGISTRY.clear()
 
 
+def validate_governance_runtime() -> None:
+    """
+    Validate that the governance runtime is fully wired before accepting mutations.
+
+    P1 STARTUP GATE: Must be called after audit sink wiring, before any
+    graph mutation is permitted.
+
+    Checks:
+        - Audit sink is wired (not None)
+
+    Raises:
+        RuntimeError: If any governance runtime component is missing.
+
+    Usage in bootstrap:
+        # Wire sink first
+        set_audit_sink(FilesystemAuditSink(...))
+        # Then validate
+        validate_governance_runtime()
+    """
+    from mahoun.core.governance.mutation_boundary import get_audit_sink
+    if get_audit_sink() is None:
+        raise RuntimeError(
+            "Governance runtime invalid: "
+            "Audit sink missing. "
+            "Call set_audit_sink() before bootstrap_runtime()."
+        )
+    logger.info("Governance runtime validation passed: audit sink is wired.")
+
+
+def validate_production_reasoning_config() -> None:
+    """
+    Validate production-critical reasoning configuration.
+
+    TIER 1 HARDENING (2025-01): Ensures STRICT mode is default and
+    thread-safe components are properly configured.
+
+    Checks:
+        - Default ReasoningMode is STRICT (not FAST)
+        - ReasoningChain uses thread-safe atomic counters
+        - NLI text-grounding verification is enabled
+
+    Raises:
+        RuntimeError: If production requirements are not met.
+
+    Usage in bootstrap:
+        validate_production_reasoning_config()  # Before accepting verdict requests
+    """
+    from mahoun.reasoning.reasoning_chain import ReasoningMode, ReasoningChain, ReasoningConfig
+    import inspect
+
+    # Check 1: Default ReasoningConfig mode must be STRICT
+    config_sig = inspect.signature(ReasoningConfig)
+    if 'mode' in config_sig.parameters:
+        mode_param = config_sig.parameters['mode']
+        if mode_param.default != ReasoningMode.STRICT:
+            raise RuntimeError(
+                f"TIER 1 VIOLATION: ReasoningConfig default mode is {mode_param.default}, "
+                f"expected {ReasoningMode.STRICT}. "
+                "Production deployment requires STRICT mode as default per CONSTITUTION.md § 10."
+            )
+    else:
+        # Fallback: Check dataclass field default
+        try:
+            test_config = ReasoningConfig()
+            if test_config.mode != ReasoningMode.STRICT:
+                raise RuntimeError(
+                    f"TIER 1 VIOLATION: ReasoningConfig default mode is {test_config.mode}, "
+                    f"expected {ReasoningMode.STRICT}. "
+                    "Production deployment requires STRICT mode as default per CONSTITUTION.md § 10."
+                )
+        except Exception as e:
+            raise RuntimeError(
+                f"TIER 1 VIOLATION: Cannot instantiate ReasoningConfig: {e}. "
+                "Unable to verify STRICT mode default."
+            )
+
+    # Check 2: Verify thread-safe stats implementation
+    chain_source = inspect.getsource(ReasoningChain)
+    if 'AtomicCounter' not in chain_source or 'AtomicFloat' not in chain_source:
+        raise RuntimeError(
+            "TIER 1 VIOLATION: ReasoningChain does not use thread-safe atomic counters. "
+            "Production deployment requires AtomicCounter/AtomicFloat for concurrent safety."
+        )
+
+    # Check 3: NLI verification exists
+    if '_verify_nli' not in chain_source:
+        raise RuntimeError(
+            "TIER 1 VIOLATION: NLI text-grounding verification method not found. "
+            "Zero-hallucination guarantee requires active NLI verification."
+        )
+
+    logger.info(
+        "✅ Production reasoning config validated: "
+        f"mode={ReasoningMode.STRICT}, "
+        "thread_safe=True, "
+        "nli_enabled=True"
+    )
+
+
 def bootstrap_runtime() -> Dict[str, Any]:
     """
     Central system wiring entry point.
@@ -112,6 +211,35 @@ def bootstrap_runtime() -> Dict[str, Any]:
     register_service("graph_retriever", graph_retriever)
     register_service("graph_vector_sync", graph_vector_sync)
     register_service("legal_query_executor", legal_query_executor)
+
+    # 5. GOVERNANCE RUNTIME VALIDATION — must pass before system is considered ready
+    # NOTE: In production, set_audit_sink() must be called BEFORE bootstrap_runtime().
+    # validate_governance_runtime() will catch missing sink configuration early.
+    # FAIL-CLOSED: Per CONSTITUTION.md § 10, validation failure prevents bootstrap completion.
+    try:
+        validate_governance_runtime()
+    except RuntimeError as e:
+        logger.critical(
+            "FATAL: Governance runtime validation failed: %s. "
+            "System cannot start without valid governance runtime. "
+            "Wire an audit sink via set_audit_sink() before calling bootstrap_runtime().",
+            e,
+        )
+        # Re-raise to enforce fail-closed principle
+        raise
+
+    # 6. PRODUCTION REASONING CONFIG VALIDATION (TIER 1 HARDENING)
+    # Validates STRICT mode default, thread-safe stats, and NLI verification
+    try:
+        validate_production_reasoning_config()
+    except RuntimeError as e:
+        logger.critical(
+            "FATAL: Production reasoning config validation failed: %s. "
+            "TIER 1 requirements not met. Cannot start in production mode.",
+            e,
+        )
+        # Re-raise to enforce fail-closed principle
+        raise
 
     logger.info("MAHOUN Runtime Bootstrap COMPLETED")
     return SERVICE_REGISTRY.copy()

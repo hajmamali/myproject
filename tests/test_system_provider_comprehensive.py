@@ -27,6 +27,7 @@ from mahoun.metrics.system_provider import (
 class TestSystemMetricsProviderStateless:
     """Verify stateless behavior."""
     
+    @pytest.mark.p2
     def test_no_internal_state_mutation(self):
         """Provider should not store collected metrics."""
         provider = SystemMetricsProvider()
@@ -49,6 +50,7 @@ class TestSystemMetricsProviderStateless:
         assert initial_dict["_start_time"] == final_dict["_start_time"]
         assert initial_dict["_psutil_available"] == final_dict["_psutil_available"]
     
+    @pytest.mark.p2
     def test_thread_safety_without_locks(self):
         """Provider should be thread-safe without explicit locking."""
         provider = SystemMetricsProvider()
@@ -80,6 +82,7 @@ class TestSystemMetricsProviderGracefulDegradation:
     """Test behavior when psutil is unavailable."""
     
     @pytest.mark.skipif(not PSUTIL_AVAILABLE, reason="psutil not available")
+    @pytest.mark.p2
     def test_with_psutil_available(self):
         """When psutil is available, should collect metrics."""
         provider = SystemMetricsProvider()
@@ -97,6 +100,7 @@ class TestSystemMetricsProviderGracefulDegradation:
         assert "mahoun_system_memory_bytes" in expected_names
         assert "mahoun_system_uptime_seconds" in expected_names
     
+    @pytest.mark.p2
     def test_without_psutil_mock(self):
         """When psutil is unavailable, should return empty dict."""
         # Mock psutil as unavailable
@@ -114,6 +118,7 @@ class TestSystemMetricsProviderGracefulDegradation:
                 # Metric names should be empty
                 assert provider.get_metric_names() == []
     
+    @pytest.mark.p2
     def test_partial_failure_isolation(self):
         """If one metric fails, others should still be collected."""
         provider = SystemMetricsProvider()
@@ -138,6 +143,7 @@ class TestSystemMetricsProviderGracefulDegradation:
 class TestSystemMetricsProviderErrorIsolation:
     """Test error handling and isolation."""
     
+    @pytest.mark.p2
     def test_cpu_collection_failure(self):
         """CPU collection failure should not crash provider."""
         provider = SystemMetricsProvider()
@@ -152,6 +158,7 @@ class TestSystemMetricsProviderErrorIsolation:
             assert isinstance(metrics, dict)
             assert "mahoun_system_cpu_percent" not in metrics
     
+    @pytest.mark.p2
     def test_memory_collection_failure(self):
         """Memory collection failure should not crash provider."""
         provider = SystemMetricsProvider()
@@ -165,6 +172,7 @@ class TestSystemMetricsProviderErrorIsolation:
             assert isinstance(metrics, dict)
             assert "mahoun_system_memory_bytes" not in metrics
     
+    @pytest.mark.p2
     def test_uptime_calculation_robustness(self):
         """Uptime should handle clock adjustments."""
         # Start time in the future (simulates clock adjustment)
@@ -184,6 +192,7 @@ class TestSystemMetricsProviderErrorIsolation:
 class TestSystemMetricsProviderDeterminism:
     """Test deterministic behavior."""
     
+    @pytest.mark.p2
     def test_uptime_increases_monotonically(self):
         """Uptime should increase over time."""
         provider = SystemMetricsProvider()
@@ -202,6 +211,7 @@ class TestSystemMetricsProviderDeterminism:
             assert uptime2 > uptime1, "Uptime should increase"
             assert uptime2 - uptime1 >= 0.1, "Uptime delta should match sleep time"
     
+    @pytest.mark.p2
     def test_metric_names_consistency(self):
         """get_metric_names should return consistent results."""
         provider = SystemMetricsProvider()
@@ -211,6 +221,7 @@ class TestSystemMetricsProviderDeterminism:
         
         assert names1 == names2
     
+    @pytest.mark.p2
     def test_collection_info_consistency(self):
         """get_collection_info should return consistent results."""
         provider = SystemMetricsProvider(start_time=12345.0)
@@ -226,6 +237,7 @@ class TestSystemMetricsProviderPerformance:
     """Performance tests."""
     
     @pytest.mark.skipif(not PSUTIL_AVAILABLE, reason="psutil not available")
+    @pytest.mark.p2
     def test_collection_performance(self):
         """Collection should complete in reasonable time."""
         provider = SystemMetricsProvider()
@@ -247,6 +259,7 @@ class TestSystemMetricsProviderPerformance:
         assert avg_time < 0.5, f"Average too slow: {avg_time}s"
         assert max_time < 1.0, f"Max too slow: {max_time}s"
     
+    @pytest.mark.p2
     def test_concurrent_collection_performance(self):
         """Concurrent collections should not block each other."""
         provider = SystemMetricsProvider()
@@ -276,6 +289,7 @@ class TestSystemMetricsProviderPerformance:
 class TestSystemMetricsProviderAPI:
     """Test public API."""
     
+    @pytest.mark.p2
     def test_is_available(self):
         """is_available should reflect psutil availability."""
         provider = SystemMetricsProvider()
@@ -285,6 +299,7 @@ class TestSystemMetricsProviderAPI:
         assert isinstance(available, bool)
         assert available == PSUTIL_AVAILABLE
     
+    @pytest.mark.p2
     def test_get_metric_names(self):
         """get_metric_names should return list of strings."""
         provider = SystemMetricsProvider()
@@ -299,6 +314,7 @@ class TestSystemMetricsProviderAPI:
         else:
             assert names == []
     
+    @pytest.mark.p2
     def test_get_collection_info(self):
         """get_collection_info should return complete info."""
         start_time = 12345.0
@@ -317,6 +333,7 @@ class TestSystemMetricsProviderAPI:
         assert isinstance(info["metric_count"], int)
         assert isinstance(info["metric_names"], list)
     
+    @pytest.mark.p2
     def test_repr(self):
         """__repr__ should be informative."""
         provider = SystemMetricsProvider(start_time=12345.0)
@@ -335,12 +352,14 @@ class TestSystemMetricsProviderAPI:
 class TestModuleLevelFunctions:
     """Test module-level convenience functions."""
     
+    @pytest.mark.p2
     def test_collect_system_metrics_function(self):
         """collect_system_metrics should work."""
         metrics = collect_system_metrics()
         
         assert isinstance(metrics, dict)
     
+    @pytest.mark.p2
     def test_collect_system_metrics_with_start_time(self):
         """collect_system_metrics should accept start_time."""
         metrics = collect_system_metrics(start_time=12345.0)
@@ -351,6 +370,7 @@ class TestModuleLevelFunctions:
             # Uptime should be large (current time - 12345.0)
             assert metrics["mahoun_system_uptime_seconds"] > 0
     
+    @pytest.mark.p2
     def test_is_system_metrics_available_function(self):
         """is_system_metrics_available should return bool."""
         available = is_system_metrics_available()
@@ -362,6 +382,7 @@ class TestModuleLevelFunctions:
 class TestSystemMetricsProviderEdgeCases:
     """Edge cases and corner cases."""
     
+    @pytest.mark.p2
     def test_start_time_none(self):
         """start_time=None should use current time."""
         provider = SystemMetricsProvider(start_time=None)
@@ -372,6 +393,7 @@ class TestSystemMetricsProviderEdgeCases:
         # Start time should be recent
         assert info["start_time"] > time.time() - 1.0
     
+    @pytest.mark.p2
     def test_start_time_zero(self):
         """start_time=0 should work."""
         provider = SystemMetricsProvider(start_time=0.0)
@@ -385,6 +407,7 @@ class TestSystemMetricsProviderEdgeCases:
             # Uptime should be very large (current time - 0)
             assert metrics["mahoun_system_uptime_seconds"] > 1000000
     
+    @pytest.mark.p2
     def test_multiple_providers_independence(self):
         """Multiple providers should be independent."""
         provider1 = SystemMetricsProvider(start_time=1000.0)

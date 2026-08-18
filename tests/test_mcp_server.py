@@ -24,6 +24,7 @@ INVALID_HEADERS = {"X-API-Key": "wrong-key"}
 class TestAuthentication:
     """Test API key authentication."""
     
+    @pytest.mark.p2
     def test_missing_api_key(self):
         """Request without API key should fail."""
         response = client.post("/mcp", json={
@@ -34,6 +35,7 @@ class TestAuthentication:
         assert response.status_code == 401
         assert "Missing API key" in response.json().get("detail", "")
     
+    @pytest.mark.p2
     def test_invalid_api_key(self):
         """Request with wrong API key should fail."""
         response = client.post("/mcp", json={
@@ -44,6 +46,7 @@ class TestAuthentication:
         assert response.status_code == 403
         assert "Invalid API key" in response.json().get("detail", "")
     
+    @pytest.mark.p2
     def test_valid_api_key(self):
         """Request with valid API key should succeed."""
         response = client.post("/mcp", json={
@@ -58,6 +61,7 @@ class TestAuthentication:
 class TestJSONRPCProtocol:
     """Test JSON-RPC 2.0 protocol compliance."""
     
+    @pytest.mark.p2
     def test_invalid_jsonrpc_version(self):
         """Request with wrong jsonrpc version should fail."""
         response = client.post("/mcp", json={
@@ -68,6 +72,7 @@ class TestJSONRPCProtocol:
         data = response.json()
         assert "error" in data or response.status_code == 422
     
+    @pytest.mark.p2
     def test_missing_method(self):
         """Request without method should fail."""
         response = client.post("/mcp", json={
@@ -76,6 +81,7 @@ class TestJSONRPCProtocol:
         }, headers=VALID_HEADERS)
         assert response.status_code == 422
     
+    @pytest.mark.p2
     def test_invalid_method_format(self):
         """Method without dot separator should fail."""
         response = client.post("/mcp", json={
@@ -90,6 +96,7 @@ class TestJSONRPCProtocol:
 class TestErrorHandling:
     """Test comprehensive error handling."""
     
+    @pytest.mark.p2
     def test_tool_not_found(self):
         """Non-existent tool should return METHOD_NOT_FOUND."""
         response = client.post("/mcp", json={
@@ -101,6 +108,7 @@ class TestErrorHandling:
         assert data["error"]["code"] == -32601  # METHOD_NOT_FOUND
         assert "available_tools" in data["error"].get("data", {})
     
+    @pytest.mark.p2
     def test_function_not_found(self):
         """Non-existent function should return METHOD_NOT_FOUND."""
         response = client.post("/mcp", json={
@@ -112,6 +120,7 @@ class TestErrorHandling:
         assert data["error"]["code"] == -32601
         assert "available_methods" in data["error"].get("data", {})
     
+    @pytest.mark.p2
     def test_error_response_structure(self):
         """Error responses should follow JSON-RPC 2.0 spec."""
         response = client.post("/mcp", json={
@@ -131,6 +140,7 @@ class TestErrorHandling:
 class TestToolExecution:
     """Test actual tool method execution."""
     
+    @pytest.mark.p2
     def test_system_health(self):
         """System.health should return status."""
         response = client.post("/mcp", json={
@@ -145,6 +155,7 @@ class TestToolExecution:
         assert "result" in data
         assert data["id"] == 1
     
+    @pytest.mark.p2
     def test_method_with_params(self):
         """Methods with parameters should work."""
         response = client.post("/mcp", json={
@@ -162,12 +173,14 @@ class TestToolExecution:
 class TestEndpoints:
     """Test HTTP endpoints."""
     
+    @pytest.mark.p2
     def test_health_endpoint(self):
         """GET /health should return healthy status."""
         response = client.get("/health")
         assert response.status_code == 200
         assert response.json()["status"] == "healthy"
     
+    @pytest.mark.p2
     def test_list_tools_endpoint(self):
         """GET /mcp/tools should list available tools."""
         response = client.get("/mcp/tools")
@@ -181,6 +194,7 @@ class TestRateLimiting:
     """Test rate limiting functionality."""
     
     @pytest.mark.skip(reason="Rate limiting test requires slowapi setup")
+    @pytest.mark.p2
     def test_rate_limit_exceeded(self):
         """Exceeding rate limit should return 429."""
         # Send 101 requests (limit is 100/minute)

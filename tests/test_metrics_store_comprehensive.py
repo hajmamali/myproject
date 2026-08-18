@@ -23,6 +23,7 @@ from mahoun.metrics.metrics import Counter, Gauge, Histogram
 class TestMetricsStoreThreadSafety:
     """Ruthless thread safety tests."""
     
+    @pytest.mark.p2
     def test_concurrent_counter_registration(self):
         """Test 100 threads registering same counter simultaneously."""
         store = MetricsStore()
@@ -60,6 +61,7 @@ class TestMetricsStoreThreadSafety:
         final_counter = store.get_counter("shared_counter")
         assert final_counter.value == 100, f"Expected 100, got {final_counter.value}"
     
+    @pytest.mark.p2
     def test_concurrent_mixed_operations(self):
         """Test mixed read/write operations from multiple threads."""
         store = MetricsStore()
@@ -90,6 +92,7 @@ class TestMetricsStoreThreadSafety:
         assert len(snapshot["counters"]) == thread_count
         assert len(snapshot["gauges"]) == thread_count
     
+    @pytest.mark.p2
     def test_concurrent_reset_and_register(self):
         """Test reset while other threads are registering metrics."""
         store = MetricsStore()
@@ -137,6 +140,7 @@ class TestMetricsStoreThreadSafety:
 class TestMetricsStoreEdgeCases:
     """Test edge cases and error conditions."""
     
+    @pytest.mark.p2
     def test_empty_name_rejection(self):
         """Empty names should be rejected."""
         store = MetricsStore()
@@ -150,6 +154,7 @@ class TestMetricsStoreEdgeCases:
         with pytest.raises(ValueError, match="non-empty string"):
             store.register_histogram("")
     
+    @pytest.mark.p2
     def test_none_name_rejection(self):
         """None names should be rejected."""
         store = MetricsStore()
@@ -157,6 +162,7 @@ class TestMetricsStoreEdgeCases:
         with pytest.raises((ValueError, AttributeError)):
             store.register_counter(None)
     
+    @pytest.mark.p2
     def test_invalid_labels_type(self):
         """Invalid label types should be rejected."""
         store = MetricsStore()
@@ -167,6 +173,7 @@ class TestMetricsStoreEdgeCases:
         with pytest.raises(TypeError, match="dictionary"):
             store.register_gauge("test", labels=123)
     
+    @pytest.mark.p2
     def test_invalid_histogram_buckets(self):
         """Invalid histogram buckets should be rejected."""
         store = MetricsStore()
@@ -183,6 +190,7 @@ class TestMetricsStoreEdgeCases:
         with pytest.raises(ValueError, match="ascending"):
             store.register_histogram("test", buckets=[5.0, 1.0, 3.0])
     
+    @pytest.mark.p2
     def test_get_nonexistent_metrics(self):
         """Getting non-existent metrics should return None."""
         store = MetricsStore()
@@ -191,6 +199,7 @@ class TestMetricsStoreEdgeCases:
         assert store.get_gauge("nonexistent") is None
         assert store.get_histogram("nonexistent") is None
     
+    @pytest.mark.p2
     def test_snapshot_immutability(self):
         """Snapshot should be independent of store state."""
         store = MetricsStore()
@@ -214,6 +223,7 @@ class TestMetricsStoreEdgeCases:
 class TestMetricsStoreDeterminism:
     """Test deterministic behavior."""
     
+    @pytest.mark.p2
     def test_reset_determinism(self):
         """Reset should always produce same empty state."""
         store = MetricsStore()
@@ -239,6 +249,7 @@ class TestMetricsStoreDeterminism:
         # Should be identical
         assert snapshot1 == snapshot2
     
+    @pytest.mark.p2
     def test_registration_idempotence(self):
         """Registering same metric multiple times returns same instance."""
         store = MetricsStore()
@@ -256,6 +267,7 @@ class TestMetricsStoreDeterminism:
         assert counter2.value == 5
         assert counter3.value == 5
     
+    @pytest.mark.p2
     def test_snapshot_determinism(self):
         """Same state should produce identical snapshots."""
         store = MetricsStore()
@@ -274,6 +286,7 @@ class TestMetricsStoreDeterminism:
 class TestMetricsStorePerformance:
     """Performance and stress tests."""
     
+    @pytest.mark.p2
     def test_large_number_of_metrics(self):
         """Test with 10,000 metrics."""
         store = MetricsStore()
@@ -301,6 +314,7 @@ class TestMetricsStorePerformance:
         assert registration_time < 5.0, "Registration too slow"
         assert snapshot_time < 2.0, "Snapshot too slow"
     
+    @pytest.mark.p2
     def test_snapshot_performance_under_load(self):
         """Test snapshot performance with concurrent modifications."""
         store = MetricsStore()
@@ -354,6 +368,7 @@ class TestMetricsStorePerformance:
 class TestMetricsStoreMemorySafety:
     """Memory safety and leak detection."""
     
+    @pytest.mark.p2
     def test_no_memory_leak_on_repeated_reset(self):
         """Repeated reset should not leak memory."""
         store = MetricsStore()
@@ -372,6 +387,7 @@ class TestMetricsStoreMemorySafety:
             assert counts["counters"] == 0
             assert counts["gauges"] == 0
     
+    @pytest.mark.p2
     def test_snapshot_independence(self):
         """Snapshots should not share mutable state."""
         store = MetricsStore()
@@ -392,6 +408,7 @@ class TestMetricsStoreMemorySafety:
 class TestMetricsStoreIntrospection:
     """Test introspection methods."""
     
+    @pytest.mark.p2
     def test_get_metric_counts(self):
         """Test _get_metric_counts accuracy."""
         store = MetricsStore()
@@ -409,6 +426,7 @@ class TestMetricsStoreIntrospection:
         counts = store._get_metric_counts()
         assert counts == {"counters": 2, "gauges": 1, "histograms": 1}
     
+    @pytest.mark.p2
     def test_get_metric_names(self):
         """Test _get_metric_names accuracy."""
         store = MetricsStore()
@@ -423,6 +441,7 @@ class TestMetricsStoreIntrospection:
         assert set(names["gauges"]) == {"gauge_x"}
         assert names["histograms"] == []
     
+    @pytest.mark.p2
     def test_repr(self):
         """Test __repr__ output."""
         store = MetricsStore()

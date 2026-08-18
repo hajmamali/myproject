@@ -19,7 +19,7 @@ from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
 from mahoun.reasoning.causal_inference import CausalInferenceEngine
 from mahoun.core.models import ReasoningResult
 from mahoun.core.logging import setup_logger
-from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
+from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 
 log = setup_logger("reasoning_engine")
 
@@ -45,7 +45,7 @@ class DeepLegalReasoningEngine:
     def __init__(self):
         """Initialize deep reasoning engine with full legacy implementation"""
         self.knowledge_graph = LegalKnowledgeGraph()
-        self.graph_builder = UltraGraphBuilder(
+        self.graph_builder = ConcurrentGraphBuilder(
             enable_quality_assessment=False,
             enable_analytics=False
         )

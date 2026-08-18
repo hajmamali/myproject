@@ -42,6 +42,7 @@ class TestPatch6CypherTokenizerSpec:
     After Patch 6: Kernel will use proper Cypher tokenizer
     """
     
+    @pytest.mark.p2
     def test_patch6_spec_requirement(self):
         """
         Patch 6 MUST implement:
@@ -62,6 +63,7 @@ class TestPatch7AuditLoggingSpec:
     After Patch 7: Kernel will log all decisions with provenance
     """
     
+    @pytest.mark.p2
     def test_patch7_spec_requirement(self):
         """
         Patch 7 MUST implement:
@@ -88,6 +90,7 @@ class TestSecurityRequirements:
     These are the objectives stated in the hardening roadmap.
     """
     
+    @pytest.mark.p2
     def test_phase1_objective_88_percent(self):
         """
         Phase 1 (Patches 1, 2, 5) MUST achieve 88% confidence by:
@@ -97,6 +100,7 @@ class TestSecurityRequirements:
         """
         pass
     
+    @pytest.mark.p2
     def test_phase2_objective_95_percent(self):
         """
         Phase 2 (Patches 3, 4, 7) MUST achieve 95% confidence by:
@@ -106,6 +110,7 @@ class TestSecurityRequirements:
         """
         pass
     
+    @pytest.mark.p2
     def test_known_vulnerabilities_in_baseline(self):
         """
         Document known vulnerabilities in baseline kernel
@@ -132,6 +137,7 @@ class TestPatchImplementationGuide:
     This serves as documentation for developers implementing patches.
     """
     
+    @pytest.mark.p2
     def test_patch1_implementation_guide(self):
         """
         Patch 1 Implementation Steps:
@@ -154,6 +160,7 @@ class TestPatchImplementationGuide:
         """
         pass
     
+    @pytest.mark.p2
     def test_patch2_implementation_guide(self):
         """
         Patch 2 Implementation Steps:
@@ -176,6 +183,7 @@ class TestPatchImplementationGuide:
         """
         pass
     
+    @pytest.mark.p2
     def test_patch3_implementation_guide(self):
         """
         Patch 3 Implementation Steps:
@@ -188,6 +196,7 @@ class TestPatchImplementationGuide:
         """
         pass
     
+    @pytest.mark.p2
     def test_patch4_implementation_guide(self):
         """
         Patch 4 Implementation Steps:
@@ -210,6 +219,7 @@ class TestPatchImplementationGuide:
         """
         pass
     
+    @pytest.mark.p2
     def test_patch5_implementation_guide(self):
         """
         Patch 5 Implementation Steps:
@@ -236,6 +246,7 @@ class TestPatchImplementationGuide:
         """
         pass
     
+    @pytest.mark.p2
     def test_patch7_implementation_guide(self):
         """
         Patch 7 Implementation Steps:
@@ -252,10 +263,12 @@ class TestPatchImplementationGuide:
 class TestBaselineKernel:
     """Test what kernel currently supports (pre-patches)."""
     
+    @pytest.mark.p2
     def test_baseline_kernel_exists(self):
         """Test that kernel can be imported."""
         assert KernelMutationBoundary is not None
     
+    @pytest.mark.p2
     def test_baseline_query_classification(self):
         """Test basic query classification works."""
         result = KernelMutationBoundary.classify_query("MATCH (n) RETURN n")
@@ -264,6 +277,7 @@ class TestBaselineKernel:
         result = KernelMutationBoundary.classify_query("CREATE (n)")
         assert result == QueryType.WRITE
     
+    @pytest.mark.p2
     def test_baseline_authorization_context(self):
         """Test authorization context works."""
         assert is_governance_authorized() is False
@@ -287,6 +301,7 @@ class TestPatch1MonkeyPatchDetectionSpec:
     After Patch 1: Kernel WILL detect when methods are replaced
     """
     
+    @pytest.mark.p2
     def test_patch1_spec_monkey_patch_currently_not_detected(self):
         """
         CURRENT BEHAVIOR: Monkey-patching is NOT detected.
@@ -310,6 +325,7 @@ class TestPatch1MonkeyPatchDetectionSpec:
         # This should be True for the unpatched kernel
         assert vulnerability_confirmed, "Monkey-patching should not be detected (pre-Patch 1)"
     
+    @pytest.mark.p2
     def test_patch1_spec_requirement(self):
         """
         Patch 1 MUST prevent monkey-patching by:
@@ -329,6 +345,7 @@ class TestPatch2UnicodeNormalizationSpec:
     After Patch 2: Kernel will strip zero-width characters
     """
     
+    @pytest.mark.p2
     def test_patch2_spec_zero_width_vulnerability_exists(self):
         """
         CURRENT BEHAVIOR: Zero-width characters can be inserted.
@@ -345,6 +362,7 @@ class TestPatch2UnicodeNormalizationSpec:
         # This is the vulnerability that Patch 2 will fix
         assert '\u200b' in normalized, "Zero-width space should still be present (pre-Patch 2)"
     
+    @pytest.mark.p2
     def test_patch2_spec_requirement(self):
         """
         Patch 2 MUST do aggressive Unicode normalization:
@@ -369,6 +387,7 @@ class TestPatch3CommentStrippingSpec:
     After Patch 3: Kernel will use state machine to handle strings/comments
     """
     
+    @pytest.mark.p2
     def test_patch3_spec_current_comment_handling(self):
         """
         Test how current kernel handles comments.
@@ -383,6 +402,7 @@ class TestPatch3CommentStrippingSpec:
         result = KernelMutationBoundary.classify_query(query)
         assert result == QueryType.WRITE  # Works
     
+    @pytest.mark.p2
     def test_patch3_spec_requirement(self):
         """
         Patch 3 MUST implement state machine comment stripping:
@@ -403,6 +423,7 @@ class TestPatch4AsyncContextCleanupSpec:
     After Patch 4: Kernel will provide save/restore/reset utilities
     """
     
+    @pytest.mark.p2
     def test_patch4_spec_current_context_works(self):
         """Test that basic context already works."""
         assert is_governance_authorized() is False
@@ -413,6 +434,7 @@ class TestPatch4AsyncContextCleanupSpec:
         reset_governance_authority(token)
         assert is_governance_authorized() is False
     
+    @pytest.mark.p2
     def test_patch4_spec_requirement(self):
         """
         Patch 4 MUST provide:
@@ -432,6 +454,7 @@ class TestPatch5SysModulesIntegritySpec:
     After Patch 5: Kernel will verify its module identity
     """
     
+    @pytest.mark.p2
     def test_patch5_spec_kernel_currently_replaceable(self):
         """
         CURRENT BEHAVIOR: Kernel can be swapped in sys.modules.
@@ -453,6 +476,7 @@ class TestPatch5SysModulesIntegritySpec:
         
         assert vulnerability_confirmed, "Kernel swapping should be possible (pre-Patch 5)"
     
+    @pytest.mark.p2
     def test_patch5_spec_requirement(self):
         """
         Patch 5 MUST implement module integrity verification:

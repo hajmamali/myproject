@@ -6,6 +6,8 @@ Tests for governance kernel isolation and import firewall.
 import pytest
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_governance_kernel_isolated():
     """Governance kernel must have zero external dependencies."""
     import ast
@@ -21,6 +23,8 @@ def test_governance_kernel_isolated():
     raise AssertionError("classify_query function not found")
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_query_type_enum():
     """QueryType enum must exist and have correct values."""
     from mahoun.core.governance_kernel import QueryType
@@ -31,6 +35,8 @@ def test_query_type_enum():
     assert QueryType.UNKNOWN.value == "UNKNOWN"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_classify_query():
     """Test query classification."""
     from mahoun.core.governance_kernel import classify_query, QueryType
@@ -41,6 +47,8 @@ def test_classify_query():
     assert classify_query("") == QueryType.UNKNOWN
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_enforce_governance():
     """Test governance enforcement."""
     from mahoun.core.governance_kernel import (
@@ -56,6 +64,8 @@ def test_enforce_governance():
         enforce_governance(QueryType.DESTRUCTIVE, "corr", "actor", False)
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_import_firewall_blocks_yaml():
     """Import firewall must block yaml."""
     from mahoun.core.import_firewall import get_tier, DependencyTier
@@ -64,6 +74,8 @@ def test_import_firewall_blocks_yaml():
     assert tier == DependencyTier.ML
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_import_firewall_blocks_torch():
     """Import firewall must block torch."""
     from mahoun.core.import_firewall import get_tier, DependencyTier
@@ -72,6 +84,8 @@ def test_import_firewall_blocks_torch():
     assert tier == DependencyTier.ML
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_import_firewall_allows_stdlib():
     """Import firewall must allow stdlib."""
     from mahoun.core.import_firewall import get_tier
@@ -80,6 +94,8 @@ def test_import_firewall_allows_stdlib():
     assert tier is None
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_safe_import_blocks_forbidden():
     """safe_import must block forbidden modules."""
     from mahoun.core.import_firewall import safe_import, DependencyTier
@@ -88,6 +104,8 @@ def test_safe_import_blocks_forbidden():
     assert result is None
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_circular_imports():
     """Verify no circular imports between core modules."""
     import importlib

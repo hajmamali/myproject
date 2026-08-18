@@ -1,0 +1,248 @@
+# MAHOUN Frontend Readiness Gate Configuration
+# ================================================
+# Machine-readable configuration for the frontend readiness gate.
+# This file defines all checks that must pass before frontend development can proceed.
+#
+# Format:
+#   checks: List of check identifiers
+#   Each check has:
+#     - id: Unique identifier
+#     - name: Human-readable name
+#     - description: Detailed description
+#     - required: Whether this check is mandatory
+#     - severity: FAIL (blocks) or WARN (warns but doesn't block)
+#
+# Usage:
+#   python ci/gates/frontend_readiness_gate.py
+#   python ci/gates/frontend_readiness_gate.py --output json
+#   python ci/gates/frontend_readiness_gate.py --quiet
+
+---
+
+# Gate metadata
+gate:
+  name: "MAHOUN Frontend Readiness Gate"
+  version: "1.0.0"
+  description: "Validates backend/platform contract stability before allowing frontend development"
+  author: "MAHOUN Platform Governance Council"
+  exit_codes:
+    0: READY      # All checks passed - frontend development can proceed
+    1: NOT_READY  # One or more checks failed - frontend development is blocked
+
+# List of all checks to run
+checks:
+  - id: bootstrap_stability
+    name: "Bootstrap Stability"
+    description: "Validates existence of bootstrap behavior snapshots, contracts, and golden masters. Ensures Tier-0 components are stable and unauthorized changes are detected."
+    required: true
+    severity: FAIL
+    files:
+      - "mahoun/bootstrap/BEHAVIOR_SNAPSHOT.md"
+      - "mahoun/bootstrap/bootstrap_contract.yaml"
+      - "mahoun/bootstrap/golden_master/"
+    
+  - id: characterization_tests
+    name: "Characterization Tests"
+    description: "Validates existence of characterization test suite and golden snapshots. Ensures pytest can collect and run the tests successfully."
+    required: true
+    severity: FAIL
+    paths:
+      - "tests/bootstrap/characterization/"
+      - "mahoun/bootstrap/golden_master/"
+    pytest:
+      collect_only: true
+      timeout: 30
+      
+  - id: api_contract
+    name: "API Contract"
+    description: "Validates OpenAPI specification exists with request schemas, response schemas, and error schemas. Frontend must not guess response structures."
+    required: true
+    severity: FAIL
+    locations:
+      - "docs/api/openapi.yaml"
+      - "docs/api/openapi.yml"
+      - "openapi.yaml"
+    schemas:
+      - "api/models/"
+      - "mahoun/api/models/"
+    required_sections:
+      - paths
+      - components.schemas
+      - components.responses
+      
+  - id: boundary_enforcement
+    name: "Backend Boundary Enforcement"
+    description: "Detects forbidden coupling between frontend and backend internals. Frontend must only depend on API contract through client abstraction."
+    required: true
+    severity: FAIL
+    forbidden_patterns:
+      - "database modules"
+      - "Neo4j modules"
+      - "GraphDatabase.driver"
+      - "embedding internals"
+      - "executor classes"
+      - "ThreadPoolExecutor"
+      - "ProcessPoolExecutor"
+      - "mahoun.graph imports"
+      - "mahoun.core.governance imports"
+      - "mahoun.ledger imports"
+      - "neo4j imports"
+    allowed_dependencies:
+      - "Frontend"
+      - "API Contract"
+      - "Application Layer"
+    
+  - id: auth_contract
+    name: "Authentication Contract"
+    description: "Validates authentication documentation exists defining identity model, roles, and permissions."
+    required: true
+    severity: FAIL
+    locations:
+      - "docs/security/authentication.md"
+      - "docs/authentication.md"
+    required_sections:
+      - identity_model
+      - roles
+      - permissions
+      - authentication
+    
+  - id: governance_boundary
+    name: "Governance Boundary"
+    description: "Validates user-facing API responses contain governance metadata: request_id, trace_id, audit reference, provenance/citation where applicable."
+    required: true
+    severity: FAIL
+    required_fields:
+      - request_id
+      - trace_id
+      - audit_reference
+      - provenance
+      - citation
+    middleware:
+      - "api/middleware/governance_context.py"
+    
+  - id: error_contract
+    name: "Error Contract"
+    description: "Validates unified error format across all endpoints with minimum fields: error_code, message, trace_id, timestamp."
+    required: true
+    severity: FAIL
+    required_fields:
+      - error_code
+      - message
+      - trace_id
+      - timestamp
+    locations:
+      - "mahoun/api/errors.py"
+      - "api/errors.py"
+    
+  - id: observability
+    name: "Observability"
+    description: "Validates structured logging, correlation IDs, and audit capability are implemented."
+    required: true
+    severity: FAIL
+    components:
+      - structured_logging
+      - correlation_ids
+      - audit_capability
+    files:
+      - "mahoun/core/logging.py"
+      - "api/middleware/governance_context.py"
+      - "mahoun/ledger/"
+    
+  - id: frontend_architecture
+    name: "Frontend Architecture Declaration"
+    description: "Requires frontend architecture document defining framework, API client strategy, state management, authentication integration, and component strategy."
+    required: true
+    severity: FAIL
+    locations:
+      - "docs/frontend/architecture.md"
+      - "docs/FRONTEND_ARCHITECTURE.md"
+      - "frontend/ARCHITECTURE.md"
+    required_sections:
+      - frontend_framework
+      - api_client_strategy
+      - state_management
+      - authentication_integration
+      - component_strategy
+    
+  - id: sdk_readiness
+    name: "API Client Readiness"
+    description: "Validates existence of API client abstraction. Frontend must consume API through client layer, not raw backend internals."
+    required: true
+    severity: FAIL
+    locations:
+      - "clients/"
+      - "frontend/src/api/"
+      - "src/api/"
+    patterns:
+      - uses_fetch_with_base_url
+      - defines_typescript_types
+      - consumed_by_components
+
+# Execution configuration
+execution:
+  fail_closed: true          # Gate fails closed - any failure blocks frontend
+  timeout: 60               # Total execution timeout in seconds
+  parallel: false           # Run checks sequentially (for deterministic output)
+  
+# Report configuration
+report:
+  formats: ["text", "json", "yaml"]
+  default_format: "text"
+  include:
+    - timestamp
+    - status
+    - summary
+    - checks
+    - evidence
+    - problems
+    - recommendations
+
+# Integration with CI/CD
+ci:
+  github_actions:
+    enabled: true
+    workflow: "frontend-readiness.yml"
+    triggers:
+      - push
+      - pull_request
+    paths:
+      - "mahoun/bootstrap/"
+      - "api/"
+      - "frontend/"
+      - "docs/api/"
+      - "docs/frontend/"
+    
+  gitlab_ci:
+    enabled: true
+    job: "frontend-readiness"
+    stage: "gate"
+    
+  jenkins:
+    enabled: true
+    pipeline:
+      stage: "validation"
+      script: "python ci/gates/frontend_readiness_gate.py"
+
+# Notification configuration
+notifications:
+  slack:
+    enabled: false
+    channel: "#mahoun-dev"
+    on_failure: true
+    on_success: false
+    
+  email:
+    enabled: false
+    recipients: []
+    on_failure: true
+    on_success: false
+
+# Historical tracking
+tracking:
+  enabled: true
+  log_file: "ci/gates/frontend_readiness_history.log"
+  track:
+    - status
+    - timestamp
+    - failed_checks
+    - execution_time

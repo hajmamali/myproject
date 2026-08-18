@@ -139,8 +139,9 @@ export default function JobStatusMonitor({
     }
   };
 
-  const progress = status.progress?.percent || 0;
-  const currentStep = status.progress?.current_step || "";
+  const progressValue = status.progress;
+  const progress = typeof progressValue === 'number' ? progressValue : progressValue?.percent || 0;
+  const currentStep = typeof progressValue === 'object' ? progressValue?.current_step || "" : "";
 
   return (
     <div className="space-y-3">

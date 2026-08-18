@@ -126,6 +126,7 @@ class TestReasoningLogic:
         query = "MATCH (n) WHERE n.test_tag = 'logic_battle' DETACH DELETE n"
         self.conn.execute_query(query)
 
+    @pytest.mark.p2
     def test_student_bitcoin_logic_trap(self):
         """The 'Logical Trap' Query Verification"""
         if not self.connected: pytest.skip("Neo4j offline")

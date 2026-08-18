@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirna
 class TestUltraBaseAgent:
     """Tests for UltraBaseAgent"""
     
+    @pytest.mark.p2
     def test_import_base_agent(self):
         """Test that base agent can be imported"""
         from mahoun.agents import UltraBaseAgent, AgentConfig, AgentResult
@@ -27,6 +28,7 @@ class TestUltraBaseAgent:
         assert AgentConfig is not None
         assert AgentResult is not None
     
+    @pytest.mark.p2
     def test_agent_config_defaults(self):
         """Test AgentConfig default values"""
         from mahoun.agents import AgentConfig
@@ -37,6 +39,7 @@ class TestUltraBaseAgent:
         assert config.circuit_breaker_threshold == 5
         assert config.enable_fallback == True
     
+    @pytest.mark.p2
     def test_agent_result_to_dict(self):
         """Test AgentResult serialization"""
         from mahoun.agents import AgentResult
@@ -54,6 +57,7 @@ class TestUltraBaseAgent:
         assert d["correlation_id"] == "test123"
         assert d["processing_time_ms"] == 100.5
     
+    @pytest.mark.p2
     def test_circuit_breaker_states(self):
         """Test CircuitBreaker state transitions"""
         from mahoun.agents import CircuitBreaker, CircuitBreakerState
@@ -84,6 +88,7 @@ class TestUltraBaseAgent:
 class TestUltraOrchestrator:
     """Tests for UltraOrchestrator"""
     
+    @pytest.mark.p2
     def test_import_orchestrator(self):
         """Test that orchestrator can be imported"""
         from mahoun.agents import (
@@ -96,6 +101,7 @@ class TestUltraOrchestrator:
         assert WorkflowDAG is not None
         assert WorkflowNode is not None
     
+    @pytest.mark.p2
     def test_workflow_dag_creation(self):
         """Test WorkflowDAG creation and validation"""
         from mahoun.agents import WorkflowDAG, WorkflowNode
@@ -119,6 +125,7 @@ class TestUltraOrchestrator:
         assert set(levels[1]) == {"step2", "step3"}
         assert "step4" in levels[2]
     
+    @pytest.mark.p2
     def test_workflow_dag_cycle_detection(self):
         """Test that DAG detects cycles"""
         from mahoun.agents import WorkflowDAG, WorkflowNode
@@ -132,6 +139,7 @@ class TestUltraOrchestrator:
         assert len(errors) > 0
         assert any("Cycle" in e or "unknown" in e for e in errors)
     
+    @pytest.mark.p2
     def test_workflow_dag_missing_dependency(self):
         """Test that DAG detects missing dependencies"""
         from mahoun.agents import WorkflowDAG, WorkflowNode
@@ -147,12 +155,14 @@ class TestUltraOrchestrator:
 class TestUltraDocParserAgent:
     """Tests for UltraDocParserAgent"""
     
+    @pytest.mark.p2
     def test_import_doc_parser(self):
         """Test that doc parser can be imported"""
         from mahoun.agents import UltraDocParserAgent, DocParserConfig
         assert UltraDocParserAgent is not None
         assert DocParserConfig is not None
     
+    @pytest.mark.p2
     def test_doc_parser_config(self):
         """Test DocParserConfig"""
         from mahoun.agents import DocParserConfig
@@ -164,6 +174,7 @@ class TestUltraDocParserAgent:
         assert config.enable_ocr == True
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_doc_parser_initialization(self):
         """Test doc parser initialization"""
         from mahoun.agents import UltraDocParserAgent, DocParserConfig
@@ -191,6 +202,7 @@ class TestUltraDocParserAgent:
 class TestUltraContractAgent:
     """Tests for UltraContractAgent"""
     
+    @pytest.mark.p2
     def test_import_contract_agent(self):
         """Test that contract agent can be imported"""
         from mahoun.agents import UltraContractAgent, ContractAgentConfig, ReasoningMode
@@ -198,6 +210,7 @@ class TestUltraContractAgent:
         assert ContractAgentConfig is not None
         assert ReasoningMode is not None
     
+    @pytest.mark.p2
     def test_contract_config(self):
         """Test ContractAgentConfig"""
         from mahoun.agents import ContractAgentConfig, ReasoningMode
@@ -208,6 +221,7 @@ class TestUltraContractAgent:
         assert config.enable_verification == True
         assert config.reasoning_mode == ReasoningMode.AUTO
     
+    @pytest.mark.p2
     def test_reasoning_modes(self):
         """Test ReasoningMode enum"""
         from mahoun.agents import ReasoningMode
@@ -221,12 +235,14 @@ class TestUltraContractAgent:
 class TestUltraAgentFactory:
     """Tests for UltraAgentFactory"""
     
+    @pytest.mark.p2
     def test_import_factory(self):
         """Test that factory can be imported"""
         from mahoun.agents import UltraAgentFactory, ULTRA_AGENT_REGISTRY
         assert UltraAgentFactory is not None
         assert ULTRA_AGENT_REGISTRY is not None
     
+    @pytest.mark.p2
     def test_list_available_agents(self):
         """Test listing available agents"""
         from mahoun.agents import UltraAgentFactory
@@ -239,6 +255,7 @@ class TestUltraAgentFactory:
         assert "doc_parser" in agent_types
         assert "contract" in agent_types
     
+    @pytest.mark.p2
     def test_get_agent_info(self):
         """Test getting agent info"""
         from mahoun.agents import UltraAgentFactory
@@ -249,6 +266,7 @@ class TestUltraAgentFactory:
         assert info["category"] == "parsing"
         assert "description" in info
     
+    @pytest.mark.p2
     def test_get_unknown_agent_raises(self):
         """Test that unknown agent raises ValueError"""
         from mahoun.agents import UltraAgentFactory
@@ -258,6 +276,7 @@ class TestUltraAgentFactory:
         
         assert "Unknown agent type" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_register_custom_agent(self):
         """Test registering a custom agent"""
         from mahoun.agents import UltraAgentFactory, UltraBaseAgent
@@ -285,6 +304,7 @@ class TestIntegration:
     """Integration tests"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_full_workflow(self):
         """Test a complete workflow execution"""
         from mahoun.agents import (
@@ -346,12 +366,14 @@ if __name__ == "__main__":
 class TestUltraDisputeAgent:
     """Tests for UltraDisputeAgent"""
     
+    @pytest.mark.p2
     def test_import_dispute_agent(self):
         """Test that dispute agent can be imported"""
         from mahoun.agents import UltraDisputeAgent, DisputeType
         assert UltraDisputeAgent is not None
         assert DisputeType is not None
     
+    @pytest.mark.p2
     def test_dispute_types(self):
         """Test DisputeType enum"""
         from mahoun.agents import DisputeType
@@ -360,6 +382,7 @@ class TestUltraDisputeAgent:
         assert DisputeType.FINANCIAL.value == "financial"
         assert DisputeType.TEMPORAL.value == "temporal"
     
+    @pytest.mark.p2
     def test_dispute_severity(self):
         """Test DisputeSeverity enum"""
         from mahoun.agents import DisputeSeverity
@@ -372,6 +395,7 @@ class TestUltraDisputeAgent:
 class TestUltraClaimAgent:
     """Tests for UltraClaimAgent"""
     
+    @pytest.mark.p2
     def test_import_claim_agent(self):
         """Test that claim agent can be imported"""
         from mahoun.agents import UltraClaimAgent, ClaimAgentConfig, ClaimType
@@ -379,6 +403,7 @@ class TestUltraClaimAgent:
         assert ClaimAgentConfig is not None
         assert ClaimType is not None
     
+    @pytest.mark.p2
     def test_claim_types(self):
         """Test ClaimType enum"""
         from mahoun.agents import ClaimType
@@ -391,6 +416,7 @@ class TestUltraClaimAgent:
 class TestUltraNarrativeAgent:
     """Tests for UltraNarrativeAgent"""
     
+    @pytest.mark.p2
     def test_import_narrative_agent(self):
         """Test that narrative agent can be imported"""
         from mahoun.agents import UltraNarrativeAgent, NarrativeAgentConfig, NarrativeType
@@ -398,6 +424,7 @@ class TestUltraNarrativeAgent:
         assert NarrativeAgentConfig is not None
         assert NarrativeType is not None
     
+    @pytest.mark.p2
     def test_narrative_types(self):
         """Test NarrativeType enum"""
         from mahoun.agents import NarrativeType
@@ -410,6 +437,7 @@ class TestUltraNarrativeAgent:
 class TestUltraPrecedentAgent:
     """Tests for UltraPrecedentAgent"""
     
+    @pytest.mark.p2
     def test_import_precedent_agent(self):
         """Test that precedent agent can be imported"""
         from mahoun.agents import UltraPrecedentAgent, PrecedentAgentConfig, PrecedentType
@@ -417,6 +445,7 @@ class TestUltraPrecedentAgent:
         assert PrecedentAgentConfig is not None
         assert PrecedentType is not None
     
+    @pytest.mark.p2
     def test_precedent_types(self):
         """Test PrecedentType enum"""
         from mahoun.agents import PrecedentType
@@ -429,6 +458,7 @@ class TestUltraPrecedentAgent:
 class TestFactoryWithAllAgents:
     """Tests for factory with all agents"""
     
+    @pytest.mark.p2
     def test_all_agents_registered(self):
         """Test that all 6 core agents are registered"""
         from mahoun.agents import UltraAgentFactory
@@ -446,6 +476,7 @@ class TestFactoryWithAllAgents:
         # At least 6 agents (may have custom ones from other tests)
         assert len(available) >= 6
     
+    @pytest.mark.p2
     def test_agent_categories(self):
         """Test agent categories"""
         from mahoun.agents import UltraAgentFactory

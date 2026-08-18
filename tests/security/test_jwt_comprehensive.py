@@ -60,6 +60,7 @@ def refresh_token(jwt_auth):
 class TestTokenCreation:
     """Test JWT token generation."""
     
+    @pytest.mark.p1
     def test_create_access_token_structure(self, jwt_auth):
         """Verify access token has correct structure."""
         token = jwt_auth.create_access_token("user123", [UserRole.ADMIN])
@@ -77,6 +78,7 @@ class TestTokenCreation:
         assert 'iat' in payload
         assert 'jti' in payload
     
+    @pytest.mark.p1
     def test_create_access_token_default_role(self, jwt_auth):
         """Verify default role is USER."""
         token = jwt_auth.create_access_token("user123")
@@ -88,6 +90,7 @@ class TestTokenCreation:
         
         assert UserRole.USER in payload['roles']
     
+    @pytest.mark.p1
     def test_create_access_token_expiry(self, jwt_auth):
         """Verify access token expiry is set correctly."""
         before = datetime.now(timezone.utc)
@@ -110,6 +113,7 @@ class TestTokenCreation:
         time_window = (after - before).total_seconds() + 2  # Add 2 sec buffer
         assert abs((iat_time - before).total_seconds()) < time_window
     
+    @pytest.mark.p1
     def test_create_refresh_token_structure(self, jwt_auth):
         """Verify refresh token has correct structure."""
         token = jwt_auth.create_refresh_token("user123")
@@ -125,6 +129,7 @@ class TestTokenCreation:
         assert 'iat' in payload
         assert 'jti' in payload
     
+    @pytest.mark.p1
     def test_create_refresh_token_expiry(self, jwt_auth):
         """Verify refresh token expiry is set correctly (7 days)."""
         before = datetime.now(timezone.utc)
@@ -141,6 +146,7 @@ class TestTokenCreation:
         expected_exp = before + timedelta(days=7)
         assert abs((exp_time - expected_exp).total_seconds()) < 2
     
+    @pytest.mark.p1
     def test_tokens_are_unique(self, jwt_auth):
         """Verify each token has unique JTI."""
         token1 = jwt_auth.create_access_token("user1")
@@ -159,6 +165,7 @@ class TestTokenCreation:
 class TestTokenVerification:
     """Test JWT token verification - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_verify_valid_token(self, jwt_auth, access_token):
         """Verify valid token passes verification."""
         payload = jwt_auth.verify_token(access_token)
@@ -167,6 +174,7 @@ class TestTokenVerification:
         assert payload['user_id'] == "test_user"
         assert payload['type'] == "access"
     
+    @pytest.mark.p1
     def test_verify_expired_token_fails(self, jwt_auth):
         """CRITICAL: Expired tokens must fail verification."""
         # Create authenticator with very short expiry
@@ -187,6 +195,7 @@ class TestTokenVerification:
         with pytest.raises(jwt.ExpiredSignatureError):
             short_auth.verify_token(token)
     
+    @pytest.mark.p1
     def test_verify_invalid_signature_fails(self, jwt_auth, access_token):
         """CRITICAL: Tokens with invalid signature must fail."""
         # Create different authenticator with different secret
@@ -201,6 +210,7 @@ class TestTokenVerification:
         with pytest.raises(jwt.InvalidTokenError):
             wrong_auth.verify_token(access_token)
     
+    @pytest.mark.p1
     def test_verify_malformed_token_fails(self, jwt_auth):
         """CRITICAL: Malformed tokens must fail verification."""
         if jwt is None:
@@ -215,6 +225,7 @@ class TestTokenVerification:
         with pytest.raises(jwt.InvalidTokenError):
             jwt_auth.verify_token("invalid_token")
     
+    @pytest.mark.p1
     def test_verify_modified_token_fails(self, jwt_auth, access_token):
         """CRITICAL: Modified tokens must fail verification."""
         # Modify token slightly
@@ -230,6 +241,7 @@ class TestTokenVerification:
 class TestTokenBlacklist:
     """Test token blacklist enforcement - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_revoke_token_adds_to_blacklist(self, jwt_auth, access_token):
         """Verify revocation adds JTI to blacklist."""
         initial_count = len(jwt_auth.blacklist)
@@ -238,6 +250,7 @@ class TestTokenBlacklist:
         
         assert len(jwt_auth.blacklist) == initial_count + 1
     
+    @pytest.mark.p1
     def test_blacklisted_token_fails_verification(self, jwt_auth, access_token):
         """CRITICAL: Blacklisted tokens must not verify."""
         # First verify it works
@@ -251,6 +264,7 @@ class TestTokenBlacklist:
         with pytest.raises(ValueError, match="revoked"):
             jwt_auth.verify_token(access_token)
     
+    @pytest.mark.p1
     def test_revoke_expired_token(self, jwt_auth):
         """Verify expired tokens can still be revoked."""
         # Create token
@@ -268,6 +282,7 @@ class TestTokenBlacklist:
         
         assert jti in jwt_auth.blacklist
     
+    @pytest.mark.p1
     def test_revoke_invalid_token_fails_gracefully(self, jwt_auth):
         """Verify revoking invalid token doesn't crash."""
         # Should not raise
@@ -280,6 +295,7 @@ class TestTokenBlacklist:
 class TestTokenRefresh:
     """Test token refresh mechanism."""
     
+    @pytest.mark.p1
     def test_refresh_access_token_from_refresh_token(self, jwt_auth, refresh_token):
         """Verify new access token can be created from refresh token."""
         new_access_token = jwt_auth.refresh_access_token(refresh_token)
@@ -291,11 +307,13 @@ class TestTokenRefresh:
         payload = jwt_auth.verify_token(new_access_token)
         assert payload['type'] == "access"
     
+    @pytest.mark.p1
     def test_refresh_with_access_token_fails(self, jwt_auth, access_token):
         """CRITICAL: Access tokens must not be used for refresh."""
         with pytest.raises(ValueError, match="Not a refresh token"):
             jwt_auth.refresh_access_token(access_token)
     
+    @pytest.mark.p1
     def test_refresh_with_expired_token_fails(self, jwt_auth):
         """CRITICAL: Expired refresh tokens must not work."""
         # Create auth with short refresh expiry
@@ -316,6 +334,7 @@ class TestTokenRefresh:
         with pytest.raises(jwt.ExpiredSignatureError):
             short_auth.refresh_access_token(token)
     
+    @pytest.mark.p1
     def test_refresh_preserves_user_id(self, jwt_auth, refresh_token):
         """Verify refresh preserves user identity."""
         new_access_token = jwt_auth.refresh_access_token(refresh_token)
@@ -327,18 +346,21 @@ class TestTokenRefresh:
 class TestRoleChecking:
     """Test role-based access control."""
     
+    @pytest.mark.p1
     def test_has_role_with_correct_role(self, jwt_auth):
         """Verify role check succeeds for correct role."""
         token = jwt_auth.create_access_token("user123", [UserRole.ADMIN])
         
         assert jwt_auth.has_role(token, UserRole.ADMIN) is True
     
+    @pytest.mark.p1
     def test_has_role_without_role(self, jwt_auth):
         """Verify role check fails for missing role."""
         token = jwt_auth.create_access_token("user123", [UserRole.USER])
         
         assert jwt_auth.has_role(token, UserRole.ADMIN) is False
     
+    @pytest.mark.p1
     def test_admin_has_all_roles(self, jwt_auth):
         """Verify ADMIN role grants access to everything."""
         token = jwt_auth.create_access_token("admin", [UserRole.ADMIN])
@@ -348,10 +370,12 @@ class TestRoleChecking:
         assert jwt_auth.has_role(token, UserRole.READONLY) is True
         assert jwt_auth.has_role(token, UserRole.SERVICE) is True
     
+    @pytest.mark.p1
     def test_has_role_invalid_token(self, jwt_auth):
         """Verify role check fails for invalid token."""
         assert jwt_auth.has_role("invalid_token", UserRole.USER) is False
     
+    @pytest.mark.p1
     def test_has_role_expired_token(self, jwt_auth):
         """Verify role check fails for expired token."""
         short_auth = JWTAuthenticator(
@@ -370,6 +394,7 @@ class TestRoleChecking:
 class TestAlgorithmSupport:
     """Test different JWT algorithms."""
     
+    @pytest.mark.p1
     def test_hs256_algorithm(self):
         """Verify HS256 (default) works."""
         auth = JWTAuthenticator(
@@ -381,6 +406,7 @@ class TestAlgorithmSupport:
         payload = auth.verify_token(token)
         assert payload is not None
     
+    @pytest.mark.p1
     def test_different_algorithms_incompatible(self):
         """Verify tokens from different algorithms don't cross-validate."""
         auth_hs256 = JWTAuthenticator(

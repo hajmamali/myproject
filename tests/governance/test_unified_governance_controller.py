@@ -80,6 +80,8 @@ def governance_context():
 # Test: Basic Coordination (Kernel + Policy)
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_read_query_approved(unified_controller, governance_context):
     """Test that read queries are approved by both layers."""
     query = "MATCH (n:Law) WHERE n.status = 'active' RETURN n LIMIT 10"
@@ -98,6 +100,8 @@ def test_read_query_approved(unified_controller, governance_context):
     assert decision.allow_tombstones is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_write_query_unauthorized(unified_controller, governance_context):
     """Test that write queries without authorization are denied."""
     query = "CREATE (n:Law {id: 'test'}) RETURN n"
@@ -114,6 +118,8 @@ def test_write_query_unauthorized(unified_controller, governance_context):
     assert "UNAUTHORIZED" in decision.kernel_message
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_write_query_authorized(unified_controller, governance_context):
     """Test that write queries with authorization are approved."""
     query = "CREATE (n:Law {id: 'test'}) RETURN n"
@@ -135,6 +141,8 @@ def test_write_query_authorized(unified_controller, governance_context):
         reset_governance_authority(token)
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_forbidden_query_denied(unified_controller, governance_context):
     """Test that forbidden queries (apoc, dbms) are always denied."""
     query = "CALL apoc.periodic.iterate('MATCH (n) RETURN n', 'DELETE n', {})"
@@ -155,6 +163,8 @@ def test_forbidden_query_denied(unified_controller, governance_context):
 # Test: View Mode Enforcement
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_active_view_default(unified_controller, governance_context):
     """Test that ACTIVE_VIEW is the default."""
     query = "MATCH (n:Law) RETURN n"
@@ -168,6 +178,8 @@ def test_active_view_default(unified_controller, governance_context):
     assert decision.allow_tombstones is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_historical_view_requires_justification(unified_controller, governance_context):
     """Test that HISTORICAL_VIEW requires audit justification."""
     query = "MATCH (n:Law) RETURN n"
@@ -185,6 +197,8 @@ def test_historical_view_requires_justification(unified_controller, governance_c
     assert decision.policy_check_passed is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_historical_view_with_justification(unified_controller, governance_context):
     """Test that HISTORICAL_VIEW works with proper justification."""
     query = "MATCH (n:Law) RETURN n"
@@ -206,6 +220,8 @@ def test_historical_view_with_justification(unified_controller, governance_conte
 # Test: Query Transformation
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_tombstone_filter_injection_active_view(unified_controller, governance_context):
     """Test that tombstone filters are injected for ACTIVE_VIEW."""
     query = "MATCH (n:Law) RETURN n"
@@ -224,6 +240,8 @@ def test_tombstone_filter_injection_active_view(unified_controller, governance_c
     assert "n._deleted = true" in decision.transformed_query
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_tombstone_filter_historical_view(unified_controller, governance_context):
     """Test that tombstone filters are NOT injected for HISTORICAL_VIEW."""
     query = "MATCH (n:Law) RETURN n"
@@ -240,6 +258,8 @@ def test_no_tombstone_filter_historical_view(unified_controller, governance_cont
     assert "tombstone_filter_active_view" not in transformations
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_depth_limiting_transformation(unified_controller, governance_context):
     """Test that depth limits are applied based on profile."""
     query = "MATCH path = (a)-[:*]-(b) RETURN path"
@@ -259,6 +279,8 @@ def test_depth_limiting_transformation(unified_controller, governance_context):
         assert "[:*1..3]" in decision.transformed_query
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_limit_injection(unified_controller, governance_context):
     """Test that LIMIT is injected when missing."""
     query = "MATCH (n:Law) RETURN n"
@@ -273,6 +295,8 @@ def test_limit_injection(unified_controller, governance_context):
     assert any("default_limit" in t for t in decision.transformations_applied)
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_transformation_when_disabled(policy_resolver, governance_context):
     """Test that transformation can be disabled."""
     controller = UnifiedGovernanceController(
@@ -297,6 +321,8 @@ def test_no_transformation_when_disabled(policy_resolver, governance_context):
 # Test: Profile Integration
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_desktop_minimal_constraints(unified_controller, governance_context):
     """Test that DESKTOP_MINIMAL profile applies conservative constraints."""
     query = "MATCH (n:Law) RETURN n"
@@ -314,6 +340,8 @@ def test_desktop_minimal_constraints(unified_controller, governance_context):
     assert policy.reasoning_budget.value == "low"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_enterprise_full_capabilities(governance_context):
     """Test that ENTERPRISE_FULL profile enables full capabilities."""
     # Configure for enterprise
@@ -351,6 +379,8 @@ def test_enterprise_full_capabilities(governance_context):
 # Test: Audit Trail
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_audit_trail_creation(unified_controller, governance_context):
     """Test that audit trail is created for every decision."""
     query = "MATCH (n:Law) RETURN n"
@@ -370,6 +400,8 @@ def test_audit_trail_creation(unified_controller, governance_context):
     assert audit_trail[0].correlation_id == governance_context.correlation_id
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_audit_trail_filtering(unified_controller, governance_context):
     """Test audit trail filtering capabilities."""
     # Execute multiple queries
@@ -386,6 +418,8 @@ def test_audit_trail_filtering(unified_controller, governance_context):
     assert len(trail) <= 3
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_statistics_generation(unified_controller, governance_context):
     """Test statistics generation from audit trail."""
     # Execute various queries
@@ -410,6 +444,8 @@ def test_statistics_generation(unified_controller, governance_context):
 # Test: Utility Functions
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_create_default_unified_controller():
     """Test default controller creation."""
     controller = create_default_unified_controller()
@@ -420,6 +456,8 @@ def test_create_default_unified_controller():
     assert controller.strict_mode is True
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_validate_query_convenience_function(governance_context):
     """Test validate_query_with_unified_governance convenience function."""
     query = "MATCH (n:Law) RETURN n"
@@ -437,6 +475,8 @@ def test_validate_query_convenience_function(governance_context):
 # Test: Edge Cases
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_empty_query(unified_controller, governance_context):
     """Test handling of empty query - MUST be READ (safe default)."""
     query = ""
@@ -452,6 +492,8 @@ def test_empty_query(unified_controller, governance_context):
     assert decision.kernel_check_passed is True
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_complex_query_with_multiple_clauses(unified_controller, governance_context):
     """Test complex query with multiple MATCH clauses."""
     query = """
@@ -475,6 +517,8 @@ def test_complex_query_with_multiple_clauses(unified_controller, governance_cont
     assert decision.query_transformed is True
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_decision_helper_methods(unified_controller, governance_context):
     """Test UnifiedGovernanceDecision helper methods."""
     query = "MATCH (n:Law) RETURN n"
@@ -495,6 +539,8 @@ def test_decision_helper_methods(unified_controller, governance_context):
     assert "approved" in decision_dict
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_concurrent_decisions_isolated(unified_controller):
     """Test that concurrent decisions are properly isolated."""
     # Create two different contexts
@@ -515,6 +561,8 @@ def test_concurrent_decisions_isolated(unified_controller):
 # Test: Error Handling
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_policy_resolution_failure_handling(unified_controller, governance_context):
     """Test handling of policy resolution failures."""
     # Request HISTORICAL_VIEW without justification
@@ -536,6 +584,8 @@ def test_policy_resolution_failure_handling(unified_controller, governance_conte
 # Test: Integration Scenarios
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_production_reasoning_workflow(unified_controller, governance_context):
     """Test typical production reasoning workflow."""
     # Scenario: Legal reasoning query in production
@@ -565,6 +615,8 @@ def test_production_reasoning_workflow(unified_controller, governance_context):
     assert "_deleted = true" in decision.transformed_query
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_forensic_audit_workflow(unified_controller, governance_context):
     """Test forensic audit workflow with HISTORICAL_VIEW."""
     # Scenario: Forensic analysis needs to see deleted entities
@@ -591,6 +643,8 @@ def test_forensic_audit_workflow(unified_controller, governance_context):
     assert "tombstone_filter_active_view" not in transformations
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_laptop_performance_mode(unified_controller, governance_context):
     """Test laptop mode with conservative resource limits."""
     query = "MATCH path = (a)-[:*]-(b) RETURN path"

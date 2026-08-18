@@ -20,21 +20,25 @@ sys.path.insert(0, str(project_root))
 class TestImports:
     """Test that all components can be imported"""
     
+    @pytest.mark.p2
     def test_import_document_normalizer(self):
         """Test Document Normalizer import"""
         from mahoun.pipelines.ingestion.document_normalizer import DocumentNormalizer
         assert DocumentNormalizer is not None
     
+    @pytest.mark.p2
     def test_import_metadata_extractor(self):
         """Test Metadata Extractor import"""
         from mahoun.pipelines.ingestion.metadata_extractor import MetadataExtractor
         assert MetadataExtractor is not None
     
+    @pytest.mark.p2
     def test_import_ocr_handler(self):
         """Test OCR Handler import"""
         from mahoun.pipelines.ingestion.ocr_handler import OCRHandler
         assert OCRHandler is not None
     
+    @pytest.mark.p2
     def test_import_document_handlers(self):
         """Test Document Handlers import"""
         from mahoun.pipelines.ingestion.document_handlers import (
@@ -46,11 +50,13 @@ class TestImports:
         assert TxtHandler is not None
         assert DocumentHandlerFactory is not None
     
+    @pytest.mark.p2
     def test_import_ingestion_pipeline(self):
         """Test Ingestion Pipeline import"""
         from mahoun.pipelines.ingestion import IngestionPipeline
         assert IngestionPipeline is not None
     
+    @pytest.mark.p2
     def test_import_agents(self):
         """Test Agents import"""
         from mahoun.agents.base_agent import BaseAgent
@@ -59,6 +65,7 @@ class TestImports:
         assert Orchestrator is not None
         assert ContractAgent is not None
     
+    @pytest.mark.p2
     def test_import_rag_components(self):
         """Test RAG components import"""
         try:
@@ -67,6 +74,7 @@ class TestImports:
         except ImportError as e:
             pytest.skip(f"HybridRAGService not available: {e}")
     
+    @pytest.mark.p2
     def test_import_vector_store(self):
         """Test Vector Store import"""
         from mahoun.pipelines.vector_store.manager import VectorStoreManager
@@ -76,6 +84,7 @@ class TestImports:
 class TestDependencies:
     """Test that dependencies are available"""
     
+    @pytest.mark.p2
     def test_basic_dependencies(self):
         """Test basic Python dependencies"""
         import asyncio
@@ -89,6 +98,7 @@ class TestDependencies:
         assert json is not None
         assert datetime is not None
     
+    @pytest.mark.p2
     def test_optional_dependencies(self):
         """Test optional dependencies (should not fail if missing)"""
         optional_deps = {
@@ -116,6 +126,7 @@ class TestDependencies:
 class TestComponentInitialization:
     """Test that components can be initialized"""
     
+    @pytest.mark.p2
     def test_document_normalizer_init(self):
         """Test Document Normalizer initialization"""
         from mahoun.pipelines.ingestion.document_normalizer import DocumentNormalizer
@@ -123,12 +134,14 @@ class TestComponentInitialization:
         assert normalizer is not None
         assert normalizer.txt_handler is not None
     
+    @pytest.mark.p2
     def test_metadata_extractor_init(self):
         """Test Metadata Extractor initialization"""
         from mahoun.pipelines.ingestion.metadata_extractor import MetadataExtractor
         extractor = MetadataExtractor()
         assert extractor is not None
     
+    @pytest.mark.p2
     def test_ocr_handler_init(self):
         """Test OCR Handler initialization"""
         from mahoun.pipelines.ingestion.ocr_handler import OCRHandler
@@ -137,6 +150,7 @@ class TestComponentInitialization:
         # Availability depends on dependencies
         assert isinstance(handler.available, bool)
     
+    @pytest.mark.p2
     def test_agent_orchestrator_init(self):
         """Test Agent Orchestrator initialization"""
         from mahoun.agents import Orchestrator
@@ -145,6 +159,7 @@ class TestComponentInitialization:
         # Check if orchestrator has workflows attribute (UltraOrchestrator structure)
         assert hasattr(orchestrator, 'workflows') or hasattr(orchestrator, 'agents')
     
+    @pytest.mark.p2
     def test_contract_agent_init(self):
         """Test Contract Agent initialization"""
         from mahoun.agents import ContractAgent
@@ -158,6 +173,7 @@ class TestIntegrationPoints:
     """Test integration points between components"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_normalizer_to_ingestion_pipeline(self):
         """Test Document Normalizer → Ingestion Pipeline"""
         try:
@@ -182,6 +198,7 @@ class TestIntegrationPoints:
             pytest.skip(f"Integration test skipped: {e}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_contract_agent_with_rag(self):
         """Test Contract Agent with RAG integration"""
         try:
@@ -200,6 +217,7 @@ class TestIntegrationPoints:
             pytest.skip(f"Contract Agent RAG integration test skipped: {e}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_metadata_extractor_with_ner(self):
         """Test Metadata Extractor with NER"""
         try:
@@ -221,6 +239,7 @@ class TestIntegrationPoints:
 class TestErrorHandling:
     """Test error handling and graceful degradation"""
     
+    @pytest.mark.p2
     def test_missing_file_handling(self):
         """Test handling of missing files"""
         from mahoun.pipelines.ingestion.document_normalizer import DocumentNormalizer
@@ -233,6 +252,7 @@ class TestErrorHandling:
             asyncio.run(normalizer.normalize_file("/nonexistent/file.txt"))
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_invalid_document_type(self):
         """Test handling of invalid document types"""
         from mahoun.pipelines.ingestion.document_normalizer import DocumentNormalizer

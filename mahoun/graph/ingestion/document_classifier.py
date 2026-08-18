@@ -24,17 +24,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict, Counter
 
-# Handle numpy import - use string-based dynamic import to avoid linter issues
+# Handle numpy import safely
 HAS_NUMPY = False
 np = None
 
 try:
-    # Use exec to avoid static analysis issues
-    exec("import numpy")
+    import numpy as np
     HAS_NUMPY = True
-    np = __import__('numpy')
-except ImportError:
-    # Create a simple fallback for mean calculation
+except (ImportError, ModuleNotFoundError):
     class SimpleNumpy:
         @staticmethod
         def mean(values):
@@ -138,54 +135,46 @@ AutoTokenizer = PlaceholderAutoTokenizer
 AutoModel = PlaceholderAutoModel
 torch = PlaceholderTorch
 
-# Try to import actual libraries using exec to avoid static analysis errors
+# Safe optional imports for ML classifiers
 try:
-    exec("""
-from sklearn.feature_extraction.text import TfidfVectorizer as RealTfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB as RealMultinomialNB
-from sklearn.linear_model import LogisticRegression as RealLogisticRegression
-from sklearn.ensemble import RandomForestClassifier as RealRandomForestClassifier, VotingClassifier as RealVotingClassifier
-from sklearn.metrics import classification_report, accuracy_score
-from sklearn.model_selection import train_test_split, cross_val_score as real_cross_val_score
-from sklearn.preprocessing import LabelEncoder as RealLabelEncoder
-HAS_SKLEARN = True
+    from sklearn.feature_extraction.text import TfidfVectorizer as RealTfidfVectorizer
+    from sklearn.naive_bayes import MultinomialNB as RealMultinomialNB
+    from sklearn.linear_model import LogisticRegression as RealLogisticRegression
+    from sklearn.ensemble import RandomForestClassifier as RealRandomForestClassifier, VotingClassifier as RealVotingClassifier
+    from sklearn.metrics import classification_report, accuracy_score
+    from sklearn.model_selection import train_test_split, cross_val_score as real_cross_val_score
+    from sklearn.preprocessing import LabelEncoder as RealLabelEncoder
+    HAS_SKLEARN = True
 
-# Reassign to actual classes if import succeeds
-TfidfVectorizer = RealTfidfVectorizer
-MultinomialNB = RealMultinomialNB
-LogisticRegression = RealLogisticRegression
-RandomForestClassifier = RealRandomForestClassifier
-VotingClassifier = RealVotingClassifier
-LabelEncoder = RealLabelEncoder
-cross_val_score = real_cross_val_score
-""")
-except:
-    pass
+    TfidfVectorizer = RealTfidfVectorizer
+    MultinomialNB = RealMultinomialNB
+    LogisticRegression = RealLogisticRegression
+    RandomForestClassifier = RealRandomForestClassifier
+    VotingClassifier = RealVotingClassifier
+    LabelEncoder = RealLabelEncoder
+    cross_val_score = real_cross_val_score
+except (ImportError, ModuleNotFoundError):
+    HAS_SKLEARN = False
 
 try:
-    exec("""
-import torch as real_torch
-import torch.nn as real_nn
-from transformers import AutoTokenizer as RealAutoTokenizer, AutoModel as RealAutoModel
-HAS_TRANSFORMERS = True
+    import torch as real_torch
+    import torch.nn as real_nn
+    from transformers import AutoTokenizer as RealAutoTokenizer, AutoModel as RealAutoModel
+    HAS_TRANSFORMERS = True
 
-# Reassign to actual classes if import succeeds
-torch = real_torch
-nn = real_nn
-AutoTokenizer = RealAutoTokenizer
-AutoModel = RealAutoModel
-""")
-except:
-    pass
+    torch = real_torch
+    nn = real_nn
+    AutoTokenizer = RealAutoTokenizer
+    AutoModel = RealAutoModel
+except (ImportError, ModuleNotFoundError):
+    HAS_TRANSFORMERS = False
 
-# Quantum-inspired computing simulation
+# Quantum-inspired computing simulation (optional)
 try:
-    exec("""
-import qiskit
-from qiskit import QuantumCircuit, Aer, execute
-HAS_QISKIT = True
-""")
-except:
+    import qiskit
+    from qiskit import QuantumCircuit, Aer, execute
+    HAS_QISKIT = True
+except (ImportError, ModuleNotFoundError):
     HAS_QISKIT = False
 
 # Blockchain for model versioning

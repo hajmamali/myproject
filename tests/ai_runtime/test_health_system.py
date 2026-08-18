@@ -24,6 +24,7 @@ from mahoun.ai.health import (
 class TestHealthCheckResult:
     """Test HealthCheckResult data model"""
     
+    @pytest.mark.p2
     def test_health_check_result_creation(self):
         """Test creating health check result"""
         result = HealthCheckResult(
@@ -47,6 +48,7 @@ class TestHealthCheckResult:
 class TestSystemMetrics:
     """Test SystemMetrics data model"""
     
+    @pytest.mark.p2
     def test_system_metrics_creation(self):
         """Test creating system metrics"""
         metrics = SystemMetrics(
@@ -93,6 +95,7 @@ class TestAIRuntimeHealthChecker:
             enable_detailed_metrics=True
         )
     
+    @pytest.mark.p2
     def test_health_checker_initialization(self, temp_dirs):
         """Test health checker initializes correctly"""
         models_dir, data_dir = temp_dirs
@@ -108,6 +111,7 @@ class TestAIRuntimeHealthChecker:
         assert checker._cache_ttl == 5.0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_check_health_basic(self, health_checker):
         """Test basic health check execution"""
         result = await health_checker.check_health(include_details=False)
@@ -128,6 +132,7 @@ class TestAIRuntimeHealthChecker:
         assert result["version"] == "2.0.0-NEXUS"
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_check_health_with_details(self, health_checker):
         """Test health check with detailed metrics"""
         result = await health_checker.check_health(include_details=True)
@@ -145,6 +150,7 @@ class TestAIRuntimeHealthChecker:
                 assert isinstance(check_data["metrics"], dict)
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_model_runtime_check_no_models(self, health_checker):
         """Test model runtime check when no models present"""
         result = await health_checker._check_model_runtime()
@@ -155,6 +161,7 @@ class TestAIRuntimeHealthChecker:
         assert result.latency_ms >= 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_model_runtime_check_with_models(self, health_checker, temp_dirs):
         """Test model runtime check with GGUF models present"""
         models_dir, _ = temp_dirs
@@ -174,6 +181,7 @@ class TestAIRuntimeHealthChecker:
         assert result.metrics["accessible_count"] == 2.0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_embedding_service_check(self, health_checker):
         """Test embedding service health check"""
         result = await health_checker._check_embedding_service()
@@ -184,6 +192,7 @@ class TestAIRuntimeHealthChecker:
     
     @pytest.mark.asyncio
     @patch('psutil.virtual_memory')
+    @pytest.mark.p2
     async def test_memory_resources_check_healthy(self, mock_memory, health_checker):
         """Test memory check when resources are healthy"""
         # Mock healthy memory state (60% used)
@@ -203,6 +212,7 @@ class TestAIRuntimeHealthChecker:
     
     @pytest.mark.asyncio
     @patch('psutil.virtual_memory')
+    @pytest.mark.p2
     async def test_memory_resources_check_degraded(self, mock_memory, health_checker):
         """Test memory check when resources are degraded"""
         # Mock degraded memory state (90% used)
@@ -222,6 +232,7 @@ class TestAIRuntimeHealthChecker:
     
     @pytest.mark.asyncio
     @patch('psutil.virtual_memory')
+    @pytest.mark.p2
     async def test_memory_resources_check_unhealthy(self, mock_memory, health_checker):
         """Test memory check when resources are critical"""
         # Mock critical memory state (97% used)
@@ -239,6 +250,7 @@ class TestAIRuntimeHealthChecker:
         assert "Critical memory pressure" in result.message
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_governance_validator_check(self, health_checker):
         """Test governance validator health check"""
         result = await health_checker._check_governance_validator()
@@ -253,6 +265,7 @@ class TestAIRuntimeHealthChecker:
         'HF_DATASETS_OFFLINE': '1',
         'MAHOUN_ENABLE_NETWORK': 'false'
     })
+    @pytest.mark.p2
     async def test_network_isolation_check_compliant(self, health_checker):
         """Test network isolation check when air-gap compliant"""
         result = await health_checker._check_network_isolation()
@@ -267,6 +280,7 @@ class TestAIRuntimeHealthChecker:
         'TRANSFORMERS_OFFLINE': '0',
         'MAHOUN_ENABLE_NETWORK': 'true'
     }, clear=True)
+    @pytest.mark.p2
     async def test_network_isolation_check_non_compliant(self, health_checker):
         """Test network isolation check when not air-gap compliant"""
         result = await health_checker._check_network_isolation()
@@ -280,6 +294,7 @@ class TestAIRuntimeHealthChecker:
     @patch('psutil.cpu_percent')
     @patch('psutil.virtual_memory')
     @patch('psutil.disk_usage')
+    @pytest.mark.p2
     async def test_collect_system_metrics(self, mock_disk, mock_memory, mock_cpu, health_checker):
         """Test system metrics collection"""
         # Mock system resources
@@ -305,6 +320,7 @@ class TestAIRuntimeHealthChecker:
         assert metrics.uptime_seconds >= 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_readiness_check(self, health_checker):
         """Test Kubernetes-style readiness check"""
         result = await health_checker.readiness_check()
@@ -317,6 +333,7 @@ class TestAIRuntimeHealthChecker:
         assert "memory" in result["components"]
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_liveness_check(self, health_checker):
         """Test Kubernetes-style liveness check"""
         result = await health_checker.liveness_check()
@@ -327,6 +344,7 @@ class TestAIRuntimeHealthChecker:
         assert result["uptime_seconds"] >= 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_health_check_exception_handling(self, health_checker):
         """Test health check handles exceptions gracefully"""
         # Patch one check to raise exception
@@ -343,6 +361,7 @@ class TestHealthSystemIntegration:
     """Integration tests for health system"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_full_health_check_cycle(self, tmp_path):
         """Test complete health check cycle with real filesystem"""
         models_dir = tmp_path / "models"
@@ -385,6 +404,7 @@ class TestHealthSystemIntegration:
             assert component in result["checks"], f"Missing check for {component}"
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_concurrent_health_checks(self, tmp_path):
         """Test multiple concurrent health checks"""
         models_dir = tmp_path / "models"
@@ -414,6 +434,7 @@ class TestHealthSystemPerformance:
     """Performance tests for health system"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_health_check_latency(self, tmp_path):
         """Test health check completes within acceptable latency"""
         models_dir = tmp_path / "models"

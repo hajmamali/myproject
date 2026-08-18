@@ -97,6 +97,7 @@ def isBugCondition(module_path: str, pattern: str) -> bool:
 class TestClassA_SessionBypass:
     """Assert that raw .session() calls are gone from all P0 sites."""
 
+    @pytest.mark.p2
     def test_graph_enhanced_no_raw_session(self):
         """
         mahoun/retrieval/graph_enhanced.py must NOT call self.neo4j.session().
@@ -110,6 +111,7 @@ class TestClassA_SessionBypass:
             f"Replace with self.connection.governed_session(...)."
         )
 
+    @pytest.mark.p2
     def test_graph_vector_sync_no_raw_session_inject(self):
         """
         mahoun/pipelines/sync/graph_vector_sync.py must NOT call self.neo4j.session()
@@ -123,6 +125,7 @@ class TestClassA_SessionBypass:
             f"Replace with self.connection.governed_session(...)."
         )
 
+    @pytest.mark.p2
     def test_graph_vector_sync_no_raw_session_backfill(self):
         """
         mahoun/pipelines/sync/graph_vector_sync.py must NOT call self.neo4j.session()
@@ -137,6 +140,7 @@ class TestClassA_SessionBypass:
             f"VIOLATION in {path}: {len(lines)} raw session bypass(es) remain at lines {lines}."
         )
 
+    @pytest.mark.p2
     def test_legal_cypher_queries_no_raw_session(self):
         """
         mahoun/graph/legal_cypher_queries.py must NOT call self.driver.session().
@@ -158,6 +162,7 @@ class TestClassA_SessionBypass:
 class TestClassB_DriverCreation:
     """Assert that no driver creation occurs outside the allowlist."""
 
+    @pytest.mark.p2
     def test_integrity_probe_no_graphdatabase_driver(self):
         """
         mahoun/infrastructure/health/integrity_probe.py must NOT call GraphDatabase.driver(.
@@ -171,6 +176,7 @@ class TestClassB_DriverCreation:
             f"Replace with get_connection().ping()."
         )
 
+    @pytest.mark.p2
     def test_checker_no_asyncgraphdatabase_driver(self):
         """
         mahoun/infrastructure/health/checker.py must NOT call AsyncGraphDatabase.driver(.
@@ -184,6 +190,7 @@ class TestClassB_DriverCreation:
             f"Replace with get_connection().ping() via executor."
         )
 
+    @pytest.mark.p2
     def test_run_optimizer_job_no_direct_neo4j_connection(self):
         """
         mahoun/graph/optimizer/run_optimizer_job.py must NOT directly instantiate Neo4jConnection(.
@@ -197,6 +204,7 @@ class TestClassB_DriverCreation:
             f"Replace with get_connection()."
         )
 
+    @pytest.mark.p2
     def test_no_graphdatabase_driver_outside_allowlist_globally(self):
         """
         Global scan: GraphDatabase.driver( must not appear outside the allowlist.
@@ -206,7 +214,7 @@ class TestClassB_DriverCreation:
             rel = _rel(py_file)
             if rel in ALLOWLIST:
                 continue
-            if "__pycache__" in rel or ".git" in rel:
+            if any(skip in rel for skip in ("__pycache__", ".git", "venv", "node_modules", "archived_modules", ".worktrees")):
                 continue
             for i, line in enumerate(py_file.read_text(encoding="utf-8", errors="ignore").splitlines()):
                 if "GraphDatabase.driver(" in line:
@@ -216,6 +224,7 @@ class TestClassB_DriverCreation:
             + "\n".join(f"  {f}:{ln}" for f, ln in violations)
         )
 
+    @pytest.mark.p2
     def test_no_asyncgraphdatabase_driver_outside_allowlist_globally(self):
         """
         Global scan: AsyncGraphDatabase.driver( must not appear outside the allowlist.
@@ -225,7 +234,7 @@ class TestClassB_DriverCreation:
             rel = _rel(py_file)
             if rel in ALLOWLIST:
                 continue
-            if "__pycache__" in rel or ".git" in rel:
+            if any(skip in rel for skip in ("__pycache__", ".git", "venv", "node_modules", "archived_modules", ".worktrees")):
                 continue
             for i, line in enumerate(py_file.read_text(encoding="utf-8", errors="ignore").splitlines()):
                 if "AsyncGraphDatabase.driver(" in line:
@@ -245,6 +254,7 @@ class TestClassC_HiddenConstruction:
 
     # --- SentenceTransformer sites (7 files) ---
 
+    @pytest.mark.p2
     def test_embedding_provider_no_hidden_sentence_transformer(self):
         """
         mahoun/graph/retriever/embedding_provider.py must NOT construct SentenceTransformer(
@@ -262,6 +272,7 @@ class TestClassC_HiddenConstruction:
             f"Add `model: Optional[SentenceTransformer] = None` to __init__."
         )
 
+    @pytest.mark.p2
     def test_graph_builder_no_hidden_sentence_transformer(self):
         """
         mahoun/graph/gnn/graph_builder.py must accept injected SentenceTransformer.
@@ -274,6 +285,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable model parameter found."
         )
 
+    @pytest.mark.p2
     def test_semantic_chunker_no_hidden_sentence_transformer(self):
         """
         mahoun/graph/gnn/semantic_chunker.py must accept injected SentenceTransformer.
@@ -287,6 +299,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable embed_model_instance parameter found."
         )
 
+    @pytest.mark.p2
     def test_semantic_search_no_hidden_sentence_transformer(self):
         """
         mahoun/graph/semantic_search.py must accept injected SentenceTransformer.
@@ -299,6 +312,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable model_instance parameter found."
         )
 
+    @pytest.mark.p2
     def test_retrieval_cache_no_hidden_sentence_transformer(self):
         """
         mahoun/pipelines/retrieval_cache.py must accept injected SentenceTransformer.
@@ -312,6 +326,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable embed_model parameter found."
         )
 
+    @pytest.mark.p2
     def test_embed_index_no_hidden_sentence_transformer(self):
         """
         mahoun/pipelines/embed_index.py AdvancedEmbedder must accept injected SentenceTransformer.
@@ -324,6 +339,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable model parameter found in AdvancedEmbedder."
         )
 
+    @pytest.mark.p2
     def test_ultra_evaluation_no_hidden_sentence_transformer(self):
         """
         mahoun/rag/ultra_evaluation_system.py SemanticSimilarityCalculator must accept
@@ -338,6 +354,7 @@ class TestClassC_HiddenConstruction:
 
     # --- redis.Redis and QdrantClient (ultra_indexing_system.py) ---
 
+    @pytest.mark.p2
     def test_ultra_indexing_embedding_generator_no_hidden_redis(self):
         """
         mahoun/rag/ultra_indexing_system.py EmbeddingGenerator must accept injected redis.Redis.
@@ -350,6 +367,7 @@ class TestClassC_HiddenConstruction:
             f"VIOLATION in {path}: No injectable cache parameter found in EmbeddingGenerator."
         )
 
+    @pytest.mark.p2
     def test_ultra_indexing_vector_index_no_hidden_qdrant(self):
         """
         mahoun/rag/ultra_indexing_system.py VectorIndex must accept injected QdrantClient.
@@ -364,6 +382,7 @@ class TestClassC_HiddenConstruction:
 
     # --- OpenAI client (query_rewriter.py) ---
 
+    @pytest.mark.p2
     def test_query_rewriter_no_module_level_openai_import(self):
         """
         mahoun/pipelines/query_rewriter.py must NOT have module-level `from openai import OpenAI`.
@@ -384,6 +403,7 @@ class TestClassC_HiddenConstruction:
             f"{module_level_violations}. Move inside __init__ under try/except ImportError."
         )
 
+    @pytest.mark.p2
     def test_query_rewriter_accepts_injected_client(self):
         """
         mahoun/pipelines/query_rewriter.py LLMQueryRewriter must accept injected OpenAI client.
@@ -475,6 +495,7 @@ class TestIsBugConditionProperty:
     ]
 
     @pytest.mark.parametrize("module_path,pattern,description", VIOLATION_INVENTORY)
+    @pytest.mark.p2
     def test_violation_site_is_detectable(self, module_path, pattern, description):
         """
         Each violation site must be detectable by isBugCondition().

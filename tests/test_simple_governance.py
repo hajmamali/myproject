@@ -3,6 +3,8 @@
 Simple governance test outside the test directory
 """
 
+@pytest.mark.p1
+@pytest.mark.p0
 def test_reasoning_response_validation():
     print('Testing ReasoningResponse validation...')
 

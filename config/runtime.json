@@ -11,7 +11,6 @@
   "features": {
     "graph_enabled": "${MAHOUN_ENABLE_GRAPH:-true}",
     "rag_enabled": "${MAHOUN_ENABLE_RAG:-true}",
-    "self_improvement_enabled": "${MAHOUN_ENABLE_SELF_IMPROVEMENT:-false}",
     "lora_enabled": false
   },
   

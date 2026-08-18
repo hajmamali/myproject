@@ -1,0 +1,33 @@
+{
+  "categories": {
+    "AMBIGUOUS": 18,
+    "CANONICAL_CANDIDATE": 102,
+    "DELETE_CANDIDATE": 149,
+    "INFRASTRUCTURE": 194,
+    "LEGACY": 7,
+    "POSSIBLE_ORPHAN": 23,
+    "SUPPORTING_PRODUCTION": 76,
+    "TEST_ONLY": 428,
+    "TOOLING": 74
+  },
+  "entry_points": [
+    "api/main.py",
+    "api/routers/finetuning.py",
+    "api/routers/governance.py",
+    "api/routers/health_v2.py",
+    "api/routers/ingest.py",
+    "api/routers/mahoun.py",
+    "api/routers/metrics.py",
+    "api/routers/reasoning.py",
+    "api/routers/search.py",
+    "api/routers/system.py",
+    "api/routers/training_datasets.py",
+    "config/runtime.py",
+    "mahoun/bootstrap/manager.py",
+    "mahoun/bootstrap/runtime.py",
+    "mahoun/mcp/server.py"
+  ],
+  "repository": "/home/haji/Desktop/KingMahouN",
+  "timestamp": "FROZEN_BASELINE",
+  "total_clean_modules": 1071
+}

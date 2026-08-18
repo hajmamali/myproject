@@ -34,6 +34,7 @@ from mahoun.core.governance.violations import (
 class TestContextCreation:
     """Tests for GovernanceContext creation"""
 
+    @pytest.mark.p2
     def test_create_context(self):
         """Test creating a governance context"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-001", execution_mode="STRICT")
@@ -44,6 +45,7 @@ class TestContextCreation:
         assert ctx.context_id is not None
         assert ctx.timestamp is not None
 
+    @pytest.mark.p2
     def test_create_context_auto_correlation_id(self):
         """Test creating a context with auto-generated correlation_id"""
         ctx = GovernanceContextManager.create_context(execution_mode="STRICT")
@@ -52,6 +54,7 @@ class TestContextCreation:
         assert ctx.correlation_id is not None
         assert ctx.correlation_id.startswith("req-")
 
+    @pytest.mark.p2
     def test_create_context_with_timestamp(self):
         """Test that context has timestamp"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-002", execution_mode="AUDIT")
@@ -70,6 +73,7 @@ class TestContextLifecycle:
     """Tests for governance context lifecycle"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_active_context_context_manager(self):
         """Test active_context context manager"""
         async with GovernanceContextManager.active_context(correlation_id="test-003", execution_mode="STRICT") as ctx:
@@ -81,6 +85,7 @@ class TestContextLifecycle:
         assert GovernanceContextManager.get_current_context() is None
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_nested_active_contexts(self):
         """Test nested active contexts"""
         async with GovernanceContextManager.active_context(
@@ -97,6 +102,7 @@ class TestContextLifecycle:
             assert GovernanceContextManager.get_current_context() == parent_ctx
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_active_context_with_exception(self):
         """Test that context is cleaned up on exception"""
         with pytest.raises(ValueError):
@@ -115,6 +121,7 @@ class TestContextLifecycle:
 class TestContextRequirement:
     """Tests for require_context"""
 
+    @pytest.mark.p2
     def test_get_current_context_no_context(self):
         """Test get_current_context when no context is active"""
         # Ensure no context is active
@@ -124,6 +131,7 @@ class TestContextRequirement:
 
         assert ctx is None
 
+    @pytest.mark.p2
     def test_require_context_no_context(self):
         """Test require_context when no context is active"""
         # Ensure no context is active
@@ -135,6 +143,7 @@ class TestContextRequirement:
         assert "no active governance context" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_require_context_with_active_context(self):
         """Test require_context with active context"""
         async with GovernanceContextManager.active_context(correlation_id="test-006", execution_mode="STRICT"):
@@ -143,6 +152,7 @@ class TestContextRequirement:
             assert ctx is not None
             assert ctx.correlation_id == "test-006"
 
+    @pytest.mark.p2
     def test_require_provenance(self):
         """Test require_provenance method"""
         GovernanceContextManager._reset_for_test()
@@ -151,6 +161,7 @@ class TestContextRequirement:
             GovernanceContextManager.require_provenance(source="test", author="system")
 
         # With active context
+        @pytest.mark.p2
         async def test_with_context():
             async with GovernanceContextManager.active_context(correlation_id="test-007", execution_mode="STRICT"):
                 provenance = GovernanceContextManager.require_provenance(source="test", author="system")
@@ -171,6 +182,7 @@ class TestContextRequirement:
 class TestChildContext:
     """Tests for child context creation"""
 
+    @pytest.mark.p2
     def test_create_child_context(self):
         """Test creating a child context"""
         parent_ctx = GovernanceContextManager.create_context(correlation_id="test-008-parent", execution_mode="STRICT")
@@ -182,6 +194,7 @@ class TestChildContext:
         assert child_ctx.execution_mode == parent_ctx.execution_mode
         assert len(child_ctx.correlation_lineage) > len(parent_ctx.correlation_lineage)
 
+    @pytest.mark.p2
     def test_create_child_context_with_custom_id(self):
         """Test creating a child context with custom correlation_id"""
         parent_ctx = GovernanceContextManager.create_context(correlation_id="test-009-parent", execution_mode="STRICT")
@@ -190,6 +203,7 @@ class TestChildContext:
 
         assert child_ctx.correlation_id == "custom-child"
 
+    @pytest.mark.p2
     def test_child_context_inherits_components(self):
         """Test that child context inherits governance components"""
         parent_ctx = GovernanceContextManager.create_context(correlation_id="test-010-parent", execution_mode="STRICT")
@@ -210,6 +224,7 @@ class TestChildContext:
 class TestAttestation:
     """Tests for attestation generation"""
 
+    @pytest.mark.p2
     def test_get_attestation(self):
         """Test getting attestation from context"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-011", execution_mode="STRICT")
@@ -225,6 +240,7 @@ class TestAttestation:
         assert "contradiction_hooks_active" in attestation
         assert "governance_scope_injected" in attestation
 
+    @pytest.mark.p2
     def test_attestation_includes_lineage(self):
         """Test that attestation includes correlation lineage"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-012", execution_mode="STRICT")
@@ -244,6 +260,7 @@ class TestAttestation:
 class TestScopeEnforcement:
     """Tests for scope enforcement"""
 
+    @pytest.mark.p2
     def test_validate_governance_scope_active(self):
         """Test validate_governance_scope with active scope"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-013", execution_mode="STRICT")
@@ -252,6 +269,7 @@ class TestScopeEnforcement:
 
         assert result is True
 
+    @pytest.mark.p2
     def test_validate_governance_scope_inactive(self):
         """Test validate_governance_scope with inactive scope"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-014", execution_mode="STRICT")
@@ -264,6 +282,7 @@ class TestScopeEnforcement:
 
         assert "governance scope not active" in str(exc_info.value).lower()
 
+    @pytest.mark.p2
     def test_require_active_context(self):
         """Test require_active_context method"""
         ctx = GovernanceContextManager.create_context(correlation_id="test-015", execution_mode="STRICT")
@@ -288,10 +307,12 @@ class TestScopeEnforcement:
 class TestGovernanceScopeEnforcer:
     """Tests for GovernanceScopeEnforcer decorator"""
 
+    @pytest.mark.p2
     def test_enforce_decorator_without_context(self):
         """Test enforce decorator without active context"""
 
         @GovernanceScopeEnforcer.enforce()
+        @pytest.mark.p2
         async def test_func():
             return "success"
 
@@ -301,10 +322,12 @@ class TestGovernanceScopeEnforcer:
             asyncio.run(test_func())
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_enforce_decorator_with_context(self):
         """Test enforce decorator with active context"""
 
         @GovernanceScopeEnforcer.enforce()
+        @pytest.mark.p2
         async def test_func():
             return "success"
 
@@ -312,12 +335,14 @@ class TestGovernanceScopeEnforcer:
             result = await test_func()
             assert result == "success"
 
+    @pytest.mark.p2
     def test_check_context_without_context(self):
         """Test check_context without active context"""
         with pytest.raises(GovernanceViolationError):
             GovernanceScopeEnforcer.check_context()
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_check_context_with_context(self):
         """Test check_context with active context"""
         async with GovernanceContextManager.active_context(correlation_id="test-017", execution_mode="STRICT"):
@@ -335,6 +360,7 @@ class TestPerformance:
     """Tests for GovernanceContext performance"""
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_context_creation_performance(self):
         """Test context creation performance"""
         import time
@@ -347,6 +373,7 @@ class TestPerformance:
         assert elapsed < 1.0  # < 1s for 100 contexts
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_active_context_performance(self):
         """Test active_context performance"""
         import time
@@ -368,6 +395,7 @@ class TestPerformance:
 class TestEdgeCases:
     """Tests for edge cases"""
 
+    @pytest.mark.p2
     def test_multiple_get_current_context_calls(self):
         """Test multiple get_current_context calls"""
         GovernanceContextManager._reset_for_test()
@@ -378,6 +406,7 @@ class TestEdgeCases:
         assert ctx1 is None
         assert ctx2 is None
 
+    @pytest.mark.p2
     def test_context_after_reset(self):
         """Test context after reset"""
         GovernanceContextManager._reset_for_test()

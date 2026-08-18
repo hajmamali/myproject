@@ -12,8 +12,8 @@ from datetime import datetime
 from dataclasses import dataclass, asdict
 import json
 
-from core.monitoring.anomaly_detector import AnomalyAlert, AnomalyDetectionSystem
-from core.monitoring.rolling_stats import RollingStatistics, MultiWindowStatsTracker
+from mahoun.monitoring.anomaly_detector import AnomalyAlert, AnomalyDetectionSystem
+from mahoun.monitoring.rolling_stats import RollingStatistics, MultiWindowStatsTracker
 logger = logging.getLogger(__name__)
 
 

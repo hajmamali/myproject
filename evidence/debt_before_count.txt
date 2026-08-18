@@ -1,0 +1,2 @@
+Test count before duplicate removal: 3518 collected tests (measured earlier in task execution)
+Collection had 14 errors which are unrelated to duplicate files (import errors in some test files)

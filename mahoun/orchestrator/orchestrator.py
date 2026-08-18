@@ -1,7 +1,6 @@
 """
-Ultra-Advanced Self-Improvement Orchestrator
-============================================
-Enterprise-grade orchestration for all self-improvement components.
+Task and Event Orchestrator
+============================
 
 Features:
 - Distributed task scheduling with priority queues
@@ -39,19 +38,6 @@ except ImportError:
     class DummyModule:
         Module = object
     nn = DummyModule()
-
-try:
-    from self_improve import (
-        UltraSelfImprovementSystem,
-        UltraRLAgent,
-        UltraActiveLearner,
-        UltraBanditSystem,
-        UnifiedPerformanceMonitor,
-        CausalABBridge,
-        UltraSelfImproveIntegration
-    )
-except ImportError:
-    pass
 
 
 # ============================================================================
@@ -319,8 +305,8 @@ class FeatureFlags:
 
 class UltraOrchestrator:
     """
-    Ultra-advanced orchestrator for self-improvement systems
-    
+    Task and event orchestrator.
+
     Manages:
     - Task scheduling and execution
     - Component health monitoring
@@ -846,22 +832,5 @@ if __name__ == "__main__":
     asyncio.run(example_usage())
 
 # Compatibility shims for older features (not used in this version)
-class ComponentStatus(str, Enum):
-    IDLE = "idle"
-    RUNNING = "running"
-    ERROR = "error"
-
-class OrchestratorState(str, Enum):
-    STARTING = "starting"
-    READY = "ready"
-    STOPPED = "stopped"
-
-class SelfImprovementOrchestrator:
-    def __init__(self, *args, **kwargs):
-        self.state = OrchestratorState.READY
-    
-    def start(self):
-        pass
-    
     def stop(self):
         pass

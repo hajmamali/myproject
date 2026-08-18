@@ -48,6 +48,7 @@ from mahoun.schemas.contracts.reasoning_contracts import (
 class TestEvidenceReferenceContract:
     """Test EvidenceReferenceContract validation."""
     
+    @pytest.mark.p2
     def test_valid_evidence_reference(self):
         """Valid evidence reference should pass."""
         ref = EvidenceReferenceContract(
@@ -61,6 +62,7 @@ class TestEvidenceReferenceContract:
         assert ref.node_type == "LegalRule"
         assert ref.confidence == 0.95
     
+    @pytest.mark.p2
     def test_minimal_evidence_reference(self):
         """Minimal evidence reference (no edge_id, no justification) should pass."""
         ref = EvidenceReferenceContract(
@@ -72,6 +74,7 @@ class TestEvidenceReferenceContract:
         assert ref.edge_id is None
         assert ref.justification == ""
     
+    @pytest.mark.p2
     def test_empty_node_id_fails(self):
         """Empty node_id should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -82,6 +85,7 @@ class TestEvidenceReferenceContract:
             )
         assert "node_id" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_confidence_out_of_range_fails(self):
         """Confidence outside [0, 1] should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -100,6 +104,7 @@ class TestEvidenceReferenceContract:
             )
         assert "confidence" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_extra_fields_forbidden(self):
         """Extra fields should be rejected (extra='forbid')."""
         with pytest.raises(ValidationError) as exc_info:
@@ -119,6 +124,7 @@ class TestEvidenceReferenceContract:
 class TestVerdictStepContract:
     """Test VerdictStepContract validation (enforces G1)."""
     
+    @pytest.mark.p2
     def test_valid_verdict_step(self):
         """Valid verdict step with evidence should pass."""
         step = VerdictStepContract(
@@ -134,6 +140,7 @@ class TestVerdictStepContract:
         assert len(step.evidence) == 1
         assert step.evidence[0].node_id == "rule_contract_breach"
     
+    @pytest.mark.p2
     def test_empty_statement_fails(self):
         """Empty statement should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -149,6 +156,7 @@ class TestVerdictStepContract:
             )
         assert "statement" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_empty_evidence_fails_g1(self):
         """Empty evidence list should fail (G1: every step must have evidence)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -158,6 +166,7 @@ class TestVerdictStepContract:
             )
         assert "evidence" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_multiple_evidence_references(self):
         """Multiple evidence references should pass."""
         step = VerdictStepContract(
@@ -185,6 +194,7 @@ class TestVerdictStepContract:
 class TestGenerateVerdictInput:
     """Test GenerateVerdictInput validation (enforces EL-I7)."""
     
+    @pytest.mark.p2
     def test_valid_input_with_string_facts(self):
         """Valid input with string facts should pass."""
         inp = GenerateVerdictInput(
@@ -194,6 +204,7 @@ class TestGenerateVerdictInput:
         assert len(inp.facts) == 2
         assert isinstance(inp.facts[0], str)
     
+    @pytest.mark.p2
     def test_valid_input_with_dict_facts(self):
         """Valid input with dict facts (with 'id' field) should pass."""
         inp = GenerateVerdictInput(
@@ -206,6 +217,7 @@ class TestGenerateVerdictInput:
         assert len(inp.facts) == 2
         assert inp.facts[0]["id"] == "fact_0"
     
+    @pytest.mark.p2
     def test_empty_question_fails(self):
         """Empty question should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -215,6 +227,7 @@ class TestGenerateVerdictInput:
             )
         assert "question" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_empty_facts_fails(self):
         """Empty facts list should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -224,6 +237,7 @@ class TestGenerateVerdictInput:
             )
         assert "facts" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_dict_fact_without_id_fails(self):
         """Dict fact without 'id' field should fail (EL-I7)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -235,6 +249,7 @@ class TestGenerateVerdictInput:
             )
         assert "id" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_invalid_fact_type_fails(self):
         """Fact with invalid type (not str or dict) should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -244,6 +259,7 @@ class TestGenerateVerdictInput:
             )
         assert "must be string or dict" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_too_many_facts_fails(self):
         """More than 1000 facts should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -261,6 +277,7 @@ class TestGenerateVerdictInput:
 class TestGenerateVerdictOutput:
     """Test GenerateVerdictOutput validation (enforces G4)."""
     
+    @pytest.mark.p2
     def test_valid_output_no_conflicts(self):
         """Valid output without conflicts should pass."""
         output = GenerateVerdictOutput(
@@ -283,6 +300,7 @@ class TestGenerateVerdictOutput:
         assert output.confidence_score == 0.92
         assert len(output.unresolved_conflicts) == 0
     
+    @pytest.mark.p2
     def test_valid_output_with_undetermined_verdict(self):
         """Output with conflicts and UNDETERMINED verdict should pass (G4)."""
         output = GenerateVerdictOutput(
@@ -305,6 +323,7 @@ class TestGenerateVerdictOutput:
         assert len(output.unresolved_conflicts) == 1
         assert "UNDETERMINED" in output.final_verdict
     
+    @pytest.mark.p2
     def test_conflicts_without_undetermined_verdict_fails_g4(self):
         """Conflicts without UNDETERMINED verdict should fail (G4)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -327,6 +346,7 @@ class TestGenerateVerdictOutput:
             )
         assert "G4" in str(exc_info.value) or "UNDETERMINED" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_empty_steps_fails(self):
         """Empty steps list should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -337,6 +357,7 @@ class TestGenerateVerdictOutput:
             )
         assert "steps" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_confidence_out_of_range_fails(self):
         """Confidence outside [0, 1] should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -366,6 +387,7 @@ class TestGenerateVerdictOutput:
 class TestGenerateVerdictError:
     """Test GenerateVerdictError validation."""
     
+    @pytest.mark.p2
     def test_valid_privacy_violation_error(self):
         """Valid privacy violation error should pass."""
         error = GenerateVerdictError(
@@ -379,6 +401,7 @@ class TestGenerateVerdictError:
         assert error.error_type == "privacy_violation"
         assert error.details is not None
     
+    @pytest.mark.p2
     def test_valid_error_without_details(self):
         """Valid error without details should pass."""
         error = GenerateVerdictError(
@@ -387,6 +410,7 @@ class TestGenerateVerdictError:
         )
         assert error.details is None
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError) as exc_info:
@@ -396,6 +420,7 @@ class TestGenerateVerdictError:
             )
         assert "error_type" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -419,6 +444,7 @@ class TestGenerateVerdictError:
 class TestReasonInput:
     """Test ReasonInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = ReasonInput(
@@ -428,6 +454,7 @@ class TestReasonInput:
         )
         assert len(inp.facts) == 2
     
+    @pytest.mark.p2
     def test_empty_question_fails(self):
         """Empty question should fail."""
         with pytest.raises(ValidationError):
@@ -437,6 +464,7 @@ class TestReasonInput:
                 facts=["fact1"]
             )
     
+    @pytest.mark.p2
     def test_empty_context_fails(self):
         """Empty context should fail."""
         with pytest.raises(ValidationError):
@@ -446,6 +474,7 @@ class TestReasonInput:
                 facts=["fact1"]
             )
     
+    @pytest.mark.p2
     def test_empty_facts_fails(self):
         """Empty facts list should fail."""
         with pytest.raises(ValidationError):
@@ -463,6 +492,7 @@ class TestReasonInput:
 class TestReasoningStepContract:
     """Test ReasoningStepContract validation."""
     
+    @pytest.mark.p2
     def test_valid_step(self):
         """Valid reasoning step should pass."""
         step = ReasoningStepContract(
@@ -474,6 +504,7 @@ class TestReasoningStepContract:
         assert step.step == "question_analysis"
         assert step.confidence == 0.8
     
+    @pytest.mark.p2
     def test_step_without_evidence(self):
         """Step without evidence should pass (evidence is optional)."""
         step = ReasoningStepContract(
@@ -483,6 +514,7 @@ class TestReasoningStepContract:
         )
         assert len(step.evidence) == 0
     
+    @pytest.mark.p2
     def test_confidence_out_of_range_fails(self):
         """Confidence outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -500,6 +532,7 @@ class TestReasoningStepContract:
 class TestReasonOutput:
     """Test ReasonOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = ReasonOutput(
@@ -518,6 +551,7 @@ class TestReasonOutput:
         assert output.confidence == 0.85
         assert output.graph_dependency_proof is True
     
+    @pytest.mark.p2
     def test_empty_reasoning_chain_fails(self):
         """Empty reasoning chain should fail."""
         with pytest.raises(ValidationError):
@@ -527,6 +561,7 @@ class TestReasonOutput:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_too_many_steps_fails(self):
         """More than 20 reasoning steps should fail."""
         with pytest.raises(ValidationError):
@@ -543,6 +578,7 @@ class TestReasonOutput:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_all_optional_fields_default(self):
         """All optional fields should have defaults."""
         output = ReasonOutput(
@@ -574,6 +610,7 @@ class TestReasonOutput:
 class TestReasonError:
     """Test ReasonError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = ReasonError(
@@ -582,6 +619,7 @@ class TestReasonError:
         )
         assert error.error_type == "no_rules_found"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -597,6 +635,7 @@ class TestReasonError:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError):
@@ -613,6 +652,7 @@ class TestReasonError:
 class TestDeepReasonInput:
     """Test DeepReasonInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input_with_facts(self):
         """Valid input with facts should pass."""
         inp = DeepReasonInput(
@@ -622,6 +662,7 @@ class TestDeepReasonInput:
         )
         assert len(inp.facts) == 2
     
+    @pytest.mark.p2
     def test_valid_input_without_facts(self):
         """Valid input without facts (auto-extract) should pass."""
         inp = DeepReasonInput(
@@ -630,6 +671,7 @@ class TestDeepReasonInput:
         )
         assert inp.facts is None
     
+    @pytest.mark.p2
     def test_empty_question_fails(self):
         """Empty question should fail."""
         with pytest.raises(ValidationError):
@@ -646,6 +688,7 @@ class TestDeepReasonInput:
 class TestCausalRelationContract:
     """Test CausalRelationContract validation."""
     
+    @pytest.mark.p2
     def test_valid_causal_relation(self):
         """Valid causal relation should pass."""
         relation = CausalRelationContract(
@@ -656,6 +699,7 @@ class TestCausalRelationContract:
         )
         assert relation.strength == 0.85
     
+    @pytest.mark.p2
     def test_strength_out_of_range_fails(self):
         """Strength outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -674,6 +718,7 @@ class TestCausalRelationContract:
 class TestDeepReasonOutput:
     """Test DeepReasonOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = DeepReasonOutput(
@@ -694,6 +739,7 @@ class TestDeepReasonOutput:
         assert output.confidence == 0.85
         assert output.evidence_strength == "قوی"
     
+    @pytest.mark.p2
     def test_invalid_evidence_strength_fails(self):
         """Invalid evidence_strength should fail."""
         with pytest.raises(ValidationError):
@@ -713,6 +759,7 @@ class TestDeepReasonOutput:
                 evidence_strength="invalid"  # Must be قوی, متوسط, or ضعیف
             )
     
+    @pytest.mark.p2
     def test_invalid_reasoning_depth_fails(self):
         """Invalid reasoning_depth should fail."""
         with pytest.raises(ValidationError):
@@ -741,6 +788,7 @@ class TestDeepReasonOutput:
 class TestDeepReasonError:
     """Test DeepReasonError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = DeepReasonError(
@@ -749,6 +797,7 @@ class TestDeepReasonError:
         )
         assert error.error_type == "insufficient_context"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -764,6 +813,7 @@ class TestDeepReasonError:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError):
@@ -780,6 +830,7 @@ class TestDeepReasonError:
 class TestContractIntegration:
     """Test contract integration and composition."""
     
+    @pytest.mark.p2
     def test_nested_contracts_validation(self):
         """Nested contracts should validate recursively."""
         # Invalid nested evidence should fail at top level
@@ -801,6 +852,7 @@ class TestContractIntegration:
                 confidence_score=0.8
             )
     
+    @pytest.mark.p2
     def test_g1_and_g4_enforcement_together(self):
         """G1 (evidence required) and G4 (conflicts → UNDETERMINED) should work together."""
         # Valid: Has evidence (G1) and UNDETERMINED with conflicts (G4)
@@ -824,6 +876,7 @@ class TestContractIntegration:
         assert len(output.steps[0].evidence) >= 1  # G1
         assert "UNDETERMINED" in output.final_verdict  # G4
     
+    @pytest.mark.p2
     def test_extra_forbid_at_all_levels(self):
         """extra='forbid' should be enforced at all nesting levels."""
         # Extra field at top level should fail

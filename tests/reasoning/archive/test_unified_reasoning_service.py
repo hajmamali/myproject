@@ -58,6 +58,7 @@ class TestUnifiedReasoningService:
     # 1. Service Initialization and Mode Selection Tests
     # ================================================================
     
+    @pytest.mark.p1
     def test_service_initialization(self):
         """Test service initialization"""
         # Test with neural enabled
@@ -70,6 +71,7 @@ class TestUnifiedReasoningService:
         assert service_symbolic.enable_neural is False
         assert service_symbolic.neural_engine is None
     
+    @pytest.mark.p1
     def test_mode_selection_auto(self):
         """Test automatic mode selection"""
         # Forward inference with facts/rules -> should select SYMBOLIC
@@ -93,6 +95,7 @@ class TestUnifiedReasoningService:
         expected = ReasoningMode.NEURAL if self.service.enable_neural else ReasoningMode.HYBRID
         assert mode in [ReasoningMode.NEURAL, ReasoningMode.HYBRID, ReasoningMode.SYMBOLIC]
     
+    @pytest.mark.p1
     def test_mode_selection_explicit(self):
         """Test explicit mode selection"""
         request = ReasoningRequest(
@@ -108,6 +111,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_symbolic_forward_inference(self):
         """Test symbolic forward inference"""
         request = ReasoningRequest(
@@ -128,6 +132,7 @@ class TestUnifiedReasoningService:
         assert response.execution_time_ms > 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_symbolic_backward_proof(self):
         """Test symbolic backward proof"""
         request = ReasoningRequest(
@@ -148,6 +153,7 @@ class TestUnifiedReasoningService:
             assert response.proof_tree is not None
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_symbolic_consistency_check(self):
         """Test symbolic consistency checking"""
         # Consistent knowledge base
@@ -184,6 +190,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_neural_question_answering(self):
         """Test neural question answering"""
         if not self.service.enable_neural:
@@ -204,6 +211,7 @@ class TestUnifiedReasoningService:
         assert response.confidence > 0.0
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_neural_explanation(self):
         """Test neural explanation generation"""
         if not self.service.enable_neural:
@@ -226,6 +234,7 @@ class TestUnifiedReasoningService:
         assert len(response.explanation) > 20
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_neural_fallback(self):
         """Test neural fallback when services unavailable"""
         # Force neural reasoning with minimal setup
@@ -249,6 +258,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_hybrid_reasoning_symbolic_success(self):
         """Test hybrid reasoning when symbolic succeeds"""
         request = ReasoningRequest(
@@ -268,6 +278,7 @@ class TestUnifiedReasoningService:
         # Should have symbolic results enhanced with neural explanation (if available)
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_hybrid_reasoning_symbolic_failure(self):
         """Test hybrid reasoning fallback when symbolic fails"""
         request = ReasoningRequest(
@@ -291,6 +302,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_forward_inference_convenience(self):
         """Test forward_inference convenience function"""
         facts = ["human(socrates)", "human(plato)"]
@@ -303,6 +315,7 @@ class TestUnifiedReasoningService:
         assert len(response.derived_facts) > 0
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_prove_goal_convenience(self):
         """Test prove_goal convenience function"""
         goal = "mortal(socrates)"
@@ -316,6 +329,7 @@ class TestUnifiedReasoningService:
         assert "proved" in response.result.lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_answer_question_convenience(self):
         """Test answer_question convenience function"""
         question = "What is the capital of France?"
@@ -332,6 +346,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_invalid_request_handling(self):
         """Test handling of invalid requests"""
         # Empty request
@@ -349,6 +364,7 @@ class TestUnifiedReasoningService:
         assert response.reasoning_mode is not None
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_parse_error_handling(self):
         """Test handling of parse errors"""
         request = ReasoningRequest(
@@ -367,6 +383,7 @@ class TestUnifiedReasoningService:
             assert "parse" in response.error.lower() or "failed" in response.error.lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_timeout_handling(self):
         """Test timeout handling"""
         # Create request with very short timeout
@@ -390,6 +407,7 @@ class TestUnifiedReasoningService:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_performance_benchmark(self):
         """Test performance with various request sizes"""
         test_cases = [
@@ -424,6 +442,7 @@ class TestUnifiedReasoningService:
                   f"Time: {execution_time:.2f}ms, Derived: {len(response.derived_facts)}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_integration_with_symbolic_engine(self):
         """Test integration with symbolic reasoning engine"""
         # Compare unified service results with direct symbolic engine
@@ -465,6 +484,7 @@ class TestUnifiedReasoningService:
               f"Direct: {stats.facts_derived} facts, Match: {len(unified_response.derived_facts) == stats.facts_derived}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_concurrent_requests(self):
         """Test handling of concurrent requests"""
         requests = []

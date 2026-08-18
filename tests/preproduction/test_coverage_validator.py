@@ -93,6 +93,7 @@ Priority Order:
 class TestModuleCoverage:
     """Test ModuleCoverage dataclass."""
     
+    @pytest.mark.p2
     def test_missing_percent_calculation(self):
         """Test missing percentage calculation."""
         module = ModuleCoverage(
@@ -105,6 +106,7 @@ class TestModuleCoverage:
         
         assert module.missing_percent == 25.0
     
+    @pytest.mark.p2
     def test_missing_percent_zero_statements(self):
         """Test missing percent when no statements."""
         module = ModuleCoverage(
@@ -117,6 +119,7 @@ class TestModuleCoverage:
         
         assert module.missing_percent == 0.0
     
+    @pytest.mark.p2
     def test_is_critical_detection(self):
         """Test critical module detection."""
         critical = ModuleCoverage(
@@ -135,6 +138,7 @@ class TestModuleCoverage:
         )
         assert not non_critical.is_critical
     
+    @pytest.mark.p2
     def test_all_critical_paths(self):
         """Test all critical path patterns."""
         critical_paths = [
@@ -154,6 +158,7 @@ class TestModuleCoverage:
 class TestCoverageValidator:
     """Test CoverageValidator."""
     
+    @pytest.mark.p2
     def test_initialization(self, mock_evidence_collector, tmp_path):
         """Test validator initialization."""
         validator = CoverageValidator(
@@ -166,6 +171,7 @@ class TestCoverageValidator:
         assert validator.coverage_json_path == tmp_path / "coverage.json"
         assert validator.baseline_path == tmp_path / "TEST_COVERAGE_BASELINE.md"
     
+    @pytest.mark.p2
     def test_dependencies(self, mock_evidence_collector, tmp_path):
         """Test validator dependencies."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -173,6 +179,7 @@ class TestCoverageValidator:
         
         assert "test-classification-validator" in deps
     
+    @pytest.mark.p2
     def test_parse_coverage_json(self, mock_evidence_collector, tmp_path, sample_coverage_data):
         """Test parsing coverage.json."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -189,6 +196,7 @@ class TestCoverageValidator:
         assert api_keys_module.missing == 110
         assert api_keys_module.coverage_percent == 45.0
     
+    @pytest.mark.p2
     def test_parse_baseline_targets(self, mock_evidence_collector, tmp_path, sample_baseline_content):
         """Test parsing baseline targets from markdown."""
         # Write baseline file
@@ -202,6 +210,7 @@ class TestCoverageValidator:
         assert targets["mahoun/security/api_keys.py"] == 80.0
         assert targets["mahoun/ledger/writer.py"] == 90.0
     
+    @pytest.mark.p2
     def test_parse_baseline_missing_file(self, mock_evidence_collector, tmp_path):
         """Test baseline parsing when file missing."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -212,6 +221,7 @@ class TestCoverageValidator:
         assert "mahoun/security/api_keys.py" in targets
         assert targets["mahoun/security/api_keys.py"] == 80.0
     
+    @pytest.mark.p2
     def test_identify_coverage_gaps(self, mock_evidence_collector, tmp_path, sample_coverage_data):
         """Test identifying coverage gaps."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -243,6 +253,7 @@ class TestCoverageValidator:
         assert api_keys_gap.gap_percent == 35.0
         assert api_keys_gap.priority_score > 0
     
+    @pytest.mark.p2
     def test_gap_prioritization(self, mock_evidence_collector, tmp_path):
         """Test gap prioritization logic."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -282,6 +293,7 @@ class TestCoverageValidator:
         
         assert critical_gap.priority_score > non_critical_gap.priority_score
     
+    @pytest.mark.p2
     def test_check_critical_paths(self, mock_evidence_collector, tmp_path):
         """Test critical path coverage checking."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -312,6 +324,7 @@ class TestCoverageValidator:
         assert len(p0_findings) > 0
         assert "critical modules below" in p0_findings[0].message.lower()
     
+    @pytest.mark.p2
     def test_untested_critical_module(self, mock_evidence_collector, tmp_path):
         """Test detection of untested critical modules."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -336,6 +349,7 @@ class TestCoverageValidator:
         assert len(zero_coverage_findings) > 0
         assert zero_coverage_findings[0].severity == FindingSeverity.P0_CRITICAL
     
+    @pytest.mark.p2
     def test_calculate_overall_coverage(self, mock_evidence_collector, tmp_path, sample_coverage_data):
         """Test overall coverage calculation."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -344,6 +358,7 @@ class TestCoverageValidator:
         
         assert overall == 60.4
     
+    @pytest.mark.p2
     def test_estimate_tests_needed(self, mock_evidence_collector, tmp_path):
         """Test estimation of tests needed."""
         validator = CoverageValidator(mock_evidence_collector, tmp_path)
@@ -371,6 +386,7 @@ class TestCoverageValidator:
         assert estimated == 3
     
     @patch("mahoun.preproduction.validators.coverage_validator.subprocess.run")
+    @pytest.mark.p2
     def test_generate_coverage_data_success(self, mock_run, mock_evidence_collector, tmp_path, sample_coverage_data):
         """Test successful coverage data generation."""
         # Mock subprocess success
@@ -387,6 +403,7 @@ class TestCoverageValidator:
         assert "files" in result
     
     @patch("mahoun.preproduction.validators.coverage_validator.subprocess.run")
+    @pytest.mark.p2
     def test_generate_coverage_data_timeout(self, mock_run, mock_evidence_collector, tmp_path):
         """Test coverage generation timeout handling."""
         import subprocess
@@ -401,6 +418,7 @@ class TestCoverageValidator:
         # Check that a finding was added
         assert len(validator.findings) > 0
     
+    @pytest.mark.p2
     def test_full_validation_with_mock_data(self, mock_evidence_collector, tmp_path, sample_coverage_data, sample_baseline_content):
         """Test full validation workflow with mocked data."""
         # Setup files
@@ -425,6 +443,7 @@ class TestCoverageValidator:
 class TestCoverageGapDataclass:
     """Test CoverageGap dataclass."""
     
+    @pytest.mark.p2
     def test_coverage_gap_creation(self):
         """Test creating coverage gap."""
         module = ModuleCoverage(
@@ -451,6 +470,7 @@ class TestCoverageGapDataclass:
 class TestIntegrationScenarios:
     """Integration test scenarios."""
     
+    @pytest.mark.p2
     def test_meets_target_coverage_passes(self, mock_evidence_collector, tmp_path):
         """Test that meeting target coverage passes."""
         # Mock data with good coverage

@@ -279,6 +279,7 @@ class TestUltimateReasoningChallenge:
             'expected_derivations': 50,  # Minimum expected derived facts
         }
     
+    @pytest.mark.p2
     def test_1_massive_forward_chaining(self, complex_fraud_scenario):
         """
         Test 1: Massive Forward Chaining
@@ -329,6 +330,7 @@ class TestUltimateReasoningChallenge:
         
         logger.info("\n✅ TEST 1 PASSED: Massive forward chaining successful\n")
     
+    @pytest.mark.p2
     def test_2_deep_backward_chaining_proof(self, complex_fraud_scenario):
         """
         Test 2: Deep Backward Chaining Proof
@@ -375,6 +377,7 @@ class TestUltimateReasoningChallenge:
         
         logger.info("\n✅ TEST 2 PASSED: Deep backward chaining successful\n")
     
+    @pytest.mark.p2
     def test_3_explanation_generation(self, complex_fraud_scenario):
         """
         Test 3: Explanation Generation
@@ -429,6 +432,7 @@ class TestUltimateReasoningChallenge:
         
         logger.info("\n✅ TEST 3 PASSED: Explanation generation successful\n")
     
+    @pytest.mark.p2
     def test_4_performance_profiling(self, complex_fraud_scenario):
         """
         Test 4: Performance Profiling
@@ -459,6 +463,7 @@ class TestUltimateReasoningChallenge:
         
         logger.info("\n✅ TEST 4 PASSED: Performance profiling successful\n")
     
+    @pytest.mark.p2
     def test_5_stress_test_scalability(self):
         """
         Test 5: Extreme Scalability Stress Test
@@ -513,6 +518,7 @@ class TestUltimateReasoningChallenge:
         
         logger.info("\n✅ TEST 5 PASSED: Extreme scalability test successful\n")
     
+    @pytest.mark.p2
     def test_6_ultimate_integration(self, complex_fraud_scenario):
         """
         Test 6: ULTIMATE INTEGRATION TEST

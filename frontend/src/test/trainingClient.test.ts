@@ -13,8 +13,7 @@ import {
 
 // Mock fetch globally
 const fetchMock = vi.fn();
-// @ts-expect-error - mocking global fetch for tests
-global.fetch = fetchMock;
+global.fetch = fetchMock as any;
 
 describe('Training API Client', () => {
   beforeEach(() => {

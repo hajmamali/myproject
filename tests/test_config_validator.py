@@ -21,6 +21,7 @@ from mahoun.core.runtime_config import MahounRuntimeSettings
 class TestConfigurationValidator:
     """Test suite for configuration validator"""
 
+    @pytest.mark.p2
     def test_valid_desktop_minimal_config(self):
         """Test: Valid desktop_minimal configuration passes validation"""
         settings = MahounRuntimeSettings(
@@ -39,6 +40,7 @@ class TestConfigurationValidator:
             # Should not raise
             validate_runtime_config()
 
+    @pytest.mark.p2
     def test_valid_server_full_config(self):
         """Test: Valid server_full configuration passes validation"""
         settings = MahounRuntimeSettings(
@@ -58,6 +60,7 @@ class TestConfigurationValidator:
             # Should not raise
             validate_runtime_config()
 
+    @pytest.mark.p2
     def test_invalid_desktop_minimal_with_local_graph(self):
         """Test: desktop_minimal + local graph backend = INVALID"""
         settings = MahounRuntimeSettings(
@@ -81,6 +84,7 @@ class TestConfigurationValidator:
             assert "desktop_minimal mode cannot use local graph backend" in error_msg
             assert "local_full" in error_msg
 
+    @pytest.mark.p2
     def test_valid_desktop_minimal_with_remote_graph(self):
         """Test: desktop_minimal + remote graph backend = VALID"""
         settings = MahounRuntimeSettings(
@@ -99,6 +103,7 @@ class TestConfigurationValidator:
             # Should not raise
             validate_runtime_config()
 
+    @pytest.mark.p2
     def test_missing_neo4j_password_for_local_graph(self):
         """Test: local graph backend requires Neo4j password"""
         settings = MahounRuntimeSettings(
@@ -122,6 +127,7 @@ class TestConfigurationValidator:
             assert "NEO4J_PASSWORD_MISSING" in error_msg
             assert "Neo4j password required" in error_msg
 
+    @pytest.mark.p2
     def test_invalid_graph_backend(self):
         """Test: Invalid graph backend raises error"""
         settings = MahounRuntimeSettings(
@@ -144,6 +150,7 @@ class TestConfigurationValidator:
             assert "GRAPH_BACKEND_INVALID" in error_msg
             assert "invalid_backend" in error_msg
 
+    @pytest.mark.p2
     def test_graph_disabled_warning(self, caplog):
         """Test: Graph disabled generates warning about verdict generation"""
         import logging
@@ -170,6 +177,7 @@ class TestConfigurationValidator:
                 for record in caplog.records
             )
 
+    @pytest.mark.p2
     def test_lora_training_in_desktop_minimal_warning(self, caplog):
         """Test: LoRA training in desktop_minimal generates warning"""
         import logging
@@ -196,6 +204,7 @@ class TestConfigurationValidator:
                 for record in caplog.records
             )
 
+    @pytest.mark.p2
     def test_local_gpu_in_desktop_minimal_warning(self, caplog):
         """Test: Local GPU in desktop_minimal generates warning"""
         import logging
@@ -222,6 +231,7 @@ class TestConfigurationValidator:
                 for record in caplog.records
             )
 
+    @pytest.mark.p2
     def test_validation_success_logged(self, caplog):
         """Test: Successful validation is logged"""
         import logging
@@ -253,6 +263,7 @@ class TestConfigurationValidator:
 class TestConfigFileValidation:
     """Test suite for YAML config file validation"""
 
+    @pytest.mark.p2
     def test_valid_yaml_config(self, tmp_path):
         """Test: Valid YAML config file passes validation"""
         from mahoun.core.config_validator import validate_config_file
@@ -270,6 +281,7 @@ graph:
         # Should not raise
         validate_config_file(str(config_file))
 
+    @pytest.mark.p2
     def test_missing_config_file(self):
         """Test: Missing config file raises error"""
         from mahoun.core.config_validator import validate_config_file
@@ -279,6 +291,7 @@ graph:
 
         assert "Configuration file not found" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_invalid_yaml_syntax(self, tmp_path):
         """Test: Invalid YAML syntax raises error"""
         from mahoun.core.config_validator import validate_config_file
@@ -296,6 +309,7 @@ mode: server_full
 
         assert "Invalid YAML" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_missing_mode_field(self, tmp_path):
         """Test: Missing 'mode' field raises error"""
         from mahoun.core.config_validator import validate_config_file
@@ -313,6 +327,7 @@ graph:
 
         assert "missing required field: 'mode'" in str(exc_info.value)
 
+    @pytest.mark.p2
     def test_invalid_mode_value(self, tmp_path):
         """Test: Invalid mode value raises error"""
         from mahoun.core.config_validator import validate_config_file

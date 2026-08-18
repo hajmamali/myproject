@@ -58,11 +58,13 @@ from mahoun.core.models import (
 class TestTaskA11_AIRuntimeProtocol:
     """Test AIRuntimeProtocol interface (Task A.1.1)"""
     
+    @pytest.mark.p2
     def test_protocol_is_abstract(self):
         """Protocol should be abstract and not instantiable"""
         with pytest.raises(TypeError):
             AIRuntimeProtocol()
     
+    @pytest.mark.p2
     def test_protocol_has_required_methods(self):
         """Protocol should define all required methods"""
         required_methods = [
@@ -77,6 +79,7 @@ class TestTaskA11_AIRuntimeProtocol:
             assert hasattr(AIRuntimeProtocol, method_name)
             assert callable(getattr(AIRuntimeProtocol, method_name))
     
+    @pytest.mark.p2
     def test_model_metadata_validation(self):
         """ModelMetadata should validate input"""
         # Create temp file for test
@@ -106,6 +109,7 @@ class TestTaskA11_AIRuntimeProtocol:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
     
+    @pytest.mark.p2
     def test_health_status_success_rate(self):
         """HealthStatus should calculate success rate correctly"""
         health = HealthStatus(
@@ -121,6 +125,7 @@ class TestTaskA11_AIRuntimeProtocol:
         
         assert health.success_rate == 0.9
     
+    @pytest.mark.p2
     def test_health_status_zero_requests(self):
         """HealthStatus should handle zero requests"""
         health = HealthStatus(
@@ -140,6 +145,7 @@ class TestTaskA11_AIRuntimeProtocol:
 class TestTaskA12_AIResponse:
     """Test AIResponse data model (Task A.1.2)"""
     
+    @pytest.mark.p2
     def test_ai_response_creation(self):
         """AIResponse should be creatable with valid data"""
         token_usage = TokenUsage(
@@ -174,6 +180,7 @@ class TestTaskA12_AIResponse:
         assert response.request_id == "test-123"
         assert response.confidence_score == 0.85
     
+    @pytest.mark.p2
     def test_ai_response_validates_confidence(self):
         """AIResponse should validate confidence score range"""
         token_usage = TokenUsage(
@@ -206,6 +213,7 @@ class TestTaskA12_AIResponse:
                 generation_metadata=gen_metadata
             )
     
+    @pytest.mark.p2
     def test_ai_response_content_hash(self):
         """AIResponse should generate deterministic content hash"""
         response = create_success_response(
@@ -237,6 +245,7 @@ class TestTaskA12_AIResponse:
 class TestTaskA13_PromptTemplate:
     """Test PromptTemplate data model (Task A.1.3)"""
     
+    @pytest.mark.p2
     def test_prompt_template_creation(self):
         """PromptTemplate should be creatable with valid data"""
         template = PromptTemplate(
@@ -260,6 +269,7 @@ class TestTaskA13_PromptTemplate:
         assert template.template_id == "test-template"
         assert len(template.evidence_slots) == 2
     
+    @pytest.mark.p2
     def test_prompt_template_validates_slots(self):
         """PromptTemplate should validate evidence slots"""
         with pytest.raises(ValueError):
@@ -270,6 +280,7 @@ class TestTaskA13_PromptTemplate:
                 evidence_slots=[]  # Invalid - needs at least one slot
             )
     
+    @pytest.mark.p2
     def test_prompt_template_generates_prompt(self):
         """PromptTemplate should generate complete prompt from evidence"""
         template = PromptTemplate(
@@ -294,6 +305,7 @@ class TestTaskA13_PromptTemplate:
 class TestTaskA14_AuditEvent:
     """Test AuditEvent data model (Task A.1.4)"""
     
+    @pytest.mark.p2
     def test_audit_event_creation(self):
         """AuditEvent should be creatable with valid data"""
         event = create_audit_event(
@@ -307,6 +319,7 @@ class TestTaskA14_AuditEvent:
         assert event.success is True
         assert event.payload_hash is not None
     
+    @pytest.mark.p2
     def test_audit_event_integrity(self):
         """AuditEvent should verify payload integrity"""
         event = create_audit_event(
@@ -317,6 +330,7 @@ class TestTaskA14_AuditEvent:
         
         assert event.verify_integrity() is True
     
+    @pytest.mark.p2
     def test_audit_event_security_critical(self):
         """AuditEvent should identify security-critical events"""
         security_event = create_audit_event(
@@ -333,6 +347,7 @@ class TestTaskA14_AuditEvent:
 class TestTaskA15_DeploymentProfile:
     """Test DeploymentProfile configuration (Task A.1.5)"""
     
+    @pytest.mark.p2
     def test_desktop_minimal_profile(self):
         """DESKTOP_MINIMAL profile should have correct constraints"""
         profile = DESKTOP_MINIMAL
@@ -342,6 +357,7 @@ class TestTaskA15_DeploymentProfile:
         assert profile.resource_limits.max_cpu_cores == 4
         assert profile.resource_limits.enable_gpu is False
     
+    @pytest.mark.p2
     def test_enterprise_full_profile(self):
         """ENTERPRISE_FULL profile should have correct constraints"""
         profile = ENTERPRISE_FULL
@@ -351,6 +367,7 @@ class TestTaskA15_DeploymentProfile:
         assert profile.resource_limits.max_cpu_cores == 16
         assert profile.resource_limits.enable_gpu is True
     
+    @pytest.mark.p2
     def test_profile_model_compatibility(self):
         """Profile should validate model compatibility"""
         profile = DESKTOP_MINIMAL
@@ -369,6 +386,7 @@ class TestTaskA15_DeploymentProfile:
             model_context_window=4096
         ) is False
     
+    @pytest.mark.p2
     def test_profile_to_dict(self):
         """Profile should serialize to dictionary"""
         profile = DESKTOP_MINIMAL
@@ -382,6 +400,7 @@ class TestTaskA15_DeploymentProfile:
 class TestContractFreeze:
     """Test that contracts are ready for G-0 freeze"""
     
+    @pytest.mark.p2
     def test_all_contracts_importable(self):
         """All G-0 contracts should be importable"""
         # This test passing means all contracts are syntactically correct
@@ -391,6 +410,7 @@ class TestContractFreeze:
         assert AuditEvent is not None
         assert DeploymentProfile is not None
     
+    @pytest.mark.p2
     def test_contracts_are_immutable(self):
         """Dataclass contracts should be frozen (immutable)"""
         token_usage = TokenUsage(10, 20, 30)
@@ -398,6 +418,7 @@ class TestContractFreeze:
         with pytest.raises(Exception):  # FrozenInstanceError
             token_usage.prompt_tokens = 999
     
+    @pytest.mark.p2
     def test_contracts_have_validation(self):
         """Contracts should validate their inputs"""
         # TokenUsage validation

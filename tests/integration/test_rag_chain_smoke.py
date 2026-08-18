@@ -18,6 +18,7 @@ from unittest.mock import patch, MagicMock, Mock
 class TestRAGChainSmoke:
     """End-to-end RAG chain smoke tests"""
     
+    @pytest.mark.p2
     def test_bootstrap_to_graph_retriever_to_rag(self, monkeypatch):
         """
         CRITICAL: Test complete chain bootstrap → graph_retriever → RAG
@@ -65,6 +66,7 @@ class TestRAGChainSmoke:
                     "Graph retriever not wired to RAG service"
                 )
     
+    @pytest.mark.p2
     def test_rag_graceful_degradation_when_neo4j_down(self, monkeypatch):
         """
         Test RAG gracefully degrades when Neo4j is unavailable
@@ -98,6 +100,7 @@ class TestRAGChainSmoke:
                     "RAG service should be created even if graph retriever fails"
                 )
     
+    @pytest.mark.p2
     def test_end_to_end_verdict_engine_with_rag(self, monkeypatch):
         """
         Test EvidenceLinkedVerdictEngine can access RAG through container
@@ -161,6 +164,7 @@ class TestRAGChainSmoke:
 class TestBootstrapWiring:
     """Test bootstrap wiring correctness"""
     
+    @pytest.mark.p2
     def test_all_services_initialized_correctly(self):
         """
         Test that bootstrap correctly initializes all services
@@ -208,6 +212,7 @@ class TestBootstrapWiring:
                                         f"Service '{service_name}' is None — wiring error"
                                     )
     
+    @pytest.mark.p2
     def test_bootstrap_idempotent(self):
         """
         Test that calling bootstrap multiple times is safe

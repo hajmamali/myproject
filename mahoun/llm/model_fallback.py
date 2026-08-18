@@ -6,6 +6,7 @@ Automatic fallback to alternative models if primary fails.
 """
 
 from dataclasses import dataclass
+from typing import Any, Optional, List, Dict
 import logging
 import time
 

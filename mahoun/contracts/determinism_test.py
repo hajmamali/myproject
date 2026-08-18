@@ -8,12 +8,7 @@ import sys
 import argparse
 
 def run_determinism_check(repetitions: int):
-    print(f"Running {repetitions} repetitions of the core resolution engine...")
-    # Simulated check
-    for i in range(repetitions):
-        print(f"Repetition {i+1}: HASH 8f2c3d... MATCH")
-    
-    return True
+    raise NotImplementedError("Scaffold only — see Issue 4 tracking reference")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MAHOUN Determinism Checker")

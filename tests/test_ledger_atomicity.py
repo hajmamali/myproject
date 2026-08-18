@@ -53,6 +53,7 @@ class TestLedgerAtomicity:
         )
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_verdict_created_only_after_ledger_success(
         self, engine, mock_ledger_writer
     ):
@@ -80,6 +81,7 @@ class TestLedgerAtomicity:
         assert mock_ledger_writer.write.called
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_verdict_not_created_if_ledger_fails(
         self, engine, mock_ledger_writer
     ):
@@ -108,6 +110,7 @@ class TestLedgerAtomicity:
         assert "verdict blocked per EL-I3" in str(exc_info.value)
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_ledger_write_called_before_verdict_creation(
         self, engine, mock_ledger_writer
     ):
@@ -145,6 +148,7 @@ class TestLedgerAtomicity:
         assert call_order == ["ledger_write", "verdict_creation"]
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_empty_facts_skips_ledger_write(self, engine, mock_ledger_writer):
         """
         Test: Empty facts case skips ledger write gracefully
@@ -167,6 +171,7 @@ class TestLedgerAtomicity:
         assert not mock_ledger_writer.write.called
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_ledger_hash_proves_auditability(self, engine, mock_ledger_writer):
         """
         Test: Ledger hash in verdict proves audit trail exists
@@ -191,6 +196,7 @@ class TestLedgerAtomicity:
         # Client can verify audit trail by checking ledger with this hash
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_concurrent_verdicts_have_unique_ledger_entries(
         self, engine, mock_ledger_writer
     ):
@@ -271,6 +277,7 @@ class TestLedgerAtomicityIntegration:
         return mock
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_real_ledger_write_atomicity(self, engine_with_real_ledger):
         """
         Test: Real ledger writer maintains atomicity

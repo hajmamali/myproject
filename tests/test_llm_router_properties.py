@@ -32,6 +32,7 @@ class TestProperty10_DeterministicSelection:
     This ensures reproducibility and auditability.
     """
     
+    @pytest.mark.p2
     def test_same_inputs_same_output(self):
         """Same inputs must produce same output."""
         models = [
@@ -65,6 +66,7 @@ class TestProperty10_DeterministicSelection:
         assert len(set(results)) == 1, "Selection must be deterministic"
         assert results[0] == "model-a", "Should select highest priority"
     
+    @pytest.mark.p2
     def test_deterministic_with_routing_rules(self):
         """Routing rules must be deterministic."""
         models = [
@@ -94,6 +96,7 @@ class TestProperty10_DeterministicSelection:
         assert len(set(results)) == 1
         assert results[0] == "code-model"
     
+    @pytest.mark.p2
     def test_deterministic_across_router_instances(self):
         """Same configuration must produce same results across instances."""
         models = [
@@ -121,6 +124,7 @@ class TestProperty10_DeterministicSelection:
         
         assert result1 == result2, "Different instances must produce same result"
     
+    @pytest.mark.p2
     def test_deterministic_with_capability_matching(self):
         """Capability matching must be deterministic."""
         models = [
@@ -146,6 +150,7 @@ class TestProperty10_DeterministicSelection:
         assert len(set(results)) == 1
         assert results[0] == "specialized"
     
+    @pytest.mark.p2
     def test_deterministic_priority_ordering(self):
         """Priority ordering must be stable and deterministic."""
         models = [
@@ -162,6 +167,7 @@ class TestProperty10_DeterministicSelection:
         # All must select highest priority
         assert all(r == "p10" for r in results)
     
+    @pytest.mark.p2
     def test_deterministic_with_context(self):
         """Context-based routing must be deterministic."""
         models = [
@@ -201,6 +207,7 @@ class TestProperty11_FallbackChain:
     This ensures resilience and high availability.
     """
     
+    @pytest.mark.p2
     def test_fallback_returns_next_in_chain(self):
         """Fallback must return next model in priority order."""
         models = [
@@ -223,6 +230,7 @@ class TestProperty11_FallbackChain:
         fallback3 = router.get_fallback("tertiary")
         assert fallback3 is None
     
+    @pytest.mark.p2
     def test_fallback_chain_completeness(self):
         """Every model except last must have a fallback."""
         models = [
@@ -242,6 +250,7 @@ class TestProperty11_FallbackChain:
         # Last model has no fallback
         assert router.get_fallback("model-4") is None
     
+    @pytest.mark.p2
     def test_fallback_respects_circuit_breakers(self):
         """Fallback must skip models with open circuits."""
         models = [
@@ -260,6 +269,7 @@ class TestProperty11_FallbackChain:
         fallback = router.get_fallback("primary")
         assert fallback == "tertiary", "Must skip models with open circuits"
     
+    @pytest.mark.p2
     def test_fallback_chain_exhaustion(self):
         """When all models fail, fallback returns None."""
         models = [
@@ -281,6 +291,7 @@ class TestProperty11_FallbackChain:
         fallback2 = router.get_fallback("model-b")
         assert fallback2 is None, "No more fallbacks available"
     
+    @pytest.mark.p2
     def test_fallback_with_capability_filtering(self):
         """Fallback should prefer models with matching capabilities."""
         models = [
@@ -312,6 +323,7 @@ class TestProperty11_FallbackChain:
         # Should fallback to secondary code model
         assert fallback == "code-secondary"
     
+    @pytest.mark.p2
     def test_fallback_updates_circuit_breaker(self):
         """Calling get_fallback must update circuit breaker state."""
         models = [
@@ -334,6 +346,7 @@ class TestProperty11_FallbackChain:
         final_state = router.get_circuit_state("primary")
         assert final_state == CircuitState.OPEN
     
+    @pytest.mark.p2
     def test_fallback_chain_with_single_model(self):
         """Single model configuration should return None on fallback."""
         models = [
@@ -345,6 +358,7 @@ class TestProperty11_FallbackChain:
         fallback = router.get_fallback("only-model")
         assert fallback is None, "Single model has no fallback"
     
+    @pytest.mark.p2
     def test_fallback_chain_ordering_stability(self):
         """Fallback chain order must be stable across calls."""
         models = [
@@ -378,6 +392,7 @@ class TestProperty11_FallbackChain:
 class TestRouterIntegration:
     """Integration tests for router with fallback."""
     
+    @pytest.mark.p2
     def test_select_with_automatic_fallback(self):
         """Router should automatically use fallback on failure."""
         models = [
@@ -395,6 +410,7 @@ class TestRouterIntegration:
         selected = router.select("test prompt")
         assert selected == "backup", "Should automatically fallback"
     
+    @pytest.mark.p2
     def test_circuit_breaker_recovery(self):
         """Circuit breaker should allow recovery after timeout."""
         import time
@@ -427,6 +443,7 @@ class TestRouterIntegration:
         
         assert router.get_circuit_state("flaky") == CircuitState.CLOSED
     
+    @pytest.mark.p2
     def test_routing_decision_audit_trail(self):
         """Router should maintain audit trail of decisions."""
         models = [
@@ -458,6 +475,7 @@ class TestRouterIntegration:
 class TestRouterEdgeCases:
     """Test edge cases and error conditions."""
     
+    @pytest.mark.p2
     def test_no_models_raises_error(self):
         """Router with no models should raise error on select."""
         router = LLMRouter(models=[])
@@ -465,6 +483,7 @@ class TestRouterEdgeCases:
         with pytest.raises(LLMRouterError, match="No models available"):
             router.select("test")
     
+    @pytest.mark.p2
     def test_all_circuits_open_raises_error(self):
         """All circuits open should raise error."""
         models = [
@@ -482,6 +501,7 @@ class TestRouterEdgeCases:
         with pytest.raises(LLMRouterError, match="all circuits open"):
             router.select("test")
     
+    @pytest.mark.p2
     def test_unknown_model_in_routing_rule(self):
         """Adding rule for unknown model should raise error."""
         models = [
@@ -493,6 +513,7 @@ class TestRouterEdgeCases:
         with pytest.raises(LLMRouterError, match="Unknown model"):
             router.add_routing_rule("code", "nonexistent-model")
     
+    @pytest.mark.p2
     def test_remove_model_cleans_up_rules(self):
         """Removing model should clean up routing rules."""
         models = [

@@ -28,6 +28,7 @@ def api_key_manager():
 class TestKeyCollisionPrevention:
     """Test cryptographic uniqueness and collision resistance."""
     
+    @pytest.mark.p1
     def test_no_collisions_in_10000_keys(self, api_key_manager):
         """CRITICAL: Verify no collisions in 10,000 generated keys."""
         keys = []
@@ -49,6 +50,7 @@ class TestKeyCollisionPrevention:
         # All IDs unique
         assert len(key_ids) == len(set(key_ids)), "Key IDs must all be unique"
     
+    @pytest.mark.p1
     def test_hash_function_deterministic(self, api_key_manager):
         """Verify hash function is deterministic."""
         test_key = "mhn_test_key_12345"
@@ -58,6 +60,7 @@ class TestKeyCollisionPrevention:
         
         assert hash1 == hash2, "Same key must produce same hash"
     
+    @pytest.mark.p1
     def test_hash_function_avalanche_effect(self, api_key_manager):
         """Verify small changes produce completely different hashes."""
         key1 = "mhn_test_key_12345"
@@ -73,6 +76,7 @@ class TestKeyCollisionPrevention:
         # SHA256 should have ~50% bits different
         assert diff_bits > 20, f"Only {diff_bits}/64 hex digits different - poor avalanche"
     
+    @pytest.mark.p1
     def test_hash_output_length(self, api_key_manager):
         """Verify SHA256 hash is correct length."""
         key = "mhn_test_key"
@@ -84,6 +88,7 @@ class TestKeyCollisionPrevention:
         # All characters should be valid hex
         assert all(c in "0123456789abcdef" for c in hash_output), "Non-hex characters in hash"
     
+    @pytest.mark.p1
     def test_key_prefix_enforced(self, api_key_manager):
         """Verify all keys have correct prefix."""
         keys = [api_key_manager.generate_key(f"test{i}")[0] for i in range(100)]
@@ -91,6 +96,7 @@ class TestKeyCollisionPrevention:
         for key in keys:
             assert key.startswith("mhn_"), f"Key {key} missing prefix"
     
+    @pytest.mark.p1
     def test_concurrent_key_generation_no_collision(self, api_key_manager):
         """Verify concurrent-like generation produces unique keys."""
         # Simulate rapid generation (no actual threading to keep tests simple)
@@ -98,6 +104,7 @@ class TestKeyCollisionPrevention:
         
         assert len(keys) == len(set(keys)), "Rapid generation must not produce collisions"
     
+    @pytest.mark.p1
     def test_key_id_uniqueness(self, api_key_manager):
         """Verify key IDs are globally unique."""
         key_ids = set()
@@ -107,6 +114,7 @@ class TestKeyCollisionPrevention:
             assert meta.key_id not in key_ids, f"Key ID collision at iteration {i}"
             key_ids.add(meta.key_id)
     
+    @pytest.mark.p1
     def test_hash_collision_different_keys_same_name(self, api_key_manager):
         """Verify different keys with same name don't collide."""
         key1, meta1 = api_key_manager.generate_key("duplicate_name")
@@ -121,6 +129,7 @@ class TestKeyCollisionPrevention:
 class TestKeyEntropyValidation:
     """Test cryptographic entropy of generated keys."""
     
+    @pytest.mark.p1
     def test_key_entropy_sufficient(self, api_key_manager):
         """Verify keys have sufficient entropy."""
         keys = [api_key_manager.generate_key(f"test{i}")[0] for i in range(100)]
@@ -136,6 +145,7 @@ class TestKeyEntropyValidation:
             unique_chars = len(set(key_body))
             assert unique_chars > 20, f"Only {unique_chars} unique characters - low entropy"
     
+    @pytest.mark.p1
     def test_key_randomness_distribution(self, api_key_manager):
         """Verify key bytes have uniform distribution."""
         keys = [api_key_manager.generate_key(f"test{i}")[0] for i in range(100)]
@@ -160,6 +170,7 @@ class TestKeyEntropyValidation:
 class TestKeyValidationUniqueness:
     """Test key validation uniqueness guarantees."""
     
+    @pytest.mark.p1
     def test_validate_only_correct_key(self, api_key_manager):
         """Verify only the exact key validates."""
         key1, meta1 = api_key_manager.generate_key("test1")
@@ -177,6 +188,7 @@ class TestKeyValidationUniqueness:
         assert validated1.key_id != meta2.key_id
         assert validated2.key_id != meta1.key_id
     
+    @pytest.mark.p1
     def test_modified_key_fails_validation(self, api_key_manager):
         """CRITICAL: Modified key must not validate."""
         key, meta = api_key_manager.generate_key("test")

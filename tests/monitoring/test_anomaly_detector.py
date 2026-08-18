@@ -31,6 +31,7 @@ from mahoun.monitoring import (
 class TestStatisticalAnomalyDetector:
     """Test statistical anomaly detection"""
     
+    @pytest.mark.p2
     def test_zscore_no_anomaly_stable_data(self):
         """Test Z-score detection with stable data (no anomaly)"""
         detector = StatisticalAnomalyDetector(z_threshold=3.0, min_samples=10)
@@ -43,6 +44,7 @@ class TestStatisticalAnomalyDetector:
         alert = detector.detect_anomaly_zscore("stable_metric", 10.0)
         assert alert is None
     
+    @pytest.mark.p2
     def test_zscore_detects_spike(self):
         """Test Z-score detection catches spike anomaly"""
         detector = StatisticalAnomalyDetector(z_threshold=3.0, min_samples=10)
@@ -57,6 +59,7 @@ class TestStatisticalAnomalyDetector:
         assert alert.severity in ('medium', 'high', 'critical')
         assert alert.z_score > 3.0
     
+    @pytest.mark.p2
     def test_zscore_detects_drop(self):
         """Test Z-score detection catches drop anomaly"""
         detector = StatisticalAnomalyDetector(z_threshold=2.5, min_samples=10)
@@ -70,6 +73,7 @@ class TestStatisticalAnomalyDetector:
         assert alert is not None
         assert alert.z_score > 2.5
     
+    @pytest.mark.p2
     def test_iqr_detects_outlier(self):
         """Test IQR method detects outliers"""
         detector = StatisticalAnomalyDetector(iqr_multiplier=1.5, min_samples=10)
@@ -83,6 +87,7 @@ class TestStatisticalAnomalyDetector:
         assert alert is not None
         assert alert.severity in ('medium', 'high', 'critical')
     
+    @pytest.mark.p2
     def test_detect_anomaly_chooses_method(self):
         """Test detect_anomaly delegates to correct method"""
         detector = StatisticalAnomalyDetector(min_samples=10, z_threshold=2.5)
@@ -99,6 +104,7 @@ class TestStatisticalAnomalyDetector:
         alert_iqr = detector.detect_anomaly("test_metric", 300.0, method='iqr')
         assert alert_iqr is not None
     
+    @pytest.mark.p2
     def test_insufficient_samples_returns_none(self):
         """Test graceful handling of insufficient samples"""
         detector = StatisticalAnomalyDetector(min_samples=10)
@@ -111,6 +117,7 @@ class TestStatisticalAnomalyDetector:
         alert = detector.detect_anomaly("sparse_metric", 1000.0)
         assert alert is None
     
+    @pytest.mark.p2
     def test_zero_std_returns_none(self):
         """Test handling of zero standard deviation (constant data)"""
         detector = StatisticalAnomalyDetector(min_samples=10)
@@ -123,6 +130,7 @@ class TestStatisticalAnomalyDetector:
         alert = detector.detect_anomaly_zscore("constant", 42.0)
         assert alert is None
     
+    @pytest.mark.p2
     def test_get_metric_statistics(self):
         """Test statistics calculation"""
         detector = StatisticalAnomalyDetector()
@@ -139,6 +147,7 @@ class TestStatisticalAnomalyDetector:
         assert stats['count'] > 0
         assert 40 < stats['mean'] < 60  # approximate center
     
+    @pytest.mark.p2
     def test_get_recent_alerts(self):
         """Test alert retrieval and filtering"""
         detector = StatisticalAnomalyDetector(min_samples=10)
@@ -153,6 +162,7 @@ class TestStatisticalAnomalyDetector:
         alerts = detector.get_recent_alerts(limit=5)
         assert len(alerts) >= 0  # At least attempt succeeded
     
+    @pytest.mark.p2
     def test_clear_history(self):
         """Test history clearing"""
         detector = StatisticalAnomalyDetector()
@@ -170,6 +180,7 @@ class TestStatisticalAnomalyDetector:
 class TestPerformanceDegradationDetector:
     """Test performance degradation detection"""
     
+    @pytest.mark.p2
     def test_detects_degradation_lower_is_better(self):
         """Test degradation when lower values are better (e.g., latency)"""
         detector = PerformanceDegradationDetector(
@@ -189,6 +200,7 @@ class TestPerformanceDegradationDetector:
         assert alert is not None
         assert alert.severity in ('low', 'medium', 'high', 'critical')
     
+    @pytest.mark.p2
     def test_detects_degradation_higher_is_better(self):
         """Test degradation when higher values are better (e.g., throughput)"""
         detector = PerformanceDegradationDetector(
@@ -208,6 +220,7 @@ class TestPerformanceDegradationDetector:
         assert alert is not None
         assert alert.message.__contains__("degradation")
     
+    @pytest.mark.p2
     def test_no_degradation_stable_performance(self):
         """Test no alert on stable performance"""
         detector = PerformanceDegradationDetector(
@@ -226,6 +239,7 @@ class TestPerformanceDegradationDetector:
 class TestAnomalyDetectionSystem:
     """Test combined anomaly detection system"""
     
+    @pytest.mark.p2
     def test_check_metric_returns_list(self):
         """Test check_metric returns list of alerts"""
         system = AnomalyDetectionSystem(
@@ -241,6 +255,7 @@ class TestAnomalyDetectionSystem:
         alerts = system.check_metric("test_metric", 300.0)
         assert isinstance(alerts, list)
     
+    @pytest.mark.p2
     def test_check_anomaly_returns_single_alert(self):
         """Test check_anomaly (API compatibility) returns single alert"""
         system = AnomalyDetectionSystem(
@@ -258,6 +273,7 @@ class TestAnomalyDetectionSystem:
         # Should return single AnomalyAlert or None
         assert alert is None or isinstance(alert, AnomalyAlert)
     
+    @pytest.mark.p2
     def test_check_anomaly_returns_highest_severity(self):
         """Test check_anomaly returns highest severity when multiple alerts"""
         system = AnomalyDetectionSystem(
@@ -276,6 +292,7 @@ class TestAnomalyDetectionSystem:
             # If multiple alerts generated, should be highest severity
             assert alert.severity in ('low', 'medium', 'high', 'critical')
     
+    @pytest.mark.p2
     def test_disabled_statistical_detection(self):
         """Test system with statistical detection disabled"""
         system = AnomalyDetectionSystem(
@@ -286,6 +303,7 @@ class TestAnomalyDetectionSystem:
         assert system.statistical_detector is None
         assert system.degradation_detector is not None
     
+    @pytest.mark.p2
     def test_get_all_alerts(self):
         """Test retrieving all alerts"""
         system = AnomalyDetectionSystem()
@@ -303,6 +321,7 @@ class TestAnomalyDetectionSystem:
 class TestBehavioralMonitorCompatibility:
     """Test API compatibility with behavioral_monitor.py"""
     
+    @pytest.mark.p2
     def test_detect_anomaly_api_compatible(self):
         """Test detect_anomaly works for behavioral_monitor.py usage"""
         detector = StatisticalAnomalyDetector(min_samples=10)
@@ -323,6 +342,7 @@ class TestBehavioralMonitorCompatibility:
             assert alert.metric_name == metric_name
             assert alert.z_score > 0
     
+    @pytest.mark.p2
     def test_system_check_anomaly_api_compatible(self):
         """Test AnomalyDetectionSystem.check_anomaly API"""
         system = AnomalyDetectionSystem()

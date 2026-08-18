@@ -280,7 +280,13 @@ class NeuralOutputValidator:
 
         # Initialize symbolic reasoning components
         self.knowledge_base = KnowledgeBase()
-        self.forward_chainer = ForwardChaining(self.knowledge_base)
+        # Use Rete-capable forward chainer if available
+        try:
+            from mahoun.reasoning.rete_manager import SafeForwardChaining
+            self.forward_chainer = SafeForwardChaining(self.knowledge_base, max_iterations=1000)
+        except ImportError:
+            # Fallback to traditional ForwardChaining
+            self.forward_chainer = ForwardChaining(self.knowledge_base, use_rete=False)
         self.backward_chainer = BackwardChaining(self.knowledge_base)
         self.fact_extractor = SymbolicFactExtractor()
 

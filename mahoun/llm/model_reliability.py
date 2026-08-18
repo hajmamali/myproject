@@ -7,6 +7,7 @@ Ensures models work reliably with monitoring and fallbacks
 import logging
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from typing import Dict, List, Optional
 import time
 
 log = logging.getLogger(__name__)

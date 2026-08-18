@@ -17,6 +17,7 @@ from mahoun.core.governance.governance_context import GovernanceContext, Governa
 class TestValidationGovernedSessions:
     """Test that validation modules use governed sessions"""
     
+    @pytest.mark.p2
     def test_integrity_checker_uses_governed_session(self):
         """
         Verify IntegrityChecker uses GovernedNeo4jSession, not raw session
@@ -53,6 +54,7 @@ class TestValidationGovernedSessions:
                 "not connection.session() (bypass path)"
             )
     
+    @pytest.mark.p2
     def test_quality_validator_uses_governed_session(self):
         """
         Verify GraphQualityValidator uses GovernedNeo4jSession, not raw session
@@ -87,6 +89,7 @@ class TestValidationGovernedSessions:
                 "not connection.session() (bypass path)"
             )
     
+    @pytest.mark.p2
     def test_validation_modules_no_raw_session_usage(self):
         """
         Static analysis: Verify no raw connection.session() calls in validation
@@ -122,6 +125,7 @@ class TestValidationGovernedSessions:
                 "calls in quality_validator.py. All queries must use GovernedNeo4jSession."
             )
     
+    @pytest.mark.p2
     def test_validation_queries_pass_through_mutation_boundary(self):
         """
         Test that read queries from validation pass through MutationAuthorizationBoundary
@@ -154,6 +158,7 @@ class TestValidationGovernedSessions:
 class TestValidationAuditTrail:
     """Test that validation operations leave proper audit trail"""
     
+    @pytest.mark.p2
     def test_integrity_check_creates_audit_entry(self):
         """
         Verify integrity checks create audit entries
@@ -177,6 +182,7 @@ class TestValidationAuditTrail:
             # Verify governance context is propagated
             assert checker.governance_context.correlation_id == "test_integrity_correlation"
     
+    @pytest.mark.p2
     def test_quality_validation_creates_audit_entry(self):
         """
         Verify quality validation creates audit entries

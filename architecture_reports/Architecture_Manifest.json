@@ -1,0 +1,181 @@
+{
+  "baseline": {
+    "hash": "2d62c4e205636e27",
+    "timestamp": "FROZEN_BASELINE",
+    "version": "architecture-baseline-v1"
+  },
+  "classification_summary": {
+    "AMBIGUOUS": 18,
+    "CANONICAL_CANDIDATE": 102,
+    "DELETE_CANDIDATE": 149,
+    "INFRASTRUCTURE": 194,
+    "LEGACY": 7,
+    "POSSIBLE_ORPHAN": 23,
+    "SUPPORTING_PRODUCTION": 76,
+    "TEST_ONLY": 428,
+    "TOOLING": 74
+  },
+  "domains": {
+    "AGENTS": {
+      "ambiguous": 2,
+      "canonical_candidates": 5,
+      "delete_candidates": 2,
+      "experimental": 0,
+      "infrastructure": 6,
+      "interface": "UltraBaseAgent",
+      "legacy": 6,
+      "supporting": 0
+    },
+    "API": {
+      "ambiguous": 0,
+      "canonical_candidates": 14,
+      "delete_candidates": 4,
+      "experimental": 0,
+      "infrastructure": 1,
+      "interface": "BaseModel, BaseModel, BaseModel, BaseModel",
+      "legacy": 0,
+      "supporting": 2
+    },
+    "AUDIT": {
+      "ambiguous": 0,
+      "canonical_candidates": 0,
+      "delete_candidates": 0,
+      "experimental": 0,
+      "infrastructure": 4,
+      "interface": "RegulatoryExportTemplate, RegulatoryExportTemplate, RegulatoryExportTemplate",
+      "legacy": 0,
+      "supporting": 1
+    },
+    "CONFIG": {
+      "ambiguous": 0,
+      "canonical_candidates": 0,
+      "delete_candidates": 0,
+      "experimental": 0,
+      "infrastructure": 2,
+      "interface": "N/A",
+      "legacy": 0,
+      "supporting": 0
+    },
+    "CRYPTO": {
+      "ambiguous": 0,
+      "canonical_candidates": 2,
+      "delete_candidates": 1,
+      "experimental": 0,
+      "infrastructure": 0,
+      "interface": "N/A",
+      "legacy": 0,
+      "supporting": 2
+    },
+    "DOMAIN": {
+      "ambiguous": 0,
+      "canonical_candidates": 1,
+      "delete_candidates": 2,
+      "experimental": 0,
+      "infrastructure": 5,
+      "interface": "BaseDomainEngine",
+      "legacy": 0,
+      "supporting": 0
+    },
+    "FINETUNING": {
+      "ambiguous": 0,
+      "canonical_candidates": 1,
+      "delete_candidates": 2,
+      "experimental": 0,
+      "infrastructure": 7,
+      "interface": "BaseModel, BaseModel, BaseModel, BaseModel, BaseModel",
+      "legacy": 0,
+      "supporting": 1
+    },
+    "GOVERNANCE": {
+      "ambiguous": 0,
+      "canonical_candidates": 0,
+      "delete_candidates": 1,
+      "experimental": 0,
+      "infrastructure": 8,
+      "interface": "BaseModel",
+      "legacy": 0,
+      "supporting": 0
+    },
+    "GRAPH": {
+      "ambiguous": 2,
+      "canonical_candidates": 5,
+      "delete_candidates": 34,
+      "experimental": 0,
+      "infrastructure": 18,
+      "interface": "BaseModel",
+      "legacy": 0,
+      "supporting": 3
+    },
+    "GUARDRAILS": {
+      "ambiguous": 2,
+      "canonical_candidates": 1,
+      "delete_candidates": 3,
+      "experimental": 0,
+      "infrastructure": 3,
+      "interface": "N/A",
+      "legacy": 0,
+      "supporting": 0
+    },
+    "LEDGER": {
+      "ambiguous": 2,
+      "canonical_candidates": 4,
+      "delete_candidates": 0,
+      "experimental": 0,
+      "infrastructure": 2,
+      "interface": "LedgerBackend, LedgerBackend, LedgerBackend",
+      "legacy": 0,
+      "supporting": 3
+    },
+    "PIPELINES": {
+      "ambiguous": 1,
+      "canonical_candidates": 7,
+      "delete_candidates": 21,
+      "experimental": 0,
+      "infrastructure": 20,
+      "interface": "N/A",
+      "legacy": 0,
+      "supporting": 7
+    },
+    "RAG": {
+      "ambiguous": 1,
+      "canonical_candidates": 3,
+      "delete_candidates": 3,
+      "experimental": 0,
+      "infrastructure": 9,
+      "interface": "BaseModel, BaseModel, BaseModel",
+      "legacy": 1,
+      "supporting": 1
+    },
+    "REASONING": {
+      "ambiguous": 3,
+      "canonical_candidates": 13,
+      "delete_candidates": 4,
+      "experimental": 0,
+      "infrastructure": 12,
+      "interface": "LLMServiceProtocol",
+      "legacy": 0,
+      "supporting": 8
+    },
+    "UNKNOWN": {
+      "ambiguous": 5,
+      "canonical_candidates": 46,
+      "delete_candidates": 72,
+      "experimental": 0,
+      "infrastructure": 97,
+      "interface": "UltraBaseAgent, UltraBaseAgent",
+      "legacy": 0,
+      "supporting": 48
+    }
+  },
+  "layers": {
+    "DOMAIN_SUBSYSTEM": 120,
+    "INFRASTRUCTURE_SUPPORT": 391,
+    "KERNEL_CORE": 58,
+    "TEST_SUITE": 428,
+    "TOOLING_UTILITY": 74
+  },
+  "repository": {
+    "production_entry_points": 15,
+    "total_clean_modules": 1071
+  }
+}

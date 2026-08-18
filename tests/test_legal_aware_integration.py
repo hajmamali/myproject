@@ -87,6 +87,7 @@ def sample_legal_documents():
 class TestLegalMetadata:
     """Test legal metadata schema and validation"""
     
+    @pytest.mark.p2
     def test_legal_metadata_creation(self, sample_legal_metadata):
         """Test creating legal metadata with all fields"""
         assert sample_legal_metadata.court_rank == CourtRank.SUPREME_COURT
@@ -94,18 +95,21 @@ class TestLegalMetadata:
         assert sample_legal_metadata.authority_score == 0.95
         assert sample_legal_metadata.cited_by_higher_courts is True
     
+    @pytest.mark.p2
     def test_court_rank_hierarchy(self):
         """Test court rank hierarchy ordering"""
         assert CourtRank.SUPREME_COURT.value < CourtRank.APPEALS_COURT.value
         assert CourtRank.APPEALS_COURT.value < CourtRank.FIRST_INSTANCE.value
         assert CourtRank.FIRST_INSTANCE.value < CourtRank.SPECIALIZED_COURT.value
     
+    @pytest.mark.p2
     def test_statute_status_values(self):
         """Test statute status enumeration"""
         assert StatuteStatus.ACTIVE.value == "active"
         assert StatuteStatus.REPEALED.value == "repealed"
         assert StatuteStatus.AMENDED.value == "amended"
     
+    @pytest.mark.p2
     def test_legal_metadata_defaults(self):
         """Test legal metadata default values"""
         metadata = LegalMetadata()
@@ -122,6 +126,7 @@ class TestLegalMetadata:
 class TestLegalQueryFilter:
     """Test legal query filtering"""
     
+    @pytest.mark.p2
     def test_default_filter(self):
         """Test default legal query filter"""
         filter = LegalQueryFilter()
@@ -129,6 +134,7 @@ class TestLegalQueryFilter:
         assert filter.min_authority_score == 0.0
         assert StatuteStatus.ACTIVE in filter.allowed_statuses
     
+    @pytest.mark.p2
     def test_court_hierarchy_filter(self):
         """Test filtering by court hierarchy"""
         filter = LegalQueryFilter(
@@ -138,11 +144,13 @@ class TestLegalQueryFilter:
         assert filter.min_court_rank == CourtRank.APPEALS_COURT
         assert filter.max_court_rank == CourtRank.FIRST_INSTANCE
     
+    @pytest.mark.p2
     def test_authority_score_filter(self):
         """Test filtering by authority score"""
         filter = LegalQueryFilter(min_authority_score=0.8)
         assert filter.min_authority_score == 0.8
     
+    @pytest.mark.p2
     def test_temporal_filter(self):
         """Test temporal filtering"""
         filter = LegalQueryFilter(
@@ -160,6 +168,7 @@ class TestLegalQueryFilter:
 class TestLegalCypherQueries:
     """Test legal Cypher query collection"""
     
+    @pytest.mark.p2
     def test_query_retrieval(self):
         """Test retrieving queries by name"""
         query = LegalCypherQueries.get_query("find_superseded_laws")
@@ -167,6 +176,7 @@ class TestLegalCypherQueries:
         assert query.name == "find_superseded_laws"
         assert query.category.value == "supersession"
     
+    @pytest.mark.p2
     def test_query_categories(self):
         """Test querying by category"""
         supersession_queries = LegalCypherQueries.get_queries_by_category(
@@ -174,6 +184,7 @@ class TestLegalCypherQueries:
         )
         assert len(supersession_queries) > 0
     
+    @pytest.mark.p2
     def test_all_queries_list(self):
         """Test listing all queries"""
         all_queries = LegalCypherQueries.list_all_queries()
@@ -185,6 +196,7 @@ class TestLegalCypherQueries:
         assert "validate_no_supersession" in query_names
         assert "rank_by_court_hierarchy" in query_names
     
+    @pytest.mark.p2
     def test_query_parameters(self):
         """Test query parameter definitions"""
         query = LegalCypherQueries.get_query("find_superseded_laws")
@@ -200,6 +212,7 @@ class TestLegalAwareRetrieval:
     """Test legal-aware retrieval service"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_legal_filtering(self, sample_legal_documents):
         """Test filtering of repealed documents"""
         # Mock retrieval results
@@ -233,6 +246,7 @@ class TestLegalAwareRetrieval:
         assert all(r.legal_metadata.statute_status != StatuteStatus.REPEALED for r in filtered)
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_court_hierarchy_ranking(self, sample_legal_documents):
         """Test ranking by court hierarchy"""
         # Mock retrieval results
@@ -283,6 +297,7 @@ class TestLegalMigrationService:
     """Test legal schema migration service"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_metadata_extraction(self):
         """Test legal metadata extraction from document ID"""
         # Test Supreme Court document
@@ -297,6 +312,7 @@ class TestLegalMigrationService:
         assert metadata.authority_score == 0.95
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_migration_batch_creation(self):
         """Test creating migration batch"""
         from mahoun.services.legal_migration_service import MigrationBatch, MigrationStatus
@@ -320,6 +336,7 @@ class TestLegalAwareIntegration:
     """End-to-end integration tests"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_full_legal_retrieval_pipeline(self, sample_legal_documents):
         """Test complete legal-aware retrieval pipeline"""
         # 1. Create legal metadata
@@ -361,6 +378,7 @@ class TestLegalAwareIntegration:
         assert all(doc["statute_status"] != StatuteStatus.REPEALED for doc in filtered_docs)
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_supersession_detection(self):
         """Test supersession relationship detection"""
         # Create documents with supersession
@@ -379,6 +397,7 @@ class TestLegalAwareIntegration:
         assert "old_law_001" in new_law.supersedes
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_cross_system_synchronization(self):
         """Test cross-system UID synchronization"""
         from mahoun.schemas.legal_aware_schema import GlobalIdentifier
@@ -406,6 +425,7 @@ class TestLegalAwarePerformance:
     """Performance tests for legal-aware operations"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_large_batch_filtering(self):
         """Test filtering performance with large document set"""
         # Create large document set

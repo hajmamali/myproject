@@ -1,0 +1,2291 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-17T13:34:59.125859Z",
+    "kernel_version": "1.0.0",
+    "snapshot_version": "1.0.0",
+    "description": "Public API snapshot for MAHOUN Constitutional Kernel",
+    "source_of_truth": "kernel.manifest.yaml"
+  },
+  "modules": {
+    "mahoun.core.governance.authorization_state": {
+      "description": "mahoun.core.governance.authorization_state",
+      "classes": {},
+      "functions": {
+        "is_authorized": {
+          "signature": "() -> bool",
+          "description": "",
+          "critical": false
+        },
+        "reset_authorized": {
+          "signature": "(token: _contextvars.Token[bool]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "set_authorized": {
+          "signature": "(state: bool) -> _contextvars.Token[bool]",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {}
+    },
+    "mahoun.core.governance.mutation_boundary": {
+      "description": "mahoun.core.governance.mutation_boundary",
+      "classes": {
+        "CypherLexer": {
+          "analyze_intent": {
+            "signature": "(query: 'str') -> 'Tuple[bool, List[str]]'",
+            "description": "",
+            "critical": false
+          },
+          "strip_comments": {
+            "signature": "(query: 'str') -> 'str'",
+            "description": "",
+            "critical": false
+          }
+        },
+        "GovernedNeo4jSession": {
+          "begin_transaction": {
+            "signature": "(self) -> \"'GovernedWriteTransaction'\"",
+            "description": "",
+            "critical": false
+          },
+          "delete_node": {
+            "signature": "(self, label: 'str', node_id: 'str', soft_delete: 'bool' = True, deleted_reason: 'str' = 'governance_delete', source_event_id: 'str' = '') -> 'MutationReceipt'",
+            "description": "",
+            "critical": false
+          },
+          "write_node": {
+            "signature": "(self, label: 'str', node_data: 'Dict[str, Any]', merge: 'bool' = True) -> 'MutationReceipt'",
+            "description": "",
+            "critical": false
+          },
+          "write_relationship": {
+            "signature": "(self, source_type: 'str', source_id: 'str', relationship_type: 'str', target_type: 'str', target_id: 'str', rel_data: 'Dict[str, Any]', merge: 'bool' = True) -> 'MutationReceipt'",
+            "description": "",
+            "critical": false
+          }
+        },
+        "GovernedWriteTransaction": {
+          "abort": {
+            "signature": "(self) -> 'None'",
+            "description": "",
+            "critical": false
+          },
+          "commit": {
+            "signature": "(self) -> 'Tuple[MutationReceipt, ...]'",
+            "description": "",
+            "critical": false
+          },
+          "queue_node": {
+            "signature": "(self, label: 'str', node_data: 'Dict[str, Any]', merge: 'bool' = True) -> 'None'",
+            "description": "",
+            "critical": false
+          },
+          "queue_relationship": {
+            "signature": "(self, source_type: 'str', source_id: 'str', relationship_type: 'str', target_type: 'str', target_id: 'str', rel_data: 'Dict[str, Any]', merge: 'bool' = True) -> 'None'",
+            "description": "",
+            "critical": false
+          }
+        },
+        "MutationAuthorizationBoundary": {
+          "inspect": {
+            "signature": "(query: 'str') -> 'None'",
+            "description": "",
+            "critical": false
+          }
+        },
+        "MutationReceipt": {
+          "to_dict": {
+            "signature": "(self) -> 'Dict[str, Any]'",
+            "description": "",
+            "critical": false
+          }
+        },
+        "MutationType": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {
+        "classify_cypher": {
+          "signature": "(query: 'str') -> 'bool'",
+          "description": "",
+          "critical": false
+        },
+        "get_audit_sink": {
+          "signature": "() -> \"'AuditSinkProtocol | None'\"",
+          "description": "",
+          "critical": false
+        },
+        "set_audit_sink": {
+          "signature": "(sink: \"'AuditSinkProtocol'\") -> 'None'",
+          "description": "",
+          "critical": false
+        },
+        "unset_audit_sink": {
+          "signature": "() -> 'None'",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "Dict": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Generator": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "List": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "TYPE_CHECKING": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Tuple": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "annotations": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "logger": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.core.governance_kernel.__init__": {
+      "description": "mahoun.core.governance_kernel.__init__",
+      "classes": {
+        "GovernanceError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "QueryType": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {},
+      "variables": {
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "annotations": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.core.governance_kernel.kernel": {
+      "description": "mahoun.core.governance_kernel.kernel",
+      "classes": {
+        "GovernanceViolation": {},
+        "GovernanceViolationError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "KernelMutationBoundary": {
+          "classify_query": {
+            "signature": "(query: str) -> mahoun.core.governance_kernel.kernel.QueryType",
+            "description": "",
+            "critical": false
+          },
+          "inspect": {
+            "signature": "(query: str) -> None",
+            "description": "",
+            "critical": false
+          }
+        },
+        "QueryType": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        },
+        "ViolationCategory": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        },
+        "ViolationSeverity": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {
+        "is_governance_authorized": {
+          "signature": "() -> bool",
+          "description": "",
+          "critical": false
+        },
+        "reset_governance_authority": {
+          "signature": "(token: Any) -> None",
+          "description": "",
+          "critical": false
+        },
+        "set_governance_authority": {
+          "signature": "(state: bool) -> Any",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "Dict": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Generator": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "List": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Tuple": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.core.governance_lock": {
+      "description": "mahoun.core.governance_lock",
+      "classes": {
+        "GovernanceLock": {
+          "get_audit_metadata": {
+            "signature": "() -> dict",
+            "description": "",
+            "critical": false
+          },
+          "get_mode": {
+            "signature": "() -> mahoun.core.governance_lock.GovernanceMode",
+            "description": "",
+            "critical": false
+          },
+          "initialize": {
+            "signature": "(mode: mahoun.core.governance_lock.GovernanceMode = <GovernanceMode.STRICT: 'STRICT'>, authorization_token: str | None = None) -> 'GovernanceLock'",
+            "description": "",
+            "critical": false
+          },
+          "is_enforcement_enabled": {
+            "signature": "() -> bool",
+            "description": "",
+            "critical": false
+          },
+          "verify_immutable": {
+            "signature": "() -> bool",
+            "description": "",
+            "critical": false
+          },
+          "verify_integrity": {
+            "signature": "() -> bool",
+            "description": "",
+            "critical": false
+          }
+        },
+        "GovernanceMode": {
+          "capitalize": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "casefold": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "center": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "count": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "encode": {
+            "signature": "(self, /, encoding='utf-8', errors='strict')",
+            "description": "",
+            "critical": false
+          },
+          "endswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "expandtabs": {
+            "signature": "(self, /, tabsize=8)",
+            "description": "",
+            "critical": false
+          },
+          "find": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "format_map": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "index": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "isalnum": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isalpha": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isascii": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdecimal": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isdigit": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isidentifier": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "islower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isnumeric": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isprintable": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isspace": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "istitle": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "isupper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "join": {
+            "signature": "(self, iterable, /)",
+            "description": "",
+            "critical": false
+          },
+          "ljust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "lower": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "lstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "maketrans": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "partition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "removeprefix": {
+            "signature": "(self, prefix, /)",
+            "description": "",
+            "critical": false
+          },
+          "removesuffix": {
+            "signature": "(self, suffix, /)",
+            "description": "",
+            "critical": false
+          },
+          "replace": {
+            "signature": "(self, old, new, count=-1, /)",
+            "description": "",
+            "critical": false
+          },
+          "rfind": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rindex": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "rjust": {
+            "signature": "(self, width, fillchar=' ', /)",
+            "description": "",
+            "critical": false
+          },
+          "rpartition": {
+            "signature": "(self, sep, /)",
+            "description": "",
+            "critical": false
+          },
+          "rsplit": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "rstrip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "split": {
+            "signature": "(self, /, sep=None, maxsplit=-1)",
+            "description": "",
+            "critical": false
+          },
+          "splitlines": {
+            "signature": "(self, /, keepends=False)",
+            "description": "",
+            "critical": false
+          },
+          "startswith": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "strip": {
+            "signature": "(self, chars=None, /)",
+            "description": "",
+            "critical": false
+          },
+          "swapcase": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "title": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "translate": {
+            "signature": "(self, table, /)",
+            "description": "",
+            "critical": false
+          },
+          "upper": {
+            "signature": "(self, /)",
+            "description": "",
+            "critical": false
+          },
+          "zfill": {
+            "signature": "(self, width, /)",
+            "description": "",
+            "critical": false
+          }
+        },
+        "SecurityError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {
+        "check_governance_integrity": {
+          "signature": "() -> dict",
+          "description": "",
+          "critical": false
+        },
+        "initialize_governance_at_startup": {
+          "signature": "()",
+          "description": "",
+          "critical": false
+        },
+        "should_enforce_proof_carrying_contract": {
+          "signature": "() -> bool",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "UTC": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.governance.api_guard": {
+      "description": "mahoun.governance.api_guard",
+      "classes": {
+        "APIDriftError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "APIGuardError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "APIMember": {},
+        "APISnapshot": {}
+      },
+      "functions": {
+        "check_critical_interfaces": {
+          "signature": "(manifest: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        },
+        "extract_api_from_module": {
+          "signature": "(module_path: str) -> mahoun.governance.api_guard.APISnapshot",
+          "description": "",
+          "critical": false
+        },
+        "extract_api_from_source": {
+          "signature": "(filepath: str, module_path: str) -> mahoun.governance.api_guard.APISnapshot",
+          "description": "",
+          "critical": false
+        },
+        "generate_api_snapshot": {
+          "signature": "(manifest: Dict[str, Any]) -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "get_critical_modules": {
+          "signature": "(manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "get_module_path_from_file": {
+          "signature": "(filepath: str) -> str",
+          "description": "",
+          "critical": false
+        },
+        "load_api_snapshot": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "load_manifest": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "main": {
+          "signature": "()",
+          "description": "",
+          "critical": false
+        },
+        "save_api_snapshot": {
+          "signature": "(snapshot: Dict[str, Any]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "verify_api_snapshot": {
+          "signature": "(manifest: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "API_SNAPSHOT_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Dict": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "List": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "MANIFEST_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "ROOT_DIR": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Set": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Tuple": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.governance.architecture_guard": {
+      "description": "mahoun.governance.architecture_guard",
+      "classes": {
+        "ArchitectureGuardError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "DuplicateSymbolError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "ForbiddenImportError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "GovernanceBypassError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "LayerViolationError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {
+        "check_duplicate_symbols": {
+          "signature": "(filepath: str, manifest: Dict[str, Any], all_symbols: Dict[str, Dict[str, List[int]]]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "check_forbidden_imports": {
+          "signature": "(filepath: str, manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "check_governance_bypass": {
+          "signature": "(filepath: str, manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "check_layer_violations": {
+          "signature": "(filepath: str, manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "check_specific_file": {
+          "signature": "(filepath: str, manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "extract_defined_symbols": {
+          "signature": "(tree: ast.AST) -> Dict[str, List[int]]",
+          "description": "",
+          "critical": false
+        },
+        "extract_imports_from_ast": {
+          "signature": "(tree: ast.AST, filepath: str) -> Dict[str, List[Tuple[int, str]]]",
+          "description": "",
+          "critical": false
+        },
+        "extract_string_patterns": {
+          "signature": "(tree: ast.AST) -> List[Tuple[int, str]]",
+          "description": "",
+          "critical": false
+        },
+        "get_file_path_module": {
+          "signature": "(filepath: str) -> str",
+          "description": "",
+          "critical": false
+        },
+        "is_governance_tooling_file": {
+          "signature": "(filepath: str) -> bool",
+          "description": "",
+          "critical": false
+        },
+        "load_manifest": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "main": {
+          "signature": "()",
+          "description": "",
+          "critical": false
+        },
+        "verify_architecture": {
+          "signature": "(manifest: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "Dict": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "List": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "MANIFEST_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "ROOT_DIR": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Set": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Tuple": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    },
+    "mahoun.governance.kernel_guard": {
+      "description": "mahoun.governance.kernel_guard",
+      "classes": {
+        "KernelGuardError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "KernelIntegrityViolationError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "ManifestValidationError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        },
+        "UnauthorizedKernelChangeError": {
+          "add_note": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          },
+          "with_traceback": {
+            "signature": "()",
+            "description": "",
+            "critical": false
+          }
+        }
+      },
+      "functions": {
+        "authorize_change": {
+          "signature": "(manifest: Dict[str, Any], version: str, reason: str, approved_by: str) -> None",
+          "description": "",
+          "critical": false
+        },
+        "calculate_manifest_hash": {
+          "signature": "(manifest: Dict[str, Any]) -> str",
+          "description": "",
+          "critical": false
+        },
+        "calculate_sha256": {
+          "signature": "(filepath: str) -> Optional[str]",
+          "description": "",
+          "critical": false
+        },
+        "generate_attestation": {
+          "signature": "(manifest: Dict[str, Any]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "get_kernel_name": {
+          "signature": "(manifest: Dict[str, Any]) -> str",
+          "description": "",
+          "critical": false
+        },
+        "get_kernel_version": {
+          "signature": "(manifest: Dict[str, Any]) -> str",
+          "description": "",
+          "critical": false
+        },
+        "get_tier_0_protected_files": {
+          "signature": "(manifest: Dict[str, Any]) -> List[str]",
+          "description": "",
+          "critical": false
+        },
+        "load_changes": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "load_lock": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "load_manifest": {
+          "signature": "() -> Dict[str, Any]",
+          "description": "",
+          "critical": false
+        },
+        "main": {
+          "signature": "()",
+          "description": "",
+          "critical": false
+        },
+        "save_changes": {
+          "signature": "(changes_data: Dict[str, Any]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "save_lock": {
+          "signature": "(lock_data: Dict[str, Any]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "update_lock": {
+          "signature": "(manifest: Dict[str, Any]) -> None",
+          "description": "",
+          "critical": false
+        },
+        "validate_authorization": {
+          "signature": "(manifest: Dict[str, Any], reason: str, approved_by: str) -> bool",
+          "description": "",
+          "critical": false
+        },
+        "validate_manifest_structure": {
+          "signature": "(manifest: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        },
+        "verify_attestation": {
+          "signature": "() -> bool",
+          "description": "",
+          "critical": false
+        },
+        "verify_authorization": {
+          "signature": "(manifest: Dict[str, Any], lock_data: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        },
+        "verify_lock": {
+          "signature": "(manifest: Dict[str, Any]) -> bool",
+          "description": "",
+          "critical": false
+        }
+      },
+      "variables": {
+        "ATTESTATION_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "CHANGES_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Dict": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "LOCK_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "List": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "MANIFEST_PATH": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "Optional": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        },
+        "ROOT_DIR": {
+          "type": "variable",
+          "description": "",
+          "critical": false
+        }
+      }
+    }
+  },
+  "critical_interfaces": {
+    "governance": [
+      "GovernanceViolation",
+      "GovernanceViolationError",
+      "is_governance_authorized()",
+      "set_governance_authority(state: bool)",
+      "reset_governance_authority(token: Any)",
+      "KernelMutationBoundary.inspect(query: str)",
+      "KernelMutationBoundary.classify_query(query: str)"
+    ],
+    "lock": [
+      "GovernanceLock.initialize(mode: GovernanceMode, authorization_token: Optional[str])",
+      "GovernanceLock.is_enforcement_enabled()",
+      "GovernanceLock.get_mode()",
+      "GovernanceLock.verify_integrity()",
+      "GovernanceLock.verify_immutable()"
+    ]
+  },
+  "snapshot_rules": {
+    "critical_apis": "Must not be renamed, removed, or have signature changes without authorization",
+    "non_critical_apis": "Can be modified but changes should be documented",
+    "enforcement": "fail-closed - any API drift detection causes CI failure",
+    "update_requirement": "Requires explicit authorization"
+  }
+}

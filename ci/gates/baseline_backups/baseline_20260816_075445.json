@@ -1,0 +1,341 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_date": "2026-08-16T07:38:42.640567",
+    "last_modified": "2026-08-16T07:54:31.861388",
+    "author": "system",
+    "description": "Initial baseline from module wiring gate Phase 3",
+    "total_exceptions": 47
+  },
+  "exceptions": {
+    "reasoning.rag_evidence": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640587",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "reasoning.causal_effects": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640595",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "reasoning": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640600",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "reasoning.semantic_matcher": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640603",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "reasoning.causal_structure": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640606",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.gguf_embedding": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640609",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.ocr_post_processor": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640612",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.ocr_preprocessing": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640615",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.provenance_aware_mapper": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640621",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.deterministic_id_generator": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640623",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.ingestion_logger": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640626",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.enhanced_ner": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640629",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.metadata_extractor": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640632",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.validation_quality": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640639",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640643",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "pipelines.ingestion.ocr_ensemble": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640646",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "guardrails.ultra_citation_auditor": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640649",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "guardrails": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640652",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.batch.worker": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640655",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.batch.models": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640658",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.batch": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640660",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.batch.queue": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640664",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.gnn": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640666",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.ingestion.document_classifier": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640669",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.ingestion.data_orchestrator": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640672",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.ingestion.auto_ingest": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640677",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.ingestion": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640680",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.ingestion.validators": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640683",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.services.rag_integration": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640686",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.services": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640688",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.optimizer.config": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640691",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.optimizer": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640694",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.reasoning": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640697",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.schema.text_schema": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640700",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.schema.legal_struct_schema": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640702",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.schema.field_labels_fa": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640705",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.training": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640708",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.neo4j.monitoring": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640711",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.neo4j.models": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640714",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.neo4j.runner": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640717",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.retriever": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640719",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.retriever.embedding_provider": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640727",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.reranker.cross_encoder": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640730",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.reranker": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640733",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.schema.schemas": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640736",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.neo4j.examples.import_documents": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640738",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    },
+    "graph.neo4j.examples": {
+      "reason": "Initial baseline exception",
+      "added_date": "2026-08-16T07:38:42.640741",
+      "expires_date": null,
+      "approved_by": "system",
+      "status": "active"
+    }
+  }
+}

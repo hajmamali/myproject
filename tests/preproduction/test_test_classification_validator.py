@@ -17,6 +17,7 @@ from mahoun.preproduction.validators.test_classification_validator import (
 class TestTestFileMetadata:
     """Test TestFileMetadata dataclass."""
     
+    @pytest.mark.p2
     def test_is_mismarked_slow(self):
         """Should detect slow marker on fast test."""
         meta = TestFileMetadata(
@@ -29,6 +30,7 @@ class TestTestFileMetadata:
         )
         assert meta.is_mismarked_slow
     
+    @pytest.mark.p2
     def test_is_unmarked_slow(self):
         """Should detect missing slow marker."""
         meta = TestFileMetadata(
@@ -53,6 +55,7 @@ class TestTestClassificationValidator:
         tests_dir.mkdir(parents=True)
         return project
     
+    @pytest.mark.p2
     def test_extracts_markers_from_file(self, temp_project):
         """Should extract pytest markers from test file."""
         test_file = temp_project / "tests" / "test_example.py"
@@ -70,6 +73,7 @@ def test_something():
         
         assert "slow" in markers
     
+    @pytest.mark.p2
     def test_extracts_multiple_markers(self, temp_project):
         """Should extract multiple markers."""
         test_file = temp_project / "tests" / "test_multi.py"
@@ -88,6 +92,7 @@ def test_something():
         assert "integration" in markers
         assert "slow" in markers
     
+    @pytest.mark.p2
     def test_validation_completes_without_tests_dir(self, tmp_path):
         """Should handle missing tests directory gracefully."""
         project = tmp_path / "project"
@@ -99,6 +104,7 @@ def test_something():
         assert result.status == ValidationStatus.SKIPPED
         assert "not found" in result.evidence["reason"]
     
+    @pytest.mark.p2
     def test_detects_mismarked_slow_test(self, temp_project):
         """Should detect test marked slow but executing quickly."""
         # Create test file marked as slow
@@ -126,6 +132,7 @@ def test_another_quick():
         # May not find it if estimation is off, but structure is correct
         assert isinstance(result.findings, list)
     
+    @pytest.mark.p2
     def test_scan_test_files(self, temp_project):
         """Should scan all test files in tests directory."""
         # Create multiple test files
@@ -141,6 +148,7 @@ def test_another_quick():
         
         assert len(test_files) == 3
     
+    @pytest.mark.p2
     def test_estimate_test_metadata(self, temp_project):
         """Should estimate test metadata from file."""
         test_file = temp_project / "tests" / "test_estimate.py"
@@ -167,6 +175,7 @@ def test_three():
         assert "integration" in meta.markers
         assert meta.total_duration_ms > 0
     
+    @pytest.mark.p2
     def test_check_known_issue_api_integration(self, temp_project):
         """Should detect the known test_api_integration.py issue."""
         # Create the known problematic file
@@ -205,6 +214,7 @@ def test_api_call():
         assert findings[0].severity == FindingSeverity.P1_HIGH
         assert "test_api_integration.py" in findings[0].message
     
+    @pytest.mark.p2
     def test_check_marker_consistency(self, temp_project):
         """Should detect conflicting markers."""
         test_file = temp_project / "tests" / "test_conflict.py"
@@ -230,6 +240,7 @@ def test_something():
 class TestIntegration:
     """Integration tests with real project structure."""
     
+    @pytest.mark.p2
     def test_validates_real_project(self):
         """Should validate actual project structure."""
         project_root = Path(__file__).parent.parent.parent

@@ -17,6 +17,7 @@ sys.path.insert(0, str(project_root))
 class TestGraphBasedKnowledgeGraph:
     """تست Knowledge Graph برای Reasoning"""
     
+    @pytest.mark.p2
     def test_legal_knowledge_graph_exists(self):
         """تست اینکه LegalKnowledgeGraph وجود دارد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -24,6 +25,7 @@ class TestGraphBasedKnowledgeGraph:
         assert LegalKnowledgeGraph is not None
         print("✓ LegalKnowledgeGraph exists")
     
+    @pytest.mark.p2
     def test_knowledge_graph_can_be_created(self):
         """تست اینکه می‌توان Knowledge Graph را ساخت"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -34,6 +36,7 @@ class TestGraphBasedKnowledgeGraph:
         assert hasattr(kg, 'precedents')
         print("✓ LegalKnowledgeGraph can be instantiated")
     
+    @pytest.mark.p2
     def test_can_add_legal_rules_to_graph(self):
         """تست اینکه می‌توان قوانین را به گراف اضافه کرد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -53,6 +56,7 @@ class TestGraphBasedKnowledgeGraph:
         assert kg.legal_rules["rule_1"].conclusion == "آن شخص متعهد به اجرای قرارداد است"
         print("✓ Can add legal rules to knowledge graph")
     
+    @pytest.mark.p2
     def test_can_add_precedents_to_graph(self):
         """تست اینکه می‌توان precedents را به گراف اضافه کرد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -73,6 +77,7 @@ class TestGraphBasedKnowledgeGraph:
         assert kg.precedents["case_1"].decision == "متعهد باید خسارت بپردازد"
         print("✓ Can add precedents to knowledge graph")
     
+    @pytest.mark.p2
     def test_can_find_applicable_rules(self):
         """تست اینکه می‌توان قوانین applicable را پیدا کرد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -95,6 +100,7 @@ class TestGraphBasedKnowledgeGraph:
         assert "rule_2" in rule_ids, "rule_2 باید applicable باشد"
         print(f"✓ Found {len(applicable_rules)} applicable rules")
     
+    @pytest.mark.p2
     def test_can_find_similar_precedents(self):
         """تست اینکه می‌توان precedents مشابه را پیدا کرد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -120,6 +126,7 @@ class TestGraphBasedKnowledgeGraph:
 class TestGraphBasedReasoningEngine:
     """تست Reasoning Engine با Graph"""
     
+    @pytest.mark.p2
     def test_reasoning_engine_uses_knowledge_graph(self):
         """تست اینکه Reasoning Engine از Knowledge Graph استفاده می‌کند"""
         from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
@@ -131,6 +138,7 @@ class TestGraphBasedReasoningEngine:
         assert engine.knowledge_graph is not None
         print("✓ Reasoning engine uses knowledge graph")
     
+    @pytest.mark.p2
     def test_reasoning_engine_has_graph_rules(self):
         """تست اینکه Reasoning Engine قوانین در گراف دارد"""
         from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
@@ -141,6 +149,7 @@ class TestGraphBasedReasoningEngine:
         assert len(engine.knowledge_graph.legal_rules) > 0, "باید حداقل یک قانون در گراف باشد"
         print(f"✓ Reasoning engine has {len(engine.knowledge_graph.legal_rules)} rules in graph")
     
+    @pytest.mark.p2
     def test_can_perform_graph_based_reasoning(self):
         """تست اینکه می‌توان graph-based reasoning انجام داد"""
         from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
@@ -172,6 +181,7 @@ class TestGraphBasedReasoningEngine:
 class TestGraphBasedChainOfThought:
     """تست Chain of Thought با Graph"""
     
+    @pytest.mark.p2
     def test_chain_of_thought_uses_graph(self):
         """تست اینکه Chain of Thought از گراف استفاده می‌کند"""
         from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
@@ -186,6 +196,7 @@ class TestGraphBasedChainOfThought:
         assert reasoner.knowledge_graph == kg
         print("✓ Chain of Thought uses knowledge graph")
     
+    @pytest.mark.p2
     def test_chain_of_thought_finds_rules_from_graph(self):
         """تست اینکه Chain of Thought قوانین را از گراف پیدا می‌کند"""
         from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
@@ -213,6 +224,7 @@ class TestGraphBasedChainOfThought:
         print("✓ Chain of Thought finds rules from graph")
         print(f"  Reasoning steps: {len(result['reasoning_chain'])}")
     
+    @pytest.mark.p2
     def test_chain_of_thought_finds_precedents_from_graph(self):
         """تست اینکه Chain of Thought precedents را از گراف پیدا می‌کند"""
         from mahoun.reasoning.chain_of_thought import ChainOfThoughtReasoner
@@ -242,6 +254,7 @@ class TestGraphBasedChainOfThought:
 class TestGraphBasedReasoningIntegration:
     """تست Integration Graph-Based Reasoning"""
     
+    @pytest.mark.p2
     def test_graph_builder_with_reasoning(self):
         """تست اینکه Graph Builder با Reasoning integrate می‌شود"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -291,6 +304,7 @@ class TestGraphBasedReasoningIntegration:
         
         print("✓ Graph builder integrates with reasoning system")
     
+    @pytest.mark.p2
     def test_reasoning_uses_graph_structure(self):
         """تست اینکه Reasoning از ساختار گراف استفاده می‌کند"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -338,6 +352,7 @@ class TestGraphBasedReasoningIntegration:
 class TestGraphBasedReasoningScenarios:
     """تست سناریوهای واقعی Graph-Based Reasoning"""
     
+    @pytest.mark.p2
     def test_contract_breach_reasoning_scenario(self):
         """تست سناریو reasoning برای breach of contract"""
         from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
@@ -376,6 +391,7 @@ class TestGraphBasedReasoningScenarios:
         print(f"  Rules in graph: {kg_stats['num_rules']}")
         print(f"  Precedents in graph: {kg_stats['num_precedents']}")
     
+    @pytest.mark.p2
     def test_multi_step_reasoning_with_graph(self):
         """تست multi-step reasoning با استفاده از گراف"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -405,6 +421,7 @@ class TestGraphBasedReasoningScenarios:
         
         print(f"✓ Multi-step reasoning completed with {len(reasoning_steps)} steps")
     
+    @pytest.mark.p2
     def test_graph_traversal_for_reasoning(self):
         """تست graph traversal برای reasoning"""
         from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
@@ -464,6 +481,7 @@ class TestGraphBasedReasoningScenarios:
 class TestDeepReasoningHardCase:
     """تست سخت‌گیرانه برای DeepLegalReasoningEngine"""
     
+    @pytest.mark.p2
     def test_deep_reasoning_combines_graph_and_causal_signals(self):
         """سناریوی دشوار: باید هم گراف و هم روابط علّی استفاده شوند"""
         from mahoun.reasoning.reasoning_engine import DeepLegalReasoningEngine
@@ -544,6 +562,7 @@ class TestDeepReasoningHardCase:
 class TestChainOfThoughtContradictoryRules:
     """سناریوی سخت: قوانین متناقض باید همزمان دیده شوند"""
     
+    @pytest.mark.p2
     def test_contradictory_rule_evidence_is_preserved(self):
         """Chain of Thought باید هر دو قانون متناقض را در نتیجه نهایی بیاورد"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph

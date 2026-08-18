@@ -110,14 +110,26 @@ class CachedHealthChecker(HealthChecker):
     Extends HealthChecker with caching to reduce load.
     """
     
-    def __init__(self, cache_ttl: float = 30.0):
+    def __init__(
+        self,
+        cache_ttl: float = 30.0,
+        app_state: Optional[Any] = None,
+        switchboard_registry: Optional[Any] = None,
+    ):
         """
         Initialize cached health checker.
         
         Args:
             cache_ttl: Cache TTL in seconds (default: 30s)
+            app_state: Optional pre-existing application state carrying
+                singleton services to inspect.
+            switchboard_registry: Optional override for the canonical
+                switchboard singleton.
         """
-        super().__init__()
+        super().__init__(
+            app_state=app_state,
+            switchboard_registry=switchboard_registry,
+        )
         self.cache = HealthCheckCache(default_ttl=cache_ttl)
     
     async def check_all_cached(self, use_cache: bool = True) -> Dict[str, Any]:
@@ -199,4 +211,3 @@ class CachedHealthChecker(HealthChecker):
             self.cache.set(component_name, result)
         
         return result
-

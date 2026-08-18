@@ -8,6 +8,7 @@ Quick test to verify fortress integration is working correctly.
 import asyncio
 import sys
 import os
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +21,7 @@ from mahoun.reasoning.unified_reasoning_service import (
 )
 
 
+@pytest.mark.p0
 async def test_fortress_integration():
     """Test fortress integration with unified reasoning service"""
     

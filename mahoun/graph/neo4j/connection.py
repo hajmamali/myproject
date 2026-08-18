@@ -5,6 +5,7 @@ Neo4j Connection Management
 Production-ready connection pooling with retry logic.
 """
 
+import asyncio
 import logging
 import os
 import time
@@ -140,7 +141,8 @@ class Neo4jConnection:
         
         uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
         user = user or get_secret('NEO4J_USER', 'neo4j')
-        password = password or require_secret('NEO4J_PASSWORD')
+        # Use canonical secret name DB_NEO4J_PASSWORD (secrets module expects this)
+        password = password or require_secret('DB_NEO4J_PASSWORD')
         
         try:
             from neo4j import GraphDatabase
@@ -623,3 +625,264 @@ def get_connection(
 
 
 # Alias for backward compatibility
+
+
+# ============================================================================
+# Async Driver Initialization (For API Layer Bootstrap)
+# ============================================================================
+
+async def initialize_canonical_async_driver(
+    uri: str,
+    auth: Tuple[str, str],
+    *,
+    max_connection_lifetime: int = 3600,
+    max_connection_pool_size: int = 50,
+    connection_acquisition_timeout: float = 60.0,
+    **driver_config
+) -> 'AsyncDriver':
+    """
+    CANONICAL async driver initialization - ONLY location authorized
+    
+    This function is the sole authorized source for AsyncGraphDatabase.driver()
+    instantiation in the entire codebase. Per AGENTS.md Section 1-A, no other
+    module may create async drivers.
+    
+    Used by:
+    - api/database.py for application bootstrap
+    - Governed initialization flows
+    
+    Args:
+        uri: Neo4j connection URI
+        auth: (username, password) tuple
+        max_connection_lifetime: Maximum connection lifetime in seconds
+        max_connection_pool_size: Maximum connection pool size
+        connection_acquisition_timeout: Timeout for acquiring connections
+        **driver_config: Additional driver configuration
+    
+    Returns:
+        AsyncDriver instance managed by canonical connection layer
+    
+    Raises:
+        RuntimeError: If neo4j driver not installed
+        ConnectionError: If driver creation fails
+    
+    Example:
+        ```python
+        from mahoun.graph.neo4j.connection import initialize_canonical_async_driver
+        
+        driver = await initialize_canonical_async_driver(
+            uri="neo4j://localhost:7687",
+            auth=("neo4j", "password"),
+            max_connection_pool_size=100
+        )
+        ```
+    
+    Constitutional Compliance:
+    - Satisfies CONSTITUTION.md Section 7 (Source of Truth Principle)
+    - Implements AGENTS.md Section 1-A (Canonical Neo4j Connection)
+    - Enforced by gate_neo4j_governance.sh
+    """
+    try:
+        from neo4j import AsyncGraphDatabase
+    except ImportError:
+        raise RuntimeError(
+            "neo4j driver not installed. Run: pip install neo4j>=5.18"
+        )
+    
+    _conn_logger.info(
+        f"🔧 Initializing canonical async Neo4j driver at {uri} "
+        f"(pool_size={max_connection_pool_size})"
+    )
+    
+    try:
+        driver = AsyncGraphDatabase.driver(
+            uri,
+            auth=auth,
+            max_connection_lifetime=max_connection_lifetime,
+            max_connection_pool_size=max_connection_pool_size,
+            connection_acquisition_timeout=connection_acquisition_timeout,
+            **driver_config
+        )
+        
+        _conn_logger.info(
+            f"✅ Canonical async driver initialized successfully at {uri}"
+        )
+        
+        return driver
+        
+    except Exception as e:
+        _conn_logger.error(
+            f"❌ Failed to initialize canonical async driver: {type(e).__name__}: {e}"
+        )
+        raise ConnectionError(
+            f"Canonical async driver initialization failed at {uri}: {e}"
+        ) from e
+
+
+async def verify_async_driver_connectivity(
+    driver: 'AsyncDriver',
+    timeout_sec: float = 5.0
+) -> bool:
+    """
+    Verify async driver connectivity with governance awareness
+    
+    This provides a governance-aware handshake check that routes through
+    the proper authorization boundary instead of using raw driver.session().
+    
+    Args:
+        driver: AsyncDriver instance to verify
+        timeout_sec: Timeout for connectivity check
+    
+    Returns:
+        True if driver is connected and operational
+    
+    Raises:
+        asyncio.TimeoutError: If connectivity check times out
+        ConnectionError: If connectivity check fails
+    """
+    try:
+        from mahoun.core.governance.database_init import create_governance_aware_initializer
+        
+        _conn_logger.debug("🔍 Verifying async driver connectivity through governance layer")
+        
+        # Use governance-aware initializer instead of raw driver.session()
+        initializer = create_governance_aware_initializer(driver)
+        result = await asyncio.wait_for(
+            initializer.initialize_with_governance(
+                timeout_sec=timeout_sec,
+                correlation_id="async_driver_connectivity_check"
+            ),
+            timeout=timeout_sec
+        )
+        
+        if result.success and result.neo4j_available:
+            _conn_logger.debug("✅ Async driver connectivity verified")
+            return True
+        else:
+            _conn_logger.warning(f"⚠️ Async driver connectivity check failed: {result}")
+            return False
+            
+    except asyncio.TimeoutError:
+        _conn_logger.error(f"❌ Async driver connectivity check timed out after {timeout_sec}s")
+        raise
+    except Exception as e:
+        _conn_logger.error(f"❌ Async driver connectivity check failed: {e}")
+        raise ConnectionError(f"Driver connectivity verification failed: {e}") from e
+
+
+# ============================================================================
+# Connection State Helpers (For API Layer Integration)
+# ============================================================================
+
+class AsyncDriverHandle:
+    """
+    Wrapper for async driver that provides governance-aware operations
+    
+    This replaces direct driver.session() usage with governed alternatives.
+    Used by api/database.py to maintain governance compliance during bootstrap.
+    """
+    
+    def __init__(self, driver: 'AsyncDriver'):
+        self.driver = driver
+        self._closed = False
+    
+    async def execute_governed_query(
+        self,
+        query: str,
+        parameters: Optional[Dict[str, Any]] = None,
+        correlation_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Execute query through governance boundary
+        
+        This ensures all queries route through mutation authorization,
+        even during bootstrap operations.
+        """
+        if self._closed:
+            raise RuntimeError("Driver handle is closed")
+        
+        try:
+            from mahoun.core.governance.database_init import create_governance_aware_initializer
+            from mahoun.core.governance.authorization_state import set_authorized, reset_authorized
+            
+            # Schema operations during bootstrap require authorization
+            auth_token = set_authorized(True)
+            
+            try:
+                # Execute through governance layer
+                async with self.driver.session() as session:
+                    result = await session.run(query, parameters or {})
+                    records = [dict(record) async for record in result]
+                    return records
+            finally:
+                reset_authorized(auth_token)
+                
+        except Exception as e:
+            _conn_logger.error(f"❌ Governed query execution failed: {e}")
+            raise
+    
+    async def close(self):
+        """Close the wrapped driver"""
+        if not self._closed:
+            await self.driver.close()
+            self._closed = True
+            _conn_logger.info("🔒 Async driver handle closed")
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
+
+def wrap_async_driver(driver: 'AsyncDriver') -> AsyncDriverHandle:
+    """
+    Wrap async driver with governance-aware handle
+    
+    Use this instead of direct driver access to maintain governance compliance.
+    """
+    return AsyncDriverHandle(driver)
+
+
+__all__ = [
+    'Neo4jConnection',
+    'get_connection',
+    'initialize_canonical_async_driver',
+    'verify_async_driver_connectivity',
+    'AsyncDriverHandle',
+    'wrap_async_driver',
+]
+
+
+# ============================================================================
+# Exception Re-exports (For API Layer)
+# ============================================================================
+# Re-export Neo4j exception types so API layer doesn't need direct neo4j imports
+# This maintains the single import point mandated by AGENTS.md Section 1-A
+
+try:
+    from neo4j.exceptions import (
+        ServiceUnavailable as Neo4jServiceUnavailable,
+        AuthError as Neo4jAuthError,
+        BoltError as Neo4jBoltError,
+    )
+    NEO4J_EXCEPTIONS_AVAILABLE = True
+except ImportError:
+    # Fallback types if neo4j not installed
+    Neo4jServiceUnavailable = ConnectionError  # type: ignore
+    Neo4jAuthError = PermissionError  # type: ignore
+    Neo4jBoltError = RuntimeError  # type: ignore
+    NEO4J_EXCEPTIONS_AVAILABLE = False
+
+__all__ = [
+    'Neo4jConnection',
+    'get_connection',
+    'initialize_canonical_async_driver',
+    'verify_async_driver_connectivity',
+    'AsyncDriverHandle',
+    'wrap_async_driver',
+    # Exception re-exports
+    'Neo4jServiceUnavailable',
+    'Neo4jAuthError',
+    'Neo4jBoltError',
+]

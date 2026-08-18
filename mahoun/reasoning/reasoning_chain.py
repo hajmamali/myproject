@@ -22,8 +22,60 @@ from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 import time
+import threading
+from collections import namedtuple
 
 logger = logging.getLogger(__name__)
+
+
+# Thread-safe counter for concurrent statistics tracking
+class AtomicCounter:
+    """Thread-safe counter for concurrent access"""
+    
+    def __init__(self, initial_value: int = 0):
+        self._value = initial_value
+        self._lock = threading.Lock()
+    
+    def increment(self) -> int:
+        """Atomically increment and return new value"""
+        with self._lock:
+            self._value += 1
+            return self._value
+    
+    def get(self) -> int:
+        """Get current value"""
+        with self._lock:
+            return self._value
+    
+    def set(self, value: int) -> None:
+        """Set value atomically"""
+        with self._lock:
+            self._value = value
+
+
+# Thread-safe floating point accumulator
+class AtomicFloat:
+    """Thread-safe float for concurrent access"""
+    
+    def __init__(self, initial_value: float = 0.0):
+        self._value = initial_value
+        self._lock = threading.Lock()
+    
+    def add(self, amount: float) -> float:
+        """Atomically add and return new value"""
+        with self._lock:
+            self._value += amount
+            return self._value
+    
+    def get(self) -> float:
+        """Get current value"""
+        with self._lock:
+            return self._value
+    
+    def set(self, value: float) -> None:
+        """Set value atomically"""
+        with self._lock:
+            self._value = value
 
 
 class ReasoningMode(str, Enum):
@@ -37,7 +89,7 @@ class ReasoningMode(str, Enum):
 class ReasoningConfig:
     """Configuration for reasoning chain"""
     enabled: bool = True
-    mode: ReasoningMode = ReasoningMode.FAST
+    mode: ReasoningMode = ReasoningMode.STRICT
     nli_enabled: bool = True
     citation_audit_enabled: bool = True
     uncertainty_enabled: bool = True
@@ -130,13 +182,11 @@ class ReasoningChain:
         self.citation_available = False
         self.uncertainty_available = False
         
-        # Statistics
-        self.stats = {
-            "total_processed": 0,
-            "nli_verified_count": 0,
-            "citations_valid_count": 0,
-            "avg_processing_time_ms": 0.0
-        }
+        # Thread-safe statistics (replaces mutable Dict)
+        self._total_processed = AtomicCounter(0)
+        self._nli_verified_count = AtomicCounter(0) 
+        self._citations_valid_count = AtomicCounter(0)
+        self._avg_processing_time_ms = AtomicFloat(0.0)
         
         logger.info(
             f"ReasoningChain initialized "
@@ -156,8 +206,8 @@ class ReasoningChain:
         # Initialize NLI Verifier
         if self.config.nli_enabled and self._nli_verifier is None:
             try:
-                # from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier as NLIVerifier
-                self._nli_verifier = NLIVerifier(threshold=self.config.nli_threshold)
+                from mahoun.guardrails.ultra_nli_verifier import UltraNLIVerifier
+                self._nli_verifier = UltraNLIVerifier(threshold=self.config.nli_threshold)
                 self.nli_available = True
                 logger.info("✅ NLI Verifier initialized")
             except Exception as e:
@@ -278,6 +328,16 @@ class ReasoningChain:
         
         # Update statistics
         self._update_stats(nli_result['verified'], citation_result['valid'], processing_time_ms)
+        
+        # Log comprehensive audit trail (TIER 1 AUDITABILITY)
+        self._log_audit_trail(
+            query=query,
+            answer=generated_answer,
+            nli_result=nli_result,
+            citation_result=citation_result,
+            uncertainty_result=uncertainty_result,
+            processing_time_ms=processing_time_ms
+        )
         
         return ReasoningResult(
             query=query,
@@ -588,20 +648,107 @@ class ReasoningChain:
     def _update_stats(self, nli_verified: bool, citations_valid: bool, time_ms: float):
         """Update statistics"""
         self.stats["total_processed"] += 1
-        if nli_verified:
-            self.stats["nli_verified_count"] += 1
-        if citations_valid:
-            self.stats["citations_valid_count"] += 1
+    def _update_stats(self, nli_verified: bool, citations_valid: bool, time_ms: float):
+        """Update statistics thread-safely"""
+        n = self._total_processed.increment()
         
-        n = self.stats["total_processed"]
-        self.stats["avg_processing_time_ms"] = (
-            (self.stats["avg_processing_time_ms"] * (n - 1) + time_ms) / n
-        )
+        if nli_verified:
+            self._nli_verified_count.increment()
+        
+        if citations_valid:
+            self._citations_valid_count.increment()
+        
+        # Update running average atomically
+        current_avg = self._avg_processing_time_ms.get()
+        new_avg = (current_avg * (n - 1) + time_ms) / n
+        self._avg_processing_time_ms.set(new_avg)
+    
+    def _log_audit_trail(
+        self,
+        query: str,
+        answer: str,
+        nli_result: Dict[str, Any],
+        citation_result: Dict[str, Any],
+        uncertainty_result: Dict[str, float],
+        processing_time_ms: float
+    ) -> None:
+        """
+        Log comprehensive audit trail for regulatory compliance.
+        
+        TIER 1 AUDITABILITY (2025-01): Enhanced logging for complete traceability
+        of all text-grounding verification decisions.
+        
+        Args:
+            query: Input query
+            answer: Generated answer text
+            nli_result: NLI verification results
+            citation_result: Citation verification results
+            uncertainty_result: Uncertainty estimation
+            processing_time_ms: Processing duration
+        """
+        audit_entry = {
+            "timestamp": time.time(),
+            "query_hash": hash(query) % (10 ** 8),  # Privacy-preserving hash
+            "answer_length": len(answer),
+            "verification": {
+                "nli_verified": nli_result.get('verified', False),
+                "nli_entailment": nli_result.get('entailment_score', 0.0),
+                "nli_neutral": nli_result.get('neutral_score', 0.0),
+                "nli_contradiction": nli_result.get('contradiction_score', 0.0),
+                "citations_valid": citation_result.get('valid', False),
+                "citation_accuracy": citation_result.get('accuracy', 0.0),
+                "citation_count": citation_result.get('count', 0)
+            },
+            "uncertainty": {
+                "epistemic": uncertainty_result['epistemic'],
+                "aleatoric": uncertainty_result['aleatoric'],
+                "total": uncertainty_result['total'],
+                "confidence": 1.0 - uncertainty_result['total']
+            },
+            "performance": {
+                "processing_time_ms": processing_time_ms
+            },
+            "mode": self.config.mode.value,
+            "thread_id": threading.current_thread().ident
+        }
+        
+        # Log at INFO level for successful verifications, WARNING for failures
+        if nli_result.get('verified', False) and citation_result.get('valid', False):
+            logger.info(
+                f"✅ AUDIT: Reasoning verified | "
+                f"NLI={nli_result.get('entailment_score', 0.0):.3f} | "
+                f"Citations={citation_result.get('accuracy', 0.0):.3f} | "
+                f"Time={processing_time_ms:.1f}ms | "
+                f"Mode={self.config.mode.value}"
+            )
+        else:
+            logger.warning(
+                f"⚠️ AUDIT: Verification FAILED | "
+                f"NLI_verified={nli_result.get('verified', False)} | "
+                f"Citations_valid={citation_result.get('valid', False)} | "
+                f"Contradiction={nli_result.get('contradiction_score', 0.0):.3f} | "
+                f"Mode={self.config.mode.value}"
+            )
+        
+        # Detailed trace for DEBUG level
+        logger.debug(f"AUDIT_TRAIL: {audit_entry}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get reasoning statistics"""
-        stats = self.stats.copy()
-        if stats["total_processed"] > 0:
-            stats["nli_pass_rate"] = stats["nli_verified_count"] / stats["total_processed"]
-            stats["citation_pass_rate"] = stats["citations_valid_count"] / stats["total_processed"]
+        """Get reasoning statistics thread-safely"""
+        total = self._total_processed.get()
+        nli_count = self._nli_verified_count.get()
+        citation_count = self._citations_valid_count.get()
+        avg_time = self._avg_processing_time_ms.get()
+        
+        stats = {
+            "total_processed": total,
+            "nli_verified_count": nli_count,
+            "citations_valid_count": citation_count,
+            "avg_processing_time_ms": avg_time
+        }
+        
+        if total > 0:
+            stats["nli_pass_rate"] = nli_count / total
+            stats["citation_pass_rate"] = citation_count / total
+        
         return stats

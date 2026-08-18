@@ -199,11 +199,6 @@ def bootstrap_switchboard():
         ultra_path="mahoun.nlp.ultra_persian_legal_nlp.UltraPersianLegalNLP",
     )
     switchboard.register(
-        "self_improve_bandit",
-        base_path="mahoun.self_improve.bandit_system.BanditSystem",  # Assumed base
-        ultra_path="mahoun.self_improve.ultra_bandit_system.UltraBanditSystem",
-    )
-    switchboard.register(
         "ultra_graph_service",
         base_path="mahoun.graph.graph_query_service.GraphQueryService",
         ultra_path="mahoun.graph.ultra_graph_query_service.UltraGraphQueryService",

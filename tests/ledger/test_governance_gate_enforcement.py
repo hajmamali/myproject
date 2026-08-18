@@ -26,6 +26,7 @@ from mahoun.core.exceptions_v2 import MahounException as BaseMahounError
 class TestLedgerEntryValidation:
     """Test basic ledger entry validation (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_valid_entry_accepted(self):
         """
         Critical: Valid ledger entry must be accepted by guards
@@ -47,6 +48,7 @@ class TestLedgerEntryValidation:
         validate_entry(entry)
         print("✓ Valid entry accepted")
     
+    @pytest.mark.p1
     def test_empty_evidence_rejected(self):
         """
         Critical: Entry with no evidence must be rejected (EL-I1)
@@ -69,6 +71,7 @@ class TestLedgerEntryValidation:
             validate_entry(entry)
         print("✓ Empty evidence correctly rejected (EL-I1)")
     
+    @pytest.mark.p1
     def test_invalid_confidence_rejected(self):
         """
         Critical: Confidence out of range must be rejected
@@ -90,6 +93,7 @@ class TestLedgerEntryValidation:
             validate_entry(entry)
         print("✓ Invalid confidence correctly rejected")
     
+    @pytest.mark.p1
     def test_empty_verdict_id_rejected(self):
         """
         Critical: Empty verdict_id must be rejected
@@ -111,6 +115,7 @@ class TestLedgerEntryValidation:
             validate_entry(entry)
         print("✓ Empty verdict_id correctly rejected")
     
+    @pytest.mark.p1
     def test_empty_case_id_rejected(self):
         """
         Critical: Empty case_id must be rejected
@@ -136,6 +141,7 @@ class TestLedgerEntryValidation:
 class TestImmutableLedgerGovernance:
     """Test governance enforcement at ledger level (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_append_validates_entry(self):
         """
         Critical: Ledger append must validate entry
@@ -162,6 +168,7 @@ class TestImmutableLedgerGovernance:
         assert block.data.verdict_id == "verdict_001"
         print("✓ Valid entry appended to ledger")
     
+    @pytest.mark.p1
     def test_append_rejects_empty_verdict_id(self):
         """
         Critical: Append must reject empty verdict_id
@@ -187,6 +194,7 @@ class TestImmutableLedgerGovernance:
         assert len(ledger.chain) == 1  # Only genesis
         print("✓ Empty verdict_id rejected at ledger level")
     
+    @pytest.mark.p1
     def test_append_rejects_empty_case_id(self):
         """
         Critical: Append must reject empty case_id
@@ -216,6 +224,7 @@ class TestImmutableLedgerGovernance:
 class TestAuditTrailCompleteness:
     """Test audit trail completeness (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_all_metadata_recorded(self):
         """
         Critical: All governance metadata must be recorded in ledger
@@ -254,6 +263,7 @@ class TestAuditTrailCompleteness:
         
         print("✓ All metadata recorded in audit trail")
     
+    @pytest.mark.p1
     def test_multiple_writes_all_recorded(self):
         """
         Critical: Multiple writes with governance must all be recorded
@@ -294,6 +304,7 @@ class TestAuditTrailCompleteness:
 class TestChainIntegrityUnderGovernance:
     """Test chain integrity is maintained under governance (P0 Critical)"""
     
+    @pytest.mark.p1
     def test_governance_preserves_integrity(self):
         """
         Critical: Governance validation must preserve chain integrity
@@ -329,6 +340,7 @@ class TestChainIntegrityUnderGovernance:
         
         print("✓ Governance preserves chain integrity (20 entries)")
     
+    @pytest.mark.p1
     def test_proof_tree_integrity(self):
         """
         Critical: Each block must maintain proof tree integrity
@@ -358,6 +370,7 @@ class TestChainIntegrityUnderGovernance:
         
         print("✓ Proof tree integrity maintained")
     
+    @pytest.mark.p1
     def test_deterministic_hash_with_governance(self):
         """
         Critical: Hash must be deterministic under governance

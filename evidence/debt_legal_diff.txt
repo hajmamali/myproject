@@ -1,0 +1,3 @@
+diff tests/legal_reasoning_test.py tests/test_legal_reasoning.py
+(No differences - files are identical)
+Exit code: 0

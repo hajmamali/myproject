@@ -14,6 +14,7 @@ from unittest.mock import patch
 class TestNoHardcodedPaths:
     """تست‌های سخت‌گیرانه برای عدم وجود مسیرهای hardcoded"""
     
+    @pytest.mark.p2
     def test_no_home_user_paths_in_python_files(self):
         """تست 1: نباید /home/<user> در فایل‌های Python باشد"""
         result = subprocess.run(
@@ -37,6 +38,7 @@ class TestNoHardcodedPaths:
             f"Matches:\n{result.stdout}"
         )
     
+    @pytest.mark.p2
     def test_no_home_paths_in_config_files(self):
         """تست 2: نباید /home/<user> در config files باشد"""
         result = subprocess.run(
@@ -59,6 +61,7 @@ class TestNoHardcodedPaths:
             f"Matches:\n{result.stdout}"
         )
     
+    @pytest.mark.p2
     def test_no_desktop_paths(self):
         """تست 3: نباید Desktop/ در فایل‌ها باشد (except comments)"""
         result = subprocess.run(
@@ -95,6 +98,7 @@ class TestNoHardcodedPaths:
             f"Matches:\n{result.stdout}"
         )
     
+    @pytest.mark.p2
     def test_runtime_json_uses_env_var(self):
         """تست 4: runtime.json باید از ${MAHOUN_MODEL_DIR} استفاده کند"""
         runtime_file = Path(__file__).parent.parent / "config" / "runtime.json"
@@ -114,6 +118,7 @@ class TestNoHardcodedPaths:
             "❌ runtime.json should use ${MAHOUN_MODEL_DIR} placeholder"
         )
     
+    @pytest.mark.p2
     def test_env_example_documents_mahoun_model_dir(self):
         """تست 5: .env.example باید MAHOUN_MODEL_DIR را مستند کند"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -127,6 +132,7 @@ class TestNoHardcodedPaths:
             "❌ .env.example MUST document MAHOUN_MODEL_DIR"
         )
     
+    @pytest.mark.p2
     def test_env_example_documents_mahoun_data_dir(self):
         """تست 6: .env.example باید MAHOUN_DATA_DIR را مستند کند"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -136,6 +142,7 @@ class TestNoHardcodedPaths:
             "❌ .env.example MUST document MAHOUN_DATA_DIR"
         )
     
+    @pytest.mark.p2
     def test_env_example_documents_mahoun_output_dir(self):
         """تست 7: .env.example باید MAHOUN_OUTPUT_DIR را مستند کند"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -149,6 +156,7 @@ class TestNoHardcodedPaths:
 class TestPathsModule:
     """تست‌های ماژول mahoun.core.paths"""
     
+    @pytest.mark.p2
     def test_paths_module_exists(self):
         """تست 8: mahoun/core/paths.py باید وجود داشته باشد"""
         paths_file = Path(__file__).parent.parent / "mahoun" / "core" / "paths.py"
@@ -157,6 +165,7 @@ class TestPathsModule:
             "❌ mahoun/core/paths.py not found - portable path helper missing"
         )
     
+    @pytest.mark.p2
     def test_paths_module_imports(self):
         """تست 9: ماژول paths باید import شود"""
         try:
@@ -165,6 +174,7 @@ class TestPathsModule:
         except ImportError as e:
             pytest.fail(f"❌ Cannot import mahoun.core.paths: {e}")
     
+    @pytest.mark.p2
     def test_get_repo_root_function_exists(self):
         """تست 10: تابع get_repo_root باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -178,6 +188,7 @@ class TestPathsModule:
         assert isinstance(repo_root, Path)
         assert repo_root.exists()
     
+    @pytest.mark.p2
     def test_get_model_dir_function_exists(self):
         """تست 11: تابع get_model_dir باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -186,6 +197,7 @@ class TestPathsModule:
             "❌ get_model_dir function missing"
         )
     
+    @pytest.mark.p2
     def test_get_data_dir_function_exists(self):
         """تست 12: تابع get_data_dir باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -194,6 +206,7 @@ class TestPathsModule:
             "❌ get_data_dir function missing"
         )
     
+    @pytest.mark.p2
     def test_get_output_dir_function_exists(self):
         """تست 13: تابع get_output_dir باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -202,6 +215,7 @@ class TestPathsModule:
             "❌ get_output_dir function missing"
         )
     
+    @pytest.mark.p2
     def test_get_model_dir_respects_env_var(self):
         """تست 14: get_model_dir باید MAHOUN_MODEL_DIR را رعایت کند"""
         from mahoun.core import paths
@@ -212,6 +226,7 @@ class TestPathsModule:
             model_dir = paths.get_model_dir()
             assert str(model_dir) == test_path
     
+    @pytest.mark.p2
     def test_get_model_dir_default_is_relative(self):
         """تست 15: get_model_dir default باید relative به repo باشد"""
         from mahoun.core import paths
@@ -227,6 +242,7 @@ class TestPathsModule:
             # Default should be under repo_root
             assert repo_root in model_dir.parents or model_dir == repo_root / "models"
     
+    @pytest.mark.p2
     def test_get_data_dir_respects_env_var(self):
         """تست 16: get_data_dir باید MAHOUN_DATA_DIR را رعایت کند"""
         from mahoun.core import paths
@@ -237,6 +253,7 @@ class TestPathsModule:
             data_dir = paths.get_data_dir()
             assert str(data_dir) == test_path
     
+    @pytest.mark.p2
     def test_get_output_dir_respects_env_var(self):
         """تست 17: get_output_dir باید MAHOUN_OUTPUT_DIR را رعایت کند"""
         from mahoun.core import paths
@@ -247,6 +264,7 @@ class TestPathsModule:
             output_dir = paths.get_output_dir()
             assert str(output_dir) == test_path
     
+    @pytest.mark.p2
     def test_ensure_dir_function_exists(self):
         """تست 18: تابع ensure_dir باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -255,6 +273,7 @@ class TestPathsModule:
             "❌ ensure_dir function missing"
         )
     
+    @pytest.mark.p2
     def test_resolve_path_function_exists(self):
         """تست 19: تابع resolve_path باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -263,6 +282,7 @@ class TestPathsModule:
             "❌ resolve_path function missing"
         )
     
+    @pytest.mark.p2
     def test_validate_model_path_function_exists(self):
         """تست 20: تابع validate_model_path باید وجود داشته باشد"""
         from mahoun.core import paths
@@ -275,6 +295,7 @@ class TestPathsModule:
 class TestTestsArePortable:
     """تست‌ها باید portable باشند"""
     
+    @pytest.mark.p2
     def test_llm_integration_test_handles_missing_models(self):
         """تست 21: test_llm_integration باید missing models را handle کند"""
         test_file = Path(__file__).parent / "test_llm_integration.py"
@@ -294,6 +315,7 @@ class TestTestsArePortable:
             "❌ test_llm_integration should skip if models missing"
         )
     
+    @pytest.mark.p2
     def test_no_test_file_has_hardcoded_user_paths(self):
         """تست 22: هیچ test file نباید hardcoded user paths داشته باشد"""
         result = subprocess.run(
@@ -316,6 +338,7 @@ class TestTestsArePortable:
 class TestPortabilityDocumentation:
     """تست مستندات portability"""
     
+    @pytest.mark.p2
     def test_env_vars_have_descriptions(self):
         """تست 23: env vars باید توضیحات داشته باشند"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -333,6 +356,7 @@ class TestPortabilityDocumentation:
                 f"❌ {var} should have comment/description"
             )
     
+    @pytest.mark.p2
     def test_env_example_shows_default_values(self):
         """تست 24: .env.example باید default values را نشان دهد"""
         env_example = Path(__file__).parent.parent / ".env.example"
@@ -347,6 +371,7 @@ class TestPortabilityDocumentation:
 class TestCompileAndImport:
     """تست compile و import"""
     
+    @pytest.mark.p2
     def test_all_python_files_compile(self):
         """تست 25: تمام فایل‌های Python باید compile شوند"""
         repo_root = Path(__file__).parent.parent
@@ -363,6 +388,7 @@ class TestCompileAndImport:
             f"Errors:\n{result.stderr}"
         )
     
+    @pytest.mark.p2
     def test_paths_module_imports_without_error(self):
         """تست 26: ماژول paths باید بدون error import شود"""
         try:
@@ -396,6 +422,7 @@ class TestCompileAndImport:
 class TestProductionReadiness:
     """تست آمادگی production"""
     
+    @pytest.mark.p2
     def test_no_absolute_paths_in_runtime_configs(self):
         """تست 27: نباید absolute paths در runtime configs باشد"""
         config_dir = Path(__file__).parent.parent / "config"
@@ -419,6 +446,7 @@ class TestProductionReadiness:
             "\n".join(violations)
         )
     
+    @pytest.mark.p2
     def test_portable_paths_checklist_complete(self):
         """تست 28: چک‌لیست portability کامل باشد"""
         repo_root = Path(__file__).parent.parent

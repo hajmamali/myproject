@@ -13,6 +13,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_ollama():
     """Test Ollama health check"""
     checker = HealthChecker()
@@ -26,6 +27,7 @@ async def test_health_checker_ollama():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_vector_store():
     """Test VectorStore health check"""
     checker = HealthChecker()
@@ -38,6 +40,7 @@ async def test_health_checker_vector_store():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_graph():
     """Test Graph system health check"""
     checker = HealthChecker()
@@ -50,6 +53,7 @@ async def test_health_checker_graph():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_reasoning():
     """Test Reasoning service health check"""
     checker = HealthChecker()
@@ -61,6 +65,7 @@ async def test_health_checker_reasoning():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_agents():
     """Test agents health check"""
     checker = HealthChecker()
@@ -76,6 +81,7 @@ async def test_health_checker_agents():
 
 
 @pytest.mark.asyncio
+@pytest.mark.p2
 async def test_health_checker_all():
     """Test comprehensive health check"""
     checker = HealthChecker()
@@ -87,7 +93,6 @@ async def test_health_checker_all():
     assert "core" in results
     assert "graph" in results
     assert "agents" in results
-    assert "self_improve" in results
     
     # Check overall status
     assert results["status"] in ["HEALTHY", "DEGRADED", "FAILED"]
@@ -107,6 +112,7 @@ async def test_health_checker_all():
     assert "count" in results["agents"]
 
 
+@pytest.mark.p2
 def test_component_health_to_dict():
     """Test ComponentHealth to_dict method"""
     health = ComponentHealth(

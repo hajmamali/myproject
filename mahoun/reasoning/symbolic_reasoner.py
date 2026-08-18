@@ -139,6 +139,7 @@ class SymbolicReasoningEngine:
         self,
         max_forward_iterations: int = 1000,
         max_backward_depth: int = 100,
+        use_rete: bool = False,
     ) -> None:
         """
         Initialize symbolic reasoning engine.
@@ -146,13 +147,15 @@ class SymbolicReasoningEngine:
         Args:
             max_forward_iterations: Max iterations for forward chaining
             max_backward_depth: Max depth for backward chaining
+            use_rete: If True, attempt Rete algorithm for forward chaining
+                      with automatic fallback to traditional engine.
         """
         self.fol_engine = FirstOrderLogicEngine()
-        self.forward_engine = ForwardChainingEngine(max_iterations=max_forward_iterations)
+        self.forward_engine = ForwardChainingEngine(max_iterations=max_forward_iterations, use_rete=use_rete)
         self.backward_engine = BackwardChainingEngine(max_depth=max_backward_depth)
         self.knowledge_base = KnowledgeBase()
         
-        log.info("Initialized SymbolicReasoningEngine")
+        log.info(f"Initialized SymbolicReasoningEngine (use_rete={use_rete})")
     
     def add_fact(self, fact: Clause) -> None:
         """Add a fact to knowledge base"""

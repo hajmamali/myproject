@@ -14,6 +14,7 @@ client = TestClient(app)
 class TestLegalMetricsStructure:
     """Test legal metrics response structure"""
     
+    @pytest.mark.p2
     def test_legal_metrics_has_required_fields(self):
         """Test that legal metrics contains all required fields"""
         response = client.get("/metrics/legal")
@@ -31,6 +32,7 @@ class TestLegalMetricsStructure:
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
     
+    @pytest.mark.p2
     def test_legal_metrics_numeric_types(self):
         """Test that numeric fields are actually numbers"""
         response = client.get("/metrics/legal")
@@ -42,6 +44,7 @@ class TestLegalMetricsStructure:
         assert isinstance(data["error_rate"], (int, float))
         assert isinstance(data["cache_hit_rate"], (int, float))
     
+    @pytest.mark.p2
     def test_legal_metrics_percentiles_exist(self):
         """Test that percentile metrics exist"""
         response = client.get("/metrics/legal")
@@ -54,6 +57,7 @@ class TestLegalMetricsStructure:
 class TestHealthDetailedStructure:
     """Test detailed health response structure"""
     
+    @pytest.mark.p2
     def test_health_detailed_has_status(self):
         """Test that health detailed has status field"""
         response = client.get("/health/detailed")
@@ -63,6 +67,7 @@ class TestHealthDetailedStructure:
         assert "status" in data
         assert data["status"] in ["healthy", "degraded", "unhealthy", "unknown"]
     
+    @pytest.mark.p2
     def test_health_detailed_has_timestamp(self):
         """Test that health detailed has timestamp"""
         response = client.get("/health/detailed")
@@ -71,6 +76,7 @@ class TestHealthDetailedStructure:
         assert "timestamp" in data
         assert isinstance(data["timestamp"], str)
     
+    @pytest.mark.p2
     def test_health_detailed_has_uptime(self):
         """Test that health detailed has uptime_seconds"""
         response = client.get("/health/detailed")
@@ -80,6 +86,7 @@ class TestHealthDetailedStructure:
         assert isinstance(data["uptime_seconds"], (int, float))
         assert data["uptime_seconds"] >= 0
     
+    @pytest.mark.p2
     def test_health_detailed_has_components(self):
         """Test that health detailed has components"""
         response = client.get("/health/detailed")
@@ -92,6 +99,7 @@ class TestHealthDetailedStructure:
 class TestMetricsResetBehavior:
     """Test metrics reset endpoint behavior"""
     
+    @pytest.mark.p2
     def test_reset_in_dev_mode(self, monkeypatch):
         """Test that reset works in dev mode"""
         monkeypatch.setenv("MAHOUN_ENV", "dev")
@@ -103,6 +111,7 @@ class TestMetricsResetBehavior:
             assert data["status"] == "reset"
             assert "message" in data
     
+    @pytest.mark.p2
     def test_reset_blocked_in_production(self, monkeypatch):
         """Test that reset is blocked in production"""
         monkeypatch.setenv("MAHOUN_ENV", "prod")
@@ -117,6 +126,7 @@ class TestMetricsResetBehavior:
 class TestPrometheusFormat:
     """Test Prometheus metrics format"""
     
+    @pytest.mark.p2
     def test_prometheus_contains_metrics(self):
         """Test that Prometheus output contains metric lines"""
         response = client.get("/metrics/prometheus")
@@ -127,6 +137,7 @@ class TestPrometheusFormat:
         lines = text.split('\n')
         assert len(lines) > 0
     
+    @pytest.mark.p2
     def test_prometheus_has_legal_metrics(self):
         """Test that Prometheus output includes legal metrics"""
         response = client.get("/metrics/prometheus")

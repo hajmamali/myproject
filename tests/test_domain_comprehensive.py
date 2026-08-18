@@ -16,6 +16,7 @@ from typing import Dict, Any
 class TestBaseDomainEngine:
     """Tests for BaseDomainEngine"""
     
+    @pytest.mark.p2
     def test_base_engine_init(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -28,6 +29,7 @@ class TestBaseDomainEngine:
         assert engine.name == "test_engine"
         assert engine.config == {"key": "value"}
     
+    @pytest.mark.p2
     def test_base_engine_default_config(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -39,6 +41,7 @@ class TestBaseDomainEngine:
         assert engine.config == {}
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_base_engine_validate_input(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -50,6 +53,7 @@ class TestBaseDomainEngine:
         result = await engine.validate_input({"query": "test"})
         assert result is True
     
+    @pytest.mark.p2
     def test_base_engine_export_json(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -62,6 +66,7 @@ class TestBaseDomainEngine:
         exported = engine.export_results(results, "json")
         assert exported == results
     
+    @pytest.mark.p2
     def test_base_engine_export_dict(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -74,6 +79,7 @@ class TestBaseDomainEngine:
         exported = engine.export_results(results, "dict")
         assert exported == results
     
+    @pytest.mark.p2
     def test_base_engine_export_invalid_format(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -85,6 +91,7 @@ class TestBaseDomainEngine:
         with pytest.raises(ValueError, match="Unsupported format"):
             engine.export_results({}, "xml")
     
+    @pytest.mark.p2
     def test_base_engine_get_status(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         
@@ -106,6 +113,7 @@ class TestBaseDomainEngine:
 class TestTimelineAnalyzer:
     """Tests for TimelineAnalyzer"""
     
+    @pytest.mark.p2
     def test_timeline_analyzer_init(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -114,6 +122,7 @@ class TestTimelineAnalyzer:
         assert analyzer._initialized is False
         assert analyzer.timeline_agent is None
     
+    @pytest.mark.p2
     def test_timeline_analyzer_init_with_config(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -121,6 +130,7 @@ class TestTimelineAnalyzer:
         analyzer = TimelineAnalyzer(config)
         assert analyzer.config == config
     
+    @pytest.mark.p2
     def test_build_visualization_data_empty(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -132,6 +142,7 @@ class TestTimelineAnalyzer:
         assert result["date_range"]["start"] is None
         assert result["date_range"]["end"] is None
     
+    @pytest.mark.p2
     def test_build_visualization_data_with_events(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -154,6 +165,7 @@ class TestTimelineAnalyzer:
         assert len(result["conflicts"]) == 1
         assert result["conflicts"][0]["events_count"] == 2
     
+    @pytest.mark.p2
     def test_analyze_patterns_empty(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -161,6 +173,7 @@ class TestTimelineAnalyzer:
         result = analyzer._analyze_patterns([])
         assert result == {}
     
+    @pytest.mark.p2
     def test_analyze_patterns_single_event(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -170,6 +183,7 @@ class TestTimelineAnalyzer:
         assert result["total_events"] == 1
         assert result["average_interval"] == 0
     
+    @pytest.mark.p2
     def test_analyze_patterns_multiple_events(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -185,6 +199,7 @@ class TestTimelineAnalyzer:
         assert result["total_events"] == 4
         assert result["average_interval"] == 2.0  # (1+2+3)/3
     
+    @pytest.mark.p2
     def test_calculate_timeline_span_empty(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -192,6 +207,7 @@ class TestTimelineAnalyzer:
         result = analyzer._calculate_timeline_span([])
         assert result is None
     
+    @pytest.mark.p2
     def test_calculate_timeline_span_single(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -199,6 +215,7 @@ class TestTimelineAnalyzer:
         result = analyzer._calculate_timeline_span([{"date": "2024-01-01"}])
         assert result is None
     
+    @pytest.mark.p2
     def test_calculate_timeline_span_multiple(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -219,6 +236,7 @@ class TestTimelineAnalyzer:
 class TestDisputeExtractionEngine:
     """Tests for DisputeExtractionEngine"""
     
+    @pytest.mark.p2
     def test_dispute_engine_init(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -227,6 +245,7 @@ class TestDisputeExtractionEngine:
         assert engine._initialized is False
         assert engine.dispute_agent is None
     
+    @pytest.mark.p2
     def test_dispute_engine_init_with_config(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -234,6 +253,7 @@ class TestDisputeExtractionEngine:
         engine = DisputeExtractionEngine(config)
         assert engine.config == config
     
+    @pytest.mark.p2
     def test_calculate_severity_default(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -244,6 +264,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 0.5
     
+    @pytest.mark.p2
     def test_calculate_severity_critical(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -254,6 +275,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 0.8  # 0.5 + 0.3
     
+    @pytest.mark.p2
     def test_calculate_severity_high(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -264,6 +286,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 0.7  # 0.5 + 0.2
     
+    @pytest.mark.p2
     def test_calculate_severity_low(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -274,6 +297,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 0.3  # 0.5 - 0.2
     
+    @pytest.mark.p2
     def test_calculate_severity_max_cap(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -284,6 +308,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 1.0  # min(1.0, 0.9 + 0.3)
     
+    @pytest.mark.p2
     def test_calculate_severity_min_cap(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -294,6 +319,7 @@ class TestDisputeExtractionEngine:
         severity = engine._calculate_severity(item)
         assert severity == 0.0  # max(0.0, 0.1 - 0.2)
     
+    @pytest.mark.p2
     def test_calculate_severity_no_description(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -312,10 +338,12 @@ class TestDisputeExtractionEngine:
 class TestDelayNarrativeGenerator:
     """Tests for DelayNarrativeGenerator"""
     
+    @pytest.mark.p2
     def test_delay_narrative_import(self):
         from mahoun.domain.delay_narrative import DelayNarrativeGenerator
         assert DelayNarrativeGenerator is not None
     
+    @pytest.mark.p2
     def test_delay_narrative_init(self):
         from mahoun.domain.delay_narrative import DelayNarrativeGenerator
         
@@ -330,6 +358,7 @@ class TestDelayNarrativeGenerator:
 class TestDomainInit:
     """Tests for domain module initialization"""
     
+    @pytest.mark.p2
     def test_domain_init_imports(self):
         from mahoun.domain.base_engine import BaseDomainEngine
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
@@ -350,6 +379,7 @@ class TestTimelineAnalyzerAsync:
     """Async tests for TimelineAnalyzer with mocked dependencies"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_success(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -379,6 +409,7 @@ class TestTimelineAnalyzerAsync:
         assert result["metadata"]["has_conflicts"] is False
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_failure(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -401,6 +432,7 @@ class TestTimelineAnalyzerAsync:
         assert result["timeline"] == []
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_exception(self):
         from mahoun.domain.timeline_analyzer import TimelineAnalyzer
         
@@ -423,6 +455,7 @@ class TestDisputeExtractionAsync:
     """Async tests for DisputeExtractionEngine with mocked dependencies"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_success(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -453,6 +486,7 @@ class TestDisputeExtractionAsync:
         assert result["disputes"][0]["severity"] > 0.6  # Adjusted for critical keyword
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_sorts_by_severity(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         
@@ -480,6 +514,7 @@ class TestDisputeExtractionAsync:
         assert severities == sorted(severities, reverse=True)
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_analyze_failure(self):
         from mahoun.domain.dispute_extractor import DisputeExtractionEngine
         

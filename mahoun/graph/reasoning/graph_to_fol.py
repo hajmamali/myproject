@@ -65,6 +65,7 @@ from mahoun.reasoning.first_order_logic import Atom, Term, TermType
 
 # Import graph components
 from mahoun.graph.ultra_graph_builder import GraphNode, GraphEdge, UltraGraphBuilder
+from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -1497,10 +1498,10 @@ class GraphToFOLConverter:
             ConversionResult with all facts and combined metadata
 
         Example:
-            >>> from mahoun.graph import UltraGraphBuilder
+            >>> from mahoun.graph import ConcurrentGraphBuilder
             >>> from mahoun.graph.reasoning import GraphToFOLConverter
             >>>
-            >>> graph = UltraGraphBuilder()
+            >>> graph = ConcurrentGraphBuilder()
             >>> # ... build graph ...
             >>>
             >>> converter = GraphToFOLConverter()
@@ -1587,10 +1588,10 @@ def convert_graph_to_facts(
         ConversionResult with facts and metadata
 
     Example:
-        >>> from mahoun.graph import UltraGraphBuilder
+        >>> from mahoun.graph import ConcurrentGraphBuilder
         >>> from mahoun.graph.reasoning import convert_graph_to_facts
         >>>
-        >>> graph = UltraGraphBuilder()
+        >>> graph = ConcurrentGraphBuilder()
         >>> # ... build graph ...
         >>>
         >>> result = convert_graph_to_facts(graph)
@@ -1616,9 +1617,9 @@ def test_graph_to_fol_converter():
     print("=" * 60)
 
     # Create sample graph
-    from mahoun.graph import UltraGraphBuilder
+    from mahoun.graph import ConcurrentGraphBuilder
 
-    graph = UltraGraphBuilder()
+    graph = ConcurrentGraphBuilder()
 
     # Sample entities
     entities = [

@@ -1,0 +1,110 @@
+{
+  "executor_name": "EmbeddingModelsExecutor",
+  "snapshot_date": "2026-08-07T03:05:09.999519",
+  "snapshot_version": "1.0.0",
+  "context_before": {
+    "timestamp": 1786059309.6744902,
+    "services": [
+      "neo4j_connection",
+      "governance_controller"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "ULTRA"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_after": {
+    "timestamp": 1786059309.9994702,
+    "services": [
+      "neo4j_connection",
+      "governance_controller"
+    ],
+    "governance_validated": true,
+    "config": {
+      "profile": "ULTRA"
+    },
+    "runtime_info": {
+      "start_time": 1234567890.0
+    },
+    "metrics": {}
+  },
+  "context_mutations": {
+    "services_added": [],
+    "services_removed": []
+  },
+  "service_registrations": [],
+  "metrics_emitted": {},
+  "metrics_invariants": {
+    "monotonic_increase": true
+  },
+  "events": [
+    {
+      "type": "hard_test_started",
+      "timestamp": 1786059309.674529,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "scenario": "rollback_race_conditions",
+        "profile": "ULTRA",
+        "expected_complexity": "high"
+      }
+    },
+    {
+      "type": "expected_bootstrap_exception",
+      "timestamp": 1786059309.8859782,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "phase": "EMBEDDING_MODELS",
+        "message": "[Phase: EMBEDDING_MODELS] Advanced initialization failed: 'FailingEmbeddingService' object has no attribute 'initialize' | Details: {'error': \"'FailingEmbeddingService' object has no attribute 'initialize'\", 'circuit_breaker_state': 'closed', 'loaded_models': ['paraphrase-multilingual-mpnet-base-v2'], 'performance_metrics': {'paraphrase-multilingual-mpnet-base-v2': {'load_time_ms': 190.48571586608887, 'memory_usage_mb': 2048.0, 'last_load_time': 1786059309.8654416}}} (Caused by: 'FailingEmbeddingService' object has no attribute 'initialize')",
+        "partial_state": "models_partially_loaded"
+      }
+    },
+    {
+      "type": "rollback_starting",
+      "timestamp": 1786059309.8859851,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "context_services_count": 2,
+        "timestamp": 1786059309.8859837
+      }
+    },
+    {
+      "type": "rollback_completed",
+      "timestamp": 1786059309.9994555,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "exceptions_count": 0,
+        "concurrent_operations": 2,
+        "cleanup_called": true
+      }
+    },
+    {
+      "type": "invariant_checks",
+      "timestamp": 1786059309.9995096,
+      "phase": "EmbeddingModelsExecutor",
+      "data": {
+        "execution_failed": true,
+        "rollback_attempted": true,
+        "context_services_final": [
+          "neo4j_connection",
+          "governance_controller"
+        ],
+        "cleanup_errors_count": 0
+      }
+    }
+  ],
+  "rollback_sequence": [],
+  "rollback_invariants": {
+    "reverse_order": true
+  },
+  "exception_fingerprints": {},
+  "timing": {
+    "execution_time_ms": 325.117826461792,
+    "start_time": 1786059309.6744843
+  },
+  "timestamp": 1786059309.9996102,
+  "metadata": {}
+}

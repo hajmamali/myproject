@@ -97,17 +97,20 @@ class ForwardChainingEngine:
     Thread-safe: Uses immutable data structures.
     """
     
-    def __init__(self, max_iterations: int = 1000) -> None:
+    def __init__(self, max_iterations: int = 1000, use_rete: bool = False) -> None:
         """
         Initialize forward chaining engine.
         
         Args:
             max_iterations: Maximum iterations to prevent infinite loops
+            use_rete: If True, attempt Rete algorithm first with automatic
+                      fallback to traditional forward chaining on failure.
         """
         self.fol_engine = FirstOrderLogicEngine()
         self.max_iterations = max_iterations
+        self.use_rete = use_rete
         self._unification_cache: Dict[Tuple[Atom, Atom], Optional[Substitution]] = {}
-        log.info(f"Initialized ForwardChainingEngine (max_iterations={max_iterations})")
+        log.info(f"Initialized ForwardChainingEngine (max_iterations={max_iterations}, use_rete={use_rete})")
     
     def infer(
         self,
@@ -162,6 +165,13 @@ class ForwardChainingEngine:
         for rule in rules:
             if not rule.is_rule():
                 raise ValueError(f"Expected rule, got: {rule}")
+        
+        # Try Rete if enabled
+        if self.use_rete:
+            try:
+                return self._infer_with_rete(facts, rules, goal)
+            except Exception as e:
+                log.warning(f"Rete failed, falling back to traditional forward chaining: {e}")
         
         # Initialize working memory with facts
         known_facts: Set[Atom] = set()
@@ -288,6 +298,97 @@ class ForwardChainingEngine:
             iterations=iteration,
             goal_reached=goal_reached,
             statistics=statistics,
+        )
+    
+    def _infer_with_rete(
+        self,
+        facts: List[Clause],
+        rules: List[Clause],
+        goal: Optional[Atom] = None,
+    ) -> ForwardChainingResult:
+        """
+        Perform forward chaining using Rete algorithm with automatic fallback.
+        
+        Converts internal Clause/Atom types to reasoning_logic types,
+        runs Rete, and converts results back. If any step fails,
+        raises the exception so the caller can fall back to traditional
+        forward chaining.
+        """
+        from reasoning_logic.core import (
+            Atom as RLAtom,
+            Fact as RLFact,
+            Rule as RLRule,
+            Term as RLTerm,
+            TermType as RLTermType,
+        )
+        from reasoning_logic.rete import ReteForwardChaining
+        
+        def _to_rl_term(term) -> RLTerm:
+            return RLTerm(term.name, RLTermType(term.term_type.value), tuple(_to_rl_term(t) for t in term.args))
+        
+        def _to_rl_atom(atom: Atom) -> RLAtom:
+            return RLAtom(atom.predicate, tuple(_to_rl_term(t) for t in atom.terms))
+        
+        # Convert facts (must be ground for Rete)
+        rl_facts: List[RLFact] = []
+        for clause in facts:
+            if clause.is_fact() and clause.head is not None:
+                if not clause.head.is_ground():
+                    raise ValueError(f"Rete requires ground facts, got: {clause}")
+                rl_facts.append(RLFact(clause.head.predicate, tuple(_to_rl_term(t) for t in clause.head.terms)))
+        
+        # Convert rules
+        rl_rules: List[RLRule] = []
+        for clause in rules:
+            if clause.is_rule() and clause.head is not None:
+                head = _to_rl_atom(clause.head)
+                body = [_to_rl_atom(a) for a in clause.body]
+                rl_rules.append(RLRule(premise=body, conclusion=head))
+        
+        if not rl_rules:
+            raise ValueError("No rules to run Rete")
+        
+        # Run Rete
+        rete_engine = ReteForwardChaining(rl_rules)
+        derived = rete_engine.run(rl_facts, self.max_iterations)
+        
+        # Convert derived facts back
+        derived_facts: Set[Atom] = set()
+        proof_trace: List[ProofStep] = []
+        
+        # Include initial facts in result (consistent with traditional path)
+        for clause in facts:
+            if clause.is_fact() and clause.head is not None:
+                derived_facts.add(clause.head)
+                proof_trace.append(ProofStep(
+                    derived_fact=clause.head,
+                    rule_used=None,
+                    premises=tuple(),
+                    substitution={},
+                    proof_hash=self.fol_engine.compute_proof_hash(clause.head, {}),
+                ))
+        
+        for fact in derived:
+            atom = Atom(fact.predicate, tuple(fact.terms))
+            derived_facts.add(atom)
+            proof_trace.append(ProofStep(
+                derived_fact=atom,
+                rule_used=None,
+                premises=tuple(),
+                substitution={},
+                proof_hash=self.fol_engine.compute_proof_hash(atom, {}),
+            ))
+        
+        goal_reached = False
+        if goal is not None and goal in derived_facts:
+            goal_reached = True
+        
+        return ForwardChainingResult(
+            derived_facts=frozenset(derived_facts),
+            proof_trace=proof_trace,
+            iterations=1,
+            goal_reached=goal_reached,
+            statistics={"mode": "rete", "facts_derived": len(derived)},
         )
     
     def _find_matches(

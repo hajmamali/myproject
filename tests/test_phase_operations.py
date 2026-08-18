@@ -69,6 +69,7 @@ def temp_workspace(tmp_path):
 class TestPhase1Operations:
     """Test Phase 1: Create directories."""
     
+    @pytest.mark.p2
     def test_create_infrastructure_dir(self, temp_workspace):
         """Test creating infrastructure directory."""
         result = Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -77,6 +78,7 @@ class TestPhase1Operations:
         assert (temp_workspace / "mahoun/infrastructure").exists()
         assert (temp_workspace / "mahoun/infrastructure/__init__.py").exists()
     
+    @pytest.mark.p2
     def test_create_infrastructure_dir_dry_run(self, temp_workspace):
         """Test dry run doesn't create directory."""
         result = Phase1Operations.create_infrastructure_dir(dry_run=True)
@@ -84,6 +86,7 @@ class TestPhase1Operations:
         assert result is True
         assert not (temp_workspace / "mahoun/infrastructure").exists()
     
+    @pytest.mark.p2
     def test_create_monitoring_dir(self, temp_workspace):
         """Test creating monitoring subdirectory."""
         # First create parent
@@ -95,6 +98,7 @@ class TestPhase1Operations:
         assert (temp_workspace / "mahoun/infrastructure/monitoring").exists()
         assert (temp_workspace / "mahoun/infrastructure/monitoring/__init__.py").exists()
     
+    @pytest.mark.p2
     def test_create_observability_dir(self, temp_workspace):
         """Test creating observability subdirectory."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -108,6 +112,7 @@ class TestPhase1Operations:
 class TestPhase2Operations:
     """Test Phase 2: Copy files."""
     
+    @pytest.mark.p2
     def test_copy_health_cache(self, temp_workspace):
         """Test copying health_cache.py."""
         # Setup infrastructure
@@ -122,6 +127,7 @@ class TestPhase2Operations:
         assert dest.exists()
         assert "HealthCache" in dest.read_text()
     
+    @pytest.mark.p2
     def test_copy_health_cache_dry_run(self, temp_workspace):
         """Test dry run doesn't copy file."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -133,6 +139,7 @@ class TestPhase2Operations:
         assert dest is None
         assert not (temp_workspace / "mahoun/infrastructure/monitoring/health_cache.py").exists()
     
+    @pytest.mark.p2
     def test_copy_metrics_module(self, temp_workspace):
         """Test copying metrics module."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -145,6 +152,7 @@ class TestPhase2Operations:
         assert dest.exists()
         assert (dest / "__init__.py").exists()
     
+    @pytest.mark.p2
     def test_copy_monitoring_module(self, temp_workspace):
         """Test copying monitoring module."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -160,6 +168,7 @@ class TestPhase2Operations:
 class TestPhase3Operations:
     """Test Phase 3: Add deprecation warnings."""
     
+    @pytest.mark.p2
     def test_add_deprecation_to_health_cache(self, temp_workspace):
         """Test adding deprecation warning."""
         # Setup
@@ -181,6 +190,7 @@ class TestPhase3Operations:
         # Check backup exists
         assert (temp_workspace / "mahoun/core/health_cache.py.backup").exists()
     
+    @pytest.mark.p2
     def test_add_deprecation_dry_run(self, temp_workspace):
         """Test dry run doesn't modify file."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -194,6 +204,7 @@ class TestPhase3Operations:
         assert result is True
         assert (temp_workspace / "mahoun/core/health_cache.py").read_text() == original_content
     
+    @pytest.mark.p2
     def test_add_deprecation_to_metrics(self, temp_workspace):
         """Test adding deprecation to metrics module."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -210,6 +221,7 @@ class TestPhase3Operations:
 class TestPhase7Operations:
     """Test Phase 7: Remove deprecated files."""
     
+    @pytest.mark.p2
     def test_remove_health_cache(self, temp_workspace):
         """Test removing deprecated file."""
         # Setup
@@ -224,6 +236,7 @@ class TestPhase7Operations:
         assert not (temp_workspace / "mahoun/core/health_cache.py").exists()
         assert (temp_workspace / "mahoun/core/archive/health_cache.py").exists()
     
+    @pytest.mark.p2
     def test_remove_health_cache_dry_run(self, temp_workspace):
         """Test dry run doesn't remove file."""
         result = Phase7Operations.remove_health_cache(dry_run=True)
@@ -231,6 +244,7 @@ class TestPhase7Operations:
         assert result is True
         assert (temp_workspace / "mahoun/core/health_cache.py").exists()
     
+    @pytest.mark.p2
     def test_remove_metrics_module(self, temp_workspace):
         """Test removing metrics module."""
         Phase1Operations.create_infrastructure_dir(dry_run=False)
@@ -247,6 +261,7 @@ class TestPhase7Operations:
 class TestPhaseOperationsIntegration:
     """Integration tests for complete phase workflows."""
     
+    @pytest.mark.p2
     def test_phase_1_to_3_workflow(self, temp_workspace):
         """Test complete workflow from Phase 1 to 3."""
         # Phase 1: Create directories
@@ -274,6 +289,7 @@ class TestPhaseOperationsIntegration:
         assert "DEPRECATED" in old_content
         assert "warnings.warn" in old_content
     
+    @pytest.mark.p2
     def test_idempotency(self, temp_workspace):
         """Test operations are idempotent."""
         # Run Phase 1 twice

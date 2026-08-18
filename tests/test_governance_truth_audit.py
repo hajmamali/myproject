@@ -51,6 +51,7 @@ class TestAttack1_APILayerRawSession:
     This is a direct write path that bypasses MutationAuthorizationBoundary.
     """
     
+    @pytest.mark.p2
     def test_claim_1_api_bypass_exists(self):
         """
         FALSIFY CLAIM 1: "All graph mutations MUST pass through Governance Kernel"
@@ -121,6 +122,7 @@ class TestAttack1_APILayerRawSession:
             "api/database.py does NOT call MutationAuthorizationBoundary - UNPROTECTED"
         )
 
+    @pytest.mark.p2
     def test_claim_2_api_bypasses_mutation_boundary(self):
         """
         FALSIFY CLAIM 2: "No direct mutation path exists outside MutationAuthorizationBoundary"
@@ -184,6 +186,7 @@ class TestAttack2_ContextForgery:
     - Mutate graph without actual governance context
     """
     
+    @pytest.mark.p2
     def test_claim_3_context_forgery_attack(self):
         """
         FALSIFY CLAIM 3: "GovernanceContext cannot be bypassed or spoofed"
@@ -261,6 +264,7 @@ class TestAttack3_ProviderSwap:
     Attack: Replace the LLM or embedding provider, see if governance still works.
     """
     
+    @pytest.mark.p2
     def test_claim_8_provider_swap_affects_governance(self):
         """
         Can we swap the LLM provider and bypass governance?
@@ -295,6 +299,7 @@ class TestAttack3_ProviderSwap:
             except Exception:
                 pass  # Expected - governance is independent
 
+    @pytest.mark.p2
     def test_claim_9_embedding_decoupling(self):
         """
         FALSIFY CLAIM 9: "Embedding/model layer is fully decoupled from governance logic"
@@ -343,6 +348,7 @@ class TestAttack4_BootstrapRemoval:
     Can runtime still execute?
     """
     
+    @pytest.mark.p2
     def test_claim_5_kernel_is_optional(self):
         """
         If we skip GovernanceContextManager initialization, can the system
@@ -393,6 +399,7 @@ class TestAttack5_ReasoningBypass:
     Can reasoning execute directly to Neo4j without governance?
     """
     
+    @pytest.mark.p2
     def test_claim_6_reasoning_without_governance(self):
         """
         Check if reasoning layer has direct graph mutation paths.
@@ -433,6 +440,7 @@ class TestComprehensiveBypassVectors:
     Check for ALL known bypass vectors.
     """
     
+    @pytest.mark.p2
     def test_all_direct_neo4j_access_points(self):
         """
         Find ALL places where Neo4j is accessed directly without governance.
@@ -508,6 +516,7 @@ class TestVerdictSummary:
     Final verdict on each claim.
     """
     
+    @pytest.mark.p2
     def test_print_audit_findings(self):
         """
         Print comprehensive audit findings.

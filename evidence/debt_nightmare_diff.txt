@@ -1,0 +1,3 @@
+diff tests/nightmare_aml_test.py tests/test_nightmare_aml.py
+(No differences - files are identical)
+Exit code: 0

@@ -419,12 +419,7 @@ class MahounSettings(BaseSettings):
         default=True,
         description="Enable RAG features"
     )
-    
-    enable_self_improvement: bool = Field(
-        default=False,
-        description="Enable self-improvement system"
-    )
-    
+
     # =========================================================================
     # Pydantic Settings Configuration (v2 preferred)
     # =========================================================================

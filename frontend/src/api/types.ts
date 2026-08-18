@@ -1,181 +1,111 @@
 /**
- * TypeScript interfaces for MAHOUN Legal Search API
- * 
- * These match the backend Pydantic models in:
- * - services/search/legal_search_service.py
- * - api/routers/search.py
+ * API Types and Interfaces
  */
 
-/**
- * Search filters for narrowing verdict results
- */
 export interface LegalSearchFilters {
-  /** Court level, e.g., "دادگاه تجدیدنظر استان" */
-  court_level?: string | null;
-  
-  /** Type of case, e.g., "اعتراض ثالث اجرایی / رفع توقیف" */
+  query?: string | null;
+  jurisdiction?: string | null;
+  caseType?: string | null;
   case_type?: string | null;
-  
-  /** Whether the verdict is final (قطعی) */
-  is_final?: boolean | null;
-  
-  /** Law article number to filter by, e.g., "348" */
+  dateRange?: {
+    from: string;
+    to: string;
+  } | null;
+  courtLevel?: string | null;
+  court_level?: string | null;
   article_no?: string | null;
-  
-  /** Name of law to filter by, e.g., "قانون آیین دادرسی مدنی" */
   law_name?: string | null;
-  
-  /** Tags to filter by */
   tags?: string[] | null;
-}
-
-/**
- * A single search hit representing a relevant verdict chunk
- */
-export interface LegalSearchHit {
-  /** Unique identifier of the verdict */
-  verdict_id: string;
-  
-  /** Relevance score (0-1, higher is better) */
-  score: number;
-  
-  /** Section of the verdict this chunk is from */
-  section: string;
-  
-  /** The text content of the chunk */
-  chunk_text: string;
-  
-  /** Type of case */
-  case_type?: string | null;
-  
-  /** Court level */
-  court_level?: string | null;
-  
-  /** Procedure stage */
-  procedure_stage?: string | null;
-  
-  /** Whether final verdict */
+  limit?: number | null;
+  offset?: number | null;
   is_final?: boolean | null;
-  
-  /** Associated tags */
+}
+
+export interface LegalSearchHit {
+  id: string;
+  verdict_id?: string;
+  title: string;
+  content: string;
+  chunk_text?: string;
+  case_number?: string;
+  court?: string;
+  date?: string;
+  judges?: string[];
+  parties?: string[];
+  case_type?: string;
+  court_level?: string;
+  procedure_stage?: string;
+  is_final?: boolean | null;
+  score?: number;
+  section?: string;
+  law_articles: Array<{
+    article: string;
+    section?: string;
+    description?: string;
+  }>;
   tags: string[];
-  
-  /** Referenced law articles */
-  law_articles: string[];
-  
-  /** Additional metadata */
-  extra_metadata?: Record<string, unknown>;
+  relevance_score?: number;
+  verdict?: string;
+  summary?: string;
+  full_text_url?: string;
+  metadata?: Record<string, any>;
 }
 
-/**
- * Request payload for verdict search
- */
-export interface VerdictSearchRequest {
-  /** Natural language search query */
-  query: string;
-  
-  /** Optional filters to narrow results */
-  filters?: LegalSearchFilters | null;
-  
-  /** Maximum number of results to return (default: 10) */
-  limit?: number;
-  
-  /** Whether to enrich results with graph data */
-  enrich_with_graph?: boolean;
-}
-
-/**
- * Response from verdict search endpoint
- */
-export interface VerdictSearchResponse {
-  /** List of search results */
-  results: LegalSearchHit[];
-  
-  /** Total number of results returned */
+export interface SearchResult {
+  hits: LegalSearchHit[];
+  results?: LegalSearchHit[];
   total: number;
-  
-  /** Original search query */
   query: string;
-  
-  /** Filters that were applied */
-  filters_applied?: Record<string, unknown> | null;
+  executionTime: number;
+  filters?: LegalSearchFilters;
 }
 
-/**
- * Error response structure
- */
-export interface APIError {
-  detail: string;
-  status_code?: number;
+export interface JobStatusResponse {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'queued' | 'processing';
+  progress?: number | {
+    percent?: number;
+    current_step?: string;
+  };
+  error?: string;
+  result?: any;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Training configuration for model fine-tuning
- */
-export interface TrainingConfig {
-  model_name: string;
-  training_mode: "full_finetune" | "lora" | "qlora" | "dora" | "adalora";
-  quantization_mode?: "none" | "int8" | "int4" | "fp8";
-  num_train_epochs: number;
-  per_device_train_batch_size: number;
-  per_device_eval_batch_size: number;
-  gradient_accumulation_steps: number;
-  learning_rate: number;
-  weight_decay: number;
-  warmup_ratio: number;
-  max_grad_norm: number;
-  dataset_name?: string;
-  output_dir?: string;
-  run_name?: string;
-  seed?: number;
-}
-
-/**
- * Training job status and progress
- */
 export interface TrainingJob {
-  job_id: string;
-  status: "pending" | "running" | "completed" | "failed";
-  config: TrainingConfig;
-  progress?: {
-    epoch: number;
-    step: number;
-    total_steps: number;
-    loss: number;
-    learning_rate: number;
-  };
-  metrics?: {
-    train_loss: number;
-    eval_loss?: number;
-    accuracy?: number;
-    perplexity?: number;
-  };
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  error_message?: string;
+  id: string;
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  model?: string;
+  datasetSize?: number;
+  createdAt: string;
+  completedAt?: string;
+  error?: string;
 }
 
-/**
- * Model information for selection
- */
 export interface ModelOption {
   id: string;
   name: string;
-  provider: "huggingface" | "openai" | "anthropic" | "local";
-  size: string;
-  capabilities: string[];
-  description: string;
-  recommended?: boolean;
+  provider: string;
+  version: string;
+  description?: string;
+  parameters?: Record<string, any>;
 }
 
-/**
- * Training preset configuration
- */
-export interface TrainingPreset {
+export interface VerdictRequest {
+  caseId: string;
+  question: string;
+  context?: string;
+  filters?: LegalSearchFilters;
+}
+
+export interface VerdictResponse {
   id: string;
-  name: string;
-  description: string;
-  config: Partial<TrainingConfig>;
+  verdict: string;
+  confidence: number;
+  sources: LegalSearchHit[];
+  reasoning: string;
+  timestamp: string;
 }
-

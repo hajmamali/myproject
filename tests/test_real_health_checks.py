@@ -13,6 +13,7 @@ from pathlib import Path
 class TestRealHealthChecks:
     """تست‌های سخت‌گیرانه برای health checks واقعی"""
     
+    @pytest.mark.p2
     def test_no_fake_ok_in_health_endpoint(self):
         """تست 1: نباید status همیشه 'ok' باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -44,6 +45,7 @@ class TestRealHealthChecks:
             f"Status MUST be calculated based on actual component health"
         )
     
+    @pytest.mark.p2
     def test_no_todo_deferred_in_health_checks(self):
         """تست 2: نباید TODO-DEFERRED در health checks باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -59,6 +61,7 @@ class TestRealHealthChecks:
             "❌ Health check implementation incomplete"
         )
     
+    @pytest.mark.p2
     def test_health_endpoint_performs_postgres_query(self):
         """تست 3: health endpoint باید کوئری واقعی PostgreSQL اجرا کند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -74,6 +77,7 @@ class TestRealHealthChecks:
             "❌ PostgreSQL health check MUST use connection pool"
         )
     
+    @pytest.mark.p2
     def test_health_endpoint_performs_neo4j_query(self):
         """تست 4: health endpoint باید کوئری واقعی Neo4j اجرا کند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -89,6 +93,7 @@ class TestRealHealthChecks:
             "❌ Neo4j health check MUST use driver"
         )
     
+    @pytest.mark.p2
     def test_health_endpoint_performs_redis_ping(self):
         """تست 5: health endpoint باید PING واقعی Redis اجرا کند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -99,6 +104,7 @@ class TestRealHealthChecks:
             "❌ Redis health check MUST execute PING command"
         )
     
+    @pytest.mark.p2
     def test_health_endpoint_measures_latency(self):
         """تست 6: health endpoint باید latency را اندازه‌گیری کند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -113,6 +119,7 @@ class TestRealHealthChecks:
             "❌ Health check MUST use time measurements"
         )
     
+    @pytest.mark.p2
     def test_health_endpoint_captures_errors(self):
         """تست 7: health endpoint باید error messages را capture کند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -128,6 +135,7 @@ class TestRealHealthChecks:
             "❌ Health check MUST handle exceptions gracefully"
         )
     
+    @pytest.mark.p2
     def test_health_status_has_multiple_states(self):
         """تست 8: status باید multiple states داشته باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -142,6 +150,7 @@ class TestRealHealthChecks:
             f"Found only: {found_statuses}"
         )
     
+    @pytest.mark.p2
     def test_health_response_includes_components(self):
         """تست 9: response باید اطلاعات هر component را داشته باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -152,6 +161,7 @@ class TestRealHealthChecks:
             "❌ Health response MUST include 'components' with individual status"
         )
     
+    @pytest.mark.p2
     def test_health_response_includes_timestamp(self):
         """تست 10: response باید timestamp داشته باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -165,6 +175,7 @@ class TestRealHealthChecks:
             "❌ Health response MUST use ISO format timestamp"
         )
     
+    @pytest.mark.p2
     def test_overall_status_calculated_from_components(self):
         """تست 11: overall status باید از component statuses محاسبه شود"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -180,6 +191,7 @@ class TestRealHealthChecks:
             "❌ Overall status MUST be calculated from component states"
         )
     
+    @pytest.mark.p2
     def test_desktop_minimal_mode_returns_degraded_not_ok(self):
         """تست 12: desktop_minimal mode باید degraded برگرداند نه ok"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -199,6 +211,7 @@ class TestRealHealthChecks:
             "❌ Health check MUST check for desktop_minimal mode"
         )
     
+    @pytest.mark.p2
     def test_no_hardcoded_false_for_availability(self):
         """تست 13: نباید db_available = False hardcoded باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -222,6 +235,7 @@ class TestRealHealthChecks:
                 "\n".join(violations[:5])
             )
     
+    @pytest.mark.p2
     def test_health_check_async_compatible(self):
         """تست 14: health check باید async باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -237,6 +251,7 @@ class TestRealHealthChecks:
             "❌ Health check MUST use await for database operations"
         )
     
+    @pytest.mark.p2
     def test_all_components_checked(self):
         """تست 15: تمام components اصلی باید check شوند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -253,6 +268,7 @@ class TestRealHealthChecks:
             f"❌ Health check MUST check these components: {missing}"
         )
     
+    @pytest.mark.p2
     def test_error_messages_included_in_response(self):
         """تست 16: error messages باید در response باشند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -263,6 +279,7 @@ class TestRealHealthChecks:
             "❌ Component status MUST include error field"
         )
     
+    @pytest.mark.p2
     def test_latency_in_milliseconds(self):
         """تست 17: latency باید بر حسب milliseconds باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -276,6 +293,7 @@ class TestRealHealthChecks:
             "❌ Must convert seconds to milliseconds"
         )
     
+    @pytest.mark.p2
     def test_no_silent_failures(self):
         """تست 18: نباید failure ها silent باشند"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -286,6 +304,7 @@ class TestRealHealthChecks:
             "❌ Health check MUST log errors for debugging"
         )
     
+    @pytest.mark.p2
     def test_response_structure_complete(self):
         """تست 19: response structure باید کامل باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -303,6 +322,7 @@ class TestRealHealthChecks:
             f"❌ Health response MUST include: {missing}"
         )
     
+    @pytest.mark.p2
     def test_desktop_minimal_mode_graceful_degradation(self):
         """تست 20: desktop_minimal mode باید graceful degradation داشته باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -323,6 +343,7 @@ class TestHealthCheckIntegration:
     """تست‌های integration برای health check"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_health_endpoint_returns_json(self):
         """تست 21: health endpoint باید JSON برگرداند"""
         try:
@@ -344,6 +365,7 @@ class TestHealthCheckIntegration:
             pytest.skip("Could not import health endpoint")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_health_status_never_constant_ok(self):
         """تست 22: status نباید همیشه ok باشد"""
         try:
@@ -364,6 +386,7 @@ class TestHealthCheckIntegration:
             pytest.skip("Could not import health endpoint")
     
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_components_have_required_fields(self):
         """تست 23: هر component باید فیلدهای required داشته باشد"""
         try:
@@ -390,6 +413,7 @@ class TestHealthCheckIntegration:
 class TestHealthCheckRegression:
     """تست‌های regression"""
     
+    @pytest.mark.p2
     def test_no_regression_to_fake_ok(self):
         """بررسی regression به fake 'ok'"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -403,6 +427,7 @@ class TestHealthCheckRegression:
             f"⚠️  Found {ok_count} instances of 'ok' - might be regression to fake status"
         )
     
+    @pytest.mark.p2
     def test_todo_deferred_count_zero(self):
         """شمارش TODO-DEFERRED - باید صفر باشد"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"
@@ -414,6 +439,7 @@ class TestHealthCheckRegression:
             f"❌ Found {todo_count} TODO-DEFERRED comments - implementation incomplete"
         )
     
+    @pytest.mark.p2
     def test_health_check_production_ready(self):
         """چک‌لیست نهایی - آماده production"""
         health_file = Path(__file__).parent.parent / "api" / "routers" / "system.py"

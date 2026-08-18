@@ -46,6 +46,7 @@ class TestAdvancedUnifiedReasoning:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_complex_legal_contract_analysis(self):
         """Test complex legal contract analysis using hybrid reasoning"""
         
@@ -86,6 +87,7 @@ class TestAdvancedUnifiedReasoning:
         print(f"   Execution time: {response.execution_time_ms:.2f}ms")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_multi_step_legal_reasoning(self):
         """Test multi-step legal reasoning with complex rule chains"""
         
@@ -124,6 +126,7 @@ class TestAdvancedUnifiedReasoning:
         print(f"✅ Multi-Step Legal Reasoning: Goal proved in {response.execution_time_ms:.2f}ms")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_neural_legal_question_answering(self):
         """Test neural reasoning for complex legal questions"""
         
@@ -154,6 +157,7 @@ class TestAdvancedUnifiedReasoning:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_large_scale_reasoning_performance(self):
         """Test performance with large knowledge bases"""
         
@@ -201,6 +205,7 @@ class TestAdvancedUnifiedReasoning:
         print(f"   Throughput: {facts_per_second:.0f} facts/second")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_concurrent_reasoning_stress(self):
         """Test concurrent reasoning under stress"""
         
@@ -250,6 +255,7 @@ class TestAdvancedUnifiedReasoning:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_complex_consistency_analysis(self):
         """Test advanced consistency checking with complex scenarios"""
         
@@ -289,6 +295,7 @@ class TestAdvancedUnifiedReasoning:
         print(f"   Issues found: {response.metadata.get('total_issues', 0)}")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_hybrid_mode_optimization(self):
         """Test hybrid mode's ability to optimize between symbolic and neural"""
         
@@ -350,6 +357,7 @@ class TestAdvancedUnifiedReasoning:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_real_world_contract_dispute(self):
         """Test real-world contract dispute scenario"""
         
@@ -424,6 +432,7 @@ class TestAdvancedUnifiedReasoning:
         print(f"   Neural explanation: {len(explanation_response.result)} characters")
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_enterprise_grade_reliability(self):
         """Test enterprise-grade reliability and error handling"""
         
@@ -503,6 +512,7 @@ class TestAdvancedUnifiedReasoning:
     # ================================================================
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_api_compatibility_and_versioning(self):
         """Test API compatibility and version handling"""
         
@@ -532,6 +542,7 @@ class TestAdvancedUnifiedReasoning:
         
         print(f"✅ API Compatibility Test: All convenience functions working")
     
+    @pytest.mark.p1
     def test_service_metadata_and_statistics(self):
         """Test service metadata and statistics collection"""
         
@@ -563,6 +574,7 @@ class TestPerformanceBenchmarks:
         self.service = UnifiedReasoningService(enable_neural=True)
     
     @pytest.mark.asyncio
+    @pytest.mark.p1
     async def test_throughput_benchmark(self):
         """Benchmark reasoning throughput"""
         

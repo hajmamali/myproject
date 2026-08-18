@@ -77,6 +77,8 @@ READ_QUERY = "MATCH (n:Case {id: $id}) RETURN n"
 # TEST 1: Thread isolation — state set in thread A must NOT bleed to thread B
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_thread_isolation():
     """Authorization set in thread A is invisible to thread B."""
     results = {}
@@ -111,6 +113,8 @@ def test_thread_isolation():
 # TEST 2: Nested authorization — tokens must be handled in LIFO order
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_nested_authorization_lifo():
     """Nested set/reset must restore state correctly at each level."""
     assert not _kernel_is_authorized()
@@ -142,6 +146,8 @@ def test_nested_authorization_lifo():
 # TEST 3: Exception mid-authorization — state clean after exception
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_state_clean_after_exception():
     """If an exception fires while authorized, reset in finally must clean state."""
     assert not _kernel_is_authorized()
@@ -161,6 +167,8 @@ def test_state_clean_after_exception():
 # TEST 4: MutationAuthorizationBoundary.inspect blocks AFTER exception cleanup
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_inspect_blocks_after_exception_cleanup():
     """After exception+reset, boundary must block mutations again."""
     from mahoun.core.governance.violations import GovernanceViolationError
@@ -180,6 +188,8 @@ def test_inspect_blocks_after_exception_cleanup():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
+@pytest.mark.p2
+@pytest.mark.p0
 async def test_async_coroutine_isolation():
     """Each coroutine has its own ContextVar copy — state set in one must not leak."""
     results = {}
@@ -207,6 +217,8 @@ async def test_async_coroutine_isolation():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
+@pytest.mark.p2
+@pytest.mark.p0
 async def test_async_concurrent_100_tasks_no_bleed():
     """100 concurrent tasks, each authorizes/de-authorizes independently."""
     violations = []
@@ -238,6 +250,8 @@ async def test_async_concurrent_100_tasks_no_bleed():
 # TEST 7: Thread pool — 50 workers, all must start and end unauthorized
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_thread_pool_50_workers_no_bleed():
     """50 concurrent threads each set/reset in isolation."""
     violations = []
@@ -277,6 +291,8 @@ def test_thread_pool_50_workers_no_bleed():
 # TEST 8: Forged bypass attempt — create a DIFFERENT ContextVar with same name
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_forged_contextvar_does_not_bypass():
     """A ContextVar with the same name is a different object — cannot bypass gate."""
     from contextvars import ContextVar
@@ -300,6 +316,8 @@ def test_forged_contextvar_does_not_bypass():
 # TEST 9: Rapid token storm — 10,000 cycles, final state must be False
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_rapid_token_storm():
     """10,000 set/reset cycles must leave state as False."""
     for _ in range(10_000):
@@ -316,6 +334,8 @@ def test_rapid_token_storm():
 # TEST 10: Cross-module simultaneous — kernel sets, boundary+kernel both read
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_cross_module_simultaneous_read():
     """State set via kernel helpers is immediately visible in boundary and vice versa."""
     from mahoun.core.governance_kernel.kernel import (
@@ -345,6 +365,8 @@ def test_cross_module_simultaneous_read():
 # TEST 11: Reentrancy — inspect is safe to call from within authorized context
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_reentrancy_inspect_inside_authorized():
     """inspect() called from inside an authorized block must pass without error."""
     token = _set(True)
@@ -362,6 +384,8 @@ def test_reentrancy_inspect_inside_authorized():
 # TEST 12: Import-time identity — re-importing module does not create new ContextVar
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_reimport_does_not_create_new_contextvar():
     """Forcing module reload must not produce a new ContextVar object."""
     canonical_before = _canonical()
@@ -380,6 +404,8 @@ def test_reimport_does_not_create_new_contextvar():
 # TEST 13: copy_context — propagates state correctly into spawned context
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_copy_context_propagates_authorization():
     """copy_context captures current state; changes inside do not leak out."""
     token = _set(True)
@@ -411,6 +437,8 @@ def test_copy_context_propagates_authorization():
 # TEST 14: Unicode-obfuscated Cypher must not bypass KernelMutationBoundary
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_unicode_obfuscated_mutation_blocked():
     """Full-width Unicode MERGE must be detected and blocked."""
     from mahoun.core.governance.violations import GovernanceViolationError
@@ -426,6 +454,8 @@ def test_unicode_obfuscated_mutation_blocked():
 # TEST 15: Compound scenario — thread spawns async loop, both observe same state
 # ---------------------------------------------------------------------------
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_thread_spawns_asyncio_loop_state_correct():
     """A thread running an asyncio event loop must have proper ContextVar isolation."""
     outer_results = {}

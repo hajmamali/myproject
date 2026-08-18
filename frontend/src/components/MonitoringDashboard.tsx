@@ -1,410 +1,374 @@
 /**
  * Monitoring Dashboard Component
  *
- * Real-time monitoring of training jobs, system metrics, and performance analytics
+ * Live system monitoring for the Studio. Polls real-time metrics and
+ * alerts from the backend, and lists detailed component health.
  */
 
-import { useState, useEffect } from "react";
-import {
-  ChartBarIcon,
-  ClockIcon,
-  CpuChipIcon,
-  ExclamationTriangleIcon,
-  PlayIcon,
-  StopIcon,
-  TrashIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
-import { TrainingJob, listTrainingJobs, stopTrainingJob, deleteTrainingJob } from "../api/trainingClient";
-import { getLegalMetrics, getDetailedHealth, getDashboardData, type LegalMetrics, type HealthStatus, type DashboardData } from "../api/monitoringClient";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiClient } from '../api/client';
 
-interface MonitoringDashboardProps {
-  className?: string;
-}
-
-interface SystemMetrics {
+interface RealtimeMetrics {
+  timestamp: string;
   cpu_usage: number;
   memory_usage: number;
-  gpu_usage?: number;
-  active_jobs: number;
-  total_jobs: number;
-  uptime: number;
+  disk_usage: number;
+  network_in: number;
+  network_out: number;
+  active_connections: number;
+  queries_per_second: number;
+  cache_hit_rate: number;
 }
 
-export default function MonitoringDashboard({ className = "" }: MonitoringDashboardProps) {
-  const [jobs, setJobs] = useState<TrainingJob[]>([]);
-  const [selectedJob, setSelectedJob] = useState<TrainingJob | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState<SystemMetrics>({
-    cpu_usage: 0,
-    memory_usage: 0,
-    gpu_usage: 0,
-    active_jobs: 0,
-    total_jobs: 0,
-    uptime: 0,
-  });
-  const [legalMetrics, setLegalMetrics] = useState<LegalMetrics | null>(null);
-  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
+interface HealthComponent {
+  component?: string;
+  status: 'healthy' | 'warning' | 'error' | string;
+  value: number;
+  unit: string;
+  threshold: number;
+  last_updated?: string;
+}
 
-  // Load training jobs
-  useEffect(() => {
-    loadJobs();
-    loadMetrics();
-    // Set up real-time updates
-    const jobsInterval = setInterval(loadJobs, 5000); // Update every 5 seconds
-    const metricsInterval = setInterval(loadMetrics, 10000); // Update every 10 seconds
-    return () => {
-      clearInterval(jobsInterval);
-      clearInterval(metricsInterval);
-    };
+interface StudioOverview {
+  health_metrics: HealthComponent[];
+  alerts: AlertItem[];
+  metrics: {
+    total_queries_today: number;
+    avg_response_time: number;
+    error_rate: number;
+    active_users: number;
+  };
+  system_info: {
+    version: string;
+    uptime_hours: number;
+    environment: string;
+  };
+}
+
+interface AlertItem {
+  id: string;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  title: string;
+  message: string;
+  timestamp: string;
+  component: string;
+  acknowledged: boolean;
+}
+
+const REFRESH_INTERVAL_MS = 5000;
+
+function metricColor(percent: number): string {
+  if (percent >= 90) return 'text-red-400';
+  if (percent >= 75) return 'text-yellow-400';
+  return 'text-green-400';
+}
+
+function statusSeverityClass(status: string): string {
+  switch (status) {
+    case 'healthy':
+      return 'bg-green-100 text-green-700';
+    case 'warning':
+      return 'bg-yellow-100 text-yellow-700';
+    case 'error':
+      return 'bg-red-100 text-red-700';
+    default:
+      return 'bg-slate-100 text-slate-700';
+  }
+}
+
+function severityClass(severity: string): string {
+  switch (severity) {
+    case 'critical':
+      return 'border-red-500 bg-red-900/30 text-red-300';
+    case 'error':
+      return 'border-red-700 bg-red-900/20 text-red-400';
+    case 'warning':
+      return 'border-yellow-700 bg-yellow-900/20 text-yellow-400';
+    case 'info':
+    default:
+      return 'border-blue-700 bg-blue-900/20 text-blue-300';
+  }
+}
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString('fa-IR');
+  } catch {
+    return iso;
+  }
+}
+
+export default function MonitoringDashboard() {
+  const [metrics, setMetrics] = useState<RealtimeMetrics | null>(null);
+  const [overview, setOverview] = useState<StudioOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchRealtime = useCallback(async () => {
+    try {
+      const data = (await apiClient.get('/api/v1/dashboard/studio/metrics/realtime')) as RealtimeMetrics;
+      setMetrics(data);
+      setLastUpdated(new Date().toISOString());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در دریافت معیارهای لحظه‌ای');
+    }
   }, []);
 
-  const loadJobs = async () => {
+  const fetchOverview = useCallback(async () => {
     try {
-      const response = await listTrainingJobs();
-      setJobs(response.jobs);
-    } catch (error) {
-      console.error("Failed to load jobs:", error);
+      const data = (await apiClient.get('/api/v1/dashboard/studio/overview')) as StudioOverview;
+      setOverview(data);
+    } catch (err) {
+      // Overview is best-effort; realtime metrics are the primary stream.
+      console.error('Failed to load studio overview:', err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const loadMetrics = async () => {
+  const acknowledgeAlert = useCallback(async (alertId: string) => {
     try {
-      // Load dashboard data
-      const dashboard = await getDashboardData();
-      
-      // Extract system metrics from dashboard
-      setMetrics({
-        cpu_usage: 0, // TODO: Extract from dashboard if available
-        memory_usage: 0,
-        gpu_usage: 0,
-        active_jobs: Object.values(dashboard.components).filter(c => c.status === "running").length,
-        total_jobs: Object.keys(dashboard.components).length,
-        uptime: dashboard.components.orchestrator?.uptime || 0,
-      });
-
-      // Load legal metrics
-      const legal = await getLegalMetrics();
-      setLegalMetrics(legal);
-
-      // Load health status
-      const health = await getDetailedHealth();
-      setHealthStatus(health);
-    } catch (error) {
-      console.error("Failed to load metrics:", error);
+      await apiClient.post(`/api/v1/dashboard/studio/alerts/${alertId}/acknowledge`);
+      setOverview((prev) =>
+        prev
+          ? {
+              ...prev,
+              alerts: prev.alerts.map((a) =>
+                a.id === alertId ? { ...a, acknowledged: true } : a
+              ),
+            }
+          : prev
+      );
+    } catch (err) {
+      console.error('Failed to acknowledge alert:', err);
     }
-  };
+  }, []);
 
-  const handleStopJob = async (jobId: string) => {
-    if (confirm("آیا مطمئن هستید که می‌خواهید این کار را متوقف کنید؟")) {
-      try {
-        await stopTrainingJob(jobId);
-        await loadJobs(); // Refresh list
-      } catch (error) {
-        alert("خطا در توقف کار: " + String(error));
-      }
-    }
-  };
+  useEffect(() => {
+    void fetchOverview();
+    void fetchRealtime();
+    intervalRef.current = setInterval(() => void fetchRealtime(), REFRESH_INTERVAL_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchOverview, fetchRealtime]);
 
-  const handleDeleteJob = async (jobId: string) => {
-    if (confirm("آیا مطمئن هستید که می‌خواهید این کار را حذف کنید؟ این عمل قابل بازگشت نیست.")) {
-      try {
-        await deleteTrainingJob(jobId);
-        await loadJobs(); // Refresh list
-        if (selectedJob?.job_id === jobId) {
-          setSelectedJob(null);
-        }
-      } catch (error) {
-        alert("خطا در حذف کار: " + String(error));
-      }
-    }
-  };
-
-  const getStatusColor = (status: TrainingJob["status"]) => {
-    switch (status) {
-      case "running": return "bg-green-100 text-green-800";
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "completed": return "bg-blue-100 text-blue-800";
-      case "failed": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: TrainingJob["status"]) => {
-    switch (status) {
-      case "running": return <PlayIcon className="h-4 w-4" />;
-      case "pending": return <ClockIcon className="h-4 w-4" />;
-      case "completed": return <EyeIcon className="h-4 w-4" />;
-      case "failed": return <ExclamationTriangleIcon className="h-4 w-4" />;
-      default: return <ClockIcon className="h-4 w-4" />;
-    }
-  };
-
-  const formatDuration = (startTime: string) => {
-    const start = new Date(startTime);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
-    const hours = Math.floor(diff / 3600);
-    const minutes = Math.floor((diff % 3600) / 60);
-    const seconds = diff % 60;
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    return `${days}d ${hours}h ${mins}m`;
-  };
+  if (isLoading && !metrics && !overview) {
+    return (
+      <div className="p-8">
+        <h1 className="mb-8 text-3xl font-bold text-slate-900">مانیتورینگ</h1>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`max-w-7xl mx-auto p-6 ${className}`}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">مانیتورینگ سیستم</h1>
-        <p className="text-gray-600">
-          نظارت بر فرآیندهای آموزش و عملکرد سیستم
-        </p>
+    <div className="p-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">مانیتورینگ</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            معیارهای لحظه‌ای سیستم{lastUpdated ? ` · آخرین به‌روزرسانی ${formatTime(lastUpdated)}` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void fetchRealtime()}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+        >
+          به‌روزرسانی
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        {/* System Metrics Cards */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <CpuChipIcon className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">CPU</h3>
-          </div>
-          <div className="text-3xl font-bold text-blue-600 mb-2">{metrics.cpu_usage}%</div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${metrics.cpu_usage}%` }}
-            ></div>
-          </div>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          <p className="font-medium">خطا</p>
+          <p className="mt-1 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Realtime metrics grid */}
+      {metrics && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <MetricCard label="CPU" value={`${metrics.cpu_usage.toFixed(1)}%`} tone={metricColor(metrics.cpu_usage)} />
+          <MetricCard
+            label="حافظه"
+            value={`${metrics.memory_usage.toFixed(1)}%`}
+            tone={metricColor(metrics.memory_usage)}
+          />
+          <MetricCard
+            label="دیسک"
+            value={`${metrics.disk_usage.toFixed(1)}%`}
+            tone={metricColor(metrics.disk_usage)}
+          />
+          <MetricCard
+            label="اتصالات فعال"
+            value={metrics.active_connections.toLocaleString('fa-IR')}
+            tone="text-blue-400"
+          />
+          <MetricCard
+            label="درخواست در ثانیه"
+            value={metrics.queries_per_second.toFixed(2)}
+            tone="text-blue-400"
+          />
+          <MetricCard
+            label="نرخ Cache Hit"
+            value={`${(metrics.cache_hit_rate * 100).toFixed(1)}%`}
+            tone="text-green-400"
+          />
+          <MetricCard
+            label="شبکه (ورودی)"
+            value={`${metrics.network_in.toFixed(1)} MB/s`}
+            tone="text-blue-400"
+          />
+          <MetricCard
+            label="شبکه (خروجی)"
+            value={`${metrics.network_out.toFixed(1)} MB/s`}
+            tone="text-blue-400"
+          />
+        </div>
+      )}
+
+      {/* Summary stats from overview */}
+      {overview && (
+        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <MetricCard
+            label="پرس‌وجوهای امروز"
+            value={overview.metrics.total_queries_today.toLocaleString('fa-IR')}
+            tone="text-slate-900"
+          />
+          <MetricCard
+            label="میانگین زمان پاسخ"
+            value={`${(overview.metrics.avg_response_time * 1000).toFixed(0)}ms`}
+            tone="text-slate-900"
+          />
+          <MetricCard
+            label="نرخ خطا"
+            value={`${(overview.metrics.error_rate * 100).toFixed(2)}%`}
+            tone={overview.metrics.error_rate > 0.05 ? 'text-yellow-400' : 'text-green-400'}
+          />
+          <MetricCard
+            label="کاربران فعال"
+            value={overview.metrics.active_users.toLocaleString('fa-IR')}
+            tone="text-slate-900"
+          />
+        </div>
+      )}
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Component health */}
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-bold text-slate-900">سلامت اجزا</h2>
+          {overview?.health_metrics.length ? (
+            <ul className="space-y-3">
+              {overview.health_metrics.map((hc) => (
+                <li
+                  key={hc.component || `${hc.status}-${hc.value}`}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-slate-800">
+                      {hc.component}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      آستانه: {hc.threshold.toFixed(1)} {hc.unit}
+                    </div>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-3">
+                    <span className="text-sm font-bold text-slate-900">
+                      {hc.value.toFixed(1)} {hc.unit}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${statusSeverityClass(hc.status)}`}>
+                      {hc.status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">داده‌ای در دسترس نیست.</p>
+          )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <ChartBarIcon className="h-6 w-6 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">حافظه</h3>
-          </div>
-          <div className="text-3xl font-bold text-green-600 mb-2">{metrics.memory_usage}%</div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-green-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${metrics.memory_usage}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <PlayIcon className="h-6 w-6 text-purple-600" />
-            <h3 className="text-lg font-semibold text-gray-900">کارهای فعال</h3>
-          </div>
-          <div className="text-3xl font-bold text-purple-600 mb-2">{metrics.active_jobs}</div>
-          <p className="text-sm text-gray-600">از {metrics.total_jobs} کار کل</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <ClockIcon className="h-6 w-6 text-orange-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Uptime</h3>
-          </div>
-          <div className="text-2xl font-bold text-orange-600 mb-2">
-            {formatUptime(metrics.uptime)}
-          </div>
+        {/* Alerts */}
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-bold text-slate-900">هشدارها</h2>
+          {overview?.alerts.length ? (
+            <ul className="space-y-3">
+              {overview.alerts.map((alert) => (
+                <li
+                  key={alert.id}
+                  className={`rounded-lg border p-3 ${severityClass(alert.severity)}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-semibold">{alert.title}</div>
+                      <div className="text-xs opacity-80">{alert.message}</div>
+                      <div className="mt-1 text-xs opacity-60">
+                        {alert.component} · {formatTime(alert.timestamp)}
+                      </div>
+                    </div>
+                    {!alert.acknowledged && (
+                      <button
+                        type="button"
+                        onClick={() => void acknowledgeAlert(alert.id)}
+                        className="flex-shrink-0 rounded border border-current/40 px-2 py-1 text-xs transition-opacity hover:opacity-80"
+                      >
+                        تأیید
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">هیچ هشداری ثبت نشده است.</p>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Training Jobs List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">کارهای آموزش</h2>
+      {overview?.system_info && (
+        <div className="mt-4 rounded-lg bg-white p-4 shadow">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-600">
+            <div>
+              <span className="text-slate-500">نسخه: </span>
+              <span className="font-medium text-slate-800">{overview.system_info.version}</span>
             </div>
-
-            <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="p-6 text-center text-gray-500">
-                  در حال بارگذاری...
-                </div>
-              ) : jobs.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  هیچ کاری یافت نشد
-                </div>
-              ) : (
-                jobs.map((job) => (
-                  <div
-                    key={job.job_id}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      selectedJob?.job_id === job.job_id ? "bg-blue-50 border-r-4 border-blue-600" : ""
-                    }`}
-                    onClick={() => setSelectedJob(job)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                          {getStatusIcon(job.status)}
-                          {job.status === "running" ? "در حال اجرا" :
-                           job.status === "pending" ? "در انتظار" :
-                           job.status === "completed" ? "تکمیل شده" :
-                           job.status === "failed" ? "ناموفق" : job.status}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {job.config.model_name.split('/').pop()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {job.status === "running" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStopJob(job.job_id);
-                            }}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                            title="توقف کار"
-                          >
-                            <StopIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteJob(job.job_id);
-                          }}
-                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                          title="حذف کار"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <span>{job.config.training_mode.toUpperCase()}</span>
-                      <span>شروع: {new Date(job.created_at).toLocaleString('fa-IR')}</span>
-                    </div>
-
-                    {job.status === "running" && job.progress && (
-                      <div className="mt-2">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>پیشرفت: {job.progress.step}/{job.progress.total_steps}</span>
-                          <span>Epoch {job.progress.epoch}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(job.progress.step / job.progress.total_steps) * 100}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>Loss: {job.progress.loss.toFixed(4)}</span>
-                          <span>LR: {job.progress.learning_rate.toExponential(2)}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {job.status === "running" && job.started_at && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        مدت زمان: {formatDuration(job.started_at)}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
+            <div>
+              <span className="text-slate-500">زمان فعالیت: </span>
+              <span className="font-medium text-slate-800">
+                {overview.system_info.uptime_hours.toFixed(1)} ساعت
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500">محیط: </span>
+              <span className="font-medium text-slate-800">{overview.system_info.environment}</span>
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Job Details Panel */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">جزئیات کار</h2>
-            </div>
-
-            {selectedJob ? (
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">مدل</h3>
-                  <p className="text-sm text-gray-600">{selectedJob.config.model_name}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">پارامترها</h3>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>حالت: {selectedJob.config.training_mode}</div>
-                    <div>Epochs: {selectedJob.config.num_train_epochs}</div>
-                    <div>Batch Size: {selectedJob.config.per_device_train_batch_size}</div>
-                    <div>Learning Rate: {selectedJob.config.learning_rate}</div>
-                  </div>
-                </div>
-
-                {selectedJob.progress && (
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">پیشرفت</h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div>Epoch: {selectedJob.progress.epoch}</div>
-                      <div>Step: {selectedJob.progress.step}/{selectedJob.progress.total_steps}</div>
-                      <div>Loss: {selectedJob.progress.loss.toFixed(4)}</div>
-                      <div>Learning Rate: {selectedJob.progress.learning_rate.toExponential(2)}</div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedJob.metrics && (
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">متریک‌ها</h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      {selectedJob.metrics.train_loss && (
-                        <div>Train Loss: {selectedJob.metrics.train_loss.toFixed(4)}</div>
-                      )}
-                      {selectedJob.metrics.eval_loss && (
-                        <div>Eval Loss: {selectedJob.metrics.eval_loss.toFixed(4)}</div>
-                      )}
-                      {selectedJob.metrics.accuracy && (
-                        <div>Accuracy: {(selectedJob.metrics.accuracy * 100).toFixed(2)}%</div>
-                      )}
-                      {selectedJob.metrics.perplexity && (
-                        <div>Perplexity: {selectedJob.metrics.perplexity.toFixed(2)}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">زمان‌بندی</h3>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>ایجاد: {new Date(selectedJob.created_at).toLocaleString('fa-IR')}</div>
-                    {selectedJob.started_at && (
-                      <div>شروع: {new Date(selectedJob.started_at).toLocaleString('fa-IR')}</div>
-                    )}
-                    {selectedJob.completed_at && (
-                      <div>اتمام: {new Date(selectedJob.completed_at).toLocaleString('fa-IR')}</div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedJob.error_message && (
-                  <div>
-                    <h3 className="font-medium text-red-900 mb-2">خطا</h3>
-                    <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                      {selectedJob.error_message}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                یک کار را انتخاب کنید تا جزئیات آن نمایش داده شود
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+function MetricCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-lg bg-white p-4 shadow">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className={`mt-1 text-xl font-bold ${tone}`}>{value}</div>
     </div>
   );
 }

@@ -42,11 +42,14 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable, TYPE_CHECKING
 
 from mahoun.core.fortress_validator import ReasoningResponse, get_logger
 from mahoun.reasoning.evidence_linked_verdict import EvidenceLinkedVerdictEngine
 from mahoun.reasoning.unified_reasoning_service import ReasoningMode
+
+if TYPE_CHECKING:
+    from mahoun.contracts.verdict_execution import VerdictExecutionResult
 
 log = get_logger(__name__)
 
@@ -243,16 +246,25 @@ class VerdictEngineAdapter:
             # Extract request data with validation
             question = self._extract_question(request)
             facts = self._extract_facts(request)
-            case_id = correlation_id or "unknown"
+            # Extract case_id from request if available, otherwise use correlation_id
+            request_case_id = getattr(request, "case_id", None)
+            case_id = request_case_id or correlation_id or "unknown"
 
             log.debug(f"[{case_id}] Adapting verdict request: question_len={len(question)}, facts_count={len(facts)}")
 
-            # Invoke underlying verdict engine
-            verdict_result = await self.engine.generate_verdict(question=question, facts=facts)
+            # Invoke underlying verdict engine with case_id
+            # Now returns VerdictExecutionResult (RULE 3: Explicit contract)
+            execution_result = await self.engine.generate_verdict(
+                question=question, 
+                facts=facts,
+                case_id=case_id
+            )
 
-            # Transform verdict result to ReasoningResponse
-            response = self._transform_verdict_to_response(
-                verdict_result=verdict_result,
+            # Transform execution result to ReasoningResponse
+            # PER RULE 9: API Router becomes transport only
+            # The adapter now handles the transformation, not the router
+            response = self._transform_execution_to_response(
+                execution_result=execution_result,
                 correlation_id=case_id,
                 execution_time_ms=(time.time() - start_time) * 1000,
             )
@@ -310,6 +322,136 @@ class VerdictEngineAdapter:
             log.warning(f"Facts is not a list: {type(facts)}, converting to list")
             facts = [facts] if facts else []
         return facts
+
+    def _transform_execution_to_response(
+        self,
+        execution_result: Any,  # VerdictExecutionResult
+        correlation_id: str,
+        execution_time_ms: float,
+    ) -> ReasoningResponse:
+        """
+        Transform VerdictExecutionResult to ReasoningResponse with full protocol compliance.
+        
+        PER RULE 3: This handles the new execution contract format.
+        The old _transform_verdict_to_response is kept for backward compatibility.
+        
+        Args:
+            execution_result: VerdictExecutionResult from engine
+            correlation_id: Correlation ID for tracing
+            execution_time_ms: Execution time in milliseconds
+            
+        Returns:
+            FortressValidator-compatible ReasoningResponse
+        """
+        # Import here to avoid circular imports
+        try:
+            from mahoun.contracts.verdict_execution import VerdictExecutionResult
+            if isinstance(execution_result, VerdictExecutionResult):
+                # New format: extract verdict from execution result
+                verdict = execution_result.verdict
+                ledger_entry = execution_result.ledger_entry
+                proof = execution_result.proof
+                
+                # Extract core verdict data
+                final_verdict = verdict.final_verdict
+                confidence = float(verdict.confidence_score)
+                steps = verdict.steps if hasattr(verdict, "steps") else []
+                verdict_id = verdict.verdict_id if hasattr(verdict, "verdict_id") else None
+                
+                # Use execution result's correlation_id if available
+                use_correlation_id = execution_result.correlation_id or correlation_id
+                
+                # Calculate agreement score from execution result
+                agreement_score = execution_result.agreement_score
+                if agreement_score is None:
+                    # Calculate from steps if not provided
+                    steps_dicts = []
+                    for step in steps:
+                        if hasattr(step, "__dataclass_fields__"):
+                            step_dict = {
+                                "conclusion": getattr(step, "conclusion", ""),
+                                "evidence": getattr(step, "evidence", []),
+                                "confidence": getattr(step, "confidence", confidence),
+                            }
+                            steps_dicts.append(step_dict)
+                        elif isinstance(step, dict):
+                            steps_dicts.append(step)
+                    agreement_score = self._calculate_agreement_score(
+                        steps=steps_dicts, 
+                        confidence=confidence
+                    )
+            else:
+                # Fallback to old format for backward compatibility
+                return self._transform_verdict_to_response(
+                    verdict_result=execution_result,
+                    correlation_id=correlation_id,
+                    execution_time_ms=execution_time_ms
+                )
+        except ImportError:
+            # If contracts not available, fallback to old format
+            return self._transform_verdict_to_response(
+                verdict_result=execution_result,
+                correlation_id=correlation_id,
+                execution_time_ms=execution_time_ms
+            )
+        
+        # Convert steps to dicts
+        steps_dicts = []
+        for step in steps:
+            if hasattr(step, "__dataclass_fields__"):
+                # It's a dataclass, convert to dict
+                step_dict = {
+                    "conclusion": getattr(step, "conclusion", ""),
+                    "evidence": getattr(step, "evidence", []),
+                    "confidence": getattr(step, "confidence", confidence),
+                }
+                steps_dicts.append(step_dict)
+            elif isinstance(step, dict):
+                steps_dicts.append(step)
+            else:
+                # Unknown type, skip
+                log.warning(f"Unknown step type: {type(step)}")
+
+        # Construct immutable proof tree
+        proof_tree = VerdictProofTree(steps=tuple(steps_dicts))
+
+        # Extract derived facts from reasoning chain
+        derived_facts = self._extract_derived_facts(steps_dicts)
+
+        # Use agreement score from execution result if available
+        if agreement_score is None:
+            agreement_score = self._calculate_agreement_score(steps=steps_dicts, confidence=confidence)
+
+        # Enrich metadata with forensic context
+        # Include execution metadata for auditability
+        # PER RULE 3: Execution artifacts travel through EXPLICIT contracts, not metadata
+        metadata = {
+            "agreement_score": agreement_score,
+            "verdict_id": verdict_id,
+            "case_id": ledger_entry.case_id if ledger_entry else correlation_id,
+            "correlation_id": use_correlation_id,
+            "execution_id": execution_result.execution_id,
+            "step_count": len(steps_dicts),
+            "evidence_node_count": proof_tree.get_proof_size(),
+            "reasoning_depth": proof_tree.get_proof_depth(),
+            "timestamp": execution_result.execution_timestamp.isoformat(),
+            "adapter_version": "3.0.0",
+            "ledger_validation_status": ledger_entry.validation_status if ledger_entry else None,
+            "proof_generated": proof is not None,
+        }
+
+        return ReasoningResponse(
+            success=True,
+            result=final_verdict,
+            confidence=confidence,
+            reasoning_mode=ReasoningMode.HYBRID,
+            execution_time_ms=execution_time_ms,
+            proof_tree=proof_tree,
+            derived_facts=derived_facts,
+            metadata=metadata,
+            # PER RULE 3: Execution artifacts travel through explicit contract field
+            execution_result=execution_result,
+        )
 
     def _transform_verdict_to_response(
         self,
@@ -400,21 +542,23 @@ class VerdictEngineAdapter:
             steps: List of reasoning steps
 
         Returns:
-            List of derived fact strings
+            List of derived fact strings (non-empty only)
         """
         derived_facts = []
 
         for step in steps:
             # Extract conclusion
             if "conclusion" in step:
-                derived_facts.append(step["conclusion"])
+                conclusion = step["conclusion"]
+                if conclusion and isinstance(conclusion, str):
+                    derived_facts.append(conclusion)
 
             # Extract derived predicates
             if "derived" in step:
                 derived = step["derived"]
                 if isinstance(derived, list):
-                    derived_facts.extend(derived)
-                elif isinstance(derived, str):
+                    derived_facts.extend([d for d in derived if d and isinstance(d, str)])
+                elif isinstance(derived, str) and derived:
                     derived_facts.append(derived)
 
         return derived_facts

@@ -1,149 +1,184 @@
 /**
  * Timeline Visualization Component
- * 
- * Interactive timeline visualization with:
- * - Event timeline
- * - Conflict detection
- * - Zoom and pan
- * - Event details
+ *
+ * Generates a timeline report based on a query and optional date range.
+ * Uses the /api/v1/mahoun/generate-timeline-report endpoint.
  */
 
-import { useState } from "react";
-import { generateTimelineReport } from "../api/mahounClient";
-import { toast } from "./Toast";
+import { useState, useCallback } from 'react';
+import { apiClient } from '../api/client';
 
-interface TimelineEvent {
-  date: string;
-  description: string;
-  sequence: number;
-  source?: string;
+interface TimelineReportRequest {
+  query?: string;
+  documents?: string[]; // list of document IDs
+  date_range?: Record<string, any>; // { from: string, to: string } etc.
 }
 
-interface TimelineData {
-  timeline: TimelineEvent[];
-  conflicts: Array<{
-    date: string;
-    type: string;
-    conflicting_events: TimelineEvent[];
-  }>;
+interface ReportResponse {
+  success: boolean;
+  report_id: string;
+  report_type: string;
+  content: string;
+  markdown: string;
+  download_url?: string;
+  processing_time_ms: number;
+}
+
+function parseJSON<T>(str: string, fallback: T): T {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return fallback;
+  }
 }
 
 export default function TimelineVisualization() {
-  const [query, setQuery] = useState("");
-  const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
+  const [request, setRequest] = useState<TimelineReportRequest>({
+    query: 'Timeline of key events in the legal case',
+    documents: ['doc-1', 'doc-2'], // example
+    date_range: { from: '2024-01-01', to: '2024-12-31' }
+  });
+
+  const [response, setResponse] = useState<ReportResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async () => {
-    if (!query) return;
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setRequest(prev => {
+      if (name === 'documents' || name === 'date_range') {
+        return { ...prev, [name]: parseJSON(value, prev[name] ?? (name === 'documents' ? [] : {})) };
+      }
+      return { ...prev, [name]: value };
+    });
+  }, []);
 
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError(null);
+    setResponse(null);
     try {
-      await generateTimelineReport(query);
-      // Parse timeline from report content
-      // In production, this would come from the API response
-      setTimelineData({
-        timeline: [],
-        conflicts: [],
-      });
-    } catch (error: any) {
-      toast.error(`خطا در تولید خط‌زمان: ${error.message}`);
+      const data = await apiClient.post<ReportResponse>('/api/v1/mahoun/generate-timeline-report', request);
+      setResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تولید گزارش خطی ناموفق بود');
     } finally {
       setLoading(false);
     }
-  };
+  }, [request]);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 page-enter">
-      <div className="bg-slate-900 rounded-xl shadow-lg border border-slate-700 p-8">
-        <h2 className="text-2xl font-bold text-slate-100 mb-6">نمایش خط‌زمان</h2>
-
-        {/* Input */}
+    <div className="p-8 bg-slate-900 min-h-screen">
+      <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            سؤال یا موضوع
-          </label>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="مثال: توالی وقایع پروژه"
-              className="flex-1 px-4 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-            <button
-              onClick={handleGenerate}
-              disabled={loading || !query}
-              className="px-6 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800 disabled:opacity-50"
-            >
-              {loading ? "در حال تولید..." : "تولید Timeline"}
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-white">تصویرسازی خط زمانی</h1>
+          <p className="mt-2 text-slate-400">تولید گزارش خطی بر اساس پرس‌وجو و بازه زمانی</p>
         </div>
 
-        {/* Timeline Visualization */}
-        {timelineData && timelineData.timeline.length > 0 && (
-          <div className="mt-8">
-            <div className="relative">
-              {/* Timeline Line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-primary-200"></div>
-
-              {/* Events */}
-              <div className="space-y-6">
-                {timelineData.timeline.map((event, index) => (
-                  <div
-                    key={index}
-                    className="relative flex items-start gap-4 p-3 rounded-lg"
-                  >
-                    {/* Timeline Dot */}
-                    <div className="relative z-10 flex-shrink-0">
-                      <div className="w-4 h-4 bg-primary-700 rounded-full border-4 border-white shadow-md"></div>
-                    </div>
-
-                    {/* Event Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-sm font-semibold text-primary-700">
-                          {event.date}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          رویداد #{event.sequence}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-100">{event.description}</p>
-                      {event.source && (
-                        <p className="text-xs text-slate-500 mt-1">منبع: {event.source}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Query (اختیاری)</label>
+              <input
+                name="query"
+                value={request.query ?? ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
             </div>
 
-            {/* Conflicts */}
-            {timelineData.conflicts.length > 0 && (
-              <div className="mt-8 bg-accent-50 border border-accent-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-accent-900 mb-4">
-                  هشدار تضادها در Timeline ({timelineData.conflicts.length})
-                </h3>
-                {timelineData.conflicts.map((conflict, index) => (
-                  <div key={index} className="mb-4 last:mb-0">
-                    <p className="text-sm font-medium text-accent-800">
-                      تاریخ: {conflict.date} - نوع: {conflict.type}
-                    </p>
-                    <p className="text-xs text-accent-700 mt-1">
-                      {conflict.conflicting_events.length} رویداد متضاد
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Document IDs (JSON array)</label>
+              <textarea
+                name="documents"
+                value={JSON.stringify(request.documents ?? [], null, 2)}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Date Range (JSON)</label>
+              <textarea
+                name="date_range"
+                value={JSON.stringify(request.date_range ?? {}, null, 2)}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono resize-y"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-medium rounded-lg transition-colors"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+                    در حال تولید...
+                  </>
+                ) : (
+                  'تولید گزارش خطی'
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-400">
+            <p className="font-medium">خطا</p>
+            <p className="mt-1 text-sm">{error}</p>
           </div>
         )}
 
-        {/* Empty State */}
-        {!timelineData && !loading && (
-          <div className="text-center py-12 text-slate-500">
-            برای نمایش timeline، یک سؤال وارد کنید و روی "تولید Timeline" کلیک کنید
+        {response && (
+          <div className="mt-6">
+            <h2 className="mb-4 text-xl font-bold text-white">نتایج گزارش خطی</h2>
+            <div className="space-y-4">
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-200 mb-2">شماره گزارش</h3>
+                <p className="font-mono text-slate-300">{response.report_id}</p>
+              </div>
+
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-200 mb-2">نوع گزارش</h3>
+                <p className="text-slate-300">{response.report_type}</p>
+              </div>
+
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-200 mb-2">زمان پردازش</h3>
+                <p className="text-2xl font-bold text-slate-900">{response.processing_time_ms.toFixed(0)} ms</p>
+              </div>
+
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-200 mb-2">محتوى (Markdown)</h3>
+                <div className="prose prose-slate max-w-none">
+                  {/* We'll render the markdown as HTML for simplicity; in a real app you might use a markdown parser */}
+                  <div dangerouslySetInnerHTML={{ __html: response.markdown }}></div>
+                  {/* Since we don't have a markdown parser installed, we'll fallback to showing raw markdown in a pre tag for now */}
+                  {/* In production, you'd want to use a library like remark or marked to convert markdown to HTML */}
+                  <pre className="mt-4 text-xs text-slate-300 bg-slate-900/50 p-3 rounded overflow-auto whitespace-pre-wrap">{response.markdown}</pre>
+                </div>
+              </div>
+
+              {response.download_url && (
+                <div className="bg-slate-800 rounded-lg p-4 border border-slate-700 text-center">
+                  <a
+                    href={response.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    دانلود گزارش
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

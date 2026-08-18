@@ -20,7 +20,9 @@ import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type
+
+from pydantic import BaseModel
 
 from mahoun.core.governance.violations import (
     GovernanceViolation,
@@ -236,10 +238,10 @@ logger = logging.getLogger(__name__)
 
 # Central registry mapping Neo4j node labels to their Pydantic schemas.
 # Any label not in this registry will be rejected by the schema gate.
-SCHEMA_REGISTRY: Dict[str, type] = {}
+SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {}
 
 
-def register_schema(label: str, model_cls: type) -> None:
+def register_schema(label: str, model_cls: Type[BaseModel]) -> None:
     """Register a Pydantic model for a given Neo4j label.
 
     Args:

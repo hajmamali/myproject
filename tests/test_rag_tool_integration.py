@@ -19,6 +19,7 @@ class TestRAGToolIntegration:
         """Create RAGTool instance."""
         return RAGTool()
     
+    @pytest.mark.p2
     async def test_hybrid_search(self, rag_tool):
         """Test hybrid search."""
         with patch("mahoun.retrieval.hybrid_search_v2.HybridSearchV2.search", new_callable=AsyncMock) as mock_search:
@@ -32,6 +33,7 @@ class TestRAGToolIntegration:
             assert "results" in result
             assert "metrics" in result
     
+    @pytest.mark.p2
     async def test_rerank(self, rag_tool):
         """Test reranking."""
         with patch("mahoun.retrieval.hybrid_search_v2.HybridSearchV2.initialize", new_callable=AsyncMock):

@@ -23,6 +23,7 @@ class TestMetricsFullLifecycle:
         """Cleanup after each test"""
         reset_global_collector()
     
+    @pytest.mark.p2
     def test_complete_lifecycle_single_thread(self):
         """
         تست lifecycle کامل در single thread:
@@ -75,6 +76,7 @@ class TestMetricsFullLifecycle:
         assert len(snapshot_after["gauges"]) == 0
         assert len(snapshot_after["histograms"]) == 0
     
+    @pytest.mark.p2
     def test_lifecycle_with_system_metrics(self):
         """تست lifecycle با system metrics"""
         collector = MetricsCollector()
@@ -101,6 +103,7 @@ class TestMetricsFullLifecycle:
         assert len(snapshot["counters"]) == 0
         assert len(snapshot["gauges"]) == 0
     
+    @pytest.mark.p2
     def test_lifecycle_multi_threaded(self):
         """
         تست lifecycle در محیط multi-threaded:
@@ -133,6 +136,7 @@ class TestMetricsFullLifecycle:
         actual = snapshot["counters"]["concurrent_counter"]["value"]
         assert actual == expected, f"Expected {expected}, got {actual}"
     
+    @pytest.mark.p2
     def test_snapshot_immutability(self):
         """تست immutability snapshot"""
         collector = MetricsCollector()
@@ -159,6 +163,7 @@ class TestMetricsFullLifecycle:
         # Snapshot should still have old value
         assert snapshot.counters["test"]["value"] == 10
     
+    @pytest.mark.p2
     def test_prometheus_export_format(self):
         """تست format صحیح Prometheus export"""
         collector = MetricsCollector()
@@ -184,6 +189,7 @@ class TestMetricsFullLifecycle:
         assert 'temperature_celsius{location="server1"} 75.5' in output
         assert 'response_time_ms_count' in output
     
+    @pytest.mark.p2
     def test_error_recovery(self):
         """تست recovery از خطاها"""
         collector = MetricsCollector()
@@ -203,6 +209,7 @@ class TestMetricsFullLifecycle:
         snapshot = collector.snapshot()
         assert snapshot["counters"]["valid"]["value"] == 15
     
+    @pytest.mark.p2
     def test_singleton_behavior(self):
         """تست singleton pattern"""
         collector1 = get_metrics_collector()
@@ -218,6 +225,7 @@ class TestMetricsFullLifecycle:
         snapshot = collector2.snapshot()
         assert snapshot["counters"]["shared"]["value"] == 10
     
+    @pytest.mark.p2
     def test_reset_and_reuse(self):
         """تست reset و استفاده مجدد"""
         collector = MetricsCollector()
@@ -236,6 +244,7 @@ class TestMetricsFullLifecycle:
         counter2.inc(50)
         assert collector.snapshot()["counters"]["test"]["value"] == 50
     
+    @pytest.mark.p2
     def test_large_scale_metrics(self):
         """
         تست با تعداد زیاد metrics:
@@ -278,6 +287,7 @@ class TestMetricsEdgeCases:
     def teardown_method(self):
         reset_global_collector()
     
+    @pytest.mark.p2
     def test_empty_collector(self):
         """تست collector خالی"""
         collector = MetricsCollector()
@@ -290,6 +300,7 @@ class TestMetricsEdgeCases:
         prom = collector.to_prometheus()
         assert prom == "# Metrics disabled" or prom == ""
     
+    @pytest.mark.p2
     def test_duplicate_registration(self):
         """تست registration تکراری"""
         collector = MetricsCollector()
@@ -304,6 +315,7 @@ class TestMetricsEdgeCases:
         counter1.inc(10)
         assert counter2.value == 10
     
+    @pytest.mark.p2
     def test_concurrent_snapshot_creation(self):
         """تست ایجاد همزمان snapshot"""
         collector = MetricsCollector()

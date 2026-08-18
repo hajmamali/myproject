@@ -19,6 +19,7 @@ Test naming convention:
 from __future__ import annotations
 
 import asyncio
+import pytest
 import contextlib
 import threading
 import unittest
@@ -54,18 +55,22 @@ class TestTask1NodeLabelGovernance(unittest.TestCase):
         self.validate = validate_node_label
 
     # --- positive ---
+    @pytest.mark.p2
     def test_task1_valid_label_verdict_positive(self):
         """Verdict is in ALLOWED_NODE_LABELS — must pass silently."""
         self.validate("Verdict")  # no exception expected
 
+    @pytest.mark.p2
     def test_task1_valid_label_chunk_positive(self):
         self.validate("Chunk")
 
+    @pytest.mark.p2
     def test_task1_valid_label_quarantined_positive(self):
         """QuarantinedVerdict strips prefix → base 'Verdict' is allowed."""
         self.validate("QuarantinedVerdict")
 
     # --- negative ---
+    @pytest.mark.p2
     def test_task1_invalid_label_unknown_negative(self):
         """UnknownLabel is not in allowlist → GovernanceViolationError."""
         from mahoun.core.governance.violations import GovernanceViolationError, ViolationCategory
@@ -73,28 +78,33 @@ class TestTask1NodeLabelGovernance(unittest.TestCase):
             self.validate("UnknownLabel")
         self.assertEqual(cm.exception.violation.category, ViolationCategory.ONTOLOGY_VIOLATION)
 
+    @pytest.mark.p2
     def test_task1_empty_label_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError
         with self.assertRaises(GovernanceViolationError):
             self.validate("")
 
+    @pytest.mark.p2
     def test_task1_whitespace_label_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError
         with self.assertRaises(GovernanceViolationError):
             self.validate("   ")
 
+    @pytest.mark.p2
     def test_task1_unicode_injection_negative(self):
         """Unicode homoglyph attacks must be rejected."""
         from mahoun.core.governance.violations import GovernanceViolationError
         with self.assertRaises(GovernanceViolationError):
             self.validate("Ｖｅｒｄｉｃｔ")  # full-width unicode
 
+    @pytest.mark.p2
     def test_task1_dynamically_generated_label_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError
         malicious = "Verdict; DROP DATABASE mahoun"
         with self.assertRaises(GovernanceViolationError):
             self.validate(malicious)
 
+    @pytest.mark.p2
     def test_task1_allowlist_is_frozenset(self):
         """ALLOWED_NODE_LABELS must be immutable — frozenset."""
         self.assertIsInstance(self.ALLOWED, frozenset)
@@ -120,16 +130,19 @@ class TestTask2ActorIdentityEnforcement(unittest.TestCase):
                                         correlation_id=correlation_id)
 
     # --- positive ---
+    @pytest.mark.p2
     def test_task2_valid_actor_positive(self):
         session = self._make_session("outbox-worker")
         self.assertEqual(session._actor_id, "outbox-worker")
 
+    @pytest.mark.p2
     def test_task2_actor_stripped_positive(self):
         """Leading/trailing spaces are stripped from valid actor_id."""
         session = self._make_session("  api-gateway  ", correlation_id="c1")
         self.assertEqual(session._actor_id, "api-gateway")
 
     # --- negative ---
+    @pytest.mark.p2
     def test_task2_empty_actor_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError, ViolationCategory
         with self.assertRaises(GovernanceViolationError) as cm:
@@ -137,11 +150,13 @@ class TestTask2ActorIdentityEnforcement(unittest.TestCase):
         self.assertEqual(cm.exception.violation.category,
                          ViolationCategory.AUDIT_INTEGRITY_VIOLATION)
 
+    @pytest.mark.p2
     def test_task2_whitespace_actor_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError
         with self.assertRaises(GovernanceViolationError):
             self._make_session("   ", correlation_id="c3")
 
+    @pytest.mark.p2
     def test_task2_none_actor_fallback_to_ctx_negative(self):
         """Context actor_id is also empty → session must reject."""
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -176,16 +191,19 @@ class TestTask3CorrelationChainHardening(unittest.TestCase):
                                         correlation_id=corr)
 
     # --- positive ---
+    @pytest.mark.p2
     def test_task3_explicit_correlation_positive(self):
         s = self._make_session_no_corr("req-abc-123")
         self.assertEqual(s._correlation_id, "req-abc-123")
 
+    @pytest.mark.p2
     def test_task3_fallback_to_ctx_corr_positive(self):
         """When caller passes '' but ctx has a correlation → use ctx."""
         s = self._make_session_no_corr("", ctx_corr="ctx-corr-456")
         self.assertEqual(s._correlation_id, "ctx-corr-456")
 
     # --- negative ---
+    @pytest.mark.p2
     def test_task3_empty_corr_and_ctx_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError, ViolationCategory
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -203,6 +221,7 @@ class TestTask3CorrelationChainHardening(unittest.TestCase):
         self.assertEqual(cm.exception.violation.category,
                          ViolationCategory.AUDIT_INTEGRITY_VIOLATION)
 
+    @pytest.mark.p2
     def test_task3_whitespace_corr_negative(self):
         from mahoun.core.governance.violations import GovernanceViolationError
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -225,6 +244,7 @@ class TestTask3CorrelationChainHardening(unittest.TestCase):
 class TestTask4ProtocolEnforcement(unittest.TestCase):
     """Prove GovernedGraphSession Protocol and assert_governed_session()."""
 
+    @pytest.mark.p2
     def test_task4_governed_session_satisfies_protocol_positive(self):
         from mahoun.core.governance.protocols import GovernedGraphSession, assert_governed_session
         from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
@@ -240,6 +260,7 @@ class TestTask4ProtocolEnforcement(unittest.TestCase):
         self.assertIsInstance(session, GovernedGraphSession)
         assert_governed_session(session, context="test")  # must not raise
 
+    @pytest.mark.p2
     def test_task4_raw_neo4j_session_fails_protocol_negative(self):
         """A plain MagicMock without governed methods fails assert_governed_session."""
         from mahoun.core.governance.protocols import assert_governed_session
@@ -247,11 +268,13 @@ class TestTask4ProtocolEnforcement(unittest.TestCase):
         with self.assertRaises(TypeError):
             assert_governed_session(fake_session, context="raw-session-test")
 
+    @pytest.mark.p2
     def test_task4_non_callable_executor_fails_assert_negative(self):
         from mahoun.core.governance.protocols import assert_raw_executor
         with self.assertRaises(TypeError):
             assert_raw_executor("not-callable", context="test")
 
+    @pytest.mark.p2
     def test_task4_callable_executor_passes_positive(self):
         from mahoun.core.governance.protocols import assert_raw_executor
         def my_exec(query: str, params: dict): return []
@@ -292,11 +315,18 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
             })
             return []
 
+        # Setup audit sink to prevent AUDIT_FAILURE
+        from mahoun.core.governance.mutation_boundary import set_audit_sink
+        from mahoun.infrastructure.audit.filesink import NullAuditSink
+        set_audit_sink(NullAuditSink())
+        
         with patch(
-            "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_context",
+            "mahoun.core.governance.mutation_boundary._append_governance_audit",
+        ), patch(
+            "mahoun.core.governance.governance_context.GovernanceContextManager.require_context",
             return_value=ctx,
         ), patch(
-            "mahoun.core.governance.mutation_boundary.GovernanceContextManager.require_provenance",
+            "mahoun.core.governance.governance_context.GovernanceContextManager.require_provenance",
             return_value=MagicMock(
                 to_dict=lambda: {
                     "source": "test",
@@ -309,15 +339,24 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
                 },
                 provenance_hash="ph",
             ),
-        ), patch(
-            "mahoun.core.governance.mutation_boundary._append_governance_audit",
         ):
-            session = GovernedNeo4jSession(
-                raw_executor=raw_exec,
-                actor_id=f"worker-{worker_id}",
-                correlation_id=f"corr-{worker_id}",
-            )
-            session.write_node("Verdict", {"id": f"v-{worker_id}"})
+            # CRITICAL: Set up a real governance context in the ContextVar
+            # This is required because GovernedNeo4jSession.__init__ calls
+            # GovernanceContextManager.require_context() which will fail without it
+            from mahoun.core.governance.governance_context import GovernanceContextManager
+            original_stack = GovernanceContextManager._governance_stack.get()
+            GovernanceContextManager._governance_stack.set([ctx])
+            
+            try:
+                session = GovernedNeo4jSession(
+                    raw_executor=raw_exec,
+                    actor_id=f"worker-{worker_id}",
+                    correlation_id=f"corr-{worker_id}",
+                )
+                session.write_node("Verdict", {"id": f"v-{worker_id}"})
+            finally:
+                # Restore original stack
+                GovernanceContextManager._governance_stack.set(original_stack)
 
         # After execution, context var must be reset to False
         if _authorized_write_ctx.get():
@@ -325,6 +364,7 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
         else:
             results[worker_id] = raw_calls[0]["authorized"] if raw_calls else "NO_CALL"
 
+    @pytest.mark.p2
     def test_task6_100_concurrent_no_token_leakage(self):
         """100 concurrent threads: authorization token must not leak."""
         results: Dict[int, Any] = {}
@@ -340,6 +380,7 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
         for worker_id, val in results.items():
             self.assertTrue(val, f"Worker {worker_id}: authorized was False during write")
 
+    @pytest.mark.p2
     def test_task7_mutual_isolation_between_threads(self):
         """Prove no thread can read another thread's authorization token."""
         from mahoun.core.governance.mutation_boundary import _authorized_write_ctx
@@ -368,6 +409,7 @@ class TestTask6And7ConcurrencyAndTokenIsolation(unittest.TestCase):
         self.assertTrue(all(s is False for s in seen_states),
                         f"Reader threads saw leaked state: {seen_states}")
 
+    @pytest.mark.p2
     def test_task6_asyncio_coroutine_isolation(self):
         """Prove ContextVar does not leak between asyncio coroutines."""
         from mahoun.core.governance.mutation_boundary import _authorized_write_ctx
@@ -406,6 +448,7 @@ class TestTask8EvidenceConsistencyProof(unittest.TestCase):
         → Reasoning MUST raise RuntimeError (EL-I8).
     """
 
+    @pytest.mark.p2
     def test_task8_tombstoned_evidence_rejected_in_verdict(self):
         """Tombstoned fact must never reach the final verdict — proven via source inspection."""
         import inspect
@@ -432,12 +475,14 @@ class TestTask8EvidenceConsistencyProof(unittest.TestCase):
         self.assertFalse(_el_i8_check(active),
                          "EL-I8 check must not trigger on _deleted=False")
 
+    @pytest.mark.p2
     def test_task8_active_evidence_passes_validation(self):
         """Non-tombstoned fact dict passes the EL-I8 check."""
         active_fact = {"id": "f-002", "text": "Active fact", "_deleted": False}
         # The check is: if fact.get("_deleted") is True → raise
         self.assertFalse(active_fact.get("_deleted") is True)
 
+    @pytest.mark.p2
     def test_task8_tombstone_check_is_strict_true_not_truthy(self):
         """EL-I8 uses `is True` — truthy values like 1 or 'yes' must NOT trigger it."""
         truthy_but_not_true = {"_deleted": 1}
@@ -475,6 +520,7 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
             )
         return session, raw_exec
 
+    @pytest.mark.p2
     def test_task9_audit_failure_aborts_mutation_chaos(self):
         """Audit write failure must abort mutation (fail-closed, I6)."""
         from mahoun.core.governance.violations import GovernanceViolationError
@@ -515,6 +561,7 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
         # Raw executor must NOT have been called (mutation aborted before execution)
         raw_exec.assert_not_called()
 
+    @pytest.mark.p2
     def test_task9_executor_exception_leaves_no_ledger_entry_chaos(self):
         """Exception in raw executor must leave zero ledger entries."""
         session, _ = self._make_session_with_mocks(
@@ -546,6 +593,7 @@ class TestTask9ChaosFailureInjection(unittest.TestCase):
         self.assertEqual(session.mutation_count, 0,
                          "Ledger must be empty when executor raises")
 
+    @pytest.mark.p2
     def test_task9_token_reset_after_exception_chaos(self):
         """After executor exception, _authorized_write_ctx must be False."""
         from mahoun.core.governance.mutation_boundary import _authorized_write_ctx
@@ -623,6 +671,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         )
 
     # --- empty replay ---
+    @pytest.mark.p2
     def test_task11_empty_receipts_returns_empty_status(self):
         from mahoun.core.governance.mutation_replayer import MutationReplayer, ReplayStatus
         result = MutationReplayer().replay([])
@@ -630,6 +679,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(result.audit_integrity, "NOT PROVEN")
 
     # --- single mutation replay MATCH ---
+    @pytest.mark.p2
     def test_task11_single_merge_replay_match_positive(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, ReplayStatus, InMemoryGraphState,
@@ -650,6 +700,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(result.applied_count, 1)
 
     # --- N=10 mutations replay MATCH ---
+    @pytest.mark.p2
     def test_task11_ten_mutations_replay_match_positive(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, ReplayStatus, InMemoryGraphState,
@@ -671,6 +722,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(result.applied_count, N)
 
     # --- create → delete tombstone cycle ---
+    @pytest.mark.p2
     def test_task11_create_then_delete_tombstone_cycle_positive(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, ReplayStatus, InMemoryGraphState,
@@ -689,6 +741,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(ref.active_node_count, 0)
 
     # --- MISMATCH detection ---
+    @pytest.mark.p2
     def test_task11_tampered_hash_produces_mismatch_negative(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, ReplayStatus,
@@ -703,6 +756,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertIn(result.audit_integrity, ("NOT PROVEN", "PARTIALLY PROVEN"))
 
     # --- relationship receipts are skipped gracefully ---
+    @pytest.mark.p2
     def test_task11_relationship_receipts_skipped_no_crash_positive(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, ReplayStatus,
@@ -715,6 +769,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(result.skipped_count, 0)
 
     # --- determinism: same receipts always produce same hash ---
+    @pytest.mark.p2
     def test_task11_replay_is_deterministic_positive(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, InMemoryGraphState,
@@ -737,6 +792,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
                          f"Non-deterministic replay: got {hashes}")
 
     # --- InMemoryGraphState active node count after tombstone ---
+    @pytest.mark.p2
     def test_task11_graph_state_active_count_after_tombstone(self):
         from mahoun.core.governance.mutation_replayer import InMemoryGraphState
         g = InMemoryGraphState()
@@ -747,6 +803,7 @@ class TestTask11MutationReplayVerification(unittest.TestCase):
         self.assertEqual(g.active_node_count, 1)
 
     # --- ReplayResult.to_dict returns correct structure ---
+    @pytest.mark.p2
     def test_task11_replay_result_to_dict_structure(self):
         from mahoun.core.governance.mutation_replayer import (
             MutationReplayer, InMemoryGraphState,

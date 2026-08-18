@@ -35,6 +35,7 @@ from mahoun.invariants import get_invariant_by_id, verify_el_i8_registration
 class TestELI8EndToEndIntegration:
     """Complete end-to-end EL-I8 tombstone security tests"""
     
+    @pytest.mark.p3
     def test_el_i8_invariant_registration(self):
         """EL-I8: Verify invariant is properly registered in the system"""
         # Test invariant registry contains EL-I8
@@ -53,6 +54,7 @@ class TestELI8EndToEndIntegration:
         assert "gdpr" in el_i8.failure_consequence.lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_verdict_generation_blocks_tombstoned_evidence(self):
         """EL-I8: Verdict generation automatically filters tombstoned evidence"""
         # Mock dependencies
@@ -98,6 +100,7 @@ class TestELI8EndToEndIntegration:
                                         # Re-raise unexpected errors
                                         raise
     
+    @pytest.mark.p3
     def test_ledger_write_gate_tombstone_enforcement(self):
         """EL-I8: LedgerWriteGate enforces tombstone validation before writes"""
         # Mock graph builder with tombstoned evidence
@@ -149,6 +152,7 @@ class TestELI8EndToEndIntegration:
             "el-i8" in str(exc_info.value).lower()
         )
     
+    @pytest.mark.p3
     def test_cypher_query_tombstone_filtering(self):
         """EL-I8: Cypher queries are automatically filtered for tombstones"""
         resolver = PolicyResolver()
@@ -173,6 +177,7 @@ class TestELI8EndToEndIntegration:
                 ("_deleted" in filtered_query or "_redacted" in filtered_query or "_purged" in filtered_query)
             ), f"Tombstone filtering not applied: {description}"
     
+    @pytest.mark.p3
     def test_malicious_tombstone_access_blocked(self):
         """EL-I8: Explicit attempts to access tombstoned data are blocked"""
         resolver = PolicyResolver()
@@ -192,6 +197,7 @@ class TestELI8EndToEndIntegration:
             assert "EL-I8 SECURITY VIOLATION" in str(exc_info.value)
             assert "tombstone access pattern" in str(exc_info.value)
     
+    @pytest.mark.p3
     def test_evidence_filtering_comprehensive(self):
         """EL-I8: Evidence filtering handles all tombstone patterns comprehensively"""
         # Complex evidence set with all tombstone patterns
@@ -242,6 +248,7 @@ class TestELI8EndToEndIntegration:
             f"Extra: {actual_active_ids - expected_active_ids}"
         )
     
+    @pytest.mark.p3
     def test_cross_system_tombstone_consistency(self):
         """EL-I8: Tombstone status is consistent across Graph ↔ Ledger ↔ Reasoning"""
         # This test would verify that tombstone marking in one system
@@ -295,6 +302,7 @@ class TestELI8EndToEndIntegration:
 class TestELI8Performance:
     """Performance tests for EL-I8 tombstone operations"""
     
+    @pytest.mark.p3
     def test_tombstone_filtering_performance_1k(self):
         """EL-I8: Performance test with 1,000 evidence items"""
         import time
@@ -315,6 +323,7 @@ class TestELI8Performance:
         assert len(filtered) == 900  # 90% should remain
         assert (end_time - start_time) < 0.1  # Should be very fast
     
+    @pytest.mark.p3
     def test_tombstone_query_filtering_performance(self):
         """EL-I8: Performance test for Cypher query filtering"""
         import time

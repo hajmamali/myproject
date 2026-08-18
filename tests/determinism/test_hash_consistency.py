@@ -39,6 +39,7 @@ class TestHashConsistency:
     """Test cryptographic hash consistency"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_proof_hash_determinism_100x(self):
         """
         Test 6.1: Proof tree hash must be identical 100 times
@@ -75,6 +76,7 @@ class TestHashConsistency:
         print(f"✅ PROOF HASH CONSISTENCY: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_audit_hash_determinism_100x(self):
         """
         Test 6.2: Audit hash must be identical for identical responses
@@ -121,6 +123,7 @@ class TestHashConsistency:
         print(f"✅ AUDIT HASH CONSISTENCY: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_derived_facts_hash_stability(self):
         """
         Test 6.3: Derived facts hash must be stable
@@ -153,6 +156,7 @@ class TestHashConsistency:
         print(f"✅ DERIVED FACTS HASH CONSISTENCY: 100/100 identical")
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_conclusion_hash_stability(self):
         """
         Test 6.4: Conclusion hash must be stable
@@ -210,6 +214,7 @@ class TestHashConsistency:
         
         print(f"✅ CONCLUSION HASH CONSISTENCY: 100/100 identical")
     
+    @pytest.mark.p0
     def test_canonical_serialization_consistency(self):
         """
         Test 6.5: Canonical serialization must be deterministic
@@ -237,6 +242,7 @@ class TestHashConsistency:
         
         print(f"✅ CANONICAL SERIALIZATION CONSISTENCY: 100/100 identical")
     
+    @pytest.mark.p0
     def test_hash_collision_resistance(self):
         """
         Test 6.6: Hash function must resist collisions
@@ -260,6 +266,7 @@ class TestHashConsistency:
         
         print(f"✅ HASH COLLISION RESISTANCE: {len(inputs)} unique hashes")
     
+    @pytest.mark.p0
     def test_hash_tampering_detection(self):
         """
         Test 6.7: Hash must detect tampering
@@ -287,6 +294,7 @@ class TestHashConsistency:
         
         print(f"✅ TAMPERING DETECTION: Hashes differ")
     
+    @pytest.mark.p0
     def test_hash_field_ordering_independence(self):
         """
         Test 6.8: Hash must be independent of field ordering
@@ -338,6 +346,7 @@ class TestHashConsistency:
 class TestCryptographicProperties:
     """Test cryptographic properties of hash functions"""
     
+    @pytest.mark.p0
     def test_sha256_avalanche_effect(self):
         """
         Test avalanche effect: 1-bit change → ~50% hash bits change
@@ -362,6 +371,7 @@ class TestCryptographicProperties:
         
         print(f"✅ AVALANCHE EFFECT: {diff_percentage:.1f}% bits changed")
     
+    @pytest.mark.p0
     def test_hash_length_consistency(self):
         """Test that all hashes are 256 bits (64 hex chars)"""
         inputs = ["short", "medium_length_input", "very_long_input" * 100]

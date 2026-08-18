@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 class TestStartupValidation:
     """Test suite for startup validation"""
 
+    @pytest.mark.p2
     def test_valid_config_starts_successfully(self):
         """Test: Valid configuration allows application to start"""
         # Set valid environment
@@ -41,6 +42,7 @@ class TestStartupValidation:
             os.environ.pop("MAHOUN_GRAPH_BACKEND", None)
             os.environ.pop("NEO4J_PASSWORD", None)
 
+    @pytest.mark.p2
     def test_invalid_config_prevents_startup(self):
         """Test: Invalid configuration prevents application startup"""
         # Set INVALID environment (desktop_minimal + local graph)
@@ -75,6 +77,7 @@ class TestStartupValidation:
             os.environ.pop("MAHOUN_GRAPH_ENABLED", None)
             os.environ.pop("MAHOUN_GRAPH_BACKEND", None)
 
+    @pytest.mark.p2
     def test_missing_neo4j_password_prevents_startup(self):
         """Test: Missing Neo4j password prevents startup with local graph"""
         # Set environment with missing password
@@ -109,6 +112,7 @@ class TestStartupValidation:
             os.environ.pop("MAHOUN_GRAPH_ENABLED", None)
             os.environ.pop("MAHOUN_GRAPH_BACKEND", None)
 
+    @pytest.mark.p2
     def test_desktop_minimal_with_graph_disabled_starts_with_warning(self, caplog):
         """Test: desktop_minimal with graph disabled starts but logs warning"""
         import logging
@@ -151,6 +155,7 @@ class TestStartupValidation:
 class TestRuntimeModeEnforcement:
     """Test runtime mode enforcement after startup"""
 
+    @pytest.mark.p2
     def test_verdict_generation_blocked_in_desktop_minimal(self):
         """Test: Verdict generation returns 503 in desktop_minimal mode"""
         # Set desktop_minimal mode
@@ -194,6 +199,7 @@ class TestRuntimeModeEnforcement:
             os.environ.pop("MAHOUN_GRAPH_ENABLED", None)
             os.environ.pop("MAHOUN_GRAPH_BACKEND", None)
 
+    @pytest.mark.p2
     def test_verdict_generation_works_in_server_full(self):
         """Test: Verdict generation works in server_full mode (with mocked engine)"""
         # Set server_full mode

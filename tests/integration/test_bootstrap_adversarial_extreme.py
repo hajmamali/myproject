@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 class TestBootstrapMaliciousInput:
     """Test bootstrap under active attack from malicious inputs"""
     
+    @pytest.mark.p3
     def test_bootstrap_rejects_malicious_service_names(self, monkeypatch):
         """
         ADVERSARIAL: Attacker tries to register service with SQL injection name
@@ -71,6 +72,7 @@ class TestBootstrapMaliciousInput:
                     f"Error message should indicate rejection: {e}"
                 )
     
+    @pytest.mark.p3
     def test_bootstrap_rejects_poisoned_service_instances(self):
         """
         ADVERSARIAL: Attacker tries to register malicious service that crashes on access
@@ -101,6 +103,7 @@ class TestBootstrapMaliciousInput:
             assert "POISONED" in str(e)
     
     @pytest.mark.xfail(reason="Python dict does not have prototype pollution like JavaScript")
+    @pytest.mark.p3
     def test_bootstrap_prevents_prototype_pollution(self):
         """
         ADVERSARIAL: Attacker tries to pollute SERVICE_REGISTRY with __proto__
@@ -125,6 +128,7 @@ class TestBootstrapMaliciousInput:
 class TestBootstrapResourceExhaustion:
     """Test bootstrap under resource exhaustion attacks"""
     
+    @pytest.mark.p3
     def test_bootstrap_survives_registry_overflow(self):
         """
         ADVERSARIAL: Attacker floods registry with 10,000 fake services
@@ -159,6 +163,7 @@ class TestBootstrapResourceExhaustion:
         not __import__('importlib.util').util.find_spec('torch_geometric'),
         reason="torch_geometric not installed (optional dependency)"
     )
+    @pytest.mark.p3
     def test_bootstrap_handles_connection_storm(self, monkeypatch):
         """
         ADVERSARIAL: 1000 concurrent requests try to call bootstrap simultaneously
@@ -209,6 +214,7 @@ class TestBootstrapResourceExhaustion:
                                     "This indicates race condition."
                                 )
     
+    @pytest.mark.p3
     def test_bootstrap_handles_neo4j_connection_exhaustion(self):
         """
         ADVERSARIAL: Neo4j connection pool exhausted during bootstrap
@@ -245,6 +251,7 @@ class TestBootstrapResourceExhaustion:
 class TestBootstrapRaceConditions:
     """Test bootstrap race conditions and TOCTOU vulnerabilities"""
     
+    @pytest.mark.p3
     def test_bootstrap_prevents_toctou_registry_swap(self):
         """
         ADVERSARIAL: TOCTOU attack — swap registry between check and use
@@ -287,6 +294,7 @@ class TestBootstrapRaceConditions:
         final_service = get_service("critical_service")
         assert final_service is not None, "Registry corrupted by race condition"
     
+    @pytest.mark.p3
     def test_bootstrap_concurrent_clear_and_populate(self):
         """
         ADVERSARIAL: One thread clears registry while another populates
@@ -333,6 +341,7 @@ class TestBootstrapRaceConditions:
 class TestBootstrapCascadingFailures:
     """Test bootstrap under cascading failure scenarios"""
     
+    @pytest.mark.p3
     def test_bootstrap_cascade_neo4j_down_but_app_starts(self, monkeypatch):
         """
         ADVERSARIAL: Neo4j down → graph services fail → app should still start
@@ -363,6 +372,7 @@ class TestBootstrapCascadingFailures:
                 # Acceptable: fail-fast with clear error
                 assert "Neo4j" in str(e) or "connection" in str(e).lower()
     
+    @pytest.mark.p3
     def test_bootstrap_partial_service_failure_contaminates_nothing(self):
         """
         ADVERSARIAL: One service constructor fails → others MUST NOT be affected
@@ -401,6 +411,7 @@ class TestBootstrapCascadingFailures:
 class TestBootstrapByzantineFaults:
     """Test bootstrap under Byzantine fault conditions"""
     
+    @pytest.mark.p3
     def test_bootstrap_detects_corrupted_registry(self):
         """
         ADVERSARIAL: Registry corrupted by memory corruption or bit flip
@@ -426,6 +437,7 @@ class TestBootstrapByzantineFaults:
         result = get_service("none_service")
         assert result is None, "get_service should return None for None value"
     
+    @pytest.mark.p3
     def test_bootstrap_service_returns_wrong_type(self):
         """
         ADVERSARIAL: Service claims to be GraphQueryService but isn't
@@ -458,6 +470,7 @@ class TestBootstrapByzantineFaults:
 class TestBootstrapForensicIntegrity:
     """Test that bootstrap leaves unambiguous forensic trail even under attack"""
     
+    @pytest.mark.p3
     def test_bootstrap_failure_leaves_forensic_evidence(self, monkeypatch, caplog):
         """
         ADVERSARIAL: Bootstrap fails — forensic logs MUST show exact failure point
@@ -519,6 +532,7 @@ class TestBootstrapKitchenSink:
     """Throw everything at bootstrap simultaneously"""
     
     @pytest.mark.slow
+    @pytest.mark.p3
     def test_bootstrap_survives_everything_at_once(self, monkeypatch):
         """
         EXTREME: All attacks simultaneously

@@ -57,6 +57,7 @@ def api_user(rbac_manager):
 class TestRolePermissionMatrix:
     """Test all role × permission combinations - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_admin_has_all_permissions(self, rbac_manager, admin_user):
         """CRITICAL: Admin must have all permissions."""
         username = admin_user['username']
@@ -66,6 +67,7 @@ class TestRolePermissionMatrix:
             assert rbac_manager.check_permission(username, perm), \
                 f"Admin missing {perm} permission"
     
+    @pytest.mark.p1
     def test_analyst_has_read_write_export(self, rbac_manager, analyst_user):
         """Analyst should have read, write, export only."""
         username = analyst_user['username']
@@ -80,6 +82,7 @@ class TestRolePermissionMatrix:
         assert not rbac_manager.check_permission(username, Permission.ADMIN)
         assert not rbac_manager.check_permission(username, Permission.ANONYMIZE)
     
+    @pytest.mark.p1
     def test_viewer_has_read_only(self, rbac_manager, viewer_user):
         """Viewer should have read permission only."""
         username = viewer_user['username']
@@ -94,6 +97,7 @@ class TestRolePermissionMatrix:
         assert not rbac_manager.check_permission(username, Permission.EXPORT)
         assert not rbac_manager.check_permission(username, Permission.ANONYMIZE)
     
+    @pytest.mark.p1
     def test_api_user_has_read_write(self, rbac_manager, api_user):
         """API user should have read and write permissions."""
         username = api_user['username']
@@ -108,6 +112,7 @@ class TestRolePermissionMatrix:
         assert not rbac_manager.check_permission(username, Permission.EXPORT)
         assert not rbac_manager.check_permission(username, Permission.ANONYMIZE)
     
+    @pytest.mark.p1
     def test_permission_matrix_completeness(self):
         """Verify ROLE_PERMISSIONS map is complete."""
         # All roles must be defined
@@ -127,6 +132,7 @@ class TestRolePermissionMatrix:
 class TestUserManagement:
     """Test user CRUD operations."""
     
+    @pytest.mark.p1
     def test_create_user_success(self, rbac_manager):
         """Verify user creation."""
         user = rbac_manager.create_user("test_user", Role.ANALYST)
@@ -137,6 +143,7 @@ class TestUserManagement:
         assert 'permissions' in user
         assert len(user['permissions']) > 0
     
+    @pytest.mark.p1
     def test_create_duplicate_user_fails(self, rbac_manager):
         """CRITICAL: Duplicate usernames must fail."""
         rbac_manager.create_user("duplicate", Role.VIEWER)
@@ -144,6 +151,7 @@ class TestUserManagement:
         with pytest.raises(ValueError, match="already exists"):
             rbac_manager.create_user("duplicate", Role.ANALYST)
     
+    @pytest.mark.p1
     def test_create_user_with_metadata(self, rbac_manager):
         """Verify custom metadata storage."""
         metadata = {"department": "legal", "employee_id": "12345"}
@@ -151,6 +159,7 @@ class TestUserManagement:
         
         assert user['metadata'] == metadata
     
+    @pytest.mark.p1
     def test_get_user_existing(self, rbac_manager, admin_user):
         """Verify retrieving existing user."""
         user = rbac_manager.get_user(admin_user['username'])
@@ -158,11 +167,13 @@ class TestUserManagement:
         assert user is not None
         assert user['username'] == admin_user['username']
     
+    @pytest.mark.p1
     def test_get_user_nonexistent(self, rbac_manager):
         """Verify retrieving nonexistent user returns None."""
         user = rbac_manager.get_user("nonexistent")
         assert user is None
     
+    @pytest.mark.p1
     def test_list_users(self, rbac_manager):
         """Verify listing all users."""
         rbac_manager.create_user("user1", Role.ADMIN)
@@ -175,6 +186,7 @@ class TestUserManagement:
         usernames = {u['username'] for u in users}
         assert usernames == {"user1", "user2", "user3"}
     
+    @pytest.mark.p1
     def test_delete_user_success(self, rbac_manager, viewer_user):
         """Verify user deletion."""
         username = viewer_user['username']
@@ -186,6 +198,7 @@ class TestUserManagement:
         user = rbac_manager.get_user(username)
         assert user is None
     
+    @pytest.mark.p1
     def test_delete_nonexistent_user(self, rbac_manager):
         """Verify deleting nonexistent user fails gracefully."""
         success = rbac_manager.delete_user("nonexistent")
@@ -195,6 +208,7 @@ class TestUserManagement:
 class TestRoleUpdate:
     """Test role updates and transitions."""
     
+    @pytest.mark.p1
     def test_update_user_role_success(self, rbac_manager, viewer_user):
         """Verify role update."""
         username = viewer_user['username']
@@ -208,6 +222,7 @@ class TestRoleUpdate:
         # Permissions should be updated
         assert Permission.WRITE in user['permissions']
     
+    @pytest.mark.p1
     def test_update_role_updates_permissions(self, rbac_manager, viewer_user):
         """CRITICAL: Role change must update permissions."""
         username = viewer_user['username']
@@ -221,11 +236,13 @@ class TestRoleUpdate:
         # Should now have WRITE
         assert rbac_manager.check_permission(username, Permission.WRITE)
     
+    @pytest.mark.p1
     def test_update_nonexistent_user_role(self, rbac_manager):
         """Verify updating nonexistent user fails gracefully."""
         success = rbac_manager.update_user_role("nonexistent", Role.ADMIN)
         assert success is False
     
+    @pytest.mark.p1
     def test_downgrade_role(self, rbac_manager, admin_user):
         """Verify role downgrade works."""
         username = admin_user['username']
@@ -243,11 +260,13 @@ class TestRoleUpdate:
 class TestPermissionChecking:
     """Test permission checking logic - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_check_permission_user_not_found(self, rbac_manager):
         """CRITICAL: Permission check for nonexistent user must fail."""
         result = rbac_manager.check_permission("nonexistent", Permission.READ)
         assert result is False, "Nonexistent user must not have permissions"
     
+    @pytest.mark.p1
     def test_require_permission_success(self, rbac_manager, admin_user):
         """Verify require_permission passes for authorized user."""
         username = admin_user['username']
@@ -255,6 +274,7 @@ class TestPermissionChecking:
         # Should not raise
         rbac_manager.require_permission(username, Permission.ADMIN)
     
+    @pytest.mark.p1
     def test_require_permission_failure(self, rbac_manager, viewer_user):
         """CRITICAL: require_permission must raise for unauthorized user."""
         username = viewer_user['username']
@@ -262,6 +282,7 @@ class TestPermissionChecking:
         with pytest.raises(PermissionError, match="does not have Permission.ADMIN"):
             rbac_manager.require_permission(username, Permission.ADMIN)
     
+    @pytest.mark.p1
     def test_permission_check_case_sensitive(self, rbac_manager, admin_user):
         """Verify permission names are properly validated."""
         username = admin_user['username']
@@ -276,6 +297,7 @@ class TestPermissionChecking:
 class TestAuditLogging:
     """Test audit trail completeness - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_create_user_logged(self, rbac_manager):
         """Verify user creation is logged."""
         rbac_manager.create_user("test", Role.ANALYST)
@@ -291,6 +313,7 @@ class TestAuditLogging:
         assert latest['username'] == 'test'
         assert latest['details']['role'] == Role.ANALYST
     
+    @pytest.mark.p1
     def test_update_role_logged(self, rbac_manager, viewer_user):
         """Verify role updates are logged."""
         username = viewer_user['username']
@@ -309,6 +332,7 @@ class TestAuditLogging:
         assert latest['details']['old_role'] == Role.VIEWER
         assert latest['details']['new_role'] == Role.ANALYST
     
+    @pytest.mark.p1
     def test_delete_user_logged(self, rbac_manager, viewer_user):
         """Verify user deletion is logged."""
         username = viewer_user['username']
@@ -324,6 +348,7 @@ class TestAuditLogging:
         assert latest['action'] == 'delete_user'
         assert latest['username'] == username
     
+    @pytest.mark.p1
     def test_audit_log_has_timestamps(self, rbac_manager):
         """Verify all audit entries have timestamps."""
         rbac_manager.create_user("test1", Role.VIEWER)
@@ -336,6 +361,7 @@ class TestAuditLogging:
             # Timestamp should be ISO format
             assert 'T' in entry['timestamp']
     
+    @pytest.mark.p1
     def test_audit_log_filtering(self, rbac_manager):
         """Verify audit log can be filtered by username."""
         rbac_manager.create_user("user1", Role.VIEWER)
@@ -348,6 +374,7 @@ class TestAuditLogging:
         assert len(user1_logs) >= 2  # create + update
         assert all(log['username'] == 'user1' for log in user1_logs)
     
+    @pytest.mark.p1
     def test_audit_log_limit(self, rbac_manager):
         """Verify audit log respects limit parameter."""
         # Create many users
@@ -358,6 +385,7 @@ class TestAuditLogging:
         limited_log = rbac_manager.get_audit_log(limit=5)
         assert len(limited_log) == 5
     
+    @pytest.mark.p1
     def test_audit_log_retention(self, rbac_manager):
         """Verify audit log doesn't grow indefinitely."""
         # Create 10001 users (over 10000 limit)
@@ -371,6 +399,7 @@ class TestAuditLogging:
 class TestRequirePermissionDecorator:
     """Test @require_permission decorator."""
     
+    @pytest.mark.p1
     def test_decorator_allows_authorized_user(self, rbac_manager, admin_user):
         """Verify decorator allows authorized access."""
         # Note: Decorator needs access to rbac_manager instance
@@ -378,6 +407,7 @@ class TestRequirePermissionDecorator:
         # This is a known limitation of the current decorator implementation
         pytest.skip("Decorator needs refactoring to accept rbac_manager instance")
     
+    @pytest.mark.p1
     def test_decorator_blocks_unauthorized_user(self, rbac_manager, viewer_user):
         """CRITICAL: Decorator must block unauthorized access."""
         @require_permission(Permission.ADMIN)
@@ -391,6 +421,7 @@ class TestRequirePermissionDecorator:
 class TestPrivilegeEscalationPrevention:
     """Test privilege escalation attack prevention - CRITICAL P0."""
     
+    @pytest.mark.p1
     def test_viewer_cannot_gain_write_permission(self, rbac_manager, viewer_user):
         """CRITICAL: Verify users cannot self-elevate permissions."""
         username = viewer_user['username']
@@ -405,6 +436,7 @@ class TestPrivilegeEscalationPrevention:
         # Permission check should still fail (uses role, not direct list)
         # This tests that permissions are derived from role, not stored list
     
+    @pytest.mark.p1
     def test_role_update_requires_explicit_call(self, rbac_manager, viewer_user):
         """CRITICAL: Role cannot be changed without explicit update_user_role."""
         username = viewer_user['username']
@@ -421,6 +453,7 @@ class TestPrivilegeEscalationPrevention:
 class TestRoleToNeo4jMapping:
     """Test Neo4j role mapping (if connection available)."""
     
+    @pytest.mark.p1
     def test_role_mapping_defined(self):
         """Verify all roles have Neo4j equivalents."""
         manager = RBACManager()

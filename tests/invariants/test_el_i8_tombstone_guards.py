@@ -32,6 +32,7 @@ from mahoun.reasoning.evidence_linked_verdict import _filter_tombstoned_evidence
 class TestLedgerTombstoneGuards:
     """Test EL-I8 enforcement at the ledger write boundary"""
     
+    @pytest.mark.p2
     def test_tombstone_violation_detection_basic_flags(self):
         """EL-I8: Basic tombstone flags (_deleted, _redacted, _purged) are detected"""
         # Mock graph builder with tombstoned nodes
@@ -62,6 +63,7 @@ class TestLedgerTombstoneGuards:
         assert "verdict_001" in str(exc_info.value)
         assert exc_info.value.tombstoned_refs == ["node_123"]
     
+    @pytest.mark.p2
     def test_tombstone_violation_gdpr_purged(self):
         """EL-I8: GDPR purged evidence is detected and blocked"""
         mock_graph = Mock()
@@ -88,6 +90,7 @@ class TestLedgerTombstoneGuards:
         assert "gdpr_node" in str(exc_info.value)
         assert "privacy law compliance" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_tombstone_validation_passes_clean_nodes(self):
         """EL-I8: Clean (non-tombstoned) nodes pass validation"""
         mock_graph = Mock()
@@ -104,6 +107,7 @@ class TestLedgerTombstoneGuards:
         # Should not raise exception
         validate_tombstone_references(entry, mock_graph)
     
+    @pytest.mark.p2
     def test_tombstone_validation_multiple_violations(self):
         """EL-I8: Multiple tombstoned references are all detected"""
         mock_graph = Mock()
@@ -141,6 +145,7 @@ class TestLedgerTombstoneGuards:
 class TestEvidenceFiltering:
     """Test EL-I8 evidence filtering in verdict generation"""
     
+    @pytest.mark.p2
     def test_filter_basic_deleted_evidence(self):
         """EL-I8: Basic _deleted=true evidence is filtered out"""
         facts = [
@@ -156,6 +161,7 @@ class TestEvidenceFiltering:
         assert any(f["id"] == "fact_3" for f in filtered) 
         assert not any(f["id"] == "fact_2" for f in filtered)
     
+    @pytest.mark.p2
     def test_filter_gdpr_purged_evidence(self):
         """EL-I8: GDPR purged evidence is filtered"""
         facts = [
@@ -169,6 +175,7 @@ class TestEvidenceFiltering:
         assert len(filtered) == 1
         assert filtered[0]["id"] == "normal_fact"
     
+    @pytest.mark.p2
     def test_filter_status_based_tombstones(self):
         """EL-I8: Status-based tombstones (status='deleted') are filtered"""
         facts = [
@@ -183,6 +190,7 @@ class TestEvidenceFiltering:
         assert len(filtered) == 1
         assert filtered[0]["id"] == "active_fact"
     
+    @pytest.mark.p2
     def test_filter_temporal_tombstones(self):
         """EL-I8: Temporal tombstones (expired deletion timestamps) are filtered"""
         now = datetime.now(timezone.utc)
@@ -203,6 +211,7 @@ class TestEvidenceFiltering:
         assert "future_fact" in filtered_ids
         assert "expired_fact" not in filtered_ids
     
+    @pytest.mark.p2
     def test_filter_object_attributes(self):
         """EL-I8: Object attributes (not just dict keys) are checked"""
         class MockFact:
@@ -229,6 +238,7 @@ class TestEvidenceFiltering:
 class TestQueryFiltering:
     """Test EL-I8 Cypher query tombstone filtering - SKIPPED due to import issues"""
     
+    @pytest.mark.p2
     def test_skip_query_filtering(self):
         """Skipping query filtering tests due to PolicyResolver location issue"""
         pytest.skip("PolicyResolver import location needs fixing")
@@ -238,6 +248,7 @@ class TestIntegrationScenarios:
     """End-to-end EL-I8 integration tests"""
     
     @patch('mahoun.ledger.guards.logger')
+    @pytest.mark.p2
     def test_ledger_entry_validation_with_tombstones(self, mock_logger):
         """EL-I8: Full ledger entry validation rejects tombstoned references"""
         mock_graph = Mock()
@@ -272,6 +283,7 @@ class TestIntegrationScenarios:
 class TestAdversarialScenarios:
     """Adversarial test cases - attempt to bypass tombstone security"""
     
+    @pytest.mark.p2
     def test_nested_object_tombstone_detection(self):
         """EL-I8: Nested tombstone flags in complex objects are detected"""
         complex_fact = {
@@ -291,6 +303,7 @@ class TestAdversarialScenarios:
         # Current implementation only checks top-level attributes
         assert len(filtered) == 1  # Not filtered (limitation of current impl)
     
+    @pytest.mark.p2
     def test_case_sensitivity_tombstone_flags(self):
         """EL-I8: Case variations in status fields are handled"""
         facts = [
@@ -305,6 +318,7 @@ class TestAdversarialScenarios:
         assert len(filtered) == 1
         assert filtered[0]["id"] == "active_fact"
     
+    @pytest.mark.p2
     def test_performance_large_scale_filtering(self):
         """EL-I8: Performance test with large number of evidence items"""
         import time
@@ -327,6 +341,7 @@ class TestAdversarialScenarios:
         assert len(filtered) == 9000  # 90% should remain
         assert (end_time - start_time) < 1.0  # Should complete in <1 second
     
+    @pytest.mark.p2
     def test_empty_and_null_handling(self):
         """EL-I8: Edge cases with empty/null values are handled safely"""
         edge_case_facts = [

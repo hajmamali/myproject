@@ -66,6 +66,7 @@ class TestProductionFailFast:
     # Production Debug Mode Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_production_rejects_debug_true(self) -> None:
         """
         Test that production environment rejects debug=True.
@@ -85,6 +86,7 @@ class TestProductionFailFast:
         
         assert 'DEBUG must be False in production' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_staging_rejects_debug_true(self) -> None:
         """
         Test that staging environment also rejects debug=True.
@@ -106,6 +108,7 @@ class TestProductionFailFast:
     # Production Guard Mode Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_production_rejects_guard_mode_off(self) -> None:
         """
         Test that production environment rejects GUARD_MODE=OFF.
@@ -125,6 +128,7 @@ class TestProductionFailFast:
         
         assert 'GUARD_MODE cannot be OFF in production' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_production_accepts_guard_mode_strict(self) -> None:
         """
         Test that production accepts GUARD_MODE=STRICT.
@@ -140,6 +144,7 @@ class TestProductionFailFast:
         settings = MahounSettings()
         assert settings.guard_mode == 'STRICT'
     
+    @pytest.mark.p2
     def test_production_accepts_guard_mode_audit(self) -> None:
         """
         Test that production accepts GUARD_MODE=AUDIT.
@@ -159,6 +164,7 @@ class TestProductionFailFast:
     # Production Ledger Backend Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_production_rejects_ledger_noop(self) -> None:
         """
         Test that production environment rejects LEDGER_BACKEND=noop.
@@ -178,6 +184,7 @@ class TestProductionFailFast:
         
         assert 'LEDGER_BACKEND cannot be noop in production' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_production_accepts_ledger_jsonl(self) -> None:
         """
         Test that production accepts LEDGER_BACKEND=jsonl.
@@ -193,6 +200,7 @@ class TestProductionFailFast:
         settings = MahounSettings()
         assert settings.ledger_backend == 'jsonl'
     
+    @pytest.mark.p2
     def test_production_accepts_ledger_sqlite(self) -> None:
         """
         Test that production accepts LEDGER_BACKEND=sqlite.
@@ -212,6 +220,7 @@ class TestProductionFailFast:
     # Production LLM API Key Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_production_openai_requires_api_key(self) -> None:
         """
         Test that production with OpenAI provider requires API key.
@@ -232,6 +241,7 @@ class TestProductionFailFast:
         
         assert 'OPENAI_API_KEY required' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_production_openai_with_api_key_works(self) -> None:
         """
         Test that production with OpenAI provider and API key works.
@@ -249,6 +259,7 @@ class TestProductionFailFast:
         assert settings.llm_provider == 'openai'
         assert settings.openai_api_key == 'sk-test-key-12345'
     
+    @pytest.mark.p2
     def test_production_anthropic_requires_api_key(self) -> None:
         """
         Test that production with Anthropic provider requires API key.
@@ -269,6 +280,7 @@ class TestProductionFailFast:
         
         assert 'ANTHROPIC_API_KEY required' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_production_azure_requires_endpoint_and_key(self) -> None:
         """
         Test that production with Azure provider requires endpoint and API key.
@@ -289,6 +301,7 @@ class TestProductionFailFast:
         
         assert 'AZURE_OPENAI_ENDPOINT required' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_production_local_llm_no_api_key_required(self) -> None:
         """
         Test that production with local LLM provider doesn't require API key.
@@ -308,6 +321,7 @@ class TestProductionFailFast:
     # Development Mode Tests (Should Not Fail)
     # =========================================================================
     
+    @pytest.mark.p2
     def test_dev_mode_allows_debug(self) -> None:
         """
         Test that dev mode allows debug=True.
@@ -321,6 +335,7 @@ class TestProductionFailFast:
         assert settings.debug is True
         assert settings.env == 'dev'
     
+    @pytest.mark.p2
     def test_dev_mode_allows_guard_off(self) -> None:
         """
         Test that dev mode allows GUARD_MODE=OFF.
@@ -333,6 +348,7 @@ class TestProductionFailFast:
         settings = MahounSettings()
         assert settings.guard_mode == 'OFF'
     
+    @pytest.mark.p2
     def test_dev_mode_allows_ledger_noop(self) -> None:
         """
         Test that dev mode allows LEDGER_BACKEND=noop.
@@ -345,6 +361,7 @@ class TestProductionFailFast:
         settings = MahounSettings()
         assert settings.ledger_backend == 'noop'
     
+    @pytest.mark.p2
     def test_dev_mode_no_api_keys_required(self) -> None:
         """
         Test that dev mode doesn't require API keys for any provider.
@@ -359,6 +376,7 @@ class TestProductionFailFast:
         assert settings.llm_provider == 'openai'
         assert settings.openai_api_key is None
     
+    @pytest.mark.p2
     def test_test_mode_allows_all(self) -> None:
         """
         Test that test mode allows all configurations.
@@ -380,6 +398,7 @@ class TestProductionFailFast:
     # Error Message Quality Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_error_messages_are_clear(self) -> None:
         """
         Test that error messages clearly indicate what's wrong.
@@ -403,6 +422,7 @@ class TestProductionFailFast:
     # get_settings() Integration Tests
     # =========================================================================
     
+    @pytest.mark.p2
     def test_get_settings_raises_configuration_error(self) -> None:
         """
         Test that get_settings() raises ConfigurationError on invalid config.
@@ -417,6 +437,7 @@ class TestProductionFailFast:
         with pytest.raises(ConfigurationError):
             get_settings()
     
+    @pytest.mark.p2
     def test_get_settings_caches_valid_config(self) -> None:
         """
         Test that get_settings() caches valid configuration.
@@ -451,6 +472,7 @@ class TestConfigurationValidation:
         os.environ.update(original_env)
         clear_settings_cache()
     
+    @pytest.mark.p2
     def test_invalid_env_value_rejected(self) -> None:
         """Test that invalid environment values are rejected."""
         os.environ['MAHOUN_ENV'] = 'invalid_env'
@@ -460,6 +482,7 @@ class TestConfigurationValidation:
         
         assert 'env must be one of' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_invalid_guard_mode_rejected(self) -> None:
         """Test that invalid guard mode values are rejected."""
         os.environ['MAHOUN_ENV'] = 'dev'
@@ -470,6 +493,7 @@ class TestConfigurationValidation:
         
         assert 'guard_mode must be one of' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_invalid_log_level_rejected(self) -> None:
         """Test that invalid log level values are rejected."""
         os.environ['MAHOUN_ENV'] = 'dev'
@@ -480,6 +504,7 @@ class TestConfigurationValidation:
         
         assert 'log_level must be one of' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_invalid_llm_provider_rejected(self) -> None:
         """Test that invalid LLM provider values are rejected."""
         os.environ['MAHOUN_ENV'] = 'dev'
@@ -490,6 +515,7 @@ class TestConfigurationValidation:
         
         assert 'llm_provider must be one of' in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_invalid_ledger_backend_rejected(self) -> None:
         """Test that invalid ledger backend values are rejected."""
         os.environ['MAHOUN_ENV'] = 'dev'

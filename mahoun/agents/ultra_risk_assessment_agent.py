@@ -138,9 +138,9 @@ class UltraRiskAssessmentAgent(UltraBaseAgent):
         # 3. Graph Service
         if self.config.enable_graph:
             try:
-                from mahoun.graph.ultra_graph_builder import UltraGraphBuilder
+                from mahoun.graph.concurrent_graph_builder import ConcurrentGraphBuilder
 
-                self.graph_service = UltraGraphBuilder()
+                self.graph_service = ConcurrentGraphBuilder()
                 self.logger.info("✅ Graph Service initialized")
             except Exception as e:
                 self.logger.warning(f"⚠️ Graph Service not available: {e}")

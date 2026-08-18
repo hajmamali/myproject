@@ -5,7 +5,7 @@ MIGRATED FROM: domain_modules_staging/domain_modules/adversarial_detector.py
 ADAPTED FOR: MAHOUN Phase 1 Hardening - API Boundary Enforcement
 
 HARDENING ADAPTATIONS:
-- Integration with mahoun.core.logging (not self_improve)
+- Integration with mahoun.core.logging
 - Non-bypassable enforcement hooks for API boundary
 - Provenance tracking for all detection decisions
 - Audit trail integration with EvidenceLedger

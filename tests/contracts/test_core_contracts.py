@@ -44,6 +44,7 @@ from mahoun.schemas.contracts.core_contracts import (
 class TestRuntimeSettingsOutput:
     """Test RuntimeSettingsOutput contract."""
     
+    @pytest.mark.p2
     def test_valid_runtime_settings(self):
         """Test valid runtime settings accepted."""
         settings = RuntimeSettingsOutput(
@@ -55,6 +56,7 @@ class TestRuntimeSettingsOutput:
         assert settings.mode == RuntimeMode.DESKTOP_MINIMAL
         assert settings.skip_graph is True
     
+    @pytest.mark.p2
     def test_missing_required_fields(self):
         """Test missing required fields rejected."""
         with pytest.raises(ValidationError):
@@ -63,6 +65,7 @@ class TestRuntimeSettingsOutput:
                 # Missing skip_graph, skip_lora_training
             )
     
+    @pytest.mark.p2
     def test_invalid_mode(self):
         """Test invalid mode rejected."""
         with pytest.raises(ValidationError):
@@ -72,6 +75,7 @@ class TestRuntimeSettingsOutput:
                 skip_lora_training=False
             )
     
+    @pytest.mark.p2
     def test_immutability(self):
         """Test settings are immutable."""
         settings = RuntimeSettingsOutput(
@@ -86,6 +90,7 @@ class TestRuntimeSettingsOutput:
 class TestBooleanOutput:
     """Test BooleanOutput contract."""
     
+    @pytest.mark.p2
     def test_valid_boolean_output(self):
         """Test valid boolean output accepted."""
         output = BooleanOutput(result=True)
@@ -94,6 +99,7 @@ class TestBooleanOutput:
         output = BooleanOutput(result=False)
         assert output.result is False
     
+    @pytest.mark.p2
     def test_missing_result(self):
         """Test missing result rejected."""
         with pytest.raises(ValidationError):
@@ -103,6 +109,7 @@ class TestBooleanOutput:
 class TestGraphConfigOutput:
     """Test GraphConfigOutput contract."""
     
+    @pytest.mark.p2
     def test_valid_graph_config(self):
         """Test valid graph config accepted."""
         config = GraphConfigOutput(
@@ -113,12 +120,14 @@ class TestGraphConfigOutput:
         )
         assert config.batch_size == 500
     
+    @pytest.mark.p2
     def test_default_values(self):
         """Test default values applied."""
         config = GraphConfigOutput()
         assert config.enable_quality_assessment is True
         assert config.batch_size == 100
     
+    @pytest.mark.p2
     def test_batch_size_constraints(self):
         """Test batch size constraints enforced."""
         # Too small
@@ -141,6 +150,7 @@ class TestGraphConfigOutput:
 class TestLegalDocumentInput:
     """Test LegalDocumentInput contract."""
     
+    @pytest.mark.p2
     def test_valid_document_input(self):
         """Test valid document input accepted."""
         doc = LegalDocumentInput(
@@ -152,6 +162,7 @@ class TestLegalDocumentInput:
         assert doc.doc_id == "DOC-001"
         assert doc.doc_type == LegalDocTypeContract.VERDICT
     
+    @pytest.mark.p2
     def test_empty_doc_id_rejected(self):
         """Test empty doc_id rejected."""
         with pytest.raises(ValidationError):
@@ -162,6 +173,7 @@ class TestLegalDocumentInput:
                 content="Content"
             )
     
+    @pytest.mark.p2
     def test_whitespace_doc_id_rejected(self):
         """Test whitespace-only doc_id rejected."""
         with pytest.raises(ValidationError):
@@ -172,6 +184,7 @@ class TestLegalDocumentInput:
                 content="Content"
             )
     
+    @pytest.mark.p2
     def test_empty_title_rejected(self):
         """Test empty title rejected."""
         with pytest.raises(ValidationError):
@@ -182,6 +195,7 @@ class TestLegalDocumentInput:
                 content="Content"
             )
     
+    @pytest.mark.p2
     def test_empty_content_rejected(self):
         """Test empty content rejected."""
         with pytest.raises(ValidationError):
@@ -192,6 +206,7 @@ class TestLegalDocumentInput:
                 content=""
             )
     
+    @pytest.mark.p2
     def test_metadata_optional(self):
         """Test metadata is optional."""
         doc = LegalDocumentInput(
@@ -202,6 +217,7 @@ class TestLegalDocumentInput:
         )
         assert doc.metadata == {}
     
+    @pytest.mark.p2
     def test_doc_id_trimmed(self):
         """Test doc_id is trimmed."""
         doc = LegalDocumentInput(
@@ -216,6 +232,7 @@ class TestLegalDocumentInput:
 class TestLegalDocumentOutput:
     """Test LegalDocumentOutput contract."""
     
+    @pytest.mark.p2
     def test_valid_document_output(self):
         """Test valid document output accepted."""
         doc = LegalDocumentOutput(
@@ -228,6 +245,7 @@ class TestLegalDocumentOutput:
         )
         assert doc.doc_id == "DOC-001"
     
+    @pytest.mark.p2
     def test_missing_created_at_rejected(self):
         """Test missing created_at rejected."""
         with pytest.raises(ValidationError):
@@ -239,6 +257,7 @@ class TestLegalDocumentOutput:
                 metadata={}
             )
     
+    @pytest.mark.p2
     def test_immutability(self):
         """Test output is immutable."""
         doc = LegalDocumentOutput(
@@ -256,6 +275,7 @@ class TestLegalDocumentOutput:
 class TestLegalEntityInput:
     """Test LegalEntityInput contract."""
     
+    @pytest.mark.p2
     def test_valid_entity_input(self):
         """Test valid entity input accepted."""
         entity = LegalEntityInput(
@@ -268,6 +288,7 @@ class TestLegalEntityInput:
         assert entity.entity_id == "ENT-001"
         assert entity.confidence == 0.95
     
+    @pytest.mark.p2
     def test_confidence_defaults_to_one(self):
         """Test confidence defaults to 1.0."""
         entity = LegalEntityInput(
@@ -277,6 +298,7 @@ class TestLegalEntityInput:
         )
         assert entity.confidence == 1.0
     
+    @pytest.mark.p2
     def test_confidence_range_enforced(self):
         """Test confidence range [0.0, 1.0] enforced."""
         # Too low
@@ -301,6 +323,7 @@ class TestLegalEntityInput:
         LegalEntityInput(entity_id="E1", entity_type="T", name="N", confidence=0.0)
         LegalEntityInput(entity_id="E1", entity_type="T", name="N", confidence=1.0)
     
+    @pytest.mark.p2
     def test_empty_entity_id_rejected(self):
         """Test empty entity_id rejected."""
         with pytest.raises(ValidationError):
@@ -310,6 +333,7 @@ class TestLegalEntityInput:
                 name="Test"
             )
     
+    @pytest.mark.p2
     def test_empty_name_rejected(self):
         """Test empty name rejected."""
         with pytest.raises(ValidationError):
@@ -323,6 +347,7 @@ class TestLegalEntityInput:
 class TestReasoningStepContract:
     """Test ReasoningStepContract."""
     
+    @pytest.mark.p2
     def test_valid_reasoning_step(self):
         """Test valid reasoning step accepted."""
         step = ReasoningStepContract(
@@ -334,6 +359,7 @@ class TestReasoningStepContract:
         assert step.confidence == 0.9
         assert len(step.evidence) == 2
     
+    @pytest.mark.p2
     def test_empty_step_rejected(self):
         """Test empty step rejected."""
         with pytest.raises(ValidationError):
@@ -343,6 +369,7 @@ class TestReasoningStepContract:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_empty_reasoning_rejected(self):
         """Test empty reasoning rejected."""
         with pytest.raises(ValidationError):
@@ -352,6 +379,7 @@ class TestReasoningStepContract:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_confidence_range_enforced(self):
         """Test confidence range enforced."""
         with pytest.raises(ValidationError):
@@ -361,6 +389,7 @@ class TestReasoningStepContract:
                 confidence=1.5
             )
     
+    @pytest.mark.p2
     def test_evidence_optional(self):
         """Test evidence is optional."""
         step = ReasoningStepContract(
@@ -374,6 +403,7 @@ class TestReasoningStepContract:
 class TestCausalRelationContract:
     """Test CausalRelationContract."""
     
+    @pytest.mark.p2
     def test_valid_causal_relation(self):
         """Test valid causal relation accepted."""
         relation = CausalRelationContract(
@@ -384,6 +414,7 @@ class TestCausalRelationContract:
         )
         assert relation.strength == 0.75
     
+    @pytest.mark.p2
     def test_empty_cause_rejected(self):
         """Test empty cause rejected."""
         with pytest.raises(ValidationError):
@@ -393,6 +424,7 @@ class TestCausalRelationContract:
                 strength=0.5
             )
     
+    @pytest.mark.p2
     def test_empty_effect_rejected(self):
         """Test empty effect rejected."""
         with pytest.raises(ValidationError):
@@ -402,6 +434,7 @@ class TestCausalRelationContract:
                 strength=0.5
             )
     
+    @pytest.mark.p2
     def test_strength_range_enforced(self):
         """Test strength range [0.0, 1.0] enforced."""
         with pytest.raises(ValidationError):
@@ -418,6 +451,7 @@ class TestCausalRelationContract:
                 strength=1.1
             )
     
+    @pytest.mark.p2
     def test_explanation_optional(self):
         """Test explanation is optional."""
         relation = CausalRelationContract(
@@ -431,6 +465,7 @@ class TestCausalRelationContract:
 class TestReasoningResultContract:
     """Test ReasoningResultContract."""
     
+    @pytest.mark.p2
     def test_valid_reasoning_result(self):
         """Test valid reasoning result accepted."""
         result = ReasoningResultContract(
@@ -450,6 +485,7 @@ class TestReasoningResultContract:
         assert result.confidence == 0.85
         assert len(result.reasoning_chain) == 1
     
+    @pytest.mark.p2
     def test_empty_question_rejected(self):
         """Test empty question rejected."""
         with pytest.raises(ValidationError):
@@ -462,6 +498,7 @@ class TestReasoningResultContract:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_empty_final_answer_rejected(self):
         """Test empty final answer rejected."""
         with pytest.raises(ValidationError):
@@ -474,6 +511,7 @@ class TestReasoningResultContract:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_empty_reasoning_chain_rejected(self):
         """Test empty reasoning chain rejected."""
         with pytest.raises(ValidationError):
@@ -484,6 +522,7 @@ class TestReasoningResultContract:
                 confidence=0.8
             )
     
+    @pytest.mark.p2
     def test_confidence_range_enforced(self):
         """Test confidence range enforced."""
         with pytest.raises(ValidationError):
@@ -496,6 +535,7 @@ class TestReasoningResultContract:
                 confidence=1.5
             )
     
+    @pytest.mark.p2
     def test_reasoning_depth_non_negative(self):
         """Test reasoning depth must be non-negative."""
         with pytest.raises(ValidationError):
@@ -513,6 +553,7 @@ class TestReasoningResultContract:
 class TestUncertaintyEstimateContract:
     """Test UncertaintyEstimateContract."""
     
+    @pytest.mark.p2
     def test_valid_uncertainty_estimate(self):
         """Test valid uncertainty estimate accepted."""
         estimate = UncertaintyEstimateContract(
@@ -524,6 +565,7 @@ class TestUncertaintyEstimateContract:
         assert estimate.mean == 0.75
         assert estimate.variance == 0.05
     
+    @pytest.mark.p2
     def test_negative_variance_rejected(self):
         """Test negative variance rejected."""
         with pytest.raises(ValidationError):
@@ -534,6 +576,7 @@ class TestUncertaintyEstimateContract:
                 method="test"
             )
     
+    @pytest.mark.p2
     def test_invalid_confidence_interval_rejected(self):
         """Test invalid confidence interval rejected."""
         # Lower > upper
@@ -545,6 +588,7 @@ class TestUncertaintyEstimateContract:
                 method="test"
             )
     
+    @pytest.mark.p2
     def test_empty_method_rejected(self):
         """Test empty method rejected."""
         with pytest.raises(ValidationError):
@@ -563,6 +607,7 @@ class TestUncertaintyEstimateContract:
 class TestCoreModuleError:
     """Test CoreModuleError contract."""
     
+    @pytest.mark.p2
     def test_valid_validation_error(self):
         """Test valid ValidationError accepted."""
         error = CoreModuleError(
@@ -573,6 +618,7 @@ class TestCoreModuleError:
         )
         assert error.error_type == "ValidationError"
     
+    @pytest.mark.p2
     def test_valid_configuration_error(self):
         """Test valid ConfigurationError accepted."""
         error = CoreModuleError(
@@ -581,6 +627,7 @@ class TestCoreModuleError:
         )
         assert error.error_type == "ConfigurationError"
     
+    @pytest.mark.p2
     def test_valid_state_error(self):
         """Test valid StateError accepted."""
         error = CoreModuleError(
@@ -589,6 +636,7 @@ class TestCoreModuleError:
         )
         assert error.error_type == "StateError"
     
+    @pytest.mark.p2
     def test_invalid_error_type_rejected(self):
         """Test invalid error type rejected."""
         with pytest.raises(ValidationError):
@@ -597,6 +645,7 @@ class TestCoreModuleError:
                 message="Test"
             )
     
+    @pytest.mark.p2
     def test_empty_message_rejected(self):
         """Test empty message rejected."""
         with pytest.raises(ValidationError):
@@ -605,6 +654,7 @@ class TestCoreModuleError:
                 message=""
             )
     
+    @pytest.mark.p2
     def test_recoverable_defaults_to_true(self):
         """Test recoverable defaults to True."""
         error = CoreModuleError(
@@ -613,6 +663,7 @@ class TestCoreModuleError:
         )
         assert error.recoverable is True
     
+    @pytest.mark.p2
     def test_details_optional(self):
         """Test details is optional."""
         error = CoreModuleError(
@@ -629,6 +680,7 @@ class TestCoreModuleError:
 class TestContractCompleteness:
     """Test that all contracts are complete and consistent."""
     
+    @pytest.mark.p2
     def test_all_runtime_contracts_defined(self):
         """Test all runtime configuration contracts defined."""
         assert RuntimeMode is not None
@@ -636,6 +688,7 @@ class TestContractCompleteness:
         assert BooleanOutput is not None
         assert GraphConfigOutput is not None
     
+    @pytest.mark.p2
     def test_all_core_model_contracts_defined(self):
         """Test all core model contracts defined."""
         assert LegalDocTypeContract is not None
@@ -648,10 +701,12 @@ class TestContractCompleteness:
         assert ReasoningResultContract is not None
         assert UncertaintyEstimateContract is not None
     
+    @pytest.mark.p2
     def test_error_contract_defined(self):
         """Test error contract defined."""
         assert CoreModuleError is not None
     
+    @pytest.mark.p2
     def test_all_error_types_covered(self):
         """Test all error types are covered."""
         error_types = ["ValidationError", "ConfigurationError", "StateError"]

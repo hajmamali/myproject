@@ -48,6 +48,7 @@ class TestBasicOperations:
     """Test basic async operations"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_single_write(self, writer):
         """Test writing single entry"""
         entry = LedgerEntry(
@@ -68,6 +69,7 @@ class TestBasicOperations:
         assert len(result.entry_hash) == 64  # SHA256
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_multiple_writes(self, writer):
         """Test writing multiple entries"""
         results = []
@@ -95,6 +97,7 @@ class TestBasicOperations:
         assert len(set(hashes)) == len(hashes)
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_hash_chain_integrity(self, writer):
         """Test that hash chain is maintained"""
         results = []
@@ -126,6 +129,7 @@ class TestBatching:
     """Test batch processing"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_batch_writes(self, temp_ledger_path, temp_dlq_path):
         """Test that writes are batched"""
         backend = FileLedgerBackend(temp_ledger_path)
@@ -167,6 +171,7 @@ class TestBatching:
             await writer.stop()
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_auto_flush_on_interval(self, temp_ledger_path, temp_dlq_path):
         """Test auto-flush based on time interval"""
         backend = FileLedgerBackend(temp_ledger_path)
@@ -212,6 +217,7 @@ class TestPerformance:
     """Test performance under load"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_high_throughput(self, writer):
         """Test high-throughput writes"""
         num_entries = 1000
@@ -250,6 +256,7 @@ class TestPerformance:
         assert throughput > 500  # Conservative target
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_latency(self, writer):
         """Test write latency"""
         latencies = []
@@ -287,6 +294,7 @@ class TestErrorHandling:
     """Test error handling and retry logic"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_backpressure(self, temp_ledger_path, temp_dlq_path):
         """Test backpressure when queue is full"""
         backend = FileLedgerBackend(temp_ledger_path)
@@ -333,6 +341,7 @@ class TestStatistics:
     """Test statistics and monitoring"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_stats_tracking(self, writer):
         """Test that statistics are tracked correctly"""
         # Write some entries
@@ -369,6 +378,7 @@ class TestStressTest:
     """Stress tests for extreme scenarios"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_extreme_load(self, temp_ledger_path, temp_dlq_path):
         """Test under extreme load"""
         backend = FileLedgerBackend(temp_ledger_path)

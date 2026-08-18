@@ -69,6 +69,7 @@ def fitted_gp(sample_data, gp_config):
 class TestGPConfig:
     """تست‌های تنظیمات"""
 
+    @pytest.mark.p2
     def test_default_config(self):
         """تست تنظیمات پیش‌فرض"""
         config = GPConfig()
@@ -76,11 +77,13 @@ class TestGPConfig:
         assert config.num_inducing_points == 100
         assert config.learning_rate == 0.01
 
+    @pytest.mark.p2
     def test_invalid_inducing_points(self):
         """تست رد کردن inducing points نامعتبر"""
         with pytest.raises(ValueError, match="حداقل 10"):
             GPConfig(num_inducing_points=5)
 
+    @pytest.mark.p2
     def test_invalid_learning_rate(self):
         """تست رد کردن learning rate نامعتبر"""
         with pytest.raises(ValueError, match="بین 0 و 1"):
@@ -95,6 +98,7 @@ class TestGPConfig:
 class TestBasicFunctionality:
     """تست‌های عملکرد پایه"""
 
+    @pytest.mark.p2
     def test_fit_and_predict(self, sample_data, gp_config):
         """تست آموزش و پیش‌بینی"""
         X_train, y_train, X_test, _ = sample_data
@@ -108,6 +112,7 @@ class TestBasicFunctionality:
         assert std.shape == (20,)
         assert np.all(std > 0), "std باید مثبت باشد"
 
+    @pytest.mark.p2
     def test_predict_without_fit(self, gp_config):
         """تست پیش‌بینی بدون آموزش"""
         gp = GaussianProcessUncertainty(gp_config)
@@ -115,6 +120,7 @@ class TestBasicFunctionality:
         with pytest.raises(ValueError, match="not fitted"):
             gp.predict(np.random.randn(10, 5))
 
+    @pytest.mark.p2
     def test_uncertainty_estimation(self, fitted_gp, sample_data):
         """تست تخمین عدم قطعیت"""
         _, _, X_test, _ = sample_data
@@ -127,6 +133,7 @@ class TestBasicFunctionality:
         assert estimate.total_std >= 0
         assert estimate.confidence_interval_lower < estimate.confidence_interval_upper
 
+    @pytest.mark.p2
     def test_legal_explanation_generated(self, fitted_gp, sample_data):
         """تست تولید توضیح حقوقی"""
         _, _, X_test, _ = sample_data
@@ -147,6 +154,7 @@ class TestBasicFunctionality:
 class TestInputValidation:
     """تست‌های اعتبارسنجی ورودی"""
 
+    @pytest.mark.p2
     def test_nan_rejection(self, fitted_gp):
         """تست رد کردن NaN"""
         X_nan = np.array([[1, 2, np.nan, 4, 5]])
@@ -154,6 +162,7 @@ class TestInputValidation:
         with pytest.raises(ValueError, match="NaN"):
             fitted_gp.predict(X_nan)
 
+    @pytest.mark.p2
     def test_inf_rejection(self, fitted_gp):
         """تست رد کردن Inf"""
         X_inf = np.array([[1, 2, np.inf, 4, 5]])
@@ -161,6 +170,7 @@ class TestInputValidation:
         with pytest.raises(ValueError, match="Inf"):
             fitted_gp.predict(X_inf)
 
+    @pytest.mark.p2
     def test_shape_mismatch(self, gp_config):
         """تست عدم تطابق شکل"""
         gp = GaussianProcessUncertainty(gp_config)
@@ -171,6 +181,7 @@ class TestInputValidation:
         with pytest.raises(ValueError, match="same number of samples"):
             gp.fit(X, y)
 
+    @pytest.mark.p2
     def test_minimum_samples(self, gp_config):
         """تست حداقل نمونه"""
         gp = GaussianProcessUncertainty(gp_config)
@@ -190,6 +201,7 @@ class TestInputValidation:
 class TestCalibration:
     """تست‌های کالیبراسیون"""
 
+    @pytest.mark.p2
     def test_calibration(self, fitted_gp, sample_data):
         """تست کالیبراسیون"""
         _, _, X_test, y_test = sample_data
@@ -200,6 +212,7 @@ class TestCalibration:
         assert 0 <= metrics.expected_calibration_error <= 1
         assert 0 <= metrics.maximum_calibration_error <= 1
 
+    @pytest.mark.p2
     def test_calibration_temperature(self, fitted_gp, sample_data):
         """تست temperature scaling"""
         _, _, X_test, y_test = sample_data
@@ -217,6 +230,7 @@ class TestCalibration:
 class TestCache:
     """تست‌های کش"""
 
+    @pytest.mark.p2
     def test_cache_hit(self, fitted_gp, sample_data):
         """تست hit کش"""
         _, _, X_test, _ = sample_data
@@ -229,6 +243,7 @@ class TestCache:
 
         assert fitted_gp._cache._hits > 0
 
+    @pytest.mark.p2
     def test_cache_clear(self, fitted_gp, sample_data):
         """تست پاک کردن کش"""
         _, _, X_test, _ = sample_data
@@ -239,6 +254,7 @@ class TestCache:
         assert fitted_gp._cache._hits == 0
         assert fitted_gp._cache._misses == 0
 
+    @pytest.mark.p2
     def test_thread_safe_cache(self):
         """تست thread-safety کش"""
         cache = ThreadSafeCache(max_size=100, ttl_seconds=60)
@@ -277,6 +293,7 @@ class TestCache:
 class TestMetrics:
     """تست‌های معیارها"""
 
+    @pytest.mark.p2
     def test_get_metrics(self, fitted_gp, sample_data):
         """تست دریافت معیارها"""
         _, _, X_test, _ = sample_data
@@ -289,6 +306,7 @@ class TestMetrics:
         assert "calibration" in metrics
         assert metrics["is_fitted"] == True
 
+    @pytest.mark.p2
     def test_latency_tracking(self, fitted_gp, sample_data):
         """تست ردیابی تأخیر"""
         _, _, X_test, _ = sample_data
@@ -308,6 +326,7 @@ class TestMetrics:
 class TestUtilityFunctions:
     """تست‌های توابع کمکی"""
 
+    @pytest.mark.p2
     def test_create_features_from_scores(self):
         """تست ساخت ویژگی از امتیازات"""
         scores = np.array([0.5, 0.7, 0.9])
@@ -316,6 +335,7 @@ class TestUtilityFunctions:
         assert features.shape[0] == 3
         assert features.shape[1] > 1  # Should have multiple features
 
+    @pytest.mark.p2
     def test_factory_function(self):
         """تست factory function"""
         gp = create_gp_uncertainty(
@@ -335,6 +355,7 @@ class TestUtilityFunctions:
 class TestEdgeCases:
     """تست‌های موارد لبه‌ای"""
 
+    @pytest.mark.p2
     def test_single_sample_prediction(self, fitted_gp):
         """تست پیش‌بینی تک نمونه"""
         X_single = np.random.randn(1, 5)
@@ -344,6 +365,7 @@ class TestEdgeCases:
         assert mean.shape == (1,)
         assert std.shape == (1,)
 
+    @pytest.mark.p2
     def test_1d_input(self, gp_config):
         """تست ورودی یک‌بعدی"""
         gp = GaussianProcessUncertainty(gp_config)
@@ -367,6 +389,7 @@ class TestEdgeCases:
 class TestBenchmark:
     """بنچمارک‌ها"""
 
+    @pytest.mark.p2
     def test_prediction_latency(self, fitted_gp, sample_data):
         """تست تأخیر پیش‌بینی"""
         import time

@@ -46,6 +46,7 @@ from mahoun.schemas.contracts.ledger_contracts import (
 class TestLedgerEntryContract:
     """Test LedgerEntryContract validation (enforces EL-I1, EL-I4, EL-I7)."""
     
+    @pytest.mark.p2
     def test_valid_entry(self):
         """Valid ledger entry should pass."""
         entry = LedgerEntryContract(
@@ -61,6 +62,7 @@ class TestLedgerEntryContract:
         assert entry.verdict_id == "verdict_12345"
         assert len(entry.referenced_ltm_nodes) == 2
     
+    @pytest.mark.p2
     def test_entry_with_optional_fields(self):
         """Entry with optional fields should pass."""
         entry = LedgerEntryContract(
@@ -78,6 +80,7 @@ class TestLedgerEntryContract:
         assert entry.event_type == "verdict_published"
         assert entry.request_id == "req_abc123"
     
+    @pytest.mark.p2
     def test_empty_ltm_nodes_fails_el_i1(self):
         """Empty LTM nodes should fail (EL-I1: Evidence Required)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -94,6 +97,7 @@ class TestLedgerEntryContract:
         # Pydantic min_length=1 catches this before custom validator
         assert "referenced_ltm_nodes" in str(exc_info.value)
     
+    @pytest.mark.p2
     def test_long_fact_reference_fails_el_i7(self):
         """Long fact reference should fail (EL-I7: Privacy violation)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -109,6 +113,7 @@ class TestLedgerEntryContract:
             )
         assert "EL-I7" in str(exc_info.value) or "privacy" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_sensitive_pattern_in_fact_fails_el_i7(self):
         """Sensitive pattern in fact reference should fail (EL-I7)."""
         with pytest.raises(ValidationError) as exc_info:
@@ -124,6 +129,7 @@ class TestLedgerEntryContract:
             )
         assert "EL-I7" in str(exc_info.value) or "sensitive" in str(exc_info.value).lower()
     
+    @pytest.mark.p2
     def test_confidence_out_of_range_fails(self):
         """Confidence outside [0, 1] should fail."""
         with pytest.raises(ValidationError):
@@ -138,6 +144,7 @@ class TestLedgerEntryContract:
                 created_at=datetime.now()
             )
     
+    @pytest.mark.p2
     def test_invalid_guard_mode_fails(self):
         """Invalid guard_mode should fail."""
         with pytest.raises(ValidationError):
@@ -152,6 +159,7 @@ class TestLedgerEntryContract:
                 created_at=datetime.now()
             )
     
+    @pytest.mark.p2
     def test_entry_is_frozen_el_i4(self):
         """Entry should be immutable (EL-I4: Immutability)."""
         entry = LedgerEntryContract(
@@ -168,6 +176,7 @@ class TestLedgerEntryContract:
         with pytest.raises((ValidationError, AttributeError)):
             entry.verdict_id = "modified"  # Should fail
     
+    @pytest.mark.p2
     def test_extra_fields_forbidden(self):
         """Extra fields should be rejected."""
         with pytest.raises(ValidationError):
@@ -191,6 +200,7 @@ class TestLedgerEntryContract:
 class TestWriteLedgerInput:
     """Test WriteLedgerInput validation."""
     
+    @pytest.mark.p2
     def test_valid_input(self):
         """Valid input should pass."""
         inp = WriteLedgerInput(
@@ -215,6 +225,7 @@ class TestWriteLedgerInput:
 class TestWriteLedgerOutput:
     """Test WriteLedgerOutput validation (enforces EL-I6)."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = WriteLedgerOutput(
@@ -226,6 +237,7 @@ class TestWriteLedgerOutput:
         assert output.entry_hash == "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd"
         assert output.prev_hash == "genesis"
     
+    @pytest.mark.p2
     def test_output_with_prev_hash(self):
         """Output with previous hash should pass."""
         output = WriteLedgerOutput(
@@ -235,6 +247,7 @@ class TestWriteLedgerOutput:
         )
         assert len(output.prev_hash) == 64
     
+    @pytest.mark.p2
     def test_invalid_hash_length_fails(self):
         """Hash with wrong length should fail."""
         with pytest.raises(ValidationError):
@@ -244,6 +257,7 @@ class TestWriteLedgerOutput:
                 written_at=datetime.now()
             )
     
+    @pytest.mark.p2
     def test_invalid_hash_chars_fails(self):
         """Hash with invalid characters should fail."""
         with pytest.raises(ValidationError):
@@ -253,6 +267,7 @@ class TestWriteLedgerOutput:
                 written_at=datetime.now()
             )
     
+    @pytest.mark.p2
     def test_invalid_prev_hash_fails(self):
         """Invalid prev_hash should fail."""
         with pytest.raises(ValidationError):
@@ -270,6 +285,7 @@ class TestWriteLedgerOutput:
 class TestWriteLedgerError:
     """Test WriteLedgerError validation (enforces EL-I3)."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = WriteLedgerError(
@@ -280,6 +296,7 @@ class TestWriteLedgerError:
         assert error.error_type == "storage_failure"
         assert error.blocks_verdict is True  # EL-I3: Verdict blocking
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -295,6 +312,7 @@ class TestWriteLedgerError:
             )
             assert error.error_type == error_type
     
+    @pytest.mark.p2
     def test_invalid_error_type_fails(self):
         """Invalid error_type should fail."""
         with pytest.raises(ValidationError):
@@ -311,6 +329,7 @@ class TestWriteLedgerError:
 class TestVerifyIntegrityOutput:
     """Test VerifyIntegrityOutput validation (enforces EL-I6)."""
     
+    @pytest.mark.p2
     def test_valid_output_chain_valid(self):
         """Valid output with valid chain should pass."""
         output = VerifyIntegrityOutput(
@@ -322,6 +341,7 @@ class TestVerifyIntegrityOutput:
         assert output.is_valid is True
         assert output.total_entries == 1523
     
+    @pytest.mark.p2
     def test_valid_output_chain_invalid(self):
         """Valid output with invalid chain should pass."""
         output = VerifyIntegrityOutput(
@@ -333,6 +353,7 @@ class TestVerifyIntegrityOutput:
         assert output.is_valid is False
         assert output.first_invalid_entry == "verdict_500"
     
+    @pytest.mark.p2
     def test_negative_total_entries_fails(self):
         """Negative total_entries should fail."""
         with pytest.raises(ValidationError):
@@ -350,6 +371,7 @@ class TestVerifyIntegrityOutput:
 class TestVerifyIntegrityError:
     """Test VerifyIntegrityError validation."""
     
+    @pytest.mark.p2
     def test_valid_error(self):
         """Valid error should pass."""
         error = VerifyIntegrityError(
@@ -358,6 +380,7 @@ class TestVerifyIntegrityError:
         )
         assert error.error_type == "backend_unavailable"
     
+    @pytest.mark.p2
     def test_all_valid_error_types(self):
         """All documented error types should be valid."""
         valid_types = [
@@ -380,6 +403,7 @@ class TestVerifyIntegrityError:
 class TestInvariantSpecContract:
     """Test InvariantSpecContract validation."""
     
+    @pytest.mark.p2
     def test_valid_invariant(self):
         """Valid invariant spec should pass."""
         inv = InvariantSpecContract(
@@ -392,6 +416,7 @@ class TestInvariantSpecContract:
         assert inv.id == "EL-I1"
         assert len(inv.enforced_at) == 1
     
+    @pytest.mark.p2
     def test_invalid_id_format_fails(self):
         """Invalid ID format should fail."""
         with pytest.raises(ValidationError):
@@ -403,6 +428,7 @@ class TestInvariantSpecContract:
                 failure_consequence="Test consequence"
             )
     
+    @pytest.mark.p2
     def test_empty_enforced_at_fails(self):
         """Empty enforced_at should fail."""
         with pytest.raises(ValidationError):
@@ -422,6 +448,7 @@ class TestInvariantSpecContract:
 class TestGetInvariantsOutput:
     """Test GetInvariantsOutput validation."""
     
+    @pytest.mark.p2
     def test_valid_output(self):
         """Valid output should pass."""
         output = GetInvariantsOutput(
@@ -447,6 +474,7 @@ class TestGetInvariantsOutput:
         assert output.total_invariants == 2
         assert len(output.invariants) == 2
     
+    @pytest.mark.p2
     def test_empty_invariants_fails(self):
         """Empty invariants list should fail."""
         with pytest.raises(ValidationError):
@@ -464,6 +492,7 @@ class TestGetInvariantsOutput:
 class TestLedgerBackendConfig:
     """Test LedgerBackendConfig validation."""
     
+    @pytest.mark.p2
     def test_valid_jsonl_config(self):
         """Valid JSONL config should pass."""
         config = LedgerBackendConfig(
@@ -473,6 +502,7 @@ class TestLedgerBackendConfig:
         assert config.backend_type == "jsonl"
         assert config.path == "data/ledger/evidence.jsonl"
     
+    @pytest.mark.p2
     def test_valid_sqlite_config(self):
         """Valid SQLite config should pass."""
         config = LedgerBackendConfig(
@@ -481,6 +511,7 @@ class TestLedgerBackendConfig:
         )
         assert config.backend_type == "sqlite"
     
+    @pytest.mark.p2
     def test_valid_noop_config(self):
         """Valid noop config (no path) should pass."""
         config = LedgerBackendConfig(
@@ -489,6 +520,7 @@ class TestLedgerBackendConfig:
         assert config.backend_type == "noop"
         assert config.path is None
     
+    @pytest.mark.p2
     def test_jsonl_without_path_fails(self):
         """JSONL config without path should fail."""
         with pytest.raises(ValidationError):
@@ -497,6 +529,7 @@ class TestLedgerBackendConfig:
                 # Missing path
             )
     
+    @pytest.mark.p2
     def test_sqlite_without_path_fails(self):
         """SQLite config without path should fail."""
         with pytest.raises(ValidationError):
@@ -505,6 +538,7 @@ class TestLedgerBackendConfig:
                 # Missing path
             )
     
+    @pytest.mark.p2
     def test_invalid_backend_type_fails(self):
         """Invalid backend_type should fail."""
         with pytest.raises(ValidationError):
@@ -521,6 +555,7 @@ class TestLedgerBackendConfig:
 class TestLedgerContractIntegration:
     """Test contract integration and invariant enforcement."""
     
+    @pytest.mark.p2
     def test_complete_write_workflow(self):
         """Complete write workflow should validate."""
         # Input
@@ -550,6 +585,7 @@ class TestLedgerContractIntegration:
         assert output.success is True
         assert len(output.entry_hash) == 64
     
+    @pytest.mark.p2
     def test_invariant_enforcement_chain(self):
         """Invariant enforcement should work across contracts."""
         # EL-I1: Evidence required
@@ -578,6 +614,7 @@ class TestLedgerContractIntegration:
                 created_at=datetime.now()
             )
     
+    @pytest.mark.p2
     def test_extra_forbid_at_all_levels(self):
         """extra='forbid' should be enforced at all nesting levels."""
         # Extra field at entry level

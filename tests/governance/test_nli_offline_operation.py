@@ -145,6 +145,7 @@ class TestNLIModelLocalLoading:
     **This is P0 CRITICAL** - no workarounds, no fallbacks.
     """
     
+    @pytest.mark.p0
     def test_nli_model_loads_without_network(
         self,
         airgap_env_strict,
@@ -189,6 +190,7 @@ class TestNLIModelLocalLoading:
                     # If this happens, module structure may have changed
                     pytest.skip(f"ContradictionDetector import failed: {e}")
     
+    @pytest.mark.p0
     def test_nli_model_loading_with_local_path(
         self,
         airgap_env_strict,
@@ -229,6 +231,7 @@ class TestNLIModelLocalLoading:
                 
                 print("✅ NLI model loaded with local_files_only=True")
     
+    @pytest.mark.p0
     def test_nli_loading_fails_gracefully_if_not_cached(
         self,
         airgap_env_strict
@@ -276,6 +279,7 @@ class TestContradictionDetectionOffline:
     - Performance acceptable (< 500ms per comparison)
     """
     
+    @pytest.mark.p0
     def test_detect_obvious_contradiction(
         self,
         airgap_env_strict,
@@ -301,6 +305,7 @@ class TestContradictionDetectionOffline:
         
         print(f"✅ Contradiction detected: confidence={confidence:.2f}")
     
+    @pytest.mark.p0
     def test_detect_entailment(
         self,
         airgap_env_strict,
@@ -324,6 +329,7 @@ class TestContradictionDetectionOffline:
         
         print(f"✅ Entailment detected: confidence={confidence:.2f}")
     
+    @pytest.mark.p0
     def test_detect_neutral_unrelated_statements(
         self,
         airgap_env_strict,
@@ -364,6 +370,7 @@ class TestFortressValidatorWithOfflineNLI:
     **This is the MOST CRITICAL test** - if this fails, production is blocked.
     """
     
+    @pytest.mark.p0
     def test_fortress_validator_initializes_with_offline_nli(
         self,
         airgap_env_strict,
@@ -393,6 +400,7 @@ class TestFortressValidatorWithOfflineNLI:
             
             print("✅ FortressValidator initialized with offline NLI")
     
+    @pytest.mark.p0
     def test_agreement_score_calculation_with_offline_nli(
         self,
         airgap_env_strict,
@@ -420,6 +428,7 @@ class TestFortressValidatorWithOfflineNLI:
         
         print(f"✅ NLI returned valid label: {label} (conf={confidence:.2f})")
     
+    @pytest.mark.p0
     def test_fortress_rejects_low_agreement_in_airgap(
         self,
         airgap_env_strict,
@@ -475,6 +484,7 @@ class TestNLIPerformanceInAirgap:
     - No performance degradation over time
     """
     
+    @pytest.mark.p0
     def test_nli_inference_latency(
         self,
         airgap_env_strict,
@@ -523,6 +533,7 @@ class TestNLIFailureModes:
     - Insufficient memory → graceful failure
     """
     
+    @pytest.mark.p0
     def test_clear_error_when_nli_not_cached(self, airgap_env_strict):
         """
         **Setup**: NLI model NOT in cache

@@ -2,6 +2,108 @@
 
 Enterprise-grade monitoring and observability for Mahoun's legal-aware components with zero-hallucination guarantees.
 
+## MANDATORY AI AGENT CONSTITUTIONAL BOOTSTRAP
+
+All AI agents working on MAHOUN MUST perform the following initialization before any analysis, planning, coding, modification, refactoring, testing, or architectural decision.
+
+## Step 1 — Constitutional Loading
+
+The agent MUST read and understand:
+
+`/home/haji/Desktop/KingMahouN/mahoun/constitutional/constitution/CONSTITUTION.md`
+
+This document is the root authority for MAHOUN development governance.
+
+No repository action is authorized before constitutional loading is completed.
+
+## Step 2 — Authority Hierarchy
+
+The following authority hierarchy MUST be respected:
+
+1. Constitutional documents
+2. Workflow definitions
+3. Agent role instructions
+4. Repository implementation details
+5. Local tooling and IDE metadata
+
+Lower-level instructions MUST NEVER override higher-level authority.
+
+## Step 3 — Source of Truth
+
+The directory:
+
+`/home/haji/Desktop/KingMahouN/mahoun/constitutional/`
+
+is the single authoritative governance source for:
+
+- Architecture decisions
+- Governance boundaries
+- Security rules
+- API evolution policies
+- Workflow execution rules
+- Agent behavior constraints
+
+## Step 4 — Forbidden Assumptions
+
+Agents MUST NOT consider the following as architectural authority:
+
+- `.ai/`
+- `.cursor/`
+- `.vscode/`
+- IDE-generated instructions
+- Client-specific metadata
+- Generated files
+- Temporary agent memory
+- Previous agent assumptions
+
+These sources may be consulted only when explicitly referenced by constitutional documents.
+
+## Step 5 — Conflict Resolution
+
+If any conflict exists between:
+
+- Agent instructions
+- IDE instructions
+- Client configuration
+- Generated metadata
+- Existing implementation
+
+the constitutional documents ALWAYS take precedence.
+
+## Step 6 — Architectural Changes
+
+Before performing any of the following actions, the agent MUST consult relevant constitutional documents:
+
+- Creating new modules
+- Moving files
+- Changing public APIs
+- Modifying governance logic
+- Altering contracts/schema
+- Changing workflow behavior
+- Refactoring core architecture
+
+## Step 7 — Fail Closed Rule
+
+If constitutional documents cannot be accessed, are missing, ambiguous, or contradictory:
+
+The agent MUST NOT proceed with architectural changes.
+
+The agent MUST:
+
+1. Report the conflict.
+2. Identify the missing authority source.
+3. Request clarification.
+
+Silent assumption is prohibited.
+
+## Final Rule
+
+MAHOUN is governed by constitutional architecture.
+
+Agents are execution units, not architectural authorities.
+
+No agent, model, IDE, plugin, or client configuration may redefine MAHOUN architecture outside the constitutional process.
+
 ## Overview
 
 The Ultra-Professional Legal Monitoring System provides comprehensive monitoring, metrics collection, and alerting for legal reasoning operations. It integrates with Prometheus for metrics collection, Grafana for visualization, and includes ML-based anomaly detection via the UltraPerformanceMonitor.
@@ -147,7 +249,7 @@ legal_monitoring.add_sla_target(SLATarget(
 ### 4. Alert Callbacks
 
 ```python
-from mahoun.self_improve.ultra_performance_monitoring import Alert
+from mahoun.monitoring.alerting import Alert
 
 def my_alert_handler(alert: Alert):
     print(f"Alert: {alert.severity.value} - {alert.message}")

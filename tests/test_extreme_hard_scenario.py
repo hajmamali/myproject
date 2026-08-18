@@ -39,6 +39,7 @@ sys.path.insert(0, str(project_root))
 class TestExtremeHardScenario:
     """تست سناریوی بسیار سخت و پیچیده"""
     
+    @pytest.mark.p2
     def test_extreme_legal_dispute_with_multiple_contradictions(self):
         """
         سناریوی بسیار سخت: اختلاف حقوقی پیچیده با contradictions متعدد

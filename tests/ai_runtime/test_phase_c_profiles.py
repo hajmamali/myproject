@@ -44,6 +44,7 @@ from mahoun.core.models import (
 class TestTaskC11_DeploymentProfileImplementation:
     """Task C.1.1: DeploymentProfile implementation and validation"""
     
+    @pytest.mark.p2
     def test_desktop_minimal_profile_constants(self):
         """Validate Desktop Minimal profile specifications"""
         profile = DESKTOP_MINIMAL
@@ -60,6 +61,7 @@ class TestTaskC11_DeploymentProfileImplementation:
         assert profile.performance_targets.target_latency_ms <= 10000  # Up to 10s acceptable
         assert profile.performance_targets.target_throughput_rps >= 1
     
+    @pytest.mark.p2
     def test_enterprise_full_profile_constants(self):
         """Validate Enterprise Full profile specifications"""
         profile = ENTERPRISE_FULL
@@ -76,6 +78,7 @@ class TestTaskC11_DeploymentProfileImplementation:
         assert profile.performance_targets.target_latency_ms <= 5000  # Better than desktop
         assert profile.performance_targets.target_throughput_rps >= 50
     
+    @pytest.mark.p2
     def test_profile_resource_scaling(self):
         """Validate resource scaling between profiles"""
         desktop = DESKTOP_MINIMAL
@@ -98,6 +101,7 @@ class TestTaskC12_EnvironmentDrivenProfileSelection:
     """Task C.1.2: Environment-driven profile selection"""
     
     @patch.dict('os.environ', {'MAHOUN_DEPLOYMENT_PROFILE': 'desktop_minimal'})
+    @pytest.mark.p2
     def test_environment_variable_desktop_minimal(self):
         """Test profile selection from environment variable - Desktop Minimal"""
         from mahoun.core.models import load_profile_from_env
@@ -106,6 +110,7 @@ class TestTaskC12_EnvironmentDrivenProfileSelection:
         assert profile.profile_name == "desktop_minimal"
     
     @patch.dict('os.environ', {'MAHOUN_DEPLOYMENT_PROFILE': 'enterprise_full'})
+    @pytest.mark.p2
     def test_environment_variable_enterprise_full(self):
         """Test profile selection from environment variable - Enterprise Full"""
         from mahoun.core.models import load_profile_from_env
@@ -114,6 +119,7 @@ class TestTaskC12_EnvironmentDrivenProfileSelection:
         assert profile.profile_name == "enterprise_full"
     
     @patch.dict('os.environ', {}, clear=True)
+    @pytest.mark.p2
     def test_default_profile_selection(self):
         """Test default profile selection when no environment variable"""
         from mahoun.core.models import load_profile_from_env
@@ -124,6 +130,7 @@ class TestTaskC12_EnvironmentDrivenProfileSelection:
     
     @patch('psutil.virtual_memory')
     @patch('psutil.cpu_count')
+    @pytest.mark.p2
     def test_auto_profile_selection_enterprise(self, mock_cpu_count, mock_mem):
         """Test automatic profile selection for enterprise resources"""
         # Mock enterprise-level resources
@@ -136,6 +143,7 @@ class TestTaskC12_EnvironmentDrivenProfileSelection:
     
     @patch('psutil.virtual_memory')
     @patch('psutil.cpu_count')
+    @pytest.mark.p2
     def test_auto_profile_selection_desktop(self, mock_cpu_count, mock_mem):
         """Test automatic profile selection for desktop resources"""
         # Mock desktop-level resources
@@ -154,6 +162,7 @@ class TestTaskC13_ResourceLimitEnforcement:
     @patch('psutil.cpu_percent')
     @patch('psutil.cpu_count')
     @patch('psutil.disk_usage')
+    @pytest.mark.p2
     def test_resource_utilization_monitoring(
         self, mock_disk, mock_cpu_count, mock_cpu_percent, mock_mem
     ):
@@ -185,6 +194,7 @@ class TestTaskC13_ResourceLimitEnforcement:
     @patch('psutil.cpu_percent')
     @patch('psutil.cpu_count')
     @patch('psutil.disk_usage')
+    @pytest.mark.p2
     def test_resource_status_healthy(
         self, mock_disk, mock_cpu_count, mock_cpu_percent, mock_mem
     ):
@@ -214,6 +224,7 @@ class TestTaskC13_ResourceLimitEnforcement:
     @patch('psutil.cpu_percent')
     @patch('psutil.cpu_count')
     @patch('psutil.disk_usage')
+    @pytest.mark.p2
     def test_resource_status_exceeded(
         self, mock_disk, mock_cpu_count, mock_cpu_percent, mock_mem
     ):
@@ -242,6 +253,7 @@ class TestTaskC13_ResourceLimitEnforcement:
 class TestTaskC14_ProfileSwitchingValidation:
     """Task C.1.4: Profile switching validation"""
     
+    @pytest.mark.p2
     def test_profile_compatibility_report(self):
         """Test profile compatibility assessment"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL, auto_select=False)
@@ -255,6 +267,7 @@ class TestTaskC14_ProfileSwitchingValidation:
         assert isinstance(report.warnings, list)
         assert isinstance(report.recommendations, list)
     
+    @pytest.mark.p2
     def test_profile_comparison(self):
         """Test profile comparison utility"""
         comparison = compare_profiles(DESKTOP_MINIMAL, ENTERPRISE_FULL)
@@ -274,6 +287,7 @@ class TestTaskC14_ProfileSwitchingValidation:
 class TestTaskC21_CrossProfileQueryTesting:
     """Task C.2.1: Cross-profile query testing"""
     
+    @pytest.mark.p2
     def test_semantic_equivalence_validation_structure(self):
         """Test semantic equivalence validation framework"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -298,6 +312,7 @@ class TestTaskC21_CrossProfileQueryTesting:
         assert report["structural_checks"]["same_codebase"] == True
         assert report["structural_checks"]["same_api_surface"] == True
     
+    @pytest.mark.p2
     def test_api_surface_equivalence(self):
         """Test API surface equivalence across profiles"""
         # Both profiles use same ProfileManager API
@@ -314,6 +329,7 @@ class TestTaskC21_CrossProfileQueryTesting:
 class TestTaskC22_ResourceUtilizationMonitoring:
     """Task C.2.2: Resource utilization monitoring"""
     
+    @pytest.mark.p2
     def test_utilization_history_tracking(self):
         """Test resource utilization history tracking"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -324,6 +340,7 @@ class TestTaskC22_ResourceUtilizationMonitoring:
         
         assert len(manager._utilization_history) == 5
     
+    @pytest.mark.p2
     def test_utilization_history_limits(self):
         """Test utilization history size limits"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -339,6 +356,7 @@ class TestTaskC22_ResourceUtilizationMonitoring:
 class TestTaskC23_PerformanceScalingVerification:
     """Task C.2.3: Performance scaling verification"""
     
+    @pytest.mark.p2
     def test_performance_targets_desktop(self):
         """Test performance targets for Desktop Minimal"""
         profile = DESKTOP_MINIMAL
@@ -347,6 +365,7 @@ class TestTaskC23_PerformanceScalingVerification:
         assert profile.performance_targets.target_latency_ms <= 10000
         assert profile.performance_targets.target_throughput_rps >= 0.5
     
+    @pytest.mark.p2
     def test_performance_targets_enterprise(self):
         """Test performance targets for Enterprise Full"""
         profile = ENTERPRISE_FULL
@@ -363,6 +382,7 @@ class TestTaskC23_PerformanceScalingVerification:
 class TestTaskC31_DynamicModelSelection:
     """Task C.3.1: Dynamic model selection"""
     
+    @pytest.mark.p2
     def test_model_recommendations_desktop(self):
         """Test model recommendations for Desktop Minimal"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -376,6 +396,7 @@ class TestTaskC31_DynamicModelSelection:
         for rec in recommendations:
             assert rec.model_size_gb <= DESKTOP_MINIMAL.resource_limits.max_model_size_gb
     
+    @pytest.mark.p2
     def test_model_recommendations_enterprise(self):
         """Test model recommendations for Enterprise Full"""
         manager = ProfileManager(profile=ENTERPRISE_FULL)
@@ -392,6 +413,7 @@ class TestTaskC31_DynamicModelSelection:
 class TestTaskC32_LargeModelSupport:
     """Task C.3.2: Large model support (Enterprise Full)"""
     
+    @pytest.mark.p2
     def test_model_catalog_completeness(self):
         """Test model catalog contains all size ranges"""
         catalog = ProfileManager.MODEL_CATALOG
@@ -404,6 +426,7 @@ class TestTaskC32_LargeModelSupport:
         assert any(2_000_000_000 <= s < 5_000_000_000 for s in sizes)  # 3B range
         assert any(5_000_000_000 <= s < 10_000_000_000 for s in sizes)  # 7B range
     
+    @pytest.mark.p2
     def test_large_model_compatibility_enterprise(self):
         """Test large model (70B) compatibility with Enterprise Full"""
         manager = ProfileManager(profile=ENTERPRISE_FULL)
@@ -419,6 +442,7 @@ class TestTaskC32_LargeModelSupport:
 class TestTaskC33_ModelMetadataManagement:
     """Task C.3.3: Model metadata management"""
     
+    @pytest.mark.p2
     def test_model_metadata_structure(self):
         """Test model metadata structure"""
         catalog = ProfileManager.MODEL_CATALOG
@@ -434,6 +458,7 @@ class TestTaskC33_ModelMetadataManagement:
         assert "context_window" in spec
         assert "profile" in spec
     
+    @pytest.mark.p2
     def test_model_recommendation_completeness(self):
         """Test model recommendation data completeness"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -458,6 +483,7 @@ class TestTaskC33_ModelMetadataManagement:
 class TestProfileManagerIntegration:
     """Integration tests for ProfileManager"""
     
+    @pytest.mark.p2
     def test_profile_summary_completeness(self):
         """Test comprehensive profile summary"""
         manager = ProfileManager(profile=DESKTOP_MINIMAL)
@@ -471,6 +497,7 @@ class TestProfileManagerIntegration:
         assert "compatibility" in summary
         assert "model_recommendations" in summary
     
+    @pytest.mark.p2
     def test_optimal_profile_selection_utility(self):
         """Test optimal profile selection utility function"""
         # Low workload

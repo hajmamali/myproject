@@ -1,7 +1,9 @@
 import os
 import ast
 from pathlib import Path
+import pytest
 
+@pytest.mark.p2
 def test_no_duplicate_governance_classes():
     """
     CI-enforced regression test.

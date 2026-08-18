@@ -28,6 +28,7 @@ class TestDeterministicResolution:
         return EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_same_input_produces_same_output(self, engine):
         """Test: Same input always produces same output (determinism)"""
         # Add rules with potential contradictions
@@ -51,6 +52,7 @@ class TestDeterministicResolution:
         print("✓ Same input produces same output (determinism verified)")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_concurrent_calls_produce_same_output(self, engine):
         """Test: Concurrent calls produce same output (no race conditions)"""
         # Add rules
@@ -76,6 +78,7 @@ class TestDeterministicResolution:
         print("✓ Concurrent calls produce same output (no race conditions)")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_tie_breaking_is_deterministic(self, engine):
         """Test: Tie-breaking uses lexicographic node ID comparison"""
         # Create nodes with equal confidence (tie)
@@ -108,6 +111,7 @@ class TestDeterministicResolution:
         print("✓ Tie-breaking is deterministic (lexicographic node ID)")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_confidence_threshold_prevents_floating_point_issues(self, engine):
         """Test: Confidence threshold prevents floating-point rounding issues"""
         # Create nodes with very close confidence values
@@ -136,6 +140,7 @@ class TestDeterministicResolution:
         print("✓ Confidence threshold prevents floating-point issues")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_resolution_order_is_deterministic(self, engine):
         """Test: Contradictions are processed in deterministic order"""
         # Add multiple rules with contradictions
@@ -163,6 +168,7 @@ class TestDeterministicResolution:
         print("✓ Resolution order is deterministic")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_no_lock_needed_for_determinism(self, engine):
         """Test: Deterministic resolution works without locks"""
         # Verify no resolution lock exists
@@ -183,6 +189,7 @@ class TestDeterministicResolution:
         print("✓ No lock needed for determinism")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_multiple_engine_instances_produce_same_output(self):
         """Test: Multiple engine instances produce same output (no shared state)"""
         # Create multiple engine instances
@@ -217,6 +224,7 @@ class TestDeterministicResolution:
         print("✓ Multiple engine instances produce same output")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_date_based_resolution_is_deterministic(self, engine):
         """Test: Date-based resolution is deterministic"""
         # Create nodes with different dates
@@ -249,6 +257,7 @@ class TestDeterministicResolution:
         print("✓ Date-based resolution is deterministic")
 
     @pytest.mark.asyncio
+    @pytest.mark.p2
     async def test_credibility_based_resolution_is_deterministic(self, engine):
         """Test: Credibility-based resolution is deterministic"""
         # Create nodes with different credibility

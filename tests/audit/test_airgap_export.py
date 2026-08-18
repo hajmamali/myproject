@@ -99,6 +99,7 @@ def exporter(keypair, temp_export_dir):
 class TestExportFunctionality:
     """Test core export functionality"""
     
+    @pytest.mark.p2
     def test_export_batch_cef(self, exporter, sample_records, keypair):
         """Test CEF format export"""
         package = exporter.export_batch(
@@ -116,6 +117,7 @@ class TestExportFunctionality:
         _, public_key = keypair
         assert package.verify(public_key)
     
+    @pytest.mark.p2
     def test_export_batch_with_compression(self, exporter, sample_records, keypair):
         """Test export with GZIP compression"""
         package = exporter.export_batch(
@@ -132,6 +134,7 @@ class TestExportFunctionality:
         ratio = package.get_compression_ratio()
         assert ratio > 1.0  # Should be compressed
     
+    @pytest.mark.p2
     def test_export_multiple_formats(self, exporter, sample_records):
         """Test exporting in different formats"""
         formats = [ExportFormat.CEF, ExportFormat.LEEF, ExportFormat.JSONL]
@@ -146,6 +149,7 @@ class TestExportFunctionality:
             assert package.manifest.format == fmt
             assert package.content_path.exists()
     
+    @pytest.mark.p2
     def test_export_empty_records_raises_error(self, exporter):
         """Test that exporting empty records raises error"""
         with pytest.raises(ExportError):
@@ -154,6 +158,7 @@ class TestExportFunctionality:
                 format=ExportFormat.CEF,
             )
     
+    @pytest.mark.p2
     def test_incremental_export(self, exporter, sample_records):
         """Test incremental export with deduplication"""
         # First export
@@ -183,6 +188,7 @@ class TestExportFunctionality:
 class TestFormatConversion:
     """Test format converters"""
     
+    @pytest.mark.p2
     def test_cef_formatter(self, sample_records):
         """Test CEF formatter"""
         formatter = CEFFormatter()
@@ -196,6 +202,7 @@ class TestFormatConversion:
             assert line.startswith('CEF:0|')
             assert 'MAHOUN' in line
     
+    @pytest.mark.p2
     def test_leef_formatter(self, sample_records):
         """Test LEEF formatter"""
         formatter = LEEFFormatter()
@@ -209,6 +216,7 @@ class TestFormatConversion:
             assert line.startswith('LEEF:2.0|')
             assert 'MAHOUN' in line
     
+    @pytest.mark.p2
     def test_jsonld_formatter(self, sample_records):
         """Test JSON-LD formatter"""
         formatter = JSONLDFormatter()
@@ -219,6 +227,7 @@ class TestFormatConversion:
         assert data['numberOfItems'] == len(sample_records)
         assert len(data['member']) == len(sample_records)
     
+    @pytest.mark.p2
     def test_jsonl_formatter(self, sample_records):
         """Test JSONL formatter"""
         formatter = JSONLFormatter()
@@ -232,6 +241,7 @@ class TestFormatConversion:
             data = json.loads(line)
             assert 'id' in data
     
+    @pytest.mark.p2
     def test_csv_formatter(self, sample_records):
         """Test CSV formatter"""
         formatter = CSVFormatter()
@@ -251,6 +261,7 @@ class TestFormatConversion:
 class TestCryptographicSigning:
     """Test cryptographic signing and verification"""
     
+    @pytest.mark.p2
     def test_package_signature_verification(self, exporter, sample_records, keypair):
         """Test package signature verification"""
         package = exporter.export_batch(
@@ -261,6 +272,7 @@ class TestCryptographicSigning:
         _, public_key = keypair
         assert package.verify(public_key)
     
+    @pytest.mark.p2
     def test_tampered_content_fails_verification(
         self, exporter, sample_records, keypair
     ):
@@ -277,6 +289,7 @@ class TestCryptographicSigning:
         _, public_key = keypair
         assert not package.verify(public_key)
     
+    @pytest.mark.p2
     def test_wrong_public_key_fails_verification(
         self, exporter, sample_records
     ):
@@ -292,6 +305,7 @@ class TestCryptographicSigning:
         # Verification should fail
         assert not package.verify(wrong_public_key)
     
+    @pytest.mark.p2
     def test_manifest_integrity_check(self, exporter, sample_records):
         """Test manifest integrity verification"""
         package = exporter.export_batch(
@@ -313,6 +327,7 @@ class TestCryptographicSigning:
 class TestCompression:
     """Test compression functionality"""
     
+    @pytest.mark.p2
     def test_gzip_compression(self, exporter, sample_records):
         """Test GZIP compression"""
         package = exporter.export_batch(
@@ -328,6 +343,7 @@ class TestCompression:
             content = f.read()
             assert 'CEF:0|' in content
     
+    @pytest.mark.p2
     def test_lzma_compression(self, exporter, sample_records):
         """Test LZMA compression"""
         package = exporter.export_batch(
@@ -339,6 +355,7 @@ class TestCompression:
         assert package.compressed_path.suffix == '.xz'
         assert package.compressed_path.exists()
     
+    @pytest.mark.p2
     def test_compression_ratio_calculation(self, exporter, sample_records):
         """Test compression ratio calculation"""
         package = exporter.export_batch(
@@ -359,6 +376,7 @@ class TestCompression:
 class TestTransferProtocol:
     """Test sneakernet transfer protocol"""
     
+    @pytest.mark.p2
     def test_create_transfer_manifest(self, keypair):
         """Test creating transfer manifest"""
         private_key, public_key = keypair
@@ -379,6 +397,7 @@ class TestTransferProtocol:
         assert manifest.sender == "sender@test"
         assert manifest.verify_sender(public_key)
     
+    @pytest.mark.p2
     def test_acknowledge_receipt(self, keypair):
         """Test receiver acknowledgment"""
         sender_private, sender_public = keypair
@@ -412,6 +431,7 @@ class TestTransferProtocol:
         assert manifest.status == TransferStatus.VERIFIED
         assert manifest.verify_receiver(receiver_public)
     
+    @pytest.mark.p2
     def test_chain_of_custody_tracking(self, keypair):
         """Test chain of custody tracking"""
         private_key, public_key = keypair
@@ -430,6 +450,7 @@ class TestTransferProtocol:
         assert len(manifest.chain_of_custody.events) == 1
         assert manifest.chain_of_custody.events[0].event_type == "created"
     
+    @pytest.mark.p2
     def test_chain_of_custody_verification(self, keypair):
         """Test chain of custody verification"""
         private_key, public_key = keypair
@@ -451,6 +472,7 @@ class TestTransferProtocol:
         public_keys = {"test-actor": public_key}
         assert chain.verify_chain(public_keys)
     
+    @pytest.mark.p2
     def test_tampering_detection(self):
         """Test tampering detection"""
         chain = ChainOfCustody(
@@ -473,6 +495,7 @@ class TestTransferProtocol:
 class TestVerificationScript:
     """Test verification script generation"""
     
+    @pytest.mark.p2
     def test_verification_script_generated(self, exporter, sample_records):
         """Test that verification script is generated"""
         package = exporter.export_batch(
@@ -488,6 +511,7 @@ class TestVerificationScript:
         mode = package.verification_script_path.stat().st_mode
         assert mode & stat.S_IXUSR  # User executable
     
+    @pytest.mark.p2
     def test_verification_script_content(self, exporter, sample_records):
         """Test verification script contains correct checks"""
         package = exporter.export_batch(
@@ -510,6 +534,7 @@ class TestVerificationScript:
 class TestErrorHandling:
     """Test error handling"""
     
+    @pytest.mark.p2
     def test_invalid_export_format_raises_error(self, exporter, sample_records):
         """Test that invalid format raises error"""
         # ExportFormatError is raised for unsupported formats
@@ -521,6 +546,7 @@ class TestErrorHandling:
                 format="invalid_format",  # type: ignore
             )
     
+    @pytest.mark.p2
     def test_export_with_corrupted_records(self, exporter):
         """Test exporting with malformed records"""
         # Should handle gracefully
@@ -546,6 +572,7 @@ class TestErrorHandling:
 class TestIntegration:
     """End-to-end integration tests"""
     
+    @pytest.mark.p2
     def test_complete_export_and_transfer_workflow(
         self, exporter, sample_records, keypair, temp_export_dir
     ):
@@ -601,6 +628,7 @@ class TestIntegration:
         assert final_manifest.status == TransferStatus.VERIFIED
         assert final_manifest.verify_receiver(receiver_public)
     
+    @pytest.mark.p2
     def test_batch_export_multiple_packages(self, exporter, sample_records):
         """Test exporting multiple packages in batch"""
         packages = []
@@ -628,6 +656,7 @@ class TestIntegration:
 class TestPerformance:
     """Performance and scalability tests"""
     
+    @pytest.mark.p2
     def test_large_record_export(self, exporter, keypair):
         """Test exporting large number of records"""
         # Generate 1000 records

@@ -3,6 +3,9 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./user/**/*.{js,ts,jsx,tsx}",
+    "./developer/**/*.{js,ts,jsx,tsx}",
+    "./shared/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -35,6 +38,31 @@ export default {
           700: '#73604a',
           800: '#5e4e3d',
           900: '#4c3f32',
+        },
+      },
+      animation: {
+        'gradient-shift': 'gradient-shift 15s ease infinite',
+        'fade-in': 'fade-in 0.8s ease-out forwards',
+        'slide-up': 'slide-up 0.8s ease-out forwards',
+        'scroll': 'scroll 2s ease-in-out infinite',
+      },
+      keyframes: {
+        'gradient-shift': {
+          '0%, 100%': { transform: 'translateY(0%) rotate(0deg)' },
+          '50%': { transform: 'translateY(20%) rotate(180deg)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-up': {
+          '0%': { transform: 'translateY(30px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'scroll': {
+          '0%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(12px)' },
+          '100%': { transform: 'translateY(0)' },
         },
       },
     },

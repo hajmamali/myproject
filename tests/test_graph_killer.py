@@ -25,6 +25,7 @@ def _build_chain_entities(labels: List[str]) -> List[dict]:
 class TestGraphKiller:
     """مجموعه تست‌های Graph-Killer"""
     
+    @pytest.mark.p2
     def test_reasoning_breaks_without_edges(self):
         """
         Graph-Killer #1:
@@ -80,6 +81,7 @@ class TestGraphKiller:
         ), "باید به گره نهایی برسد"
         assert "خسارت باید پرداخت شود" in result_with["answer"]
     
+    @pytest.mark.p2
     def test_output_changes_when_path_changes(self):
         """
         Graph-Killer #2:
@@ -119,6 +121,7 @@ class TestGraphKiller:
         assert "D" in result_d["answer"], "باید به D برسد"
         assert result_c["answer"] != result_d["answer"], "تغییر مسیر باید خروجی را عوض کند"
     
+    @pytest.mark.p2
     def test_inference_breaks_when_intermediate_node_removed(self):
         """
         Graph-Killer #3:

@@ -121,6 +121,7 @@ def create_test_image(temp_image_dir):
 class TestOCRPipelineIntegration:
     """Test complete OCR pipeline with all components"""
     
+    @pytest.mark.p3
     def test_full_pipeline_clean_image(self, create_test_image, sample_persian_text):
         """Test full pipeline with clean image"""
         # Skip if OCR not available
@@ -144,6 +145,7 @@ class TestOCRPipelineIntegration:
             assert 'quality_score' in result.metadata
             assert 0.0 <= result.metadata['quality_score'] <= 1.0
     
+    @pytest.mark.p3
     def test_full_pipeline_noisy_image(self, create_test_image, sample_persian_text):
         """Test full pipeline with noisy image"""
         availability = check_ocr_availability()
@@ -164,6 +166,7 @@ class TestOCRPipelineIntegration:
             # Noisy images should have lower quality score
             assert result.metadata['quality_score'] >= 0.0
     
+    @pytest.mark.p3
     def test_pipeline_with_preprocessing(self, create_test_image, sample_persian_text):
         """Test pipeline with preprocessing enabled"""
         if not PREPROCESSING_AVAILABLE:
@@ -187,6 +190,7 @@ class TestOCRPipelineIntegration:
         assert result.success
         assert len(result.text) > 0
     
+    @pytest.mark.p3
     def test_pipeline_comparison_with_without_postprocessing(
         self, create_test_image, sample_persian_text
     ):
@@ -222,6 +226,7 @@ class TestOCRPipelineIntegration:
 class TestComponentInteraction:
     """Test interaction between different components"""
     
+    @pytest.mark.p3
     def test_ocr_engine_post_processor_integration(self):
         """Test OCR engine and post-processor work together"""
         availability = check_ocr_availability()
@@ -235,6 +240,7 @@ class TestComponentInteraction:
         assert engine.enable_post_processing
         assert engine.post_processor is not None
     
+    @pytest.mark.p3
     def test_post_processor_with_ocr_metadata(self):
         """Test post-processor handles OCR metadata correctly"""
         # Sample OCR output
@@ -265,6 +271,7 @@ class TestComponentInteraction:
 class TestRealisticScenarios:
     """Test realistic legal document scenarios"""
     
+    @pytest.mark.p3
     def test_verdict_document(self, create_test_image):
         """Test with realistic verdict document"""
         availability = check_ocr_availability()
@@ -298,6 +305,7 @@ class TestRealisticScenarios:
             text_lower = result.text
             # May contain some legal terms (depending on OCR quality)
     
+    @pytest.mark.p3
     def test_law_article_document(self, create_test_image):
         """Test with law article document"""
         availability = check_ocr_availability()
@@ -332,6 +340,7 @@ class TestRealisticScenarios:
 class TestErrorHandling:
     """Test error handling in integration scenarios"""
     
+    @pytest.mark.p3
     def test_invalid_image_path(self):
         """Test with invalid image path"""
         availability = check_ocr_availability()
@@ -346,6 +355,7 @@ class TestErrorHandling:
         assert not result.success
         assert result.error is not None
     
+    @pytest.mark.p3
     def test_corrupted_image(self, temp_image_dir):
         """Test with corrupted image file"""
         availability = check_ocr_availability()
@@ -364,6 +374,7 @@ class TestErrorHandling:
         # Should fail gracefully
         assert not result.success
     
+    @pytest.mark.p3
     def test_empty_image(self, temp_image_dir):
         """Test with empty/blank image"""
         availability = check_ocr_availability()
@@ -392,6 +403,7 @@ class TestErrorHandling:
 class TestPerformanceQuality:
     """Performance and quality benchmarks"""
     
+    @pytest.mark.p3
     def test_processing_time(self, create_test_image, sample_persian_text):
         """Test processing time is reasonable"""
         availability = check_ocr_availability()
@@ -416,6 +428,7 @@ class TestPerformanceQuality:
             print(f"Post-processing: enabled")
             print(f"Quality score: {result.metadata.get('quality_score', 'N/A')}")
     
+    @pytest.mark.p3
     def test_quality_improvement_measurement(self, create_test_image):
         """Measure quality improvement from post-processing"""
         availability = check_ocr_availability()
@@ -456,12 +469,14 @@ class TestPerformanceQuality:
 class TestConfiguration:
     """Test configuration and environment variables"""
     
+    @pytest.mark.p3
     def test_post_processing_can_be_disabled(self):
         """Test post-processing can be disabled"""
         engine = OCREngine(enable_post_processing=False)
         assert not engine.enable_post_processing
         assert engine.post_processor is None
     
+    @pytest.mark.p3
     def test_post_processing_enabled_by_default(self):
         """Test post-processing is enabled by default"""
         engine = OCREngine()
@@ -469,6 +484,7 @@ class TestConfiguration:
         if engine.post_processor is not None:
             assert engine.enable_post_processing
     
+    @pytest.mark.p3
     def test_custom_post_processing_config(self):
         """Test custom post-processing configuration"""
         config = PostProcessingConfig(

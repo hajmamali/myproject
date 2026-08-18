@@ -47,6 +47,7 @@ class TestDeterministicReasoningKernel:
     """Deterministic reasoning kernel validation"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_strict_determinism_across_calls(self):
         """Test that reasoning produces identical outputs for identical inputs"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -75,6 +76,7 @@ class TestDeterministicReasoningKernel:
         assert len(hashes) == 1, f"NON-DETERMINISTIC REASONING DETECTED: {len(hashes)} different outputs"
     
     @pytest.mark.asyncio  
+    @pytest.mark.p3
     async def test_cross_thread_reasoning_stability(self):
         """Test reasoning stability under concurrent execution"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -115,6 +117,7 @@ class TestDeterministicReasoningKernel:
 class TestSymbolicGraphCausalConsistency:
     """Test consistency between symbolic, graph, and causal reasoning"""
     
+    @pytest.mark.p3
     def test_causal_graph_acyclicity_enforcement(self):
         """Test that causal graphs are acyclic"""
         from mahoun.reasoning.causal_inference import CausalInferenceEngine
@@ -135,6 +138,7 @@ class TestSymbolicGraphCausalConsistency:
         assert len(result["causal_chain"]) > 0, "Empty causal chain"
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_reasoning_chain_no_semantic_drift(self):
         """Test that repeated reasoning does not drift semantically"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -167,6 +171,7 @@ class TestSymbolicGraphCausalConsistency:
 class TestLegalAuditGradeReasoning:
     """Test audit-grade legal reasoning with full traceability"""
     
+    @pytest.mark.p3
     def test_knowledge_graph_rule_tracking(self):
         """Test that knowledge graph tracks rule usage"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -189,6 +194,7 @@ class TestLegalAuditGradeReasoning:
         assert rule.created_at is not None
         assert rule.provenance is not None
     
+    @pytest.mark.p3
     def test_reasoning_recorder_hash_integrity(self):
         """Test that reasoning recorder maintains hash integrity"""
         from mahoun.reasoning.reasoning_recorder import ReasoningRecorder
@@ -214,6 +220,7 @@ class TestLegalAuditGradeReasoning:
 class TestByzantineFaultModel:
     """Test Byzantine fault tolerance"""
     
+    @pytest.mark.p3
     def test_corrupted_input_rejection(self):
         """Test that corrupted inputs are rejected"""
         from mahoun.reasoning.knowledge_graph import LegalKnowledgeGraph
@@ -245,6 +252,7 @@ class TestConcurrentAdversarialStress:
     """Test system under heavy concurrent load"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_massive_parallel_reasoning_consistency(self):
         """Test reasoning consistency under massive parallel load"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -281,6 +289,7 @@ class TestConcurrentAdversarialStress:
             assert len(hashes) == 1, f"Pattern {pattern_id} produced {len(hashes)} different outputs"
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_state_leakage_between_queries(self):
         """Test that queries don't leak state between each other"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -320,6 +329,7 @@ class TestFailureIsolationStrict:
     """Test failure isolation and containment"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p3
     async def test_partial_failure_is_non_propagating(self):
         """Test that partial failures don't contaminate the kernel"""
         from mahoun.reasoning.unified_reasoning_service import (
@@ -362,6 +372,7 @@ class TestFailureIsolationStrict:
 class TestFormalInvariants:
     """Test formal invariants required for Tier-1 certification"""
     
+    @pytest.mark.p3
     def test_reasoning_output_must_have_audit_anchor(self):
         """Test that all reasoning outputs have audit anchors"""
         from mahoun.reasoning.reasoning_recorder import ReasoningRecorder
@@ -380,6 +391,7 @@ class TestFormalInvariants:
         assert step.step_id is not None
         assert step.step_type == "audit_critical_inference"
     
+    @pytest.mark.p3
     def test_causal_graph_must_be_dag(self):
         """Test that causal graphs maintain DAG property"""
         from mahoun.reasoning.causal_inference import CausalInferenceEngine

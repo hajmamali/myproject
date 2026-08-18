@@ -12,6 +12,8 @@ from unittest.mock import MagicMock
 from mahoun.core.governance_kernel.kernel import KernelMutationBoundary, QueryType
 from mahoun.core.import_firewall import safe_import, SafeStub
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_kernel_classification_no_dependencies():
     """Verify kernel can classify queries without any external libraries."""
     boundary = KernelMutationBoundary()
@@ -28,6 +30,8 @@ def test_kernel_classification_no_dependencies():
     # Forbidden/DDL
     assert boundary.classify_query("CALL apoc.util.sleep(1000)") == QueryType.FORBIDDEN
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_import_firewall_stubbing():
     """Verify that missing optional dependencies return a SafeStub."""
     # Simulate a missing high-level library
@@ -41,11 +45,15 @@ def test_import_firewall_stubbing():
     with pytest.raises(RuntimeError, match="missing or blocked"):
         torch_stub()
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_import_firewall_critical_failure():
     """Verify that missing critical dependencies raise ImportFirewallError."""
     with pytest.raises(ImportError):
         safe_import("non_existent_critical_lib", optional=False)
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_kernel_import_purity():
     """Architectural check: Kernel must NOT have loaded heavy dependencies."""
     # Ensure torch/neo4j are not in sys.modules because of kernel

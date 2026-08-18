@@ -1,486 +1,251 @@
 /**
  * A/B Testing Dashboard Component
- *
- * Create and manage A/B experiments between different AI models
  */
 
-import { useState, useEffect } from "react";
-import {
-  BeakerIcon,
-  PlusIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
-import { ModelOption } from "./ModelSelector";
-import {
-  listExperiments,
-  createExperiment,
-  stopExperiment,
-  getExperimentResults,
-  calculateWinner,
-  type Experiment,
-  type ExperimentResults,
-} from "../api/experimentsClient";
+import { useState, useEffect } from 'react';
 
-interface ABTestingDashboardProps {
-  className?: string;
-}
-
-interface ABExperiment {
+interface Experiment {
   id: string;
   name: string;
   description: string;
-  status: "draft" | "running" | "completed" | "stopped";
-  variants: Array<{
-    model: ModelOption;
-    traffic_percentage: number;
-    metrics: {
-      accuracy: number;
-      latency: number;
-      cost: number;
-      sample_size: number;
-    };
-  }>;
-  winner?: string | null;
-  confidence_level?: number;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
+  status: 'running' | 'completed' | 'paused' | 'draft';
+  variant_a: string;
+  variant_b: string;
+  traffic_split: number;
+  started_at: string;
+  ended_at?: string;
+  metrics: {
+    impressions_a: number;
+    impressions_b: number;
+    conversions_a: number;
+    conversions_b: number;
+    conversion_rate_a: number;
+    conversion_rate_b: number;
+    statistical_significance: number;
+    winner?: 'A' | 'B' | 'inconclusive';
+  };
 }
 
-export default function ABTestingDashboard({ className = "" }: ABTestingDashboardProps) {
-  const [experiments, setExperiments] = useState<ABExperiment[]>([]);
-  const [selectedExperiment, setSelectedExperiment] = useState<ABExperiment | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+export default function ABTestingDashboard() {
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newExperiment, setNewExperiment] = useState({
-    name: "",
-    description: "",
-    variants: [] as ModelOption[],
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'running' | 'completed' | 'paused'>('all');
 
-  // Load experiments from API
   useEffect(() => {
-    loadExperiments();
-    const interval = setInterval(loadExperiments, 10000); // Refresh every 10s
-    return () => clearInterval(interval);
+    fetchExperiments();
   }, []);
 
-  const loadExperiments = async () => {
+  const fetchExperiments = async () => {
     try {
-      const response = await listExperiments();
-      // Convert API experiments to ABExperiment format
-      const converted: ABExperiment[] = response.experiments.map(exp => ({
-        id: exp.experiment_id,
-        name: exp.name,
-        description: "",
-        status: exp.status as any,
-        variants: exp.variants.map((variant, idx) => ({
-          model: {
-            id: variant,
-            name: variant,
-            provider: "local" as const,
-            size: "Unknown",
-            capabilities: [],
-            description: "",
-          },
-          traffic_percentage: exp.traffic_split[idx] || 0,
-          metrics: {
-            accuracy: 0,
-            latency: 0,
-            cost: 0,
-            sample_size: exp.samples || 0,
-          },
-        })),
-        created_at: exp.created_at,
-        started_at: exp.started_at,
-        completed_at: exp.stopped_at,
-      }));
-      setExperiments(converted);
-    } catch (error) {
-      console.error("Failed to load experiments:", error);
+      const response = await fetch('/api/v1/experiments');
+      if (!response.ok) throw new Error('Failed to fetch experiments');
+      const data = await response.json();
+      setExperiments(data.experiments || []);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: ABExperiment["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "running": return "bg-green-100 text-green-800";
-      case "completed": return "bg-blue-100 text-blue-800";
-      case "stopped": return "bg-red-100 text-red-800";
-      case "draft": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'running': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'paused': return 'bg-yellow-100 text-yellow-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: ABExperiment["status"]) => {
-    switch (status) {
-      case "running": return "در حال اجرا";
-      case "completed": return "تکمیل شده";
-      case "stopped": return "متوقف شده";
-      case "draft": return "پیش‌نویس";
-      default: return status;
+  const getWinnerColor = (winner?: string) => {
+    switch (winner) {
+      case 'A': return 'text-blue-500';
+      case 'B': return 'text-green-500';
+      case 'inconclusive': return 'text-yellow-500';
+      default: return 'text-slate-400';
     }
   };
 
-  const calculateWinner = (variants: ABExperiment["variants"]) => {
-    if (variants.length === 0) return null;
-
-    // Simple winner calculation based on accuracy
-    const winner = variants.reduce((best, current) =>
-      current.metrics.accuracy > best.metrics.accuracy ? current : best
-    );
-
-    return winner.model.id;
-  };
-
-  const handleCreateExperiment = async () => {
-    if (!newExperiment.name.trim() || newExperiment.variants.length < 2) {
-      alert("لطفاً نام آزمایش و حداقل دو مدل را انتخاب کنید");
-      return;
-    }
-
-    try {
-      await createExperiment({
-        name: newExperiment.name,
-        variants: newExperiment.variants.map(v => v.id),
-        traffic_split: newExperiment.variants.map(() => Math.floor(100 / newExperiment.variants.length)),
-        metrics: ["accuracy", "latency"],
-        metadata: { description: newExperiment.description },
-      });
-
-      await loadExperiments();
-      setNewExperiment({ name: "", description: "", variants: [] });
-      setShowCreateForm(false);
-    } catch (error) {
-      alert("خطا در ایجاد آزمایش: " + String(error));
-    }
-  };
-
-  const handleStartExperiment = async (experimentId: string) => {
-    // API doesn't have start endpoint, experiments start automatically
-    alert("آزمایش به صورت خودکار شروع می‌شود");
-  };
-
-  const handleStopExperiment = async (experimentId: string) => {
-    try {
-      await stopExperiment(experimentId);
-      await loadExperiments();
-    } catch (error) {
-      alert("خطا در توقف آزمایش: " + String(error));
-    }
-  };
-
-  const handleCompleteExperiment = async (experimentId: string) => {
-    try {
-      const results = await getExperimentResults(experimentId);
-      const winner = calculateWinner(results);
-      
-      setExperiments(experiments.map(exp => {
-        if (exp.id === experimentId) {
-          return {
-            ...exp,
-            status: "completed" as const,
-            winner,
-            completed_at: new Date().toISOString(),
-          };
-        }
-        return exp;
-      }));
-    } catch (error) {
-      alert("خطا در تکمیل آزمایش: " + String(error));
-    }
-  };
+  const filteredExperiments = experiments.filter(exp => 
+    filter === 'all' || exp.status === filter
+  );
 
   return (
-    <div className={`max-w-7xl mx-auto p-6 ${className}`}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">آزمایش‌های A/B</h1>
-        <p className="text-gray-600">
-          مقایسه عملکرد مدل‌های مختلف هوش مصنوعی
-        </p>
-      </div>
-
-      {/* Create Experiment Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <PlusIcon className="h-5 w-5" />
-          ایجاد آزمایش جدید
-        </button>
-      </div>
-
-      {/* Create Experiment Form */}
-      {showCreateForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">ایجاد آزمایش جدید</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                نام آزمایش
-              </label>
-              <input
-                type="text"
-                value={newExperiment.name}
-                onChange={(e) => setNewExperiment(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="مثال: مقایسه DialoGPT vs GPT-3.5"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                توضیحات
-              </label>
-              <textarea
-                value={newExperiment.description}
-                onChange={(e) => setNewExperiment(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                placeholder="توضیحات آزمایش..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                مدل‌ها (حداقل دو مدل انتخاب کنید)
-              </label>
-              <div className="text-sm text-gray-500 mb-3">
-                مدل‌های انتخاب شده: {newExperiment.variants.length}
-              </div>
-              {/* TODO: Add model selector component */}
-              <div className="text-sm text-gray-600">
-                در نسخه بعدی، کامپوننت انتخاب مدل اضافه خواهد شد
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleCreateExperiment}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                ایجاد آزمایش
-              </button>
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                انصراف
-              </button>
-            </div>
-          </div>
+    <div className="p-8 bg-slate-900 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">آزمایش‌های A/B</h1>
+          <p className="text-slate-400">مدیریت و تحلیل آزمایش‌های A/B</p>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Experiments List */}
-        <div className="lg:col-span-2">
+        {/* Filter */}
+        <div className="mb-6 flex items-center gap-4">
+          <label className="text-slate-300 text-sm">فیلتر وضعیت:</label>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as any)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm"
+          >
+            <option value="all">همه</option>
+            <option value="running">در حال اجرا</option>
+            <option value="completed">تکمیل شده</option>
+            <option value="paused">متوقف</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400">
+            <p className="font-medium">خطا در بارگذاری داده‌ها</p>
+            <p className="text-sm mt-1">{error}</p>
+          </div>
+        ) : filteredExperiments.length === 0 ? (
+          <div className="bg-slate-800 rounded-lg p-8 border border-slate-700 text-center">
+            <div className="text-6xl mb-4">🧪</div>
+            <h3 className="text-xl font-semibold text-white mb-2">هیچ آزمایشی یافت نشد</h3>
+            <p className="text-slate-400 mb-4">برای شروع، یک آزمایش جدید بسازید</p>
+            <button
+              onClick={() => window.location.href = '/app/studio/experiments/new'}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              ساخت آزمایش جدید
+            </button>
+          </div>
+        ) : (
           <div className="space-y-4">
-            {experiments.map((experiment) => (
-              <div
-                key={experiment.id}
-                className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer transition-colors ${
-                  selectedExperiment?.id === experiment.id ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"
-                }`}
-                onClick={() => setSelectedExperiment(experiment)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {experiment.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                      {experiment.description}
-                    </p>
-
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(experiment.status)}`}>
-                        <BeakerIcon className="h-3 w-3" />
-                        {getStatusText(experiment.status)}
-                      </span>
-
-                      <span>
-                        {experiment.variants.length} مدل
-                      </span>
-
-                      {experiment.winner && (
-                        <span className="text-green-600 font-medium">
-                          برنده: {experiment.variants.find(v => v.model.id === experiment.winner)?.model.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    {experiment.status === "draft" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartExperiment(experiment.id);
-                        }}
-                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
-                      >
-                        شروع
-                      </button>
-                    )}
-
-                    {experiment.status === "running" && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCompleteExperiment(experiment.id);
-                          }}
-                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
-                        >
-                          تکمیل
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStopExperiment(experiment.id);
-                          }}
-                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
-                        >
-                          توقف
-                        </button>
-                      </>
-                    )}
-                  </div>
+            {/* Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div className="text-slate-400 text-sm mb-1">کل آزمایش‌ها</div>
+                <div className="text-2xl font-bold text-white">{experiments.length}</div>
+              </div>
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div className="text-slate-400 text-sm mb-1">در حال اجرا</div>
+                <div className="text-2xl font-bold text-green-400">
+                  {experiments.filter(e => e.status === 'running').length}
                 </div>
+              </div>
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div className="text-slate-400 text-sm mb-1">تکمیل شده</div>
+                <div className="text-2xl font-bold text-blue-400">
+                  {experiments.filter(e => e.status === 'completed').length}
+                </div>
+              </div>
+              <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div className="text-slate-400 text-sm mb-1">متوقف</div>
+                <div className="text-2xl font-bold text-yellow-400">
+                  {experiments.filter(e => e.status === 'paused').length}
+                </div>
+              </div>
+            </div>
 
-                {/* Variants Preview */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {experiment.variants.map((variant, _index) => (
-                    <div key={variant.model.id} className="bg-gray-50 rounded-lg p-3">
+            {/* Experiment List */}
+            <div className="space-y-4">
+              {filteredExperiments.map((experiment) => (
+                <div key={experiment.id} className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-white">{experiment.name}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(experiment.status)}`}>
+                          {experiment.status}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-sm">{experiment.description}</p>
+                    </div>
+                    {experiment.metrics.winner && (
+                      <div className={`text-sm font-medium ${getWinnerColor(experiment.metrics.winner)}`}>
+                        برنده: {experiment.metrics.winner}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Variants */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Variant A */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {variant.model.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {variant.traffic_percentage}%
-                        </span>
+                        <span className="text-blue-400 font-medium">Variant A</span>
+                        <span className="text-slate-400 text-sm">{experiment.variant_a}</span>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                        <div>Accuracy: {(variant.metrics.accuracy * 100).toFixed(1)}%</div>
-                        <div>Latency: {variant.metrics.latency}ms</div>
-                        <div>Cost: ${variant.metrics.cost.toFixed(4)}</div>
-                        <div>Samples: {variant.metrics.sample_size}</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Impressions:</span>
+                          <span className="text-white">{experiment.metrics.impressions_a.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Conversions:</span>
+                          <span className="text-white">{experiment.metrics.conversions_a.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Rate:</span>
+                          <span className="text-white">{(experiment.metrics.conversion_rate_a * 100).toFixed(2)}%</span>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                {experiment.confidence_level && (
-                  <div className="mt-3 text-sm text-gray-600">
-                    Confidence Level: {(experiment.confidence_level * 100).toFixed(1)}%
+                    {/* Variant B */}
+                    <div className="bg-slate-900/50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-green-400 font-medium">Variant B</span>
+                        <span className="text-slate-400 text-sm">{experiment.variant_b}</span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Impressions:</span>
+                          <span className="text-white">{experiment.metrics.impressions_b.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Conversions:</span>
+                          <span className="text-white">{experiment.metrics.conversions_b.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Rate:</span>
+                          <span className="text-white">{(experiment.metrics.conversion_rate_b * 100).toFixed(2)}%</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Experiment Details Panel */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">جزئیات آزمایش</h2>
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-4">
+                      <span className="text-slate-400">Traffic Split: {experiment.traffic_split}%</span>
+                      <span className="text-slate-400">
+                        Significance: {(experiment.metrics.statistical_significance * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => window.location.href = `/app/studio/experiments/${experiment.id}`}
+                        className="text-primary-400 hover:text-primary-300"
+                      >
+                        مشاهده جزئیات
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {selectedExperiment ? (
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">نام آزمایش</h3>
-                  <p className="text-sm text-gray-600">{selectedExperiment.name}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">توضیحات</h3>
-                  <p className="text-sm text-gray-600">{selectedExperiment.description}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">وضعیت</h3>
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedExperiment.status)}`}>
-                    <BeakerIcon className="h-3 w-3" />
-                    {getStatusText(selectedExperiment.status)}
-                  </span>
-                </div>
-
-                {selectedExperiment.winner && (
-                  <div>
-                    <h3 className="font-medium text-green-900 mb-2">برنده آزمایش</h3>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <p className="text-sm text-green-800 font-medium">
-                        {selectedExperiment.variants.find(v => v.model.id === selectedExperiment.winner)?.model.name}
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        بر اساس معیار accuracy
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Statistical Comparison */}
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-3">مقایسه آماری</h3>
-                  <div className="space-y-3">
-                    {selectedExperiment.variants.map((variant, _index) => {
-                      const isWinner = selectedExperiment.winner === variant.model.id;
-                      return (
-                        <div key={variant.model.id} className={`border rounded-lg p-3 ${isWinner ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900">
-                              {variant.model.name}
-                            </span>
-                            {isWinner && (
-                              <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" />
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <ChartBarIcon className="h-3 w-3 text-blue-600" />
-                              <span>Accuracy: {(variant.metrics.accuracy * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <ClockIcon className="h-3 w-3 text-yellow-600" />
-                              <span>Latency: {variant.metrics.latency}ms</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">زمان‌بندی</h3>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>ایجاد: {new Date(selectedExperiment.created_at).toLocaleString('fa-IR')}</div>
-                    {selectedExperiment.started_at && (
-                      <div>شروع: {new Date(selectedExperiment.started_at).toLocaleString('fa-IR')}</div>
-                    )}
-                    {selectedExperiment.completed_at && (
-                      <div>اتمام: {new Date(selectedExperiment.completed_at).toLocaleString('fa-IR')}</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                یک آزمایش را انتخاب کنید تا جزئیات آن نمایش داده شود
-              </div>
-            )}
+            {/* Create Button */}
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => window.location.href = '/app/studio/experiments/new'}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                + آزمایش جدید
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -67,6 +67,8 @@ def context():
 # P0-A: Bypass Resistance Tests
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_direct_kernel_bypass_impossible(controller, context):
     """
     P0-A: Test that Kernel cannot be bypassed.
@@ -93,6 +95,8 @@ def test_direct_kernel_bypass_impossible(controller, context):
     assert "Mutation Cypher detected outside" in violation.message
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_controller_enforces_kernel_path(controller, context):
     """
     P0-A: Test that controller properly enforces kernel path.
@@ -130,6 +134,8 @@ def test_controller_enforces_kernel_path(controller, context):
 # P0-B: Mixed Query Classification
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_match_with_delete_classified_as_write(controller, context):
     """
     P0-B: Test MATCH with DELETE is classified as WRITE.
@@ -151,6 +157,8 @@ def test_match_with_delete_classified_as_write(controller, context):
     assert decision.approved is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_match_set_return_classified_as_write(controller, context):
     """
     P0-B: Test MATCH SET RETURN is classified as WRITE.
@@ -172,6 +180,8 @@ def test_match_set_return_classified_as_write(controller, context):
     assert decision.approved is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_merge_on_create_classified_as_write(controller, context):
     """
     P0-B: Test MERGE ON CREATE is classified as WRITE.
@@ -194,6 +204,8 @@ def test_merge_on_create_classified_as_write(controller, context):
     assert decision.approved is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_complex_mixed_query_with_union(controller, context):
     """
     P0-B: Test complex query with UNION containing mutations.
@@ -223,6 +235,8 @@ def test_complex_mixed_query_with_union(controller, context):
 # P0-C: Regex Corruption Tests
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_optional_match_transformation_safe(controller, context):
     """
     P0-C: Test that OPTIONAL MATCH doesn't corrupt during transformation.
@@ -252,6 +266,8 @@ def test_optional_match_transformation_safe(controller, context):
     assert "_deleted IS NULL" in transformed
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_path_with_union_transformation_safe(controller, context):
     """
     P0-C: Test path queries with UNION don't corrupt.
@@ -280,6 +296,8 @@ def test_path_with_union_transformation_safe(controller, context):
     assert "UNION" in transformed
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_subquery_call_transformation_safe(controller, context):
     """
     P0-C: Test CALL subqueries don't corrupt during transformation.
@@ -311,6 +329,8 @@ def test_subquery_call_transformation_safe(controller, context):
     assert "}" in transformed
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_multi_line_comments_handled(controller, context):
     """
     P0-C: Test multi-line comments don't break classification.
@@ -339,6 +359,8 @@ def test_multi_line_comments_handled(controller, context):
 # P1-D: Idempotent Transformation
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_double_injection_tombstone_filter(controller, context):
     """
     P1-D: Test that tombstone filter is NOT injected twice.
@@ -353,7 +375,8 @@ def test_no_double_injection_tombstone_filter(controller, context):
         context=context
     )
     
-    assert "NOT(n._deleted = true)" in decision1.transformed_query
+    # Check for tombstone filter pattern (implementation uses "NOT (" with space)
+    assert "NOT (" in decision1.transformed_query and "n._deleted = true" in decision1.transformed_query
     
     # Second pass with already-transformed query
     decision2 = controller.prepare_query_execution(
@@ -361,8 +384,8 @@ def test_no_double_injection_tombstone_filter(controller, context):
         context=context
     )
     
-    # Count occurrences of _deleted IS NULL
-    count = decision2.transformed_query.count("NOT(n._deleted = true)")
+    # Count occurrences of the tombstone filter pattern
+    count = decision2.transformed_query.count("n._deleted = true")
     
     # Should appear exactly once per node variable, not doubled
     # For single node query, should be 1 or 2 (original + one for safety)
@@ -370,6 +393,8 @@ def test_no_double_injection_tombstone_filter(controller, context):
     assert count <= 2, f"Double injection detected: {count} occurrences"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_double_depth_limiting(controller, context):
     """
     P1-D: Test that depth limits are NOT applied twice.
@@ -398,6 +423,8 @@ def test_no_double_depth_limiting(controller, context):
     assert "[:*1..3][:*1..3]" not in decision2.transformed_query
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_no_double_limit_injection(controller, context):
     """
     P1-D: Test that LIMIT is NOT injected twice.
@@ -431,6 +458,8 @@ def test_no_double_limit_injection(controller, context):
 # P1-E: Audit Trail Overflow Rotation
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_audit_trail_rotation_at_10k(controller, context):
     """
     P1-E: Test that audit trail rotates at 10,000 entries.
@@ -457,6 +486,8 @@ def test_audit_trail_rotation_at_10k(controller, context):
     assert stats["audit_trail_size"] <= 10000
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_audit_trail_keeps_most_recent(controller, context):
     """
     P1-E: Test that audit trail keeps most recent entries after rotation.
@@ -493,6 +524,8 @@ def test_audit_trail_keeps_most_recent(controller, context):
 # P1-F: Decision Hash Uniqueness Under Load
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_decision_id_uniqueness_rapid_execution(controller, context):
     """
     P1-F: Test decision IDs are unique even under rapid execution.
@@ -514,6 +547,8 @@ def test_decision_id_uniqueness_rapid_execution(controller, context):
     assert len(decision_ids) == 50, "Decision ID collision detected!"
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_decision_id_uniqueness_concurrent_execution(controller):
     """
     P1-F: Test decision IDs are unique under concurrent execution.
@@ -551,6 +586,8 @@ def test_decision_id_uniqueness_concurrent_execution(controller):
 # P0 Mismatch Fixes
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_historical_view_without_justification_denied_not_raised(controller, context):
     """
     FIXED MISMATCH: Controller returns decision.approved=False instead of raising.
@@ -579,6 +616,8 @@ def test_historical_view_without_justification_denied_not_raised(controller, con
     assert "justification" in decision.policy.justification.lower()
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_empty_query_classification_explicit(controller, context):
     """
     FIXED MISMATCH: Empty query classification must be explicit.
@@ -604,6 +643,8 @@ def test_empty_query_classification_explicit(controller, context):
     assert decision.kernel_check_passed is True
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_whitespace_only_query_classification(controller, context):
     """
     Additional tightening: Whitespace-only queries must be READ.
@@ -630,6 +671,8 @@ def test_whitespace_only_query_classification(controller, context):
 # Additional P0 Edge Cases
 # ============================================================================
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_unicode_mutation_keywords_detected(controller, context):
     """
     P0 Edge: Unicode variants of mutation keywords must be detected.
@@ -650,6 +693,8 @@ ATE instead of CREATE
     assert decision.approved is False
 
 
+@pytest.mark.p2
+@pytest.mark.p0
 def test_case_insensitive_mutation_detection(controller, context):
     """
     P0 Edge: Mutation keywords must be case-insensitive.

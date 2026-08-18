@@ -62,3 +62,26 @@ class RuntimeProfile:
 # Global instance - matches current demo behavior in desktop_minimal environment
 # (no torch, no sentence-transformers, simple_memory vector store)
 MAHOUN_PROFILE = RuntimeProfile()
+
+
+def get_current_profile() -> str:
+    """
+    Get current runtime profile name.
+    
+    Returns the profile string used for bootstrap configuration.
+    Maps environment variables to profile names.
+    
+    Returns:
+        str: Profile name ("BASE", "STANDARD", "ULTRA", etc.)
+    """
+    import os
+    
+    # Check environment variable for explicit profile
+    profile = os.getenv("MAHOUN_PROFILE", "BASE").upper()
+    
+    # Validate profile
+    valid_profiles = ["BASE", "STANDARD", "ULTRA", "MINIMAL"]
+    if profile not in valid_profiles:
+        profile = "BASE"  # Default fallback
+    
+    return profile

@@ -20,6 +20,7 @@ from unittest.mock import patch, MagicMock
 class TestBootstrapIntegration:
     """Test bootstrap runtime integration with FastAPI app"""
     
+    @pytest.mark.p2
     def test_bootstrap_called_on_startup(self, monkeypatch):
         """
         CRITICAL: Verify bootstrap_runtime() is called during app startup
@@ -77,6 +78,7 @@ class TestBootstrapIntegration:
                 )
     
     @pytest.mark.integration
+    @pytest.mark.p2
     def test_bootstrap_populates_service_registry(self, monkeypatch):
         """
         Verify SERVICE_REGISTRY contains required services after bootstrap
@@ -129,6 +131,7 @@ class TestBootstrapIntegration:
                 )
     
     @pytest.mark.integration
+    @pytest.mark.p2
     def test_app_fails_on_bootstrap_error(self, monkeypatch):
         """
         CRITICAL: App startup MUST fail if bootstrap fails
@@ -164,6 +167,7 @@ class TestBootstrapIntegration:
                     pass
     
     @pytest.mark.integration
+    @pytest.mark.p2
     def test_app_fails_on_missing_critical_services(self, monkeypatch):
         """
         CRITICAL: App startup MUST fail if critical services are missing
@@ -197,7 +201,7 @@ class TestBootstrapIntegration:
             from fastapi.testclient import TestClient
             
             # App startup should fail
-            with pytest.raises(RuntimeError, match="Missing critical service|failed to register required services"):
+            with pytest.raises(RuntimeError, match="Critical services not registered|Missing critical service|failed to register required services"):
                 with TestClient(app):
                     pass
 
@@ -206,6 +210,7 @@ class TestBootstrapIntegration:
 class TestBootstrapErrorHandling:
     """Test error handling in bootstrap integration"""
     
+    @pytest.mark.p2
     def test_adapters_fail_fast_on_missing_registry(self):
         """
         Verify adapters fail-fast when SERVICE_REGISTRY is empty
@@ -225,6 +230,7 @@ class TestBootstrapErrorHandling:
         with pytest.raises(RuntimeError, match="graph_retriever not found in SERVICE_REGISTRY"):
             _ = container.rag_service
     
+    @pytest.mark.p2
     def test_adapters_fail_fast_on_none_graph_retriever(self):
         """
         Verify adapters fail-fast when graph_retriever is None

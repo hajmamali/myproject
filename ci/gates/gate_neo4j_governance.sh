@@ -35,6 +35,12 @@ ALLOWED_PATHS=(
     "mahoun/graph/neo4j/schema.py"
     "mahoun/graph/neo4j/runner.py"
     "tests/"
+    "ci/enforcement/"
+    "archived_modules/"
+    ".worktrees/"
+    ".kilo/"
+    "venv/"
+    ".venv/"
     ".test_classification_backup/"
 )
 

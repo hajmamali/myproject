@@ -28,6 +28,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Any, Dict, Optional
 
 from mahoun.core.fortress_validator import (
@@ -36,6 +37,8 @@ from mahoun.core.fortress_validator import (
     ReasoningResponse,
     SecurityBreachException,
     ValidationResult,
+    ViolationSeverity,
+    ViolationType,
 )
 from mahoun.core.governance import (
     GovernanceContextManager,
@@ -79,20 +82,48 @@ class FortressProtectedReasoningService:
         reasoning_service: Any,
         validator: Optional[FortressValidator] = None,
         strict_mode: bool = True,
-        execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL
+        execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,
+        ledger_commit_service: Optional[Any] = None,
     ):
         """
         Initialize Fortress-protected reasoning service.
+        
+        PER RULE 8: Dependency Direction
+        - LedgerCommitService is explicitly injected, NOT discovered via object graphs
+        - This prevents Fortress from walking object graphs to find ledger_writer
+        
+        CRITICAL-002 FIX: LedgerCommitService is REQUIRED in production mode
+        RULE 7: Ledger must become source of truth - cannot have trustworthy execution without ledger
+        RULE 11: Failed executions must be recorded - ledger is the only way to record them
         
         Args:
             reasoning_service: UnifiedReasoningService instance to wrap
             validator: Optional FortressValidator instance (creates new if None)
             strict_mode: If True, raise exceptions on violations
             execution_mode: Current execution mode
+            ledger_commit_service: Explicitly injected LedgerCommitService (RULE 8)
+        
+        Raises:
+            ValueError: If ledger_commit_service is None in production mode
         """
+        # CRITICAL-002: Require LedgerCommitService in production
+        # CONSTITUTION Section 10: Fail-closed principle
+        # CONSTITUTION Section 268: Governance reference
+        # RULE 7: Ledger becomes source of truth
+        # # This prevents Fortress from walking object graphs
+        if ledger_commit_service is None:
+            from mahoun.core.environment import is_production
+            if is_production():
+                raise ValueError(
+                    "CRITICAL-002: LedgerCommitService is REQUIRED in production mode. "
+                    "Cannot have trustworthy execution without ledger recording. "
+                    "RULE 7 and RULE 11 cannot be satisfied without this service."
+                )
+        
         self.reasoning_service = reasoning_service
         self.strict_mode = strict_mode
         self.execution_mode = execution_mode
+        self.ledger_commit_service = ledger_commit_service
         
         # Create or use provided validator
         self.validator = validator or FortressValidator(
@@ -105,12 +136,15 @@ class FortressProtectedReasoningService:
             "total_requests": 0,
             "validated_responses": 0,
             "blocked_responses": 0,
-            "validation_failures": 0
+            "validation_failures": 0,
+            "ledger_commits": 0,
+            "failed_ledger_commits": 0,
         }
         
         log.info(
             f"FortressProtectedReasoningService initialized: "
-            f"strict={strict_mode}, mode={execution_mode.value}"
+            f"strict={strict_mode}, mode={execution_mode.value}, "
+            f"ledger_commit_service={'ENABLED' if ledger_commit_service else 'NOT PROVIDED (DEV ONLY)'}"
         )
     
     async def reason(
@@ -119,15 +153,14 @@ class FortressProtectedReasoningService:
         correlation_id: Optional[str] = None
     ) -> ReasoningResponse:
         """
-        Execute reasoning with automatic fortress validation and governance scope.
+        Execute reasoning with full Fortress security and governance validation.
         
-        This method:
-        1. Requires active governance context (CORRELATION LINEAGE)
-        2. Executes reasoning within governance scope (PROOF TRACKING ACTIVE)
-        3. Validates response through FortressValidator
-        4. Returns validated response or raises SecurityBreachException
-        
-        CRITICAL: NO reasoning can execute without active governance context.
+        Workflow:
+        1. Require active governance context (RULE 14)
+        2. Execute reasoning (returns pending VerdictExecutionResult)
+        3. Validate response with Fortress (RULE 1)
+        4. Commit pending ledger entry (RULE 1, RULE 2, RULE 11)
+        5. Return validated response
         
         Args:
             request: ReasoningRequest to process
@@ -146,15 +179,25 @@ class FortressProtectedReasoningService:
         if correlation_id is None and hasattr(request, 'correlation_id'):
             correlation_id = request.correlation_id
         
-        # CRITICAL: Require active governance context
+        # CRITICAL: Require active governance context (RULE 14)
         ctx = GovernanceContextManager.require_context()
+        
+        # PER RULE 3: Execution artifacts travel through explicit contracts
+        # The reasoning service now returns VerdictExecutionResult with pending ledger entry
+        execution_result = None
         
         try:
             # Execute reasoning within governance scope
             log.debug(f"[{correlation_id}] Executing reasoning request")
             response = await self.reasoning_service.reason(request)
             
+            # Get the execution result from the reasoning service if available
+            # PER RULE 3: Execution artifacts travel through explicit contract field
+            # NOT through response.metadata
+            execution_result = self._extract_execution_result(response)
+            
             # Validate response through Fortress
+            # # Validate execution result with Fortress
             log.debug(f"[{correlation_id}] Validating response through Fortress")
             validation_result = await self.validator.validate(
                 response=response,
@@ -163,16 +206,91 @@ class FortressProtectedReasoningService:
             
             self.stats["validated_responses"] += 1
             
-            if not validation_result.passed:
-                self.stats["blocked_responses"] += 1
-                log.error(
-                    f"[{correlation_id}] Response BLOCKED by Fortress: "
-                    f"{len(validation_result.violations)} violations"
-                )
+            # ========================================================================
+            # LEDGER COMMIT AFTER VALIDATION (RULE 1, RULE 2, RULE 10, RULE 11)
+            # ========================================================================
+            #
+            # PER RULE 1: Ledger is NEVER written before validation
+            # PER RULE 2: Delayed Ledger Commit
+            # PER RULE 11: Both successful AND failed validations are recorded
+            #
+            # Note: ledger_commit_service is guaranteed to be present in production
+            # by the __init__ check (CRITICAL-002 fix). In development, it may be None
+            # but the else block below will raise RuntimeError.
+            if execution_result:
+                if not self.ledger_commit_service:
+                    log.error(
+                        f"[{correlation_id}] CRITICAL-002: No LedgerCommitService configured - "
+                        f"cannot commit verdict_id={execution_result.ledger_entry.verdict_id}. "
+                        f"This violates RULE 7 and RULE 11."
+                    )
+                    raise RuntimeError(
+                        f"LedgerCommitService not configured - cannot record execution. "
+                        f"Verdict generation aborted to maintain trust guarantees."
+                    )
+                try:
+                    # Commit ledger with validation result
+                    # This happens AFTER validation, ensuring trustworthy ledger
+                    commit_result = await self.ledger_commit_service.commit_execution(
+                        execution_result=execution_result,
+                        validation_passed=validation_result.passed,
+                        validation_violations=validation_result.violations,
+                        validation_timestamp=datetime.now(UTC),
+                        fortress_version=self.validator.version if hasattr(self.validator, 'version') else "1.0.0",
+                    )
+                    
+                    if commit_result.success:
+                        self.stats["ledger_commits"] += 1
+                        log.info(
+                            f"[{correlation_id}] Ledger committed successfully: "
+                            f"verdict_id={execution_result.ledger_entry.verdict_id}, "
+                            f"validation_status={commit_result.entry.validation_status}"
+                        )
+                    else:
+                        self.stats["failed_ledger_commits"] += 1
+                        log.error(
+                            f"[{correlation_id}] Ledger commit failed: {commit_result.error}"
+                        )
+                        # PER RULE 10: Execution Atomicity
+                        # If ledger commit fails, we cannot return success
+                        if self.strict_mode:
+                            raise RuntimeError(
+                                f"Ledger commit failed after validation - execution atomicity violated: "
+                                f"{commit_result.error}"
+                            )
+                except Exception as e:
+                    log.error(f"[{correlation_id}] Ledger commit exception: {e}")
+                    if self.strict_mode:
+                        raise
             else:
+                # CRITICAL-002: No ledger commit service - FAIL CLOSED
+                # RULE 7: Ledger must become source of truth
+                # RULE 11: Failed executions must be recorded
+                # We CANNOT return a successful response without ledger recording
+                if execution_result:
+                    log.error(
+                        f"[{correlation_id}] CRITICAL-002: No LedgerCommitService configured - "
+                        f"cannot commit verdict_id={execution_result.ledger_entry.verdict_id}. "
+                        f"This violates RULE 7 and RULE 11."
+                    )
+                    raise RuntimeError(
+                        f"LedgerCommitService not configured - cannot record execution. "
+                        f"Verdict generation aborted to maintain trust guarantees."
+                    )
+            
+            # Log validation result
+            if validation_result.passed:
                 log.info(
                     f"[{correlation_id}] Response VALIDATED by Fortress "
                     f"({validation_result.execution_time_ms:.2f}ms)"
+                )
+            else:
+                # This should never be reached in strict mode since validator.raise() will be called
+                # But we keep it for safety and non-strict mode
+                self.stats["blocked_responses"] += 1
+                log.warning(
+                    f"[{correlation_id}] Response blocked by Fortress: "
+                    f"{len(validation_result.violations)} violations (non-strict mode)"
                 )
                 
             return response
@@ -186,11 +304,36 @@ class FortressProtectedReasoningService:
             self.stats["validation_failures"] += 1
             log.error(f"[{correlation_id}] Validation failed with exception: {e}")
             raise
+    
+    def _extract_execution_result(self, response: Any) -> Any:
+        """
+        Extract VerdictExecutionResult from ReasoningResponse.
+        
+        PER RULE 3: Execution artifacts travel through EXPLICIT contracts,
+        NOT through response.metadata. This method extracts from the explicit field.
+        
+        Args:
+            response: ReasoningResponse that may contain execution result
             
-        except Exception as e:
-            self.stats["validation_failures"] += 1
-            log.error(f"[{correlation_id}] Validation failed with exception: {e}")
-            raise
+        Returns:
+            VerdictExecutionResult if available, None otherwise
+        """
+        # PER RULE 3: Check explicit execution_result field first
+        if hasattr(response, 'execution_result'):
+            return response.execution_result
+        
+        # Fallback for backward compatibility (old metadata-based approach)
+        # This should be removed once all services are migrated
+        if hasattr(response, 'metadata') and response.metadata:
+            if '_execution_result' in response.metadata:
+                log.warning(
+                    "RULE 3 VIOLATION: execution_result found in response.metadata. "
+                    "This is deprecated. Use explicit execution_result field instead."
+                )
+                return response.metadata['_execution_result']
+        
+        # No execution result available
+        return None
     
     async def reason_batch(
         self,
@@ -280,7 +423,8 @@ def create_fortress_protected_service(
     reasoning_service: Any,
     strict_mode: bool = True,
     execution_mode: ExecutionMode = ExecutionMode.DESKTOP_MINIMAL,
-    validator: Optional[FortressValidator] = None
+    validator: Optional[FortressValidator] = None,
+    ledger_commit_service: Optional[Any] = None,
 ) -> FortressProtectedReasoningService:
     """
     Create a Fortress-protected reasoning service.
@@ -288,11 +432,15 @@ def create_fortress_protected_service(
     This is the recommended way to wrap an existing UnifiedReasoningService
     with automatic FortressValidator enforcement.
     
+    PER RULE 8: Dependencies point inward
+    - ledger_commit_service is explicitly injected, NOT discovered
+    
     Args:
         reasoning_service: UnifiedReasoningService instance to protect
         strict_mode: If True, raise exceptions on violations
         execution_mode: Current execution mode
         validator: Optional FortressValidator instance (creates new if None)
+        ledger_commit_service: Optional LedgerCommitService for ledger commits AFTER validation
         
     Returns:
         FortressProtectedReasoningService instance
@@ -300,24 +448,30 @@ def create_fortress_protected_service(
     Example:
         from mahoun.reasoning.unified_reasoning_service import UnifiedReasoningService
         from mahoun.reasoning.fortress_integration import create_fortress_protected_service
+        from mahoun.reasoning.ledger_commit_service import LedgerCommitService
         
         # Create base service
         base_service = UnifiedReasoningService()
         
+        # Create ledger commit service
+        ledger_commit_service = LedgerCommitService(ledger_writer=ledger_writer)
+        
         # Wrap with Fortress protection
         protected_service = create_fortress_protected_service(
             base_service,
-            strict_mode=True
+            strict_mode=True,
+            ledger_commit_service=ledger_commit_service  # Explicit injection
         )
         
-        # Use protected service (all responses auto-validated)
+        # Use protected service (all responses auto-validated, ledger auto-committed)
         response = await protected_service.reason(request)
     """
     return FortressProtectedReasoningService(
         reasoning_service=reasoning_service,
         validator=validator,
         strict_mode=strict_mode,
-        execution_mode=execution_mode
+        execution_mode=execution_mode,
+        ledger_commit_service=ledger_commit_service,
     )
 
 

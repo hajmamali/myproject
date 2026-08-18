@@ -34,6 +34,7 @@ class TestRedLinesYamlEnforcement:
             return yaml.safe_load(f)
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_min_agreement_score_enforcement(self, redlines_config):
         """Test that responses below min_agreement_score are rejected."""
         min_score = redlines_config['thresholds']['min_agreement_score']
@@ -58,6 +59,7 @@ class TestRedLinesYamlEnforcement:
         assert "agreement" in str(exc_info.value).lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_min_confidence_score_enforcement(self, redlines_config):
         """Test that responses below min_confidence_score are rejected."""
         min_confidence = redlines_config['thresholds']['min_confidence_score']
@@ -96,6 +98,7 @@ class TestRedLinesYamlEnforcement:
             assert "confidence" in str(exc).lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_proof_tree_required_enforcement(self, redlines_config):
         """Test that responses without proof_tree are rejected."""
         assert redlines_config['proof_requirements']['proof_tree_required'] is True
@@ -115,6 +118,7 @@ class TestRedLinesYamlEnforcement:
         assert "proof_tree" in str(exc_info.value).lower()
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_evidence_linkage_required_enforcement(self, redlines_config):
         """Test that responses without evidence linkage are rejected."""
         assert redlines_config['proof_requirements']['evidence_linkage_required'] is True
@@ -144,6 +148,7 @@ class TestRedLinesYamlEnforcement:
         assert "evidence" in violation_messages or "derived" in violation_messages
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_contradiction_rejection(self, redlines_config):
         """Test that responses with contradictions are rejected."""
         assert redlines_config['hallucination_prevention']['reject_contradictions'] is True
@@ -172,6 +177,7 @@ class TestRedLinesYamlEnforcement:
 class TestSecurityBreachExceptionHandling:
     """Test proper security breach exception handling in AI runtime."""
     
+    @pytest.mark.p0
     def test_security_breach_exception_structure(self):
         """Test SecurityBreachException has required forensic fields."""
         # Create exception with governance violation
@@ -199,6 +205,7 @@ class TestSecurityBreachExceptionHandling:
         assert "message" in exc_dict
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_exception_logging_required(self):
         """Test that security breaches are properly logged."""
         with patch('mahoun.core.logging.setup_logger') as mock_logger:
@@ -222,6 +229,7 @@ class TestSecurityBreachExceptionHandling:
             # Note: This tests the integration - actual logging tested elsewhere
             assert True  # SecurityBreachException was properly raised
     
+    @pytest.mark.p0
     def test_forensic_context_in_exceptions(self):
         """Test exceptions include forensic reconstruction context."""
         # Create detailed security breach
@@ -251,6 +259,7 @@ class TestAuditTrailCompletenesss:
     """Test audit trail completeness for AI runtime operations."""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_correlation_id_propagation(self):
         """Test correlation ID is propagated through AI runtime chain."""
         with patch('mahoun.core.governance.governance_context.GovernanceContextManager') as mock_gcm:
@@ -278,6 +287,7 @@ class TestAuditTrailCompletenesss:
                 assert response.correlation_id == "ai-runtime-test-123"
                 assert response.audit_trail["correlation_id"] == "ai-runtime-test-123"
     
+    @pytest.mark.p0
     def test_audit_event_structure(self):
         """Test AI runtime audit events have required structure."""
         from mahoun.core.models.audit_event import AuditEvent, AuditEventType, AuditSeverity, AuditContext
@@ -322,6 +332,7 @@ class TestAuditTrailCompletenesss:
         assert "payload" in audit_dict
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_end_to_end_audit_trail(self):
         """Test complete audit trail from AI runtime through evidence ledger."""
         # This tests the integration chain:
@@ -373,6 +384,7 @@ class TestFortressValidatorIntegration:
     """Test FortressValidator integration with AI runtime responses."""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validator_ai_response_validation(self):
         """Test FortressValidator properly validates AI-generated responses."""
         validator = FortressValidator()
@@ -403,6 +415,7 @@ class TestFortressValidatorIntegration:
         assert result.passed is True
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_fortress_validator_rejects_invalid_ai_responses(self):
         """Test FortressValidator rejects non-compliant AI responses.""" 
         validator = FortressValidator()
@@ -464,6 +477,7 @@ class TestResourceConstraintCompliance:
         with open(redlines_path, 'r') as f:
             return yaml.safe_load(f)
     
+    @pytest.mark.p0
     def test_desktop_minimal_memory_limits(self, redlines_config):
         """Test desktop minimal memory limits are enforced."""
         desktop_limits = redlines_config['resource_limits']['desktop_minimal']
@@ -480,6 +494,7 @@ class TestResourceConstraintCompliance:
             memory_limit = profile_manager.get_memory_limit()
             assert memory_limit == 8192 * 1024 * 1024  # 8GB in bytes
     
+    @pytest.mark.p0
     def test_enterprise_full_concurrent_requests(self, redlines_config):
         """Test enterprise full concurrent request limits."""
         enterprise_limits = redlines_config['resource_limits']['enterprise_full']
@@ -498,6 +513,7 @@ class TestResourceConstraintCompliance:
 class TestDeterminismRequirement:
     """Test deterministic execution requirement for AI runtime."""
     
+    @pytest.mark.p0
     def test_deterministic_ai_responses(self):
         """Test AI runtime produces deterministic responses."""
         # This would test actual determinism in integration tests
@@ -533,6 +549,7 @@ class TestGovernanceIntegrationE2E:
     """End-to-end governance integration tests."""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_complete_governance_chain(self):
         """Test complete governance chain with AI runtime."""
         # This tests: GovernanceContext → AI Runtime → FortressValidator → Audit
@@ -571,6 +588,7 @@ class TestGovernanceIntegrationE2E:
                     assert is_valid is True
     
     @pytest.mark.asyncio 
+    @pytest.mark.p0
     async def test_governance_failure_handling(self):
         """Test proper handling of governance failures."""
         # Use real FortressValidator instead of mocking

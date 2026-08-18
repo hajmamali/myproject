@@ -38,6 +38,7 @@ from mahoun.core.governance.violations import (
 class TestAttestationCreation:
     """Tests for ProvenanceAttestation creation"""
 
+    @pytest.mark.p2
     def test_create_attestation(self):
         """Test creating a provenance attestation"""
         attestation = ProvenanceAttestation.create(
@@ -54,6 +55,7 @@ class TestAttestationCreation:
         assert attestation.lineage_parent is None
         assert attestation.timestamp is not None
 
+    @pytest.mark.p2
     def test_create_attestation_with_lineage_parent(self):
         """Test creating attestation with lineage parent"""
         parent_attestation = ProvenanceAttestation.create(
@@ -71,6 +73,7 @@ class TestAttestationCreation:
 
         assert attestation.lineage_parent == parent_attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_create_attestation_timestamp_internal(self):
         """Test that timestamp is generated internally"""
         import time
@@ -93,6 +96,7 @@ class TestAttestationCreation:
         # Timestamps should be different (internal generation)
         assert attestation1.timestamp != attestation2.timestamp
 
+    @pytest.mark.p2
     def test_create_attestation_hash_computation(self):
         """Test that hash is computed from data"""
         data1 = {"source": "test", "correlation_id": "req-001"}
@@ -109,6 +113,7 @@ class TestAttestationCreation:
         # Hashes should be different
         assert attestation1.provenance_hash != attestation2.provenance_hash
 
+    @pytest.mark.p2
     def test_create_attestation_signature_computation(self):
         """Test that signature is computed"""
         attestation = ProvenanceAttestation.create(
@@ -130,6 +135,7 @@ class TestAttestationCreation:
 class TestIntegrityVerification:
     """Tests for attestation integrity verification"""
 
+    @pytest.mark.p2
     def test_verify_integrity_valid(self):
         """Test verify_integrity with valid attestation"""
         attestation = ProvenanceAttestation.create(
@@ -142,6 +148,7 @@ class TestIntegrityVerification:
 
         assert result is True
 
+    @pytest.mark.p2
     def test_verify_integrity_with_tampered_data(self):
         """Test verify_integrity with tampered data"""
         attestation = ProvenanceAttestation.create(
@@ -166,6 +173,7 @@ class TestIntegrityVerification:
 class TestInferenceProvenance:
     """Tests for InferenceProvenance"""
 
+    @pytest.mark.p2
     def test_create_inference_provenance(self):
         """Test creating inference provenance"""
         provenance = InferenceProvenance.create(
@@ -184,6 +192,7 @@ class TestInferenceProvenance:
         assert provenance.symbolic_trace_hash == "abc123def456"
         assert provenance.governance_scope_id == "scope-001"
 
+    @pytest.mark.p2
     def test_create_inference_provenance_auto_proof_id(self):
         """Test that proof_id is auto-generated"""
         provenance1 = InferenceProvenance.create(
@@ -205,6 +214,7 @@ class TestInferenceProvenance:
         # Proof IDs should be different (auto-generated)
         assert provenance1.proof_id != provenance2.proof_id
 
+    @pytest.mark.p2
     def test_inference_provenance_to_dict(self):
         """Test converting inference provenance to dict"""
         provenance = InferenceProvenance.create(
@@ -233,6 +243,7 @@ class TestInferenceProvenance:
 class TestProvenanceWithAttestation:
     """Tests for ProvenanceWithAttestation"""
 
+    @pytest.mark.p2
     def test_create_provenance_with_attestation(self):
         """Test creating provenance with attestation"""
         provenance = ProvenanceWithAttestation.create(
@@ -252,6 +263,7 @@ class TestProvenanceWithAttestation:
         assert provenance.metadata["correlation_id"] == "req-001"
         assert provenance.metadata["author"] == "system"
 
+    @pytest.mark.p2
     def test_create_provenance_with_attestation_and_inference(self):
         """Test creating provenance with attestation and inference"""
         inference = InferenceProvenance.create(
@@ -274,6 +286,7 @@ class TestProvenanceWithAttestation:
         assert provenance.inference is not None
         assert provenance.inference == inference
 
+    @pytest.mark.p2
     def test_create_provenance_with_document_id(self):
         """Test creating provenance with document_id"""
         provenance = ProvenanceWithAttestation.create(
@@ -289,6 +302,7 @@ class TestProvenanceWithAttestation:
         assert provenance.metadata["document_id"] == "doc-001"
         assert provenance.metadata["pipeline_version"] == "1.0.0"
 
+    @pytest.mark.p2
     def test_provenance_with_attestation_to_dict(self):
         """Test converting provenance with attestation to dict"""
         provenance = ProvenanceWithAttestation.create(
@@ -314,6 +328,7 @@ class TestProvenanceWithAttestation:
 class TestProvenanceChain:
     """Tests for ProvenanceChain"""
 
+    @pytest.mark.p2
     def test_create_provenance_chain(self):
         """Test creating a provenance chain"""
         chain = ProvenanceChain()
@@ -329,6 +344,7 @@ class TestProvenanceChain:
         assert provenance1 is not None
         assert provenance1.attestation.lineage_parent is None
 
+    @pytest.mark.p2
     def test_create_provenance_chain_with_lineage(self):
         """Test creating a chain with lineage"""
         chain = ProvenanceChain()
@@ -352,6 +368,7 @@ class TestProvenanceChain:
         # Second provenance should reference first
         assert provenance2.attestation.lineage_parent == provenance1.attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_get_chain(self):
         """Test getting full chain"""
         chain = ProvenanceChain()
@@ -387,6 +404,7 @@ class TestProvenanceChain:
         assert retrieved_chain[1].attestation.lineage_parent == retrieved_chain[0].attestation.provenance_hash
         assert retrieved_chain[2].attestation.lineage_parent == retrieved_chain[1].attestation.provenance_hash
 
+    @pytest.mark.p2
     def test_verify_chain_integrity_valid(self):
         """Test verifying chain integrity with valid chain"""
         chain = ProvenanceChain()
@@ -411,6 +429,7 @@ class TestProvenanceChain:
 
         assert result is True
 
+    @pytest.mark.p2
     def test_verify_chain_integrity_with_broken_lineage(self):
         """Test verifying chain integrity with broken lineage"""
         import dataclasses
@@ -454,6 +473,7 @@ class TestProvenanceChain:
 class TestPerformance:
     """Tests for provenance performance"""
 
+    @pytest.mark.p2
     def test_attestation_creation_performance(self):
         """Test attestation creation performance"""
         import time
@@ -469,6 +489,7 @@ class TestPerformance:
 
         assert elapsed < 1.0  # < 1s for 1000 attestations
 
+    @pytest.mark.p2
     def test_chain_creation_performance(self):
         """Test chain creation performance"""
         import time
@@ -487,6 +508,7 @@ class TestPerformance:
 
         assert elapsed < 1.0  # < 1s for 100 chain entries
 
+    @pytest.mark.p2
     def test_chain_verification_performance(self):
         """Test chain verification performance"""
         import time
@@ -516,6 +538,7 @@ class TestPerformance:
 class TestEdgeCases:
     """Tests for edge cases"""
 
+    @pytest.mark.p2
     def test_empty_data_attestation(self):
         """Test creating attestation with empty data"""
         attestation = ProvenanceAttestation.create(
@@ -525,6 +548,7 @@ class TestEdgeCases:
         assert attestation is not None
         assert attestation.provenance_hash is not None
 
+    @pytest.mark.p2
     def test_single_entry_chain(self):
         """Test chain with single entry"""
         chain = ProvenanceChain()
@@ -542,6 +566,7 @@ class TestEdgeCases:
         chain = chain.get_chain()
         assert len(chain) == 1
 
+    @pytest.mark.p2
     def test_many_entries_chain(self):
         """Test chain with many entries"""
         chain = ProvenanceChain()

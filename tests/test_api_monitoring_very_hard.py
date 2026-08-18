@@ -21,6 +21,7 @@ class TestInvariants:
 
     @given(st.integers(min_value=0, max_value=1000))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_legal_metrics_total_queries_non_negative(self, _):
         """Property: total_queries is always non-negative"""
         response = client.get("/metrics/legal")
@@ -29,6 +30,7 @@ class TestInvariants:
 
     @given(st.integers(min_value=0, max_value=100))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_error_rate_bounded(self, _):
         """Property: error_rate is between 0 and 1"""
         response = client.get("/metrics/legal")
@@ -37,12 +39,14 @@ class TestInvariants:
 
     @given(st.integers(min_value=0, max_value=100))
     @settings(max_examples=50, deadline=None)
+    @pytest.mark.p2
     def test_cache_hit_rate_bounded(self, _):
         """Property: cache_hit_rate is between 0 and 1"""
         response = client.get("/metrics/legal")
         data = response.json()
         assert 0 <= data["cache_hit_rate"] <= 1
 
+    @pytest.mark.p2
     def test_uptime_monotonic_increasing(self):
         """Property: uptime is monotonically increasing"""
         uptimes = []
@@ -62,6 +66,7 @@ class TestInvariants:
 class TestIdempotency:
     """Test idempotency properties"""
 
+    @pytest.mark.p2
     def test_legal_metrics_idempotent_reads(self):
         """Property: Reading metrics doesn't change metrics"""
         # Get initial state
@@ -79,6 +84,7 @@ class TestIdempotency:
         # Total queries should be same (reads don't increment)
         assert data1["total_queries"] == data2["total_queries"]
 
+    @pytest.mark.p2
     def test_prometheus_idempotent_reads(self):
         """Property: Reading Prometheus metrics doesn't change state"""
         response1 = client.get("/metrics/prometheus")
@@ -98,6 +104,7 @@ class TestIdempotency:
 class TestResetProperties:
     """Test reset operation properties"""
 
+    @pytest.mark.p2
     def test_reset_clears_all_metrics(self, monkeypatch):
         """Property: Reset clears all metrics to zero"""
         monkeypatch.setenv("MAHOUN_ENV", "dev")
@@ -113,6 +120,7 @@ class TestResetProperties:
         assert data["total_queries"] == 0
         assert data["total_errors"] == 0
 
+    @pytest.mark.p2
     def test_reset_is_atomic(self, monkeypatch):
         """Property: Reset is atomic (all or nothing)"""
         monkeypatch.setenv("MAHOUN_ENV", "dev")
@@ -131,6 +139,7 @@ class TestResetProperties:
 class TestStressAndLoad:
     """Stress tests and load testing"""
 
+    @pytest.mark.p2
     def test_rapid_fire_requests(self):
         """Test handling 100 rapid requests"""
         errors = []
@@ -144,6 +153,7 @@ class TestStressAndLoad:
 
         assert len(errors) == 0, f"Errors: {errors[:5]}"
 
+    @pytest.mark.p2
     def test_mixed_endpoint_load(self):
         """Test mixed load across all monitoring endpoints"""
         endpoints = ["/metrics/prometheus", "/metrics/legal", "/health/detailed"]
@@ -160,6 +170,7 @@ class TestStressAndLoad:
 
         assert len(errors) == 0, f"Errors: {errors[:5]}"
 
+    @pytest.mark.p2
     def test_large_response_handling(self):
         """Test handling of large Prometheus responses"""
         # Generate some metrics first
@@ -182,6 +193,7 @@ class TestStressAndLoad:
 class TestSecurityProperties:
     """Test security-related properties"""
 
+    @pytest.mark.p2
     def test_reset_always_blocked_in_production(self, monkeypatch):
         """Property: Reset is ALWAYS blocked in production"""
         prod_envs = ["prod", "production", "staging"]
@@ -198,6 +210,7 @@ class TestSecurityProperties:
             assert "error" in data
             assert data["error"] == "forbidden"
 
+    @pytest.mark.p2
     def test_no_sensitive_data_in_metrics(self):
         """Property: Metrics don't contain sensitive data"""
         response = client.get("/metrics/legal")
@@ -212,6 +225,7 @@ class TestSecurityProperties:
 class TestConsistency:
     """Test data consistency properties"""
 
+    @pytest.mark.p2
     def test_metrics_consistency_across_endpoints(self):
         """Property: Metrics are consistent across different endpoints"""
         # Get legal metrics
@@ -227,6 +241,7 @@ class TestConsistency:
         assert legal_response.status_code == 200
         assert prom_response.status_code == 200
 
+    @pytest.mark.p2
     def test_health_status_consistency(self):
         """Property: Health status is consistent with metrics"""
         health_response = client.get("/health/detailed")

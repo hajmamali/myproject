@@ -83,6 +83,7 @@ class TestGovernanceCompliance:
         }
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_redlines_threshold_enforcement(self, fortress_validator, mock_ai_response):
         """Test RedLines.yaml threshold enforcement"""
         
@@ -119,6 +120,7 @@ class TestGovernanceCompliance:
         assert result.passed is True
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_security_breach_exception_handling(self, fortress_validator):
         """Test security breach exception handling"""
         
@@ -161,6 +163,7 @@ class TestGovernanceCompliance:
         assert "Forensic Context:" in message
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_audit_trail_completeness_validation(self, fortress_validator):
         """Test audit trail completeness validation"""
         
@@ -216,6 +219,7 @@ class TestGovernanceCompliance:
         assert len(latest_audit.violations_detected) > 0
 
     @pytest.mark.asyncio 
+    @pytest.mark.p0
     async def test_runtime_governance_integration(self):
         """Test AI runtime manager governance integration"""
         
@@ -249,6 +253,7 @@ class TestGovernanceCompliance:
                 assert raw_response.audit_hash is not None
                 assert raw_response.correlation_id == "runtime-001"
 
+    @pytest.mark.p0
     def test_deployment_profile_governance_constraints(self):
         """Test governance constraints per deployment profile"""
         
@@ -285,6 +290,7 @@ class TestGovernanceCompliance:
                 enterprise_validator.config.proof_requirements.proof_tree_required)
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_air_gap_governance_compliance(self, fortress_validator):
         """Test governance compliance in air-gap environment"""
         
@@ -324,6 +330,7 @@ class TestGovernanceCompliance:
         assert result.metadata["execution_mode"] == ExecutionMode.DESKTOP_MINIMAL.value
         assert result.forensic_hash is not None
 
+    @pytest.mark.p0
     def test_governance_statistics_tracking(self, fortress_validator):
         """Test governance validation statistics tracking"""
         
@@ -337,6 +344,7 @@ class TestGovernanceCompliance:
         assert initial_stats["average_validation_time_ms"] == 0.0
 
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_citation_traceability_enforcement(self, fortress_validator):
         """Test R-07 Citation Traceability requirement"""
         
@@ -406,6 +414,7 @@ class TestGovernanceIntegrationFlow:
     """Integration tests for complete governance flow"""
     
     @pytest.mark.asyncio
+    @pytest.mark.p0
     async def test_end_to_end_governance_flow(self):
         """Test complete governance flow from AI runtime to audit"""
         

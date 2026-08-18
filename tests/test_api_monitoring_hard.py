@@ -15,6 +15,7 @@ client = TestClient(app)
 class TestMonitoringIntegration:
     """Test integration with actual monitoring system"""
     
+    @pytest.mark.p2
     def test_legal_monitoring_integration(self):
         """Test that legal metrics actually come from legal_monitoring"""
         from mahoun.monitoring.legal_metrics import legal_monitoring
@@ -29,6 +30,7 @@ class TestMonitoringIntegration:
         # Should have zero queries after reset
         assert data["total_queries"] == 0
     
+    @pytest.mark.p2
     def test_metrics_collector_integration(self):
         """Test that Prometheus metrics come from metrics collector"""
         from mahoun.metrics import get_metrics_collector
@@ -42,6 +44,7 @@ class TestMonitoringIntegration:
         # Should succeed even after reset
         assert response.status_code == 200
     
+    @pytest.mark.p2
     def test_uptime_tracking_works(self):
         """Test that uptime is actually tracked"""
         # First call
@@ -64,6 +67,7 @@ class TestMonitoringIntegration:
 class TestEdgeCases:
     """Test edge cases and error conditions"""
     
+    @pytest.mark.p2
     def test_reset_with_invalid_env(self, monkeypatch):
         """Test reset with various environment values"""
         for env in ["staging", "production", "prod"]:
@@ -71,6 +75,7 @@ class TestEdgeCases:
             response = client.post("/metrics/reset")
             assert response.status_code == 403
     
+    @pytest.mark.p2
     def test_health_detailed_without_start_time(self):
         """Test health detailed when start_time is not set"""
         # This tests the hasattr check
@@ -81,6 +86,7 @@ class TestEdgeCases:
         assert "uptime_seconds" in data
         assert isinstance(data["uptime_seconds"], (int, float))
     
+    @pytest.mark.p2
     def test_legal_metrics_with_no_data(self):
         """Test legal metrics when no queries have been tracked"""
         from mahoun.monitoring.legal_metrics import legal_monitoring
@@ -93,6 +99,7 @@ class TestEdgeCases:
         assert data["total_queries"] == 0
         assert data["error_rate"] == 0
     
+    @pytest.mark.p2
     def test_prometheus_with_empty_collector(self):
         """Test Prometheus endpoint with empty collector"""
         from mahoun.metrics import get_metrics_collector
@@ -108,6 +115,7 @@ class TestEdgeCases:
 class TestConcurrency:
     """Test concurrent access to monitoring endpoints"""
     
+    @pytest.mark.p2
     def test_concurrent_legal_metrics_calls(self):
         """Test multiple simultaneous calls to legal metrics"""
         import concurrent.futures
@@ -123,6 +131,7 @@ class TestConcurrency:
         # All should succeed
         assert all(status == 200 for status in results)
     
+    @pytest.mark.p2
     def test_concurrent_reset_calls(self, monkeypatch):
         """Test multiple simultaneous reset calls"""
         monkeypatch.setenv("MAHOUN_ENV", "dev")
@@ -143,6 +152,7 @@ class TestConcurrency:
 class TestRegressionPrevention:
     """Test that non-monitoring endpoints still work"""
     
+    @pytest.mark.p2
     def test_health_endpoint_unchanged(self):
         """Test that /health endpoint still works"""
         response = client.get("/health")
@@ -150,11 +160,13 @@ class TestRegressionPrevention:
         data = response.json()
         assert "status" in data
     
+    @pytest.mark.p2
     def test_feedback_stats_unchanged(self):
         """Test that feedback stats endpoint still works"""
         response = client.get("/api/v1/feedback/stats")
         assert response.status_code == 200
     
+    @pytest.mark.p2
     def test_system_status_unchanged(self):
         """Test that system status endpoint still works"""
         response = client.get("/api/v1/status")

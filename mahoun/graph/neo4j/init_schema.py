@@ -51,7 +51,14 @@ def main():
         print(f"   Response time: {health['response_time_ms']}ms")
         print(f"   Current nodes: {health['node_count']}")
         
-        # Create schema manager
+        # GOVERNED EXEMPTION: startup schema bootstrap.  SchemaManager issues
+        # idempotent DDL (CREATE CONSTRAINT/INDEX ... IF NOT EXISTS) before any
+        # data is present and outside any request GovernanceContext.  DDL cannot
+        # go through governed_session() because that path is for data mutations
+        # and requires an active GovernanceContext + actor_id.  Allowed here
+        # because: (a) idempotent, (b) pre-data bootstrap, (c) invoked only by
+        # the operator-run init script (never from request path).  See
+        # AGENTRULES.md "Governance exemptions" for the canonical rationale.
         with connection.session() as session:
             manager = SchemaManager(session)
             

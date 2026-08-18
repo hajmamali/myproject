@@ -24,6 +24,7 @@ def client():
 class TestRealHealthEndpoints:
     """تست واقعی Health Endpoints"""
     
+    @pytest.mark.p2
     def test_health_endpoint_returns_200(self, client):
         """تست اینکه /health واقعاً کار می‌کند"""
         response = client.get("/health")
@@ -35,6 +36,7 @@ class TestRealHealthEndpoints:
         assert "timestamp" in data
         print(f"✓ /health returned: {data}")
     
+    @pytest.mark.p2
     def test_health_v2_endpoint_exists(self, client):
         """تست اینکه /health/v2 وجود دارد"""
         response = client.get("/health/v2")
@@ -47,6 +49,7 @@ class TestRealHealthEndpoints:
 class TestRealSystemEndpoints:
     """تست واقعی System Endpoints"""
     
+    @pytest.mark.p2
     def test_system_mode_endpoint(self, client):
         """تست اینکه /system/mode کار می‌کند"""
         response = client.get("/system/mode")
@@ -56,6 +59,7 @@ class TestRealSystemEndpoints:
         assert "mode" in data
         print(f"✓ /system/mode returned: {data['mode']}")
     
+    @pytest.mark.p2
     def test_system_info_endpoint(self, client):
         """تست اینکه /system/info کار می‌کند"""
         response = client.get("/api/system/info")
@@ -70,6 +74,7 @@ class TestRealSystemEndpoints:
 class TestRealMAHOUNEndpoints:
     """تست واقعی MAHOUN Endpoints"""
     
+    @pytest.mark.p2
     def test_mahoun_endpoints_exist(self, client):
         """تست اینکه MAHOUN endpoints وجود دارند"""
         # تست یک endpoint ساده
@@ -83,6 +88,7 @@ class TestRealMAHOUNEndpoints:
 class TestRealSearchEndpoints:
     """تست واقعی Search Endpoints"""
     
+    @pytest.mark.p2
     def test_search_endpoint_exists(self, client):
         """تست اینکه search endpoint وجود دارد"""
         # تست با یک query ساده
@@ -102,6 +108,7 @@ class TestRealSearchEndpoints:
 class TestRealMetricsEndpoints:
     """تست واقعی Metrics Endpoints"""
     
+    @pytest.mark.p2
     def test_metrics_endpoint_exists(self, client):
         """تست اینکه metrics endpoint وجود دارد"""
         response = client.get("/metrics")
@@ -114,6 +121,7 @@ class TestRealMetricsEndpoints:
 class TestRealInternalEndpoints:
     """تست واقعی Internal (MCP) Endpoints"""
     
+    @pytest.mark.p2
     def test_internal_health_endpoint(self, client):
         """تست اینکه /internal/health کار می‌کند"""
         response = client.get("/internal/health")
@@ -122,6 +130,7 @@ class TestRealInternalEndpoints:
         assert response.status_code in [200, 503]
         print(f"✓ /internal/health accessible (status: {response.status_code})")
     
+    @pytest.mark.p2
     def test_internal_metrics_endpoint(self, client):
         """تست اینکه /internal/metrics کار می‌کند"""
         response = client.get("/internal/metrics")
@@ -130,6 +139,7 @@ class TestRealInternalEndpoints:
         assert response.status_code in [200, 503]
         print(f"✓ /internal/metrics accessible (status: {response.status_code})")
     
+    @pytest.mark.p2
     def test_dashboard_endpoint(self, client):
         """تست اینکه dashboard endpoint وجود دارد"""
         response = client.get("/internal/dashboard")
@@ -142,6 +152,7 @@ class TestRealInternalEndpoints:
 class TestRealErrorHandling:
     """تست واقعی Error Handling"""
     
+    @pytest.mark.p2
     def test_404_handling(self, client):
         """تست اینکه 404 درست handle می‌شود"""
         response = client.get("/nonexistent/endpoint")
@@ -149,6 +160,7 @@ class TestRealErrorHandling:
         assert response.status_code == 404
         print("✓ 404 errors handled correctly")
     
+    @pytest.mark.p2
     def test_invalid_json_handling(self, client):
         """تست اینکه invalid JSON درست handle می‌شود"""
         response = client.post(
@@ -165,6 +177,7 @@ class TestRealErrorHandling:
 class TestRealResponseStructure:
     """تست ساختار Response ها"""
     
+    @pytest.mark.p2
     def test_health_response_structure(self, client):
         """تست ساختار health response"""
         response = client.get("/health")
@@ -176,6 +189,7 @@ class TestRealResponseStructure:
             assert "timestamp" in data
             print("✓ Health response has correct structure")
     
+    @pytest.mark.p2
     def test_error_response_structure(self, client):
         """تست ساختار error response"""
         response = client.get("/nonexistent")

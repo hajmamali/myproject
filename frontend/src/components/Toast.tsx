@@ -72,16 +72,16 @@ let currentToasts: Toast[] = [];
 
 export const toast = {
   success: (message: string, duration?: number) => {
-    addToast({ type: "success", message, duration });
+    addToast({ type: "success", message, duration: duration || 3000 });
   },
   error: (message: string, duration?: number) => {
-    addToast({ type: "error", message, duration });
+    addToast({ type: "error", message, duration: duration || 5000 });
   },
   info: (message: string, duration?: number) => {
-    addToast({ type: "info", message, duration });
+    addToast({ type: "info", message, duration: duration || 3000 });
   },
   warning: (message: string, duration?: number) => {
-    addToast({ type: "warning", message, duration });
+    addToast({ type: "warning", message, duration: duration || 4000 });
   },
 };
 

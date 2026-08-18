@@ -73,6 +73,7 @@ def temp_dir():
 class TestJSONLBackendCoverage:
     """Comprehensive coverage for JSONL backend"""
     
+    @pytest.mark.p1
     def test_jsonl_write_creates_directory(self, temp_dir, sample_entry):
         """Test that JSONL backend creates parent directories"""
         nested_path = temp_dir / "nested" / "deep" / "ledger.jsonl"
@@ -85,11 +86,13 @@ class TestJSONLBackendCoverage:
         assert nested_path.exists()
         assert nested_path.parent.exists()
     
+    @pytest.mark.p1
     def test_jsonl_get_last_hash_empty_file(self, temp_dir):
         """Test get_last_hash on nonexistent file"""
         backend = JSONLLedgerBackend(temp_dir / "empty.jsonl")
         assert backend.get_last_hash() == "genesis"
     
+    @pytest.mark.p1
     def test_jsonl_get_last_hash_empty_lines(self, temp_dir):
         """Test get_last_hash when file exists but is empty"""
         path = temp_dir / "empty.jsonl"
@@ -98,11 +101,13 @@ class TestJSONLBackendCoverage:
         backend = JSONLLedgerBackend(path)
         assert backend.get_last_hash() == "genesis"
     
+    @pytest.mark.p1
     def test_jsonl_read_all_empty(self, temp_dir):
         """Test read_all on nonexistent file"""
         backend = JSONLLedgerBackend(temp_dir / "missing.jsonl")
         assert backend.read_all() == []
     
+    @pytest.mark.p1
     def test_jsonl_read_all_with_empty_lines(self, temp_dir, sample_entry):
         """Test read_all skips empty lines"""
         path = temp_dir / "with_blanks.jsonl"
@@ -118,6 +123,7 @@ class TestJSONLBackendCoverage:
         entries = backend.read_all()
         assert len(entries) == 1  # Only the valid entry
     
+    @pytest.mark.p1
     def test_jsonl_verify_chain_integrity(self, temp_dir, sample_entry):
         """Test chain verification detects tampering"""
         path = temp_dir / "chain.jsonl"
@@ -161,6 +167,7 @@ class TestJSONLBackendCoverage:
         # Verification should fail AFTER tampering
         assert backend.verify_chain() is False
     
+    @pytest.mark.p1
     def test_jsonl_entry_to_dict_conversion(self, temp_dir, sample_entry):
         """Test _entry_to_dict handles different field types"""
         backend = JSONLLedgerBackend(temp_dir / "convert.jsonl")
@@ -174,6 +181,7 @@ class TestJSONLBackendCoverage:
         assert entry_dict["confidence"] == 0.95
         assert isinstance(entry_dict["created_at"], str)  # Converted to ISO string
     
+    @pytest.mark.p1
     def test_jsonl_compute_hash_deterministic(self, temp_dir):
         """Test hash computation is deterministic"""
         backend = JSONLLedgerBackend(temp_dir / "hash_test.jsonl")
@@ -194,6 +202,7 @@ class TestJSONLBackendCoverage:
 class TestSQLiteBackendCoverage:
     """Comprehensive coverage for SQLite backend"""
     
+    @pytest.mark.p1
     def test_sqlite_init_creates_schema(self, temp_dir):
         """Test SQLite backend creates schema on init"""
         db_path = temp_dir / "ledger.db"
@@ -205,6 +214,7 @@ class TestSQLiteBackendCoverage:
         assert cursor.fetchone() is not None
         conn.close()
     
+    @pytest.mark.p1
     def test_sqlite_write_and_read(self, temp_dir, sample_entry):
         """Test SQLite write and read operations"""
         backend = SQLiteLedgerBackend(temp_dir / "rw.db")
@@ -218,11 +228,13 @@ class TestSQLiteBackendCoverage:
         assert entries[0]["entry"]["verdict_id"] == "test_verdict_001"
         assert entries[0]["hash"] == "hash_abc"
     
+    @pytest.mark.p1
     def test_sqlite_get_last_hash_empty_db(self, temp_dir):
         """Test get_last_hash on empty database"""
         backend = SQLiteLedgerBackend(temp_dir / "empty.db")
         assert backend.get_last_hash() == "genesis"
     
+    @pytest.mark.p1
     def test_sqlite_get_last_hash_after_writes(self, temp_dir, sample_entry):
         """Test get_last_hash returns most recent hash"""
         backend = SQLiteLedgerBackend(temp_dir / "seq.db")
@@ -243,6 +255,7 @@ class TestSQLiteBackendCoverage:
         backend.write(entry2, "hash2", "hash1")
         assert backend.get_last_hash() == "hash2"
     
+    @pytest.mark.p1
     def test_sqlite_verify_chain_integrity(self, temp_dir, sample_entry):
         """Test SQLite chain verification"""
         db_path = temp_dir / "chain.db"
@@ -302,6 +315,7 @@ class TestSQLiteBackendCoverage:
         # Verification should fail AFTER tampering
         assert backend.verify_chain() is False
     
+    @pytest.mark.p1
     def test_sqlite_indexes_created(self, temp_dir):
         """Test that indexes are created for performance"""
         db_path = temp_dir / "indexed.db"
@@ -325,18 +339,21 @@ class TestSQLiteBackendCoverage:
 class TestNoOpBackendCoverage:
     """Coverage for NoOp backend (dev/test only)"""
     
+    @pytest.mark.p1
     def test_noop_raises_in_production(self):
         """Test NoOp backend fails in production mode"""
         with patch("mahoun.core.environment.get_environment_name", return_value="production"):
             with pytest.raises(RuntimeError, match="NoOpLedgerBackend cannot be used in PRODUCTION"):
                 NoOpLedgerBackend()
     
+    @pytest.mark.p1
     def test_noop_allows_in_development(self):
         """Test NoOp backend works in dev/test"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
             backend = NoOpLedgerBackend()
             assert backend is not None
     
+    @pytest.mark.p1
     def test_noop_write_and_read(self, sample_entry):
         """Test NoOp backend stores in memory"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
@@ -348,12 +365,14 @@ class TestNoOpBackendCoverage:
             entries = backend.read_all()
             assert len(entries) == 1
     
+    @pytest.mark.p1
     def test_noop_verify_chain_empty(self):
         """Test NoOp verify_chain on empty ledger"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
             backend = NoOpLedgerBackend()
             assert backend.verify_chain() is True
     
+    @pytest.mark.p1
     def test_noop_verify_chain_integrity(self, sample_entry):
         """Test NoOp chain verification detects breaks"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
@@ -398,11 +417,13 @@ class TestNoOpBackendCoverage:
 class TestEvidenceLedgerWriterCoverage:
     """Comprehensive writer coverage"""
     
+    @pytest.mark.p1
     def test_writer_init_requires_backend_or_blockchain(self):
         """Test writer init validation"""
         with pytest.raises(ValueError, match="Either backend or blockchain must be provided"):
             EvidenceLedgerWriter()
     
+    @pytest.mark.p1
     def test_writer_init_rejects_both_backend_and_blockchain(self, temp_dir):
         """Test writer rejects both backend and blockchain"""
         backend = JSONLLedgerBackend(temp_dir / "test.jsonl")
@@ -411,6 +432,7 @@ class TestEvidenceLedgerWriterCoverage:
         with pytest.raises(ValueError, match="Cannot use both backend and blockchain"):
             EvidenceLedgerWriter(backend=backend, blockchain=blockchain)
     
+    @pytest.mark.p1
     def test_writer_create_blockchain_factory(self, temp_dir):
         """Test blockchain factory method"""
         writer = EvidenceLedgerWriter.create_blockchain(
@@ -420,6 +442,7 @@ class TestEvidenceLedgerWriterCoverage:
         assert writer.blockchain is not None
         assert writer.backend is None
     
+    @pytest.mark.p1
     def test_writer_compute_hash_deterministic(self, temp_dir, sample_entry):
         """Test hash computation is deterministic"""
         backend = JSONLLedgerBackend(temp_dir / "hash.jsonl")
@@ -430,6 +453,7 @@ class TestEvidenceLedgerWriterCoverage:
         
         assert hash1 == hash2
     
+    @pytest.mark.p1
     def test_writer_write_with_blockchain(self, temp_dir, sample_entry):
         """Test write path using blockchain"""
         writer = EvidenceLedgerWriter.create_blockchain(
@@ -443,6 +467,7 @@ class TestEvidenceLedgerWriterCoverage:
         assert entry_hash is not None
         assert len(entry_hash) > 0
     
+    @pytest.mark.p1
     def test_writer_write_with_jsonl_backend(self, temp_dir, sample_entry):
         """Test write path using JSONL backend"""
         backend = JSONLLedgerBackend(temp_dir / "backend.jsonl")
@@ -455,6 +480,7 @@ class TestEvidenceLedgerWriterCoverage:
         # Verify file was written
         assert (temp_dir / "backend.jsonl").exists()
     
+    @pytest.mark.p1
     def test_writer_write_validation_failure(self, temp_dir, sample_entry):
         """Test write fails when validation fails"""
         backend = JSONLLedgerBackend(temp_dir / "validate.jsonl")
@@ -465,6 +491,7 @@ class TestEvidenceLedgerWriterCoverage:
             with pytest.raises(ValueError, match="Invalid entry"):
                 writer.write(sample_entry)
     
+    @pytest.mark.p1
     def test_writer_write_backend_failure_raises_runtime_error(self, temp_dir, sample_entry):
         """Test write wraps backend exceptions"""
         backend = JSONLLedgerBackend(temp_dir / "fail.jsonl")
@@ -475,6 +502,7 @@ class TestEvidenceLedgerWriterCoverage:
                 with pytest.raises(RuntimeError, match="Ledger write failed"):
                     writer.write(sample_entry)
     
+    @pytest.mark.p1
     def test_writer_verify_integrity_blockchain(self, temp_dir, sample_entry):
         """Test verify_integrity with blockchain"""
         writer = EvidenceLedgerWriter.create_blockchain(
@@ -486,6 +514,7 @@ class TestEvidenceLedgerWriterCoverage:
         
         assert writer.verify_integrity() is True
     
+    @pytest.mark.p1
     def test_writer_verify_integrity_backend(self, temp_dir, sample_entry):
         """Test verify_integrity with backend - ensures hash chain is valid"""
         backend = JSONLLedgerBackend(temp_dir / "verify.jsonl")
@@ -501,6 +530,7 @@ class TestEvidenceLedgerWriterCoverage:
         # Verify integrity - should pass because we used backend's own hash computation
         assert writer.verify_integrity() is True
     
+    @pytest.mark.p1
     def test_writer_verify_integrity_no_backend(self):
         """Test verify_integrity returns True when no backend"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
@@ -520,6 +550,7 @@ class TestEvidenceLedgerWriterCoverage:
 class TestCreateLedgerWriterCoverage:
     """Coverage for factory function"""
     
+    @pytest.mark.p1
     def test_create_blockchain_default_path(self):
         """Test blockchain creation with default path"""
         with patch("mahoun.ledger.writer.ImmutableLedger") as mock_ledger:
@@ -528,6 +559,7 @@ class TestCreateLedgerWriterCoverage:
             assert writer is not None
             mock_ledger.assert_called()
     
+    @pytest.mark.p1
     def test_create_jsonl_with_custom_path(self, temp_dir):
         """Test JSONL creation with custom path"""
         custom_path = temp_dir / "custom.jsonl"
@@ -536,6 +568,7 @@ class TestCreateLedgerWriterCoverage:
         assert writer.backend is not None
         assert isinstance(writer.backend, JSONLLedgerBackend)
     
+    @pytest.mark.p1
     def test_create_sqlite_with_default_path(self):
         """Test SQLite creation with default path"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -546,6 +579,7 @@ class TestCreateLedgerWriterCoverage:
             
             assert isinstance(writer.backend, SQLiteLedgerBackend)
     
+    @pytest.mark.p1
     def test_create_noop_in_dev(self):
         """Test NoOp creation in development"""
         with patch("mahoun.core.environment.get_environment_name", return_value="development"):
@@ -553,11 +587,13 @@ class TestCreateLedgerWriterCoverage:
             
             assert isinstance(writer.backend, NoOpLedgerBackend)
     
+    @pytest.mark.p1
     def test_create_unknown_backend_raises(self):
         """Test unknown backend type raises ValueError"""
         with pytest.raises(ValueError, match="Unknown backend type"):
             create_ledger_writer(backend_type="invalid_backend")
     
+    @pytest.mark.p1
     def test_create_with_write_gate_enabled(self, temp_dir):
         """Test creation with P0-4 write gate enforcement"""
         with patch("mahoun.ledger.write_gate.LedgerWriteGate"):
@@ -578,6 +614,7 @@ class TestCreateLedgerWriterCoverage:
 class TestWriteGateIntegration:
     """Test P0-4 write gate enforcement paths"""
     
+    @pytest.mark.p1
     def test_writer_with_write_gate_routes_through_gate(self, temp_dir, sample_entry):
         """Test writes are routed through gate when configured"""
         from mahoun.ledger.write_gate import LedgerWriteGate, WriteGateResult
@@ -601,6 +638,7 @@ class TestWriteGateIntegration:
         mock_gate.write_verdict.assert_called_once()
         assert result_hash == "gate_generated_hash"
     
+    @pytest.mark.p1
     def test_writer_without_gate_logs_warning(self, temp_dir, sample_entry, caplog):
         """Test direct write logs warning when no gate configured"""
         backend = JSONLLedgerBackend(temp_dir / "ungated.jsonl")
@@ -612,6 +650,7 @@ class TestWriteGateIntegration:
         # Verify warning logged
         assert any("Direct ledger write without LedgerWriteGate" in record.message for record in caplog.records)
     
+    @pytest.mark.p1
     def test_writer_gate_rejection_raises_error(self, temp_dir, sample_entry):
         """Test write fails when gate rejects"""
         from mahoun.ledger.write_gate import LedgerWriteGate, WriteGateResult
@@ -640,6 +679,7 @@ class TestWriteGateIntegration:
 class TestEdgeCasesAndErrors:
     """Edge cases and error scenarios"""
     
+    @pytest.mark.p1
     def test_jsonl_write_handles_unicode(self, temp_dir):
         """Test JSONL handles Persian/Unicode correctly"""
         backend = JSONLLedgerBackend(temp_dir / "persian.jsonl")
@@ -661,6 +701,7 @@ class TestEdgeCasesAndErrors:
         entries = backend.read_all()
         assert entries[0]["entry"]["verdict_id"] == "رأی_۰۰۱"
     
+    @pytest.mark.p1
     def test_sqlite_handles_long_lists(self, temp_dir):
         """Test SQLite handles large node/fact lists"""
         backend = SQLiteLedgerBackend(temp_dir / "large.db")
@@ -682,6 +723,7 @@ class TestEdgeCasesAndErrors:
         entries = backend.read_all()
         assert len(entries[0]["entry"]["referenced_ltm_nodes"]) == 1000
     
+    @pytest.mark.p1
     def test_writer_write_with_no_backend_configured(self, sample_entry):
         """Test write fails gracefully when backend is None"""
         writer = EvidenceLedgerWriter.__new__(EvidenceLedgerWriter)
@@ -694,6 +736,7 @@ class TestEdgeCasesAndErrors:
             with pytest.raises(RuntimeError, match="No ledger backend configured"):
                 writer.write(sample_entry)
     
+    @pytest.mark.p1
     def test_blockchain_writer_returns_block_hash(self, temp_dir, sample_entry):
         """Test blockchain writer returns block hash not entry hash"""
         writer = EvidenceLedgerWriter.create_blockchain(
@@ -717,6 +760,7 @@ class TestEdgeCasesAndErrors:
 class TestConcurrentAccess:
     """Test thread-safety and concurrent operations"""
     
+    @pytest.mark.p1
     async def test_concurrent_writes_to_different_backends(self, temp_dir, sample_entry):
         """Test concurrent writes to separate backend instances"""
         backend1 = JSONLLedgerBackend(temp_dir / "concurrent1.jsonl")
