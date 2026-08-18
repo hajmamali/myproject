@@ -8,10 +8,12 @@ Store and query legal knowledge including:
 - Relationships
 
 Features:
-- Persistent storage (JSON files)
+- Persistent storage (JSON files + Neo4j)
 - Version history for rules/precedents
 - CRUD operations
 - Similarity-based search
+- Batch loading support
+- Governance context integration
 """
 
 
@@ -20,8 +22,17 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from mahoun.core.logging import setup_logger
+from mahoun.graph.batch import (
+    BatchJob,
+    JobPriority,
+    PriorityQueue,
+    Worker,
+    ResourceLimits,
+)
 
 log = setup_logger("knowledge_graph")
 
@@ -69,15 +80,28 @@ class LegalKnowledgeGraph:
     - Find similar precedents
     - CRUD operations
     - JSON file persistence
+    - Neo4j persistence
+    - Batch loading with parallel processing
+    - Governance context integration
     """
     
-    def __init__(self, storage_path: Optional[Path] = None, enable_semantic: bool = True):
+    def __init__(
+        self,
+        storage_path: Optional[Path] = None,
+        enable_semantic: bool = True,
+        enable_neo4j: bool = True,
+        neo4j_write_governance: bool = True,
+        batch_mode: bool = False,
+    ):
         """
         Initialize knowledge graph with optional persistent storage.
         
         Args:
             storage_path: Path for persistent storage. If None, uses in-memory only.
             enable_semantic: Whether to enable semantic search (default: True)
+            enable_neo4j: Whether to enable Neo4j persistence (default: True)
+            neo4j_write_governance: Whether to use governance context for Neo4j writes (default: True)
+            batch_mode: Whether to enable batch loading mode (default: False)
         """
         self.storage_path = storage_path
         self.entities: Dict[str, Any] = {}
@@ -93,10 +117,24 @@ class LegalKnowledgeGraph:
         self._semantic_searcher: Optional[Any] = None
         self._vector_index: Optional[Any] = None
         
+        # Neo4j support
+        self.enable_neo4j = enable_neo4j
+        self.neo4j_write_governance = neo4j_write_governance
+        self._neo4j_connection: Optional[Any] = None
+        
+        # Batch loading support
+        self.batch_mode = batch_mode
+        self._batch_queue: Optional[PriorityQueue] = None
+        self._batch_workers: List[Worker] = []
+        
         # Load from storage if path provided
         if self.storage_path:
             self.storage_path.mkdir(parents=True, exist_ok=True)
             self._load_from_storage()
+        
+        # Initialize Neo4j if enabled
+        if self.enable_neo4j:
+            self._init_neo4j()
         
         # Enable semantic search by default
         if enable_semantic:
@@ -108,7 +146,107 @@ class LegalKnowledgeGraph:
                     "Falling back to keyword matching."
                 )
         
-        log.info(f"Initialized LegalKnowledgeGraph (storage={storage_path}, semantic={enable_semantic})")
+        log.info(
+            f"Initialized LegalKnowledgeGraph "
+            f"(storage={storage_path}, semantic={enable_semantic}, "
+            f"neo4j={enable_neo4j}, batch={batch_mode})"
+        )
+    
+    def _init_neo4j(self) -> None:
+        """Initialize Neo4j connection"""
+        try:
+            from mahoun.graph.neo4j.connection import get_connection
+            self._neo4j_connection = get_connection()
+            log.info("Neo4j connection initialized for LegalKnowledgeGraph")
+        except Exception as e:
+            log.warning(f"Failed to initialize Neo4j: {e}. Using in-memory storage only.")
+            self.enable_neo4j = False
+    
+    def _write_to_neo4j_rule(self, rule: LegalRule) -> None:
+        """Write rule to Neo4j"""
+        if not self.enable_neo4j or not self._neo4j_connection:
+            return
+        
+        try:
+            query = """
+            MERGE (r:LegalRule {rule_id: $rule_id})
+            SET r.condition = $condition,
+                r.conclusion = $conclusion,
+                r.confidence = $confidence,
+                r.usage_count = $usage_count,
+                r.source = $source,
+                r.version = $version,
+                r.created_at = $created_at,
+                r.updated_at = $updated_at,
+                r.metadata = $metadata,
+                r.provenance = $provenance
+            RETURN r
+            """
+            
+            self._neo4j_connection._raw_execute(query, {
+                "rule_id": rule.rule_id,
+                "condition": rule.condition,
+                "conclusion": rule.conclusion,
+                "confidence": rule.confidence,
+                "usage_count": rule.usage_count,
+                "source": rule.source,
+                "version": rule.version,
+                "created_at": rule.created_at,
+                "updated_at": rule.updated_at,
+                "metadata": json.dumps(rule.metadata, ensure_ascii=False),
+                "provenance": json.dumps(
+                    self._serialize_provenance(rule.provenance), 
+                    ensure_ascii=False
+                ) if rule.provenance else None,
+            })
+            
+            log.debug(f"Wrote rule to Neo4j: {rule.rule_id}")
+            
+        except Exception as e:
+            log.error(f"Failed to write rule to Neo4j: {e}")
+    
+    def _write_to_neo4j_precedent(self, prec: LegalPrecedent) -> None:
+        """Write precedent to Neo4j"""
+        if not self.enable_neo4j or not self._neo4j_connection:
+            return
+        
+        try:
+            query = """
+            MERGE (p:LegalPrecedent {case_id: $case_id})
+            SET p.facts = $facts,
+                p.decision = $decision,
+                p.court = $court,
+                p.date = $date,
+                p.relevance_score = $relevance_score,
+                p.version = $version,
+                p.created_at = $created_at,
+                p.updated_at = $updated_at,
+                p.metadata = $metadata,
+                p.provenance = $provenance
+            RETURN p
+            """
+            
+            self._neo4j_connection._raw_execute(query, {
+                "case_id": prec.case_id,
+                "facts": prec.facts,
+                "decision": prec.decision,
+                "court": prec.court,
+                "date": prec.date,
+                "relevance_score": prec.relevance_score,
+                "version": prec.version,
+                "created_at": prec.created_at,
+                "updated_at": prec.updated_at,
+                "metadata": json.dumps(prec.metadata, ensure_ascii=False),
+                "provenance": json.dumps(
+                    self._serialize_provenance(prec.provenance),
+                    ensure_ascii=False
+                ) if prec.provenance else None,
+            })
+            
+            log.debug(f"Wrote precedent to Neo4j: {prec.case_id}")
+            
+        except Exception as e:
+            log.error(f"Failed to write precedent to Neo4j: {e}")
 
     def _resolve_entity_provenance(self, source: str, correlation_id: str, author: str, *, preserve_existing: Optional[Any] = None) -> Any:
         if preserve_existing is not None:
@@ -286,7 +424,8 @@ class LegalKnowledgeGraph:
         condition: str,
         conclusion: str,
         confidence: float = 1.0,
-        source: str = "manual"
+        source: str = "manual",
+        write_neo4j: bool = True
     ) -> LegalRule:
         """
         Add or update legal rule to knowledge base.
@@ -299,11 +438,13 @@ class LegalKnowledgeGraph:
             conclusion: Rule conclusion
             confidence: Rule confidence (0-1)
             source: Source of rule
+            write_neo4j: Whether to write to Neo4j (default: True)
             
         Returns:
             The created/updated LegalRule
         """
         now = datetime.now(timezone.utc).isoformat()
+        old_rule = None
         
         # Check if rule exists (update with version history)
         if rule_id in self.legal_rules:
@@ -353,10 +494,17 @@ class LegalKnowledgeGraph:
             source="knowledge_graph:add_legal_rule",
             correlation_id=rule_id,
             author="mahoun_knowledge_graph",
-            preserve_existing=old_rule.provenance if rule_id in self.legal_rules else None,
+            preserve_existing=old_rule.provenance if old_rule else None,
         )
         self.legal_rules[rule_id] = rule
+        
+        # Save to storage
         self._save_to_storage()
+        
+        # Write to Neo4j if enabled
+        if write_neo4j:
+            self._write_to_neo4j_rule(rule)
+        
         return rule
     
     def add_precedent(
@@ -365,7 +513,8 @@ class LegalKnowledgeGraph:
         facts: List[str],
         decision: str,
         court: str,
-        date: Optional[str] = None
+        date: Optional[str] = None,
+        write_neo4j: bool = True
     ) -> LegalPrecedent:
         """
         Add or update legal precedent.
@@ -378,11 +527,13 @@ class LegalKnowledgeGraph:
             decision: Court decision
             court: Court name
             date: Decision date
+            write_neo4j: Whether to write to Neo4j (default: True)
             
         Returns:
             The created/updated LegalPrecedent
         """
         now = datetime.now(timezone.utc).isoformat()
+        old_prec = None
         
         # Check if precedent exists (update with version history)
         if case_id in self.precedents:
@@ -430,11 +581,18 @@ class LegalKnowledgeGraph:
             source="knowledge_graph:add_precedent",
             correlation_id=case_id,
             author="mahoun_knowledge_graph",
-            preserve_existing=old_prec.provenance if case_id in self.precedents else None,
+            preserve_existing=old_prec.provenance if old_prec else None,
         )
 
         self.precedents[case_id] = prec
+        
+        # Save to storage
         self._save_to_storage()
+        
+        # Write to Neo4j if enabled
+        if write_neo4j:
+            self._write_to_neo4j_precedent(prec)
+        
         return prec
     
     def find_applicable_rules(
@@ -698,6 +856,175 @@ class LegalKnowledgeGraph:
             "num_precedent_versions": sum(len(v) for v in self._precedent_versions.values()),
             "storage_path": str(self.storage_path) if self.storage_path else None
         }
+    
+    # Batch loading support
+    async def start_batch_loader(
+        self,
+        num_rule_workers: int = 4,
+        num_precedent_workers: int = 4,
+        max_queue_size: int = 5000
+    ) -> None:
+        """
+        Start batch loader with worker pools.
+        
+        Args:
+            num_rule_workers: Number of workers for rule loading
+            num_precedent_workers: Number of workers for precedent loading
+            max_queue_size: Maximum queue size
+        """
+        if not self.batch_mode:
+            log.warning("Batch mode not enabled. Call with batch_mode=True on init.")
+            return
+        
+        # Create queue
+        self._batch_queue = PriorityQueue(max_size=max_queue_size)
+        log.info(f"Created batch queue (max size: {max_queue_size})")
+        
+        # Create resource limits
+        limits = ResourceLimits(max_memory_mb=2048)
+        
+        # Create rule workers
+        for i in range(num_rule_workers):
+            worker = Worker(
+                worker_id=f"rule_loader_{i}",
+                task_handler=self._batch_load_rule,
+                resource_limits=limits,
+                heartbeat_interval=30.0,
+            )
+            self._batch_workers.append(worker)
+            await worker.start(self._batch_queue)
+        
+        # Create precedent workers
+        for i in range(num_precedent_workers):
+            worker = Worker(
+                worker_id=f"precedent_loader_{i}",
+                task_handler=self._batch_load_precedent,
+                resource_limits=limits,
+                heartbeat_interval=30.0,
+            )
+            self._batch_workers.append(worker)
+            await worker.start(self._batch_queue)
+        
+        log.info(
+            f"Started batch loader with {num_rule_workers} rule workers "
+            f"and {num_precedent_workers} precedent workers"
+        )
+    
+    async def _batch_load_rule(self, job: BatchJob) -> Dict[str, Any]:
+        """Load rule from batch job"""
+        try:
+            data = job.data
+            rule = self.add_legal_rule(
+                rule_id=data["rule_id"],
+                condition=data["condition"],
+                conclusion=data["conclusion"],
+                confidence=data.get("confidence", 1.0),
+                source=data.get("source", "batch_loader"),
+                write_neo4j=self.enable_neo4j
+            )
+            return {
+                "status": "success",
+                "rule_id": rule.rule_id,
+                "version": rule.version
+            }
+        except Exception as e:
+            log.error(f"Failed to load rule: {e}")
+            raise
+    
+    async def _batch_load_precedent(self, job: BatchJob) -> Dict[str, Any]:
+        """Load precedent from batch job"""
+        try:
+            data = job.data
+            prec = self.add_precedent(
+                case_id=data["case_id"],
+                facts=data["facts"],
+                decision=data["decision"],
+                court=data["court"],
+                date=data.get("date"),
+                write_neo4j=self.enable_neo4j
+            )
+            return {
+                "status": "success",
+                "case_id": prec.case_id,
+                "version": prec.version
+            }
+        except Exception as e:
+            log.error(f"Failed to load precedent: {e}")
+            raise
+    
+    async def enqueue_rule_batch(
+        self,
+        rules: List[Dict[str, Any]],
+        priority: JobPriority = JobPriority.NORMAL
+    ) -> int:
+        """
+        Enqueue rules for batch loading.
+        
+        Args:
+            rules: List of rule data dicts
+            priority: Job priority for queue
+            
+        Returns:
+            Number of jobs enqueued
+        """
+        if not self._batch_queue:
+            raise RuntimeError("Batch queue not initialized. Call start_batch_loader first.")
+        
+        count = 0
+        for rule_data in rules:
+            job = BatchJob(
+                task_name="load_rule",
+                data=rule_data,
+                priority=priority,
+                timeout=300.0,
+                max_retries=2,
+            )
+            await self._batch_queue.enqueue(job)
+            count += 1
+        
+        log.info(f"Enqueued {count} rule jobs")
+        return count
+    
+    async def enqueue_precedent_batch(
+        self,
+        precedents: List[Dict[str, Any]],
+        priority: JobPriority = JobPriority.NORMAL
+    ) -> int:
+        """
+        Enqueue precedents for batch loading.
+        
+        Args:
+            precedents: List of precedent data dicts
+            priority: Job priority for queue
+            
+        Returns:
+            Number of jobs enqueued
+        """
+        if not self._batch_queue:
+            raise RuntimeError("Batch queue not initialized. Call start_batch_loader first.")
+        
+        count = 0
+        for prec_data in precedents:
+            job = BatchJob(
+                task_name="load_precedent",
+                data=prec_data,
+                priority=priority,
+                timeout=300.0,
+                max_retries=2,
+            )
+            await self._batch_queue.enqueue(job)
+            count += 1
+        
+        log.info(f"Enqueued {count} precedent jobs")
+        return count
+    
+    async def stop_batch_loader(self, timeout: float = 30.0) -> None:
+        """Stop batch loader workers"""
+        for worker in self._batch_workers:
+            await worker.stop(graceful=True, timeout=timeout)
+        
+        self._batch_workers.clear()
+        log.info("Stopped batch loader")
     
     def clear(self):
         """Clear all knowledge"""

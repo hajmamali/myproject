@@ -10,6 +10,7 @@ from typing import List, Optional, Dict, Any, Callable
 from collections import deque, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 import logging
 
 from .models import BatchJob, JobStatus, JobPriority

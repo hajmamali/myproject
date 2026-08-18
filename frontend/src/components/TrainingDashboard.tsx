@@ -73,11 +73,11 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
     void fetchModels();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
     setForm(prev => {
       if (type === 'checkbox') {
-        return { ...prev, [name]: checked };
+        return { ...prev, [name]: (e.target as HTMLInputElement).checked };
       }
       if (name === 'epochs' || name === 'batch_size') {
         return { ...prev, [name]: parseInt(value, 10) };
@@ -150,7 +150,12 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
             setIsLoadingModels(true);
             try {
               const modelList = await listAvailableModels();
-              setModels(modelList.jobs ?? []);
+              setModels((modelList.models ?? []).map((model) => ({
+                id: model.id,
+                name: model.name,
+                provider: model.provider,
+                version: model.size || '',
+              })));
             } catch (e) {
               setError(e instanceof Error ? e.message : 'خطا در بارگذاری');
             } finally {
@@ -315,7 +320,7 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
                         name="quantization"
                         value=""
                         checked={form.quantization === null}
-                        onChange={e => setForm(prev => ({ ...prev, quantization: null as 'INT8' | 'INT4' | null }))}
+                        onChange={() => setForm(prev => ({ ...prev, quantization: null as 'INT8' | 'INT4' | null }))}
                         className="h-4 w-4 text-primary-600"
                       />
                       なし

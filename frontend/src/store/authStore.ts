@@ -10,6 +10,7 @@ export enum Role {
   ANALYST = 'analyst',
   VIEWER = 'viewer',
   GUEST = 'guest',
+  LEGAL_PROFESSIONAL = 'legal_professional',
 }
 
 export enum Permission {

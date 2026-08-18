@@ -41,6 +41,10 @@ const MutationAuthorization = lazy(() => import("./components/MutationAuthorizat
 const DatasetBrowser = lazy(() => import("./components/DatasetBrowser"));
 const DatasetUploader = lazy(() => import("./components/DatasetUploader"));
 
+// 🔍 Investigator Tools - Economic Crimes Branch Features
+const SuspiciousPatternDetector = lazy(() => import("./components/SuspiciousPatternDetector"));
+const AutoInformationExtractor = lazy(() => import("./components/AutoInformationExtractor"));
+
 // Create React Query client with governance integration
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -299,7 +303,7 @@ function App() {
                     path="training" 
                     element={
                       <ProtectedRoute requiredPermissions={[Permission.ADMIN]}>
-                        <TrainingDashboard />
+                        <TrainingDashboard onStartTraining={() => undefined} />
                       </ProtectedRoute>
                     } 
                   />

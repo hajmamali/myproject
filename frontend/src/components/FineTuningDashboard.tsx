@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { listTrainingJobs, listAvailableModels } from '../api/trainingClient';
+import { listAvailableModels } from '../api/trainingClient';
 import { apiClient } from '../api/client';
 
 interface FineTuningJob {
@@ -36,14 +36,6 @@ interface ModelOption {
   name: string;
   provider: string;
   version: string;
-}
-
-function parseJSON<T>(str: string, fallback: T): T {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return fallback;
-  }
 }
 
 export default function FineTuningDashboard() {
@@ -79,7 +71,7 @@ export default function FineTuningDashboard() {
         );
 
         // Fetch fine-tuning jobs
-        const jobList = await apiClient.get('/api/v1/finetuning/jobs');
+        const jobList = await apiClient.get<{ jobs?: FineTuningJob[] }>('/api/v1/finetuning/jobs');
         setJobs(jobList.jobs ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'خطا در بارگذاری');
@@ -91,11 +83,11 @@ export default function FineTuningDashboard() {
     void fetchData();
   }, []);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setForm(prev => {
       if (type === 'checkbox') {
-        return { ...prev, [name]: e.target.checked };
+        return { ...prev, [name]: (e.target as HTMLInputElement).checked };
       }
       if (name === 'epochs' || name === 'batch_size') {
         return { ...prev, [name]: parseInt(value, 10) };
@@ -136,7 +128,7 @@ export default function FineTuningDashboard() {
         dataset_id: 'default', // In a real app, you'd have a dataset selector
       };
 
-      const response = await apiClient.post(`/api/v1/finetuning/jobs`, {
+      await apiClient.post(`/api/v1/finetuning/jobs`, {
         job_name: form.job_name,
         description: form.description,
         config,
@@ -146,7 +138,7 @@ export default function FineTuningDashboard() {
       });
 
       // Refetch jobs to include the new one
-      const jobList = await apiClient.get('/api/v1/finetuning/jobs');
+      const jobList = await apiClient.get<{ jobs?: FineTuningJob[] }>('/api/v1/finetuning/jobs');
       setJobs(jobList.jobs ?? []);
 
       // Reset form
@@ -184,8 +176,13 @@ export default function FineTuningDashboard() {
             setError(null);
             try {
               const modelList = await listAvailableModels();
-              setModels(modelList.jobs ?? []);
-              const jobList = await apiClient.get('/api/v1/finetuning/jobs');
+              setModels((modelList.models ?? []).map((model) => ({
+                id: model.id,
+                name: model.name,
+                provider: model.provider,
+                version: model.size || '',
+              })));
+              const jobList = await apiClient.get<{ jobs?: FineTuningJob[] }>('/api/v1/finetuning/jobs');
               setJobs(jobList.jobs ?? []);
             } catch (e) {
               setError(e instanceof Error ? e.message : 'خطا در بارگذاری');

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@shared/styles/index.css";
+import { ProtectedRoute } from "@shared/components/auth/ProtectedRoute";
 
 // Lazy load DEVELOPER tools and monitoring dashboards
 const Dashboard = lazy(() => import("@shared/components/Dashboard"));
@@ -13,6 +14,7 @@ const ABTestingDashboard = lazy(() => import("@shared/components/ABTestingDashbo
 const FineTuningDashboard = lazy(() => import("@shared/pages/FineTuningDashboard"));
 const GovernanceCenter = lazy(() => import("@shared/pages/GovernanceCenter"));
 const KnowledgeGraphCenter = lazy(() => import("@shared/pages/KnowledgeGraphCenter"));
+const CaseReviewWorkspace = lazy(() => import("@shared/pages/CaseReviewWorkspace"));
 const LoginPage = lazy(() => import("@shared/components/auth/LoginPage"));
 
 // Loading fallback
@@ -47,16 +49,21 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/monitoring" element={<MonitoringDashboard />} />
-            <Route path="/delay-analysis" element={<DelayAnalysisDashboard />} />
-            <Route path="/timeline" element={<TimelineVisualization />} />
-            <Route path="/training" element={<TrainingDashboard />} />
-            <Route path="/ab-testing" element={<ABTestingDashboard />} />
-            <Route path="/fine-tuning" element={<FineTuningDashboard />} />
-            <Route path="/governance" element={<GovernanceCenter />} />
-            <Route path="/knowledge-graph" element={<KnowledgeGraphCenter />} />
+            
+            {/* Protected Developer Routes */}
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/monitoring" element={<ProtectedRoute><MonitoringDashboard /></ProtectedRoute>} />
+            <Route path="/delay-analysis" element={<ProtectedRoute><DelayAnalysisDashboard /></ProtectedRoute>} />
+            <Route path="/timeline" element={<ProtectedRoute><TimelineVisualization /></ProtectedRoute>} />
+            <Route path="/training" element={<ProtectedRoute><TrainingDashboard /></ProtectedRoute>} />
+            <Route path="/ab-testing" element={<ProtectedRoute><ABTestingDashboard /></ProtectedRoute>} />
+            <Route path="/fine-tuning" element={<ProtectedRoute><FineTuningDashboard /></ProtectedRoute>} />
+            <Route path="/governance" element={<ProtectedRoute><GovernanceCenter /></ProtectedRoute>} />
+            <Route path="/knowledge-graph" element={<ProtectedRoute><KnowledgeGraphCenter /></ProtectedRoute>} />
+            <Route path="/case-review" element={<ProtectedRoute><CaseReviewWorkspace /></ProtectedRoute>} />
+            
+            {/* Catch-all redirect to login if not authenticated */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

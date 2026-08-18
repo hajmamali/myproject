@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AppError, NetworkError, ValidationError, GovernanceError } from '../errors/AppError';
+import { AppError, NetworkError, ValidationError, GovernanceError, GovernanceViolationError } from '../errors/AppError';
 import { ErrorCode, ErrorSeverity, Domain, ErrorContext, SerializedError } from '../errors/types';
 import { errorService } from '../services/errorService';
 
@@ -58,7 +58,7 @@ export interface UseErrorReturn {
 export function useError(): UseErrorReturn {
   const [error, setError] = useState<AppError | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const toastTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const toastTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const clearError = useCallback(() => {
     setError(null);

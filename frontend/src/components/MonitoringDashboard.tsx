@@ -21,6 +21,7 @@ interface RealtimeMetrics {
 }
 
 interface HealthComponent {
+  component?: string;
   status: 'healthy' | 'warning' | 'error' | string;
   value: number;
   unit: string;

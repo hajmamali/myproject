@@ -24,7 +24,7 @@ interface DatasetInfo {
   hard_count: number;
   dataset_path: string;
   created_at: string;
-  processing_time_ms: float;
+  processing_time_ms: number;
   success: boolean;
   error?: string;
   warnings: string[];

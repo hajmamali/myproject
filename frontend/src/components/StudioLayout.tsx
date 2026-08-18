@@ -35,7 +35,7 @@ const STUDIO_NAV: StudioNavItem[] = [
 ];
 
 function StudioSidebar() {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const visible = STUDIO_NAV.filter(
     (item) => !item.permissions || item.permissions.every((p) => hasPermission(p))
@@ -84,7 +84,6 @@ function StudioHeader({ onLogout }: { onLogout: () => void }) {
 export default function StudioLayout({ children }: StudioLayoutProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const handleLogout = () => {
     logout();

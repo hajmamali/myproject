@@ -159,7 +159,7 @@ export default function TimelineVisualization() {
                 <h3 className="text-lg font-semibold text-slate-200 mb-2">محتوى (Markdown)</h3>
                 <div className="prose prose-slate max-w-none">
                   {/* We'll render the markdown as HTML for simplicity; in a real app you might use a markdown parser */}
-                  <div dangerouslySetInnerHTML={{ __marked: response.markdown }}></div>
+                  <div dangerouslySetInnerHTML={{ __html: response.markdown }}></div>
                   {/* Since we don't have a markdown parser installed, we'll fallback to showing raw markdown in a pre tag for now */}
                   {/* In production, you'd want to use a library like remark or marked to convert markdown to HTML */}
                   <pre className="mt-4 text-xs text-slate-300 bg-slate-900/50 p-3 rounded overflow-auto whitespace-pre-wrap">{response.markdown}</pre>

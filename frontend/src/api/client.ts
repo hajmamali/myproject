@@ -4,7 +4,7 @@
  * Search uses the canonical backend contract: POST /v1/search/verdicts
  */
 
-import { LegalSearchFilters, SearchResult, VerdictRequest, VerdictResponse } from './types';
+import { LegalSearchFilters, SearchResult } from './types';
 
 export class SearchAPIError extends Error {
   constructor(

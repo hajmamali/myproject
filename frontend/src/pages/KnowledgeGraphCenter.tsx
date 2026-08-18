@@ -3,7 +3,7 @@
  * Graph Builder and Explorer
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface GraphNode {
   id: string;
@@ -79,29 +79,8 @@ export default function KnowledgeGraphCenter() {
       setGraphData(prev => ({
         nodes: [...(prev?.nodes || []), ...data.nodes],
         edges: [...(prev?.edges || []), ...data.edges],
+        path: prev?.path,
       }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExplainPath = async (sourceId: string, targetId: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/v1/graph/explain-path', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_id: sourceId,
-          target_id: targetId,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to explain path');
-      const data = await response.json();
-      setGraphData(prev => ({ ...prev, path: data.path }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
