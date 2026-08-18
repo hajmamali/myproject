@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -56,6 +57,35 @@ ULTRA_FACTORY = ROOT / "mahoun" / "agents" / "ultra_factory.py"
 RUNTIME_CONFIG = ROOT / "mahoun" / "core" / "runtime_config.py"
 AGENTS_MD = ROOT / "AGENTS.md"
 VALIDATOR_SCRIPT = ROOT / "scripts" / "validate_governance_compliance.py"
+
+EXCLUDED_SCAN_PARTS = {
+    "tests",
+    "examples",
+    "node_modules",
+    "venv",
+    ".venv",
+    "archived_modules",
+    "build",
+    "dist",
+    ".git",
+    ".worktrees",
+    ".kilo",
+    "__pycache__",
+}
+
+
+def _project_py_files() -> List[pathlib.Path]:
+    """Return all production Python files excluding tests, virtual environments, and caches."""
+    files: List[pathlib.Path] = []
+    for root, dirs, filenames in os.walk(str(ROOT)):
+        dirs[:] = [
+            d for d in dirs
+            if not d.startswith(".") and d not in EXCLUDED_SCAN_PARTS
+        ]
+        for f in filenames:
+            if f.endswith(".py"):
+                files.append(pathlib.Path(root) / f)
+    return files
 
 
 # ============================================================================
@@ -262,11 +292,7 @@ class TestEnforcement:
         schema apply). Anywhere else is a P0 governance bypass.
         """
         offenders: List[Tuple[str, int, str]] = []
-        for path in ROOT.rglob("*.py"):
-            if any(part.startswith(".") for part in path.parts):
-                continue
-            if "tests" in path.parts or "examples" in path.parts:
-                continue
+        for path in _project_py_files():
             try:
                 src = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
@@ -294,18 +320,16 @@ class TestEnforcement:
         down and reconciled.
         """
         offenders: List[Tuple[str, int, str]] = []
-        for path in ROOT.rglob("*.py"):
-            if any(part.startswith(".") for part in path.parts):
+        for path in _project_py_files():
+            try:
+                src = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
                 continue
-            if "tests" in path.parts or "examples" in path.parts:
-                continue
-            # Skip node_modules and other non-project directories
-            if "node_modules" in path.parts:
+            if "GovernanceContext" not in src and "MutationAuthorizationBoundary" not in src:
                 continue
             try:
-                tree = _parse(path)
-            except (SyntaxError, UnicodeDecodeError):
-                # Skip files that can't be parsed or decoded
+                tree = ast.parse(src, str(path))
+            except SyntaxError:
                 continue
             for node in ast.walk(tree):
                 if isinstance(node, ast.ClassDef) and node.name in {
@@ -485,14 +509,15 @@ class TestHardening:
         self, init_neo4j
     ) -> None:
         """Every failure path must call
-        ``GraphConnectionState.set_unavailable`` so downstream routers
+        ``GraphConnectionState.set_unavailable`` (directly or via
+        ``_handle_neo4j_init_failure`` helper) so downstream routers
         can see the disabled state.
         """
         body_src = ast.unparse(init_neo4j)
-        n = body_src.count("GraphConnectionState.set_unavailable")
+        n = body_src.count("GraphConnectionState.set_unavailable") + body_src.count("_handle_neo4j_init_failure")
         assert n >= 4, (
             f"init_neo4j must call GraphConnectionState.set_unavailable "
-            f"in every failure path (expected >= 4 sites, got {n})"
+            f"(or _handle_neo4j_init_failure) in every failure path (expected >= 4 sites, got {n})"
         )
 
     def test_init_neo4j_resets_driver_to_none(self, init_neo4j) -> None:
@@ -557,10 +582,10 @@ class TestHardening:
             "check_all core section must include import_safe"
         )
         # graph.reason, agents.count
-        assert '"reason"' in body_src, (
+        assert '"reason"' in body_src or "'reason'" in body_src, (
             "check_all must include 'reason' fields (graph.reason)"
         )
-        assert '"count"' in body_src, (
+        assert '"count"' in body_src or "'count'" in body_src, (
             "check_all must include agents.count"
         )
 
@@ -614,9 +639,7 @@ class TestUnifiedGovernance:
                 f"GraphConnectionState.{method.split('def ')[1]} missing"
             )
         # No duplicate definitions
-        for path in ROOT.rglob("*.py"):
-            if "tests" in path.parts or "examples" in path.parts:
-                continue
+        for path in _project_py_files():
             if path.resolve() == DB.resolve():
                 continue
             try:
@@ -664,11 +687,7 @@ class TestUnifiedGovernance:
             "health_checker must not reference UltraSelfImprovementSystem"
         )
         offenders: List[Tuple[str, int, str]] = []
-        for path in ROOT.rglob("*.py"):
-            if any(part.startswith(".") for part in path.parts):
-                continue
-            if "tests" in path.parts or "examples" in path.parts:
-                continue
+        for path in _project_py_files():
             try:
                 src = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
@@ -692,23 +711,23 @@ class TestUnifiedGovernance:
         module.
         """
         offenders: List[Tuple[str, int]] = []
-        for path in ROOT.rglob("*.py"):
-            if "tests" in path.parts or "examples" in path.parts:
+        for path in _project_py_files():
+            try:
+                src = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
                 continue
-            # Skip node_modules which may contain binary files
-            if "node_modules" in path.parts:
+            if "AsyncGraphDatabase" not in src and "driver(" not in src:
                 continue
             try:
-                tree = _parse(path)
-            except (SyntaxError, UnicodeDecodeError):
-                # Skip files that can't be parsed or decoded
+                tree = ast.parse(src, str(path))
+            except SyntaxError:
                 continue
             for name, line, _ in _collect_calls(tree):
                 if name == "driver":
                     # Heuristic: line containing "driver(" also mentions
                     # AsyncGraphDatabase
-                    src = ast.unparse(tree)
-                    lines = src.splitlines()
+                    src_unparsed = ast.unparse(tree)
+                    lines = src_unparsed.splitlines()
                     if line - 1 < len(lines) and \
                        "AsyncGraphDatabase" in lines[line - 1]:
                         offenders.append((str(path.relative_to(ROOT)), line))

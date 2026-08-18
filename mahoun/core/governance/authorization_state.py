@@ -33,11 +33,16 @@ from mahoun.core.governance_kernel.authorization_state import (
     _assert_no_duplicate_contextvar,
 )
 
+# Canonical alias
+is_governance_authorized = is_authorized
+
 __all__ = [
     "_authorized_write_ctx",
     "is_authorized",
+    "is_governance_authorized",
     "set_authorized",
     "reset_authorized",
     "authorize_write",
     "_assert_no_duplicate_contextvar",
 ]
+

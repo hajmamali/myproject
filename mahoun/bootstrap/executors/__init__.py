@@ -16,7 +16,7 @@ from .critical_infrastructure import (
 )
 from .database_storage import (
     Neo4jExecutor,
-    PolicyEngineExecutor,
+    PolicyRuleLoaderExecutor,
 )
 from .ai_ml_components import (
     EmbeddingModelsExecutor,
@@ -35,7 +35,7 @@ __all__ = [
     "GovernanceKernelExecutor",
     "ImmutableLedgerExecutor",
     "Neo4jExecutor",
-    "PolicyEngineExecutor",
+    "PolicyRuleLoaderExecutor",
     "EmbeddingModelsExecutor",
     "LLMLoaderExecutor",
     "AgentRegistryExecutor",

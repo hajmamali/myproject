@@ -60,7 +60,7 @@ async def build_trace() -> list[TraceStep]:
         from api.main import app
         from api.routers.system import collect_system_health
         from mahoun.core.governance.governance_context import GovernanceContextManager
-        from mahoun.core.governance_kernel.kernel import KernelMutationBoundary
+        from mahoun.core.governance import KernelMutationBoundary
         from mahoun.ledger.blockchain import ImmutableLedger
         from mahoun.reasoning.reasoning_chain import ReasoningChain
         from mahoun.graph.graph_query_service import GraphQueryService

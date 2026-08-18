@@ -36,7 +36,7 @@ export function sanitizeText(input: string): string {
 export function sanitizePersianText(input: string): string {
   // Remove potentially dangerous characters while preserving Persian
   const sanitized = input
-    .replace(/[<>\"\']/g, '') // Remove HTML and quotes
+    .replace(/[<>"']/g, '') // Remove HTML and quotes
     .replace(/javascript:/gi, '') // Remove javascript protocol
     .replace(/on\w+=/gi, '') // Remove event handlers
     .trim();

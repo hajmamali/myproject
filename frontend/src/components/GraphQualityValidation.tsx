@@ -206,7 +206,7 @@ export default function GraphQualityValidation() {
 
                   {completenessReport.missing_edges.length > 0 && (
                     <div>
-                      <h3 className="text-white font-medium mb-2">یال‌های گمشده</h33>
+                      <h3 className="text-white font-medium mb-2">یال‌های گمشده</h3>
                       <div className="bg-slate-900 rounded-lg p-3">
                         <div className="text-slate-400 text-sm space-y-1">
                           {completenessReport.missing_edges.map((edge, index) => (

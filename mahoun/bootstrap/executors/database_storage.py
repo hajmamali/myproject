@@ -226,9 +226,9 @@ class Neo4jExecutor(BootstrapPhaseExecutor):
             return False
 
 
-class PolicyEngineExecutor(BootstrapPhaseExecutor):
+class PolicyRuleLoaderExecutor(BootstrapPhaseExecutor):
     """
-    Phase 6: Policy Engine Initialization
+    Phase 6: Policy Rule Loading
     
     Loads and validates policy rules that govern system behavior.
     

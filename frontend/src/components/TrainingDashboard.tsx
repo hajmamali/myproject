@@ -55,8 +55,14 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
         setIsLoadingModels(true);
         setError(null);
         const modelList = await listAvailableModels();
-        // listAvailableModels returns { jobs: ModelOption[], total: number }
-        setModels(modelList.jobs ?? []);
+        setModels(
+          (modelList.models ?? []).map((model) => ({
+            id: model.id,
+            name: model.name,
+            provider: model.provider,
+            version: model.size || '',
+          }))
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : 'بارگذاری مدل‌ها ناموفق بود');
       } finally {
@@ -182,7 +188,7 @@ export default function TrainingDashboard({ onStartTraining, isTraining = false 
                 {models.map(model => (
                   <option key={model.id} value={model.id}>
                     {model.name} ({model.provider} {model.version})
-                  >
+                  </option>
                 ))}
               </select>
             </div>

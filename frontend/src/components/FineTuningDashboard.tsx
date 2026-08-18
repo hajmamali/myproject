@@ -69,7 +69,14 @@ export default function FineTuningDashboard() {
       try {
         // Fetch models
         const modelList = await listAvailableModels();
-        setModels(modelList.jobs ?? []); // Note: listAvailableModels returns { jobs: ModelOption[], total: number }
+        setModels(
+          (modelList.models ?? []).map((model) => ({
+            id: model.id,
+            name: model.name,
+            provider: model.provider,
+            version: model.size || '',
+          }))
+        );
 
         // Fetch fine-tuning jobs
         const jobList = await apiClient.get('/api/v1/finetuning/jobs');
@@ -215,12 +222,12 @@ export default function FineTuningDashboard() {
                         <h3 className="text-lg font-medium text-slate-100">{job.job_name}</h3>
                         <p className="text-sm text-slate-400 truncate">{job.description || 'بدون توضیح'}</p>
                         <div className="mt-2 flex items-center gap-3 text-xs">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium {
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             job.status === 'completed' ? 'bg-green-100 text-green-800' :
                             job.status === 'failed' ? 'bg-red-100 text-red-800' :
                             job.status === 'running' ? 'bg-blue-100 text-blue-800' :
                             'bg-slate-100 text-slate-700'
-                          }">
+                          }`}>
                             {job.status}
                           </span>
                           <span className="text-slate-500">· {new Date(job.created_at).toLocaleString('fa-IR')}</span>
@@ -237,7 +244,7 @@ export default function FineTuningDashboard() {
                           مشاهده
                         </button>
                       </div>
-                    >
+                    </li>
                   ))}
                 </ul>
               ) : (
@@ -291,7 +298,7 @@ export default function FineTuningDashboard() {
                   {models.map(model => (
                     <option key={model.id} value={model.id}>
                       {model.name} ({model.provider} {model.version})
-                    >
+                    </option>
                   ))}
                 </select>
               </div>

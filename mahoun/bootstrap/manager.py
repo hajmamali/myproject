@@ -218,7 +218,7 @@ class BootstrapManager:
             GovernanceKernelExecutor,
             ImmutableLedgerExecutor,
             Neo4jExecutor,
-            PolicyEngineExecutor,
+            PolicyRuleLoaderExecutor,
             ServicesExecutor,
             APIExecutor,
             ReadinessGateExecutor,
@@ -232,7 +232,7 @@ class BootstrapManager:
         
         # Phase 5-6: Database & Storage (unchanged)
         self.phase_executors[BootstrapPhase.NEO4J] = Neo4jExecutor()
-        self.phase_executors[BootstrapPhase.POLICY_ENGINE] = PolicyEngineExecutor()
+        self.phase_executors[BootstrapPhase.POLICY_ENGINE] = PolicyRuleLoaderExecutor()
         
         # Phase 7-9: AI/ML Components (NEW: Will be set up with coordinators!)
         # NOTE: These will be dynamically created with service container

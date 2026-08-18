@@ -47,6 +47,9 @@ from mahoun.core.governance.mutation_boundary import (
     GovernedWriteTransaction,
     MutationReceipt,
     MutationType,
+    KernelMutationBoundary,
+    QueryType,
+    is_governance_authorized,
 )
 from mahoun.core.governance.governance_context import (
     GovernanceContext,
@@ -79,4 +82,8 @@ __all__ = [
     "GovernedWriteTransaction",
     "MutationReceipt",
     "MutationType",
+    "KernelMutationBoundary",
+    "QueryType",
+    "is_governance_authorized",
 ]
+

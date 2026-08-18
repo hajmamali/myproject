@@ -337,14 +337,21 @@ def _make_receipt(
 # at tests/test_authorization_state_singleton.py.
 from mahoun.core.governance.authorization_state import (
     _authorized_write_ctx,
+    is_authorized,
+    is_governance_authorized,
     set_authorized as _set_authorized,
     reset_authorized as _reset_authorized,
+)
+from mahoun.core.governance_kernel.kernel import (
+    KernelMutationBoundary,
+    QueryType,
 )
 
 
 def _is_authorized() -> bool:
     """True only when executing inside GovernedNeo4jSession."""
     return _authorized_write_ctx.get()
+
 
 
 class MutationAuthorizationBoundary:
