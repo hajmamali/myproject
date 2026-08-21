@@ -215,6 +215,52 @@ async def lifespan(app: FastAPI):
         )
         # Fail-fast: Do not start application with incomplete bootstrap
         raise RuntimeError(f"MAHOUN bootstrap failed: {e}") from e
+    
+    # ============================================================================
+    # MONITORING SERVICES INITIALIZATION
+    # ============================================================================
+    # Initialize UltraIntegrityValidator and AdvancedModelOrchestrator for
+    # intelligent monitoring endpoints (/monitoring/*)
+    # ============================================================================
+    try:
+        from mahoun.graph.validation.ultra_integrity_validator import create_ultra_validator
+        from mahoun.llm.advanced_model_orchestrator import create_orchestrator
+        from mahoun.core.governance.governance_context import GovernanceContext
+        
+        # Create governance context for validator
+        governance_ctx = GovernanceContext(
+            capability="monitoring_validation",
+            correlation_id=f"startup-monitoring-{time.time()}",
+            provenance_source="monitoring_init",
+            provenance_author="system"
+        )
+        
+        # Initialize UltraIntegrityValidator
+        app.state.integrity_validator = create_ultra_validator(
+            governance_context=governance_ctx,
+            parallel_workers=4,
+            enable_anomaly_detection=True,
+            enable_semantic_validation=True
+        )
+        logger.info("✅ UltraIntegrityValidator initialized for monitoring")
+        
+        # Initialize AdvancedModelOrchestrator
+        # Note: ModelManager will be created internally with default settings
+        app.state.model_orchestrator = create_orchestrator(
+            enable_ab_testing=True,
+            enable_canary=True,
+            enable_auto_scaling=False  # Disabled for MVP
+        )
+        logger.info("✅ AdvancedModelOrchestrator initialized for monitoring")
+        
+    except Exception as e:
+        logger.warning(
+            f"⚠️  Monitoring services initialization failed (non-critical): {e}",
+            exc_info=True
+        )
+        # Non-fatal: monitoring endpoints will return 503 but app continues
+        app.state.integrity_validator = None
+        app.state.model_orchestrator = None
 
     # Check if databases are enabled
     enable_postgres = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
@@ -654,6 +700,15 @@ async def reset_metrics():
         "timestamp": datetime.now().isoformat(),
     }
 
+
+# Register Intelligent System Monitoring router (BEFORE metrics to ensure priority)
+try:
+    from api.routers import monitoring as monitoring_router
+
+    app.include_router(monitoring_router.router)
+    logger.info("✓ Intelligent monitoring router registered at /monitoring")
+except ImportError as e:
+    logger.warning(f"Monitoring router not available: {e}")
 
 # Register Metrics router (AFTER monitoring endpoints to avoid catch-all conflict)
 try:
