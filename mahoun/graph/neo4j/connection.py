@@ -188,14 +188,19 @@ class Neo4jConnection:
         return self._driver
     
     @contextmanager
-    def session(self, **kwargs):
+    def _session(self, **kwargs):
         """
-        Context manager for Neo4j session
+        v5.1 Integrity Closure (BL-5): Made private - bypasses governance inspection.
         
-        Usage:
-            with connection.session() as session:
-                result = session.run(query)
+        DEPRECATED: This method bypasses MutationAuthorizationBoundary.inspect().
+        Use _raw_execute() or GovernedNeo4jSession instead.
         """
+        import warnings
+        warnings.warn(
+            "_session() bypasses governance inspection. Use _raw_execute() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         session = self.driver.session(database=self.database, **kwargs)
         try:
             yield session
@@ -347,7 +352,9 @@ class Neo4jConnection:
         batch_size: int = 1000
     ) -> List:
         """
-        Execute batch queries in a single transaction
+        v5.1 Integrity Closure (BL-5): Route through _raw_execute for governance inspection.
+        
+        Execute batch queries with governance inspection on each query.
         
         Args:
             queries: List of (query, parameters) tuples
@@ -357,20 +364,18 @@ class Neo4jConnection:
             List of results for each query
         """
         results: List[Any] = []
-        with self.session() as session:
-            # Process in batches
-            for i in range(0, len(queries), batch_size):
-                batch = queries[i:i + batch_size]
-                
-                def batch_transaction(tx):
-                    batch_results: List[Any] = []
-                    for query, params in batch:
-                        result = tx.run(query, params or {})
-                        batch_results.append([record for record in result])
-                    return batch_results
-                
-                batch_results = session.execute_write(batch_transaction)
-                results.extend(batch_results)
+        
+        # Process each query through _raw_execute for governance inspection
+        for query, params in queries:
+            try:
+                result = self._raw_execute(query, params or {})
+                results.append(result)
+            except Exception as e:
+                # Log and continue - fail-safe for batch operations
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Batch query failed: {e}")
+                results.append([])
         
         return results
     

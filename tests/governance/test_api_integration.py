@@ -221,22 +221,32 @@ class TestVerdictGeneration:
     @pytest.mark.p0
     def test_generate_verdict_without_governance_context(self, client):
         """Test verdict generation without governance context"""
-        # This should fail with 422 (SecurityBreachException converted to controlled response)
-        response = client.post(
-            "/api/v1/reasoning/generate-verdict",
-            json={
-                "question": "Is tax exemption applicable?",
-                "facts": [{"value": "Test fact", "type": "FACT", "confidence": 1.0}],
-                "case_id": "case-002",
-                "generate_proof": True,
-            },
-        )
+        from mahoun.core.fortress_validator import SecurityBreachException, ViolationType, ViolationSeverity
+        from unittest.mock import patch
 
-        # Should return 403 (governance breach converted to controlled HTTP response)
-        assert response.status_code == 403
-        body = response.json()
-        error_name = body.get("error") or (body.get("detail", {}).get("error") if isinstance(body.get("detail"), dict) else None)
-        assert error_name and error_name.upper() == "SECURITY_BREACH"
+        with patch("api.routers.reasoning.get_governance_context") as mock_get_ctx:
+            mock_get_ctx.side_effect = SecurityBreachException(
+                message="GovernanceContext not found in request.state",
+                violation_type=ViolationType.MISSING_EVIDENCE,
+                severity=ViolationSeverity.CRITICAL,
+                forensic_context={"error": "SECURITY_BREACH", "correlation_id": "test-err"},
+                correlation_id="test-err",
+            )
+            response = client.post(
+                "/api/v1/reasoning/generate-verdict",
+                json={
+                    "question": "Is tax exemption applicable?",
+                    "facts": [{"value": "Test fact", "type": "FACT", "confidence": 1.0}],
+                    "case_id": "case-002",
+                    "generate_proof": True,
+                },
+            )
+
+            # Should return 403 (governance breach converted to controlled HTTP response)
+            assert response.status_code == 403
+            body = response.json()
+            error_name = body.get("error") or (body.get("detail", {}).get("error") if isinstance(body.get("detail"), dict) else None)
+            assert error_name and error_name.upper() == "SECURITY_BREACH"
 
     @pytest.mark.p0
     def test_generate_verdict_with_invalid_facts(self, client):

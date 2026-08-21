@@ -80,20 +80,44 @@ class KernelMutationBoundary:
     """Zero-dependency Cypher inspector."""
 
     @staticmethod
+    def _analyze_intent(query: str) -> Tuple[bool, List[str]]:
+        normalized_query = unicodedata.normalize("NFKC", query)
+        clean_query = re.sub(r"/\*.*?\*/", " ", normalized_query, flags=re.DOTALL)
+        clean_query = re.sub(r"//.*$", "", clean_query, flags=re.MULTILINE)
+        tokens = re.findall(r"[\w\.]+", clean_query)
+
+        MUTATION_KEYWORDS = frozenset(
+            {"MERGE", "CREATE", "DELETE", "SET", "REMOVE", "DROP", "DETACH"}
+        )
+        FORBIDDEN_PROCEDURES = frozenset({"apoc", "dbms", "plugin", "custom"})
+
+        is_mutation = False
+        violations = []
+
+        for token in tokens:
+            upper_token = token.upper()
+
+            if upper_token in MUTATION_KEYWORDS:
+                is_mutation = True
+
+            if "." in token:
+                prefix = token.split(".")[0].lower()
+                if prefix in FORBIDDEN_PROCEDURES:
+                    violations.append(f"Forbidden procedure call: {token}")
+
+        return is_mutation, violations
+
+    @staticmethod
     def classify_query(query: str) -> QueryType:
-        """Classify Cypher intent by delegating to the canonical classifier lazily."""
-        # Lazy import to preserve Tier 0 zero-dependency at module load time
-        from mahoun.core.governance.mutation_boundary import CypherLexer
-        # Use CypherLexer.analyze_intent to distinguish between WRITE and FORBIDDEN
-        is_mutation, violations = CypherLexer.analyze_intent(query)
-        
+        """Classify Cypher intent using stdlib-only analysis."""
+        is_mutation, violations = KernelMutationBoundary._analyze_intent(query)
+
         if violations:
-            # Forbidden procedures (apoc, dbms, etc.) take precedence
             return QueryType.FORBIDDEN
-        
+
         if is_mutation:
             return QueryType.WRITE
-        
+
         return QueryType.READ
 
     @staticmethod

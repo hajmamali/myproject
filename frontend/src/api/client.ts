@@ -19,15 +19,82 @@ export class SearchAPIError extends Error {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+const REQUEST_INIT_KEYS = new Set([
+  'method',
+  'headers',
+  'body',
+  'signal',
+  'credentials',
+  'cache',
+  'mode',
+  'redirect',
+  'referrer',
+  'referrerPolicy',
+  'integrity',
+  'keepalive',
+  'priority',
+  'duplex',
+]);
+
+function extractQueryParams(options: Record<string, unknown> = {}): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  const entries = Object.entries(options);
+
+  for (const [key, value] of entries) {
+    if (REQUEST_INIT_KEYS.has(key)) continue;
+    if (key === 'params' && value && typeof value === 'object') {
+      Object.assign(params, value as Record<string, unknown>);
+      continue;
+    }
+    if (value !== undefined && value !== null && value !== '') {
+      params[key] = value;
+    }
+  }
+
+  return params;
+}
+
+function withQueryString(endpoint: string, options: Record<string, unknown> = {}): string {
+  const params = extractQueryParams(options);
+  if (Object.keys(params).length === 0) return endpoint;
+
+  const url = new URL(endpoint, 'http://localhost');
+
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null && item !== '') {
+          url.searchParams.append(key, String(item));
+        }
+      }
+      continue;
+    }
+
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  return `${url.pathname}${url.search}`;
+}
+
 export const apiClient = {
-  async fetch<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+  async fetch<T = unknown>(endpoint: string, options: RequestInit & Record<string, unknown> = {}): Promise<T> {
+    const queryParams = extractQueryParams(options as Record<string, unknown>);
+    const url = `${API_BASE_URL}${withQueryString(endpoint, options as Record<string, unknown>)}`;
+    const { headers, ...requestOptions } = options as RequestInit & Record<string, unknown>;
+    const sanitizedOptions = { ...requestOptions };
+
+    for (const key of Object.keys(queryParams)) {
+      delete sanitizedOptions[key];
+    }
+
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(headers as HeadersInit | undefined),
       },
-      ...options,
+      ...sanitizedOptions,
     });
 
     if (!response.ok) {
@@ -44,11 +111,11 @@ export const apiClient = {
     return response.json() as Promise<T>;
   },
 
-  async get<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async get<T = unknown>(endpoint: string, options: Record<string, unknown> = {}): Promise<T> {
     return this.fetch<T>(endpoint, { ...options, method: 'GET' });
   },
 
-  async post<T = unknown>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> {
+  async post<T = unknown>(endpoint: string, data?: unknown, options: Record<string, unknown> = {}): Promise<T> {
     return this.fetch<T>(endpoint, {
       ...options,
       method: 'POST',
@@ -56,7 +123,7 @@ export const apiClient = {
     });
   },
 
-  async put<T = unknown>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> {
+  async put<T = unknown>(endpoint: string, data?: unknown, options: Record<string, unknown> = {}): Promise<T> {
     return this.fetch<T>(endpoint, {
       ...options,
       method: 'PUT',
@@ -64,7 +131,7 @@ export const apiClient = {
     });
   },
 
-  async delete<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async delete<T = unknown>(endpoint: string, options: Record<string, unknown> = {}): Promise<T> {
     return this.fetch<T>(endpoint, { ...options, method: 'DELETE' });
   },
 };

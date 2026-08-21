@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 FORENSIC-GRADE MICRO-BENCHMARK: Fact Hash Fix Validation

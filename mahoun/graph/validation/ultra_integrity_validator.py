@@ -88,7 +88,8 @@ class UltraIntegrityValidator:
         enable_semantic_validation: bool = True,
     ):
         self.governance_context = governance_context
-        self.parallel_workers = parallel_workers
+        # Fallback to default if negative or zero
+        self.parallel_workers = parallel_workers if parallel_workers > 0 else 4
         self.enable_anomaly_detection = enable_anomaly_detection
         self.enable_semantic_validation = enable_semantic_validation
         
@@ -99,7 +100,15 @@ class UltraIntegrityValidator:
     def _get_connection(self):
         """Get canonical Neo4j connection"""
         if self._connection is None:
-            self._connection = get_connection()
+            try:
+                self._connection = get_connection()
+            except Exception as e:
+                logger.error(
+                    f"Failed to get Neo4j connection: {e}",
+                    extra={"correlation_id": self.governance_context.correlation_id}
+                )
+                from mahoun.core.exceptions import GraphIntegrityException
+                raise GraphIntegrityException(f"Failed to get Neo4j connection: {e}")
         return self._connection
     
     def _execute_query(self, query: str, params: Optional[Dict] = None) -> List[Dict]:
@@ -373,9 +382,10 @@ class UltraIntegrityValidator:
         
         # Assume max 100 weighted violations for scoring
         max_weighted_violations = 100
-        health_score = max(0, 100 - (weighted_violations / max_weighted_violations * 100))
+        health_score = max(0.0, 100.0 - (weighted_violations / max_weighted_violations * 100.0))
         
-        return round(health_score, 2)
+        # Ensure it's always a float
+        return float(health_score)
 
 
 # Factory function

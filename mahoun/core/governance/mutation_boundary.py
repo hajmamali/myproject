@@ -46,6 +46,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 from mahoun.core.governance.validator_pipeline import ValidatorPipeline, PipelineResult
 from mahoun.core.governance.provenance_tracker import ProvenanceMetadata
 from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance.system_identities import verify_system_actor
 from mahoun.core.governance.violations import GovernanceViolationError, GovernanceViolation, ViolationSeverity, ViolationCategory
 
 logger = logging.getLogger(__name__)
@@ -441,6 +442,19 @@ class GovernedNeo4jSession:
                     severity=ViolationSeverity.CRITICAL,
                     message="GovernedNeo4jSession requires non-empty actor_id",
                     details={"provided_actor_id": actor_id or ""},
+                    source="GovernedNeo4jSession.__init__",
+                )
+            )
+        
+        # v5.1 Integrity Closure (BL-3): Verify system actor against registry
+        # If actor_id starts with "system:", it must be a known system actor
+        if sanitized_actor_id.startswith("system:") and not verify_system_actor(sanitized_actor_id):
+            raise GovernanceViolationError(
+                GovernanceViolation(
+                    category=ViolationCategory.AUDIT_INTEGRITY_VIOLATION,
+                    severity=ViolationSeverity.CRITICAL,
+                    message=f"Unknown system actor: {sanitized_actor_id}",
+                    details={"actor_id": sanitized_actor_id},
                     source="GovernedNeo4jSession.__init__",
                 )
             )
@@ -935,7 +949,10 @@ class GovernedWriteTransaction:
         ))
 
     def commit(self) -> Tuple[MutationReceipt, ...]:
-        """Validate ALL, then execute ALL. Atomic fail-closed semantics."""
+        """Validate ALL, then execute ALL. Atomic fail-closed semantics.
+        
+        v5.1 Integrity Closure (BL-6): Emit audit event on commit.
+        """
         self._check_open()
 
         # Phase 1: Validate every pending mutation
@@ -959,6 +976,18 @@ class GovernedWriteTransaction:
             )
             receipts.append(receipt)
             self._session._ledger.append(receipt)
+
+        # v5.1 Integrity Closure (BL-6): Emit audit event for transaction commit
+        audit_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "correlation_id": self._session._correlation_id,
+            "governance_scope_id": self._session._governance_scope_id,
+            "actor_id": self._session._actor_id,
+            "operation": "transaction_commit",
+            "mutation_count": len(receipts),
+            "receipt_ids": [r.correlation_id for r in receipts],
+        }
+        _append_governance_audit(audit_entry)
 
         self._committed = True
         return tuple(receipts)

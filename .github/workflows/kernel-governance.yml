@@ -222,27 +222,27 @@ jobs:
       - name: Run governance kernel integrity tests
         run: |
           echo "=== Governance Kernel Integrity Tests ==="
-          pytest tests/governance/test_kernel_guard.py -v --tb=short || true
+          pytest tests/governance/test_kernel_guard.py -v --tb=short
       
       - name: Run architecture guard tests
         run: |
           echo "=== Architecture Guard Tests ==="
-          pytest tests/governance/test_architecture_guard.py -v --tb=short || true
+          pytest tests/governance/test_architecture_guard.py -v --tb=short
       
       - name: Run API guard tests
         run: |
           echo "=== API Guard Tests ==="
-          pytest tests/governance/test_api_guard.py -v --tb=short || true
+          pytest tests/governance/test_api_guard.py -v --tb=short
       
       - name: Run constitutional invariant tests
         run: |
           echo "=== Constitutional Invariant Tests ==="
-          pytest tests/governance/test_constitutional_invariants.py -v --tb=short || true
+          pytest tests/governance/test_constitutional_invariants.py -v --tb=short
       
       - name: Run governance lock tests
         run: |
           echo "=== Governance Lock Tests ==="
-          pytest tests/governance/test_governance_lock.py -v --tb=short || true
+          pytest tests/governance/test_governance_lock.py -v --tb=short
 
   # =============================================================================
   # JOB 5: Security Validation

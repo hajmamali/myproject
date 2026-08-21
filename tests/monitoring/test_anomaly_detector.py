@@ -20,7 +20,7 @@ Version: 1.0.0
 import pytest
 from datetime import datetime
 
-from mahoun.monitoring import (
+from mahoun.monitoring.anomaly_detector import (
     StatisticalAnomalyDetector,
     PerformanceDegradationDetector,
     AnomalyDetectionSystem,

@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Manual E2E Test for Fine-Tuning System

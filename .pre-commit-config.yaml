@@ -7,6 +7,15 @@
 # Run manually: pre-commit run --all-files
 
 repos:
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        name: YAML Lint
+        args: [-c, .yamllint.yaml]
+        types: [yaml]
+        always_run: true
+
   - repo: local
     hooks:
       - id: gate-1-lint

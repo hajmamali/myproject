@@ -41,10 +41,10 @@ services:
     image: mahoun/backend:${VERSION:-latest}
     container_name: mahoun_access_tier-prod
     <<: *restart-policy
-    
+
     ports:
       - "${BACKEND_PORT:-8000}:8000"
-    
+
     environment:
       <<: *common-env
       # Application
@@ -53,13 +53,13 @@ services:
       MAHOUN_ALLOW_EXPERIMENTAL: "false"
       STOCHASTIC_THRESHOLD: "0.0"
       MAHOUN_ENFORCE_PROOF_CARRYING_CONTRACT: "true"
-      
+
       # Workers
       UNIFIED_LOADER_WORKERS: ${UNIFIED_LOADER_WORKERS:-4}
       JOB_POLLING_INTERVAL: ${JOB_POLLING_INTERVAL:-2}
       DLQ_MAX_RETRIES: ${DLQ_MAX_RETRIES:-3}
       MEMORY_SAFEGUARD_GB: ${MEMORY_SAFEGUARD_GB:-2.0}
-      
+
       # Neo4j
       NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
       NEO4J_USER: ${NEO4J_USER:-neo4j}
@@ -68,7 +68,7 @@ services:
       DB_NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
       DB_NEO4J_USER: ${NEO4J_USER:-neo4j}
       ENABLE_NEO4J: ${ENABLE_NEO4J:-true}
-      
+
       # PostgreSQL
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: 5432
@@ -81,7 +81,7 @@ services:
       DB_POSTGRES_DB: ${POSTGRES_DB:-mahoun}
       DB_POSTGRES_USER: ${POSTGRES_USER:-mahoun}
       ENABLE_POSTGRES: ${ENABLE_POSTGRES:-true}
-      
+
       # Redis
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
@@ -89,21 +89,21 @@ services:
       DB_REDIS_PORT: 6379
       DB_REDIS_DB: 0
       ENABLE_REDIS: ${ENABLE_REDIS:-true}
-      
+
       # ChromaDB
       CHROMA_HOST: ${CHROMA_HOST:-chromadb}
       CHROMA_PORT: 8000
       CHROMA_TOKEN: ${CHROMA_TOKEN:-}
-      
+
       # Security
       JWT_SECRET_KEY: ${SECURITY_JWT_SECRET:?SECURITY_JWT_SECRET required}
       SECURITY_JWT_SECRET: ${SECURITY_JWT_SECRET:?SECURITY_JWT_SECRET required}
       API_KEY: ${API_KEY:?API_KEY required}
-      
+
       # Monitoring
       PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
       PROMETHEUS_PORT: 9090
-    
+
     volumes:
       - backend_data:/app/data
       - backend_uploads:/app/uploads
@@ -111,12 +111,12 @@ services:
       - backend_output:/app/output
       - backend_runtime:/app/runtime
       - backend_logs:/app/logs
-    
+
     networks:
       - mahoun_access_tier
       - mahoun_secure_tier
       - mahoun-monitoring
-    
+
     depends_on:
       neo4j:
         condition: service_healthy
@@ -124,11 +124,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    
+
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD-SHELL", "python3 /app/infrastructure/health/integrity_probe.py"]
-    
+
     deploy:
       resources:
         limits:
@@ -142,14 +142,14 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "5"
         labels: "service,environment"
-    
+
     labels:
       - "com.mahoun.service=backend"
       - "com.mahoun.environment=production"
@@ -163,37 +163,37 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NODE_ENV: production
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        NODE_VERSION: 20-alpine
+        NGINX_VERSION: alpine
       cache_from:
         - mahoun/frontend:latest
     image: mahoun/frontend:${VERSION:-latest}
     container_name: mahoun-frontend-prod
     <<: *restart-policy
-    
+
     ports:
       - "${FRONTEND_PORT:-80}:80"
       - "${FRONTEND_SSL_PORT:-443}:443"
-    
+
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
       NGINX_WORKER_PROCESSES: ${NGINX_WORKERS:-auto}
       NGINX_WORKER_CONNECTIONS: ${NGINX_CONNECTIONS:-1024}
-    
+
     depends_on:
       backend:
         condition: service_healthy
-    
+
     networks:
       - mahoun_access_tier
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    
+
     deploy:
       resources:
         limits:
@@ -202,13 +202,13 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=frontend"
       - "com.mahoun.environment=production"
@@ -222,11 +222,11 @@ services:
     <<: *restart-policy
     profiles:
       - full
-    
+
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
-    
+
     environment:
       NEO4J_AUTH: ${DB_NEO4J_USER:-neo4j}/${DB_NEO4J_PASSWORD:?DB_NEO4J_PASSWORD required}
       NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
@@ -240,24 +240,24 @@ services:
       NEO4J_server_metrics_enabled: "true"
       NEO4J_server_metrics_prometheus_enabled: "true"
       NEO4J_server_metrics_prometheus_endpoint: 0.0.0.0:2004
-    
+
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - neo4j_import:/var/lib/neo4j/import
       - neo4j_plugins:/plugins
-    
+
     networks:
       - mahoun_secure_tier
       - mahoun-monitoring
-    
+
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:7474 || exit 1"]
       interval: 15s
       timeout: 15s
       retries: 5
       start_period: 90s
-    
+
     deploy:
       resources:
         limits:
@@ -266,13 +266,13 @@ services:
         reservations:
           cpus: '1.0'
           memory: 4G
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "200m"
         max-file: "5"
-    
+
     labels:
       - "com.mahoun.service=neo4j"
       - "com.mahoun.environment=production"
@@ -286,10 +286,10 @@ services:
     <<: *restart-policy
     profiles:
       - full
-    
+
     ports:
       - "${POSTGRES_HOST_PORT:-5432}:5432"
-    
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-mahoun}
       POSTGRES_USER: ${POSTGRES_USER:-mahoun}
@@ -308,21 +308,21 @@ services:
       POSTGRES_WORK_MEM: 4MB
       POSTGRES_MIN_WAL_SIZE: 1GB
       POSTGRES_MAX_WAL_SIZE: 4GB
-    
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./mahoun/graph/schema/sql/master_schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    
+
     networks:
       - mahoun_secure_tier
-    
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    
+
     deploy:
       resources:
         limits:
@@ -331,13 +331,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=postgres"
       - "com.mahoun.environment=production"
@@ -351,10 +351,10 @@ services:
     <<: *restart-policy
     profiles:
       - full
-    
+
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    
+
     command: >
       redis-server
       --requirepass "${REDIS_PASSWORD:?REDIS_PASSWORD required}"
@@ -371,21 +371,21 @@ services:
       --daemonize no
       --supervised no
       --loglevel notice
-    
+
     volumes:
       - redis_data:/data
-    
+
     networks:
       - mahoun_secure_tier
       - mahoun-monitoring
-    
+
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 10s
-    
+
     deploy:
       resources:
         limits:
@@ -394,13 +394,13 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=redis"
       - "com.mahoun.environment=production"
@@ -414,10 +414,10 @@ services:
     <<: *restart-policy
     profiles:
       - full
-    
+
     ports:
       - "${CHROMADB_PORT:-8001}:8000"
-    
+
     environment:
       IS_PERSISTENT: "TRUE"
       PERSIST_DIRECTORY: /chroma/chroma
@@ -425,20 +425,20 @@ services:
       CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: ${CHROMA_AUTH_PROVIDER:-chromadb.auth.token.TokenAuthCredentialsProvider}
       CHROMA_SERVER_AUTH_CREDENTIALS: ${CHROMA_TOKEN:-}
       CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER: X-Chroma-Token
-    
+
     volumes:
       - chromadb_data:/chroma/chroma
-    
+
     networks:
       - mahoun_secure_tier
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 20s
-    
+
     deploy:
       resources:
         limits:
@@ -447,13 +447,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 1G
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=chromadb"
       - "com.mahoun.environment=production"
@@ -467,10 +467,10 @@ services:
     <<: *restart-policy
     profiles:
       - monitoring
-    
+
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
-    
+
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -480,21 +480,21 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
-    
+
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
-    
+
     networks:
       - mahoun-monitoring
-    
+
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 5s
       retries: 3
-    
+
     deploy:
       resources:
         limits:
@@ -503,13 +503,13 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=prometheus"
       - "com.mahoun.environment=production"
@@ -523,10 +523,10 @@ services:
     <<: *restart-policy
     profiles:
       - monitoring
-    
+
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
-    
+
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD required}
@@ -537,24 +537,24 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_SECURITY_DISABLE_GRAVATAR: "true"
       GF_SNAPSHOTS_EXTERNAL_ENABLED: "false"
-    
+
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    
+
     depends_on:
       - prometheus
-    
+
     networks:
       - mahoun-monitoring
-    
+
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-    
+
     deploy:
       resources:
         limits:
@@ -563,13 +563,13 @@ services:
         reservations:
           cpus: '0.1'
           memory: 256M
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "3"
-    
+
     labels:
       - "com.mahoun.service=grafana"
       - "com.mahoun.environment=production"
@@ -597,7 +597,7 @@ volumes:
   backend_logs:
     driver: local
     name: mahoun_backend_logs_prod
-  
+
   # Neo4j
   neo4j_data:
     driver: local
@@ -611,22 +611,22 @@ volumes:
   neo4j_plugins:
     driver: local
     name: mahoun_neo4j_plugins_prod
-  
+
   # PostgreSQL
   postgres_data:
     driver: local
     name: mahoun_postgres_data_prod
-  
+
   # Redis
   redis_data:
     driver: local
     name: mahoun_redis_data_prod
-  
+
   # ChromaDB
   chromadb_data:
     driver: local
     name: mahoun_chromadb_data_prod
-  
+
   # Monitoring
   prometheus_data:
     driver: local
@@ -645,7 +645,7 @@ networks:
     ipam:
       config:
         - subnet: 172.28.1.0/24
-  
+
   mahoun_secure_tier:
     driver: bridge
     name: mahoun_secure_tier
@@ -653,7 +653,7 @@ networks:
     ipam:
       config:
         - subnet: 172.28.2.0/24
-  
+
   mahoun-monitoring:
     driver: bridge
     name: mahoun_monitoring_prod

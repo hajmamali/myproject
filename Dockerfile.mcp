@@ -1,42 +1,78 @@
-# Multi-stage build for optimized image size
-FROM python:3.12.7-slim-bookworm as builder
+# ============================================================================
+# MAHOUN MCP Server - Hardened Multi-Stage Dockerfile
+# ============================================================================
+# Architecture: Multi-stage build with Alpine for minimal attack surface
+# Security: Non-root user, capability restrictions, read-only rootfs
+# Dependencies: Installed to user-space for clean separation
+# ============================================================================
 
-WORKDIR /app
+ARG PYTHON_VERSION=3.12.7
+ARG ALPINE_VERSION=3.19
+
+# ============================================================================
+# Stage 1: Builder - Compile MCP dependencies
+# ============================================================================
+FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+WORKDIR /build
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache --virtual .build-deps \
     gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    && apk add --no-cache \
+    curl \
+    ca-certificates
 
-# Copy requirements and install Python dependencies
+# Copy MCP requirements
 COPY mahoun/mcp/requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Final stage
-FROM python:3.12.7-slim-bookworm
+# Install Python dependencies to user space
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    --disable-pip-version-check \
+    --no-compile \
+    --user \
+    -r requirements.txt
+
+# ============================================================================
+# Stage 2: Runtime - Hardened MCP server
+# ============================================================================
+FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS runtime
+
+# Security: Create dedicated MCP user with restricted home
+RUN addgroup -g 1002 mcpuser \
+    && adduser -u 1002 -G mcpuser -s /bin/sh -D mcpuser \
+    && mkdir -p /app /tmp/mcp \
+    && chown -R mcpuser:mcpuser /app /tmp/mcp \
+    && chmod 700 /app /tmp/mcp
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install only essential runtime packages
+RUN apk add --no-cache \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Copy Python packages from builder (user-space)
+COPY --from=builder --chown=mcpuser:mcpuser \
+    /root/.local /home/mcpuser/.local
 
 # Copy application code
-COPY mahoun/ ./mahoun/
-COPY pyproject.toml .
+COPY --chown=mcpuser:mcpuser mahoun/ ./mahoun/
+COPY --chown=mcpuser:mcpuser pyproject.toml .
 
-# Create non-root user
-RUN useradd -m -u 1000 mahoun && \
-    chown -R mahoun:mahoun /app
-USER mahoun
+# Set environment for user-space packages
+ENV PATH="/home/mcpuser/.local/bin:$PATH" \
+    PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Security: Switch to non-root user
+USER mcpuser:mcpuser
 
 # Expose MCP server port
 EXPOSE 8000

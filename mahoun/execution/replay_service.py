@@ -157,6 +157,9 @@ class VerdictReplayService:
         Returns:
             execution_id for later replay
         """
+        # Lookup key only — not a determinism input. Replay correctness is
+        # verified via response_checksum comparison, not ID equality.
+        # See AGENTS.md / audit history (Round 13) for full downstream trace.
         execution_id = str(uuid.uuid4())
         
         context = VerdictExecutionContext(
@@ -234,6 +237,7 @@ class VerdictReplayService:
         if not context:
             return ReplayResult(
                 execution_id=execution_id,
+                # Lookup key only — not a determinism input.
                 replay_id=str(uuid.uuid4()),
                 original_context=None,
                 replay_successful=False,
@@ -245,6 +249,10 @@ class VerdictReplayService:
         
         logger.info(f"Replaying verdict execution {execution_id}")
         
+        # Per-replay attempt identifier only — not a determinism input.
+        # The same execution may be replayed multiple times; each attempt needs
+        # its own ID. Replay correctness is verified via response_checksum
+        # comparison, not ID equality. See AGENTS.md / audit history (Round 13).
         replay_id = str(uuid.uuid4())
         start_time = datetime.now()
         

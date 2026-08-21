@@ -1,3 +1,4 @@
+import pytest
 """
 Simple Property Tests for LLM Router
 =====================================

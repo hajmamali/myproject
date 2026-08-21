@@ -294,7 +294,10 @@ def get_immutable_ledger() -> ImmutableLedger:
         # Use persistent storage in production
         import os
 
-        storage_path = os.getenv("MAHOUN_LEDGER_PATH", "./data/ledger.json")
+        if os.getenv("MAHOUN_TESTING") == "1" and "MAHOUN_LEDGER_PATH" not in os.environ:
+            storage_path = None
+        else:
+            storage_path = os.getenv("MAHOUN_LEDGER_PATH", "./data/ledger.json")
         _immutable_ledger = ImmutableLedger(storage_path=storage_path)
         log.info(f"Immutable ledger initialized: {storage_path}")
 
@@ -411,7 +414,7 @@ async def generate_verdict(
 
             # Execute reasoning (auto-validated through Fortress)
             # Pass case_id through to the reasoning service for proper ledger storage
-            user_case_id = request.case_id or str(uuid.uuid4())
+            user_case_id = request.case_id or str(uuid.uuid4())  # Fallback case identifier only — not a determinism input.
             
             # Store execution context for potential replay capability
             from mahoun.execution.replay_service import store_verdict_execution_context, store_verdict_execution_result
@@ -459,7 +462,7 @@ async def generate_verdict(
         #
         # Extract verdict_id and case_id from the response metadata
         # These are already set by the execution pipeline
-        verdict_id = verdict.metadata.get("verdict_id", str(uuid.uuid4()))
+        verdict_id = verdict.metadata.get("verdict_id", str(uuid.uuid4()))  # Fallback verdict identifier only — not a determinism input.
         case_id = user_case_id
         
         # Extract steps from proof_tree if available (for backward compatibility)

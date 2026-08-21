@@ -138,6 +138,8 @@ services:
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
+        NODE_VERSION: 20-alpine
+        NGINX_VERSION: alpine
     image: mahoun/frontend:latest
     container_name: mahoun-frontend
     restart: unless-stopped
@@ -154,7 +156,7 @@ services:
       - mahoun_access_tier
 
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/" ]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -202,7 +204,7 @@ services:
       - mahoun_secure_tier
 
     healthcheck:
-      test: [ "CMD-SHELL", "cypher-shell -u ${DB_NEO4J_USER:-neo4j} -p $DB_NEO4J_PASSWORD 'RETURN 1;' || exit 1" ]
+      test: ["CMD-SHELL", "cypher-shell -u ${DB_NEO4J_USER:-neo4j} -p $DB_NEO4J_PASSWORD 'RETURN 1;' || exit 1"]
       interval: 15s
       timeout: 15s
       retries: 5
@@ -231,7 +233,7 @@ services:
 
     command: >
       sh -c "
-      if [ -n \"$${REDIS_PASSWORD}\" ]; then
+      if [ -n \"$${REDIS_PASSWORD}\"]; then
         redis-server --appendonly yes --appendfsync everysec --maxmemory $${REDIS_MAX_MEMORY:-1gb} --maxmemory-policy allkeys-lru --requirepass \"$${REDIS_PASSWORD}\" --save 900 1 --save 300 10 --save 60 10000
       else
         redis-server --appendonly yes --appendfsync everysec --maxmemory $${REDIS_MAX_MEMORY:-1gb} --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000
@@ -245,7 +247,7 @@ services:
       - mahoun_secure_tier
 
     healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -287,7 +289,7 @@ services:
       - mahoun_secure_tier
 
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mahoun} -d ${POSTGRES_DB:-mahoun}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -335,7 +337,7 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -408,7 +410,7 @@ services:
       - mahoun_secure_tier
 
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -453,7 +455,7 @@ services:
       - mahoun_secure_tier
 
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

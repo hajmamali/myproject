@@ -1,3 +1,4 @@
+import pytest
 """
 Test script for Hardened PaddleOCR implementation
 """

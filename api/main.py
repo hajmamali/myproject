@@ -202,7 +202,17 @@ async def lifespan(app: FastAPI):
                 f"FATAL: Critical services not registered: {missing}. "
                 f"Available: {list(registry.keys())}"
             )
-        
+
+        # v5.1 Integrity Closure (BL-9): Verify version authority before
+        # accepting requests. All invariant version references must resolve
+        # to the same canonical version.
+        from mahoun.invariants.versions import verify_version_authority
+        invariant_version = verify_version_authority()
+        logger.info(
+            f"✅ Version authority verified: invariant_version={invariant_version}",
+            extra={"phase": "startup", "component": "version_authority"},
+        )
+
         # Store registry in app.state for health checks and observability
         app.state.service_registry = registry
         logger.info(f"📋 Registered services: {', '.join(registry.keys())}")
@@ -479,8 +489,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Register routers
-app.include_router(system_router.router, prefix="/system")  # /system/* endpoints
-app.include_router(system_router.router, prefix="/api/system")  # /api/system/* endpoints for frontend compatibility
+app.include_router(system_router.router)  # /api/system/* endpoints
 
 # Register search router if available
 if HAS_SEARCH_ROUTER and search_router:
@@ -574,6 +583,24 @@ try:
     logger.info("✓ Chat router registered at /api/v1/chat")
 except ImportError as e:
     logger.warning(f"Chat router not available: {e}")
+
+# Register Knowledge Graph router (Governed KG Access)
+try:
+    from api.routers import graph as graph_router
+
+    app.include_router(graph_router.router)
+    logger.info("✓ Governed Knowledge Graph router registered at /api/v1/graph")
+except ImportError as e:
+    logger.warning(f"Graph router not available: {e}")
+
+# Register Experiments router (A/B testing status)
+try:
+    from api.routers import experiments as experiments_router
+
+    app.include_router(experiments_router.router)
+    logger.info("✓ Experiments router registered at /api/v1/experiments")
+except ImportError as e:
+    logger.warning(f"Experiments router not available: {e}")
 
 # ============================================================================
 # Monitoring Endpoints (MUST be registered BEFORE metrics router

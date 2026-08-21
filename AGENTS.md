@@ -387,6 +387,19 @@ reported as warnings, not violations.
 
 ---
 
+### 1-K. Core Models Canonical Location
+
+**Canonical package:** `mahoun/core/models/` (`__init__.py`).
+The standalone file `mahoun/core/models.py` was a duplicate containing the
+same 7 classes (`LegalDocType`, `LegalDocument`, `LegalEntity`,
+`ReasoningStep`, `CausalRelation`, `ReasoningResult`, `UncertaintyEstimate`)
+as the package's `reasoning.py`. Python's import resolution gives the
+package precedence over the same-named file, so all 33+ existing importers
+already resolved to the package. The standalone file has been removed
+(Round 13). **Do not reintroduce a same-named file alongside this package.**
+
+---
+
 ## PART 2 — Things That Do Not Exist (Do Not Assume Them)
 
 - A schema-level ontology gate for Neo4j (only write-time label validation
@@ -410,10 +423,11 @@ both.
 
 Confirmed instances: `GovernanceContext` (×2+), `MutationAuthorizationBoundary`
 (×2+), RAG/retrieval implementations (×3), `GraphEnhancedReasoning` (built,
-later removed), Cypher-mutation classifiers (×4 at one point). The inverse
-pattern has also occurred: a strong component built correctly and then
-never wired into production at all (`HardenedPaddleOCR`, the NLI
-text-grounding verifier, `OCREnsemble`).
+later removed), Cypher-mutation classifiers (×4 at one point), same-named
+file/package coexistence (`mahoun/core/models.py` alongside
+`mahoun/core/models/`, Round 13). The inverse pattern has also occurred:
+a strong component built correctly and then never wired into production at
+all (`HardenedPaddleOCR`, the NLI text-grounding verifier, `OCREnsemble`).
 
 **Before writing any new class or component:**
 ```bash

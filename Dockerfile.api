@@ -397,8 +397,12 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     # Start server
+    # v5.1 Integrity Closure (BL-1): the production container MUST execute the
+    # exact same governed application that the test suite imports
+    # (api.main:app). Running a locally-defined "start-api:app" reintroduced the
+    # "Certification Surface != Execution Surface" divergence. Do NOT revert.
     uvicorn.run(
-        "start-api:app",
+        "api.main:app",
         host="0.0.0.0",
         port=8000,
         workers=1,

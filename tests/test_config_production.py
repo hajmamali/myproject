@@ -1,3 +1,4 @@
+from pydantic import Field
 import pytest
 pytest.importorskip("pydantic_settings")
 """

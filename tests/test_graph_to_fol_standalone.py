@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Standalone Test for Graph-to-FOL Converter

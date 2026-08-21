@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { apiClient } from '../api/client';
 
 interface GraphNode {
   id: string;
@@ -41,20 +42,13 @@ export default function KnowledgeGraphCenter() {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/graph/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: searchQuery,
-          limit: 50,
-        }),
+      const data = await apiClient.post<GraphResult>('/api/v1/graph/query', {
+        query: searchQuery,
+        limit: 50,
       });
-
-      if (!response.ok) throw new Error('Failed to query graph');
-      const data = await response.json();
       setGraphData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'خطا در جستجوی گراف دانش');
     } finally {
       setLoading(false);
     }
@@ -63,18 +57,11 @@ export default function KnowledgeGraphCenter() {
   const handleExpandNode = async (nodeId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/graph/expand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          node_id: nodeId,
-          depth: expandDepth,
-        }),
+      const data = await apiClient.post<GraphResult>('/api/v1/graph/expand', {
+        node_id: nodeId,
+        depth: expandDepth,
       });
 
-      if (!response.ok) throw new Error('Failed to expand node');
-      const data = await response.json();
-      
       // Merge new nodes and edges
       setGraphData(prev => ({
         nodes: [...(prev?.nodes || []), ...data.nodes],
@@ -82,7 +69,7 @@ export default function KnowledgeGraphCenter() {
         path: prev?.path,
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'خطا در بسط گره گراف');
     } finally {
       setLoading(false);
     }

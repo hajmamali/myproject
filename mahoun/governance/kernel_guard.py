@@ -32,6 +32,8 @@ import yaml
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
+from mahoun.invariants.versions import verify_version_authority
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MANIFEST_PATH = os.path.join(ROOT_DIR, "constitution", "kernel.manifest.yaml")
 LOCK_PATH = os.path.join(ROOT_DIR, "constitution", "kernel.lock")
@@ -248,6 +250,14 @@ def verify_lock(manifest: Dict[str, Any]) -> bool:
                 print(f"  - {f}")
         
         sys.exit(1)
+    
+    # BL-9 Version Authority: verify all governed version artifacts agree
+    try:
+        canonical_version = verify_version_authority()
+        print(f"Version authority verified: {canonical_version}")
+    except RuntimeError as e:
+        print(f"KERNEL_GUARD_ERROR: {e}")
+        sys.exit(1)
     else:
         print("Kernel integrity verified successfully.")
         return True
@@ -386,6 +396,13 @@ def generate_attestation(manifest: Dict[str, Any]) -> None:
     
     Creates a signed attestation that the current kernel state is approved.
     """
+    # BL-9: Version authority must be consistent before attesting
+    try:
+        verify_version_authority()
+    except RuntimeError as e:
+        print(f"KERNEL_GUARD_ERROR: {e}")
+        sys.exit(1)
+
     lock_data = load_lock()
     changes_data = load_changes()
     

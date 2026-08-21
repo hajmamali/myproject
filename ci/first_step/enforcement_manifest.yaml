@@ -86,6 +86,15 @@ enforcement_surface:
     required_patterns:
       - "tests/governance"
       - "GovernanceLock"
+      - "test_kernel_runtime_adversarial.py"
+    required_for: [pre-push]
+
+  - path: tests/test_kernel_runtime_adversarial.py
+    type: test
+    required_patterns:
+      - "adversarial"
+      - "GovernanceContext"
+      - "def test_"
     required_for: [pre-push]
 
   - path: ci/first_step/gate_9_mypy_non_regression.sh

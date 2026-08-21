@@ -1,3 +1,4 @@
+import pytest
 from api.main import app
 
 

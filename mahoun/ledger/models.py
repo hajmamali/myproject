@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class ValidationStatus(str, Enum):
@@ -93,6 +93,12 @@ class LedgerEntry:
     
     # Audit metadata
     event_type: Optional[str] = None
+
+    # Provenance / governance metadata (v5.1 Integrity Closure - BL-2)
+    actor_id: Optional[str] = None
+    authorization_state: Optional[str] = None
+    source_event_id: Optional[str] = None
+    provenance_chain: Optional[Tuple[Dict[str, Any], ...]] = None
 
 # HARDENING PATCH P11: Canonical serialization
 def canonical_serialize(entry: LedgerEntry) -> dict:

@@ -285,7 +285,7 @@ class ExecutionController:
         
         # Create replay context
         replay_context = ExecutionContext(
-            request_id=str(uuid.uuid4()),
+            request_id=str(uuid.uuid4()),  # Per-replay attempt identifier only — not a determinism input. Replay correctness is verified via seed preservation from original context.
             timestamp=datetime.now(timezone.utc),
             seed=original.context.seed,  # Use same seed
             user_id=original.context.user_id,
@@ -352,7 +352,7 @@ class ExecutionController:
         metadata: Dict[str, Any]
     ) -> ExecutionContext:
         """Create execution context"""
-        request_id = str(uuid.uuid4())
+        request_id = str(uuid.uuid4())  # Operational request identifier — not a determinism input. Seed generation includes time.time(), so each new execution gets a unique seed.
         
         # Generate deterministic seed if not provided
         if seed is None:

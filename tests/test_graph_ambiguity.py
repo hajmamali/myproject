@@ -1,3 +1,4 @@
+import pytest
 """
 Adversarial ambiguity test for Semantic Graph Linking.
 Designed to ensure UNRESOLVED is preferred over incorrect linking.

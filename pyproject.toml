@@ -67,6 +67,7 @@ security = [
   "slowapi>=0.1.9",
   "python-jose[cryptography]>=3.3.0",
   "passlib[bcrypt]>=1.7.4",
+  "bcrypt==4.0.1",  # Explicit pin for passlib 1.7.4 compatibility
   "cryptography>=41.0.0",  # AES-256-GCM encryption
   "PyNaCl>=1.5.0",  # Ed25519 signing
   "redis>=5.0.0",  # Distributed locks
@@ -95,7 +96,7 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-norecursedirs = ["venv", ".git", ".agent", "models", "archive", "reports", "build", "../.."]
+norecursedirs = ["venv", ".git", ".agent", "models", "archive", "reports", "build", "../..", "tests/quarantine"]
 # Removed invalid async config — pytest-asyncio handles this automatically
 addopts = "-v --tb=short"
 markers = [

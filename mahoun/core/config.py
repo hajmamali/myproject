@@ -42,6 +42,8 @@ except ImportError:
     from pydantic import BaseSettings  # type: ignore
     SettingsConfigDict = None  # type: ignore
 
+from pydantic import Field, field_validator, model_validator
+
 from mahoun.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)

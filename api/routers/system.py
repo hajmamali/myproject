@@ -16,7 +16,7 @@ from fastapi import APIRouter, status as http_status
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api/system")
 
 
 # ============================================================================

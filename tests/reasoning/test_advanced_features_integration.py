@@ -20,7 +20,7 @@ from unittest.mock import Mock, MagicMock, patch
 from typing import Any, Dict, List
 
 # Protocols
-from mahoun.core.protocols import (
+from mahoun.core.protocols.advanced_protocols import (
     UncertaintyEstimate,
     UncertaintyServiceProtocol,
     OntologyValidationResult,

@@ -1,3 +1,4 @@
+import pytest
 """
 Repository Hygiene Test - Prevent Root-Level Test Files
 ========================================================

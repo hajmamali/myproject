@@ -88,7 +88,14 @@ class ModelManager:
             strict_size_check: Reject models exceeding size limits
         """
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        # Only create cache_dir if we have permission (skip in tests with /app path)
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError):
+            # Use temp directory as fallback in test/restricted environments
+            import tempfile
+            self.cache_dir = Path(tempfile.gettempdir()) / "mahoun_model_cache"
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.enable_quantization = enable_quantization

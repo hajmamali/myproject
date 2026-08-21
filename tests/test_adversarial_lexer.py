@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from mahoun.core.governance.mutation_boundary import classify_cypher
 

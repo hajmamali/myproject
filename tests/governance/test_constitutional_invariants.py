@@ -455,8 +455,9 @@ class TestUncertaintyAbstentionEnforcement:
                 must return passed=False with correct violation types.
     """
 
+    @pytest.mark.asyncio
     @pytest.mark.p0
-    def test_empty_facts_raises_runtime_error(self):
+    async def test_empty_facts_raises_runtime_error(self):
         """
         Scenario A: generate_verdict with empty facts list must raise RuntimeError
         containing evidence-related message.
@@ -465,8 +466,7 @@ class TestUncertaintyAbstentionEnforcement:
 
         # EvidenceLinkedVerdictEngine requires several heavy dependencies.
         # We build the minimal stubs that satisfy __init__ without network/DB.
-        from unittest.mock import MagicMock, AsyncMock
-        import asyncio
+        from unittest.mock import MagicMock
 
         mock_graph_builder = MagicMock()
         mock_knowledge_graph = MagicMock()
@@ -478,14 +478,11 @@ class TestUncertaintyAbstentionEnforcement:
             ledger_writer=mock_ledger_writer,
         )
 
-        async def run():
-            return await engine.generate_verdict(
+        with pytest.raises(RuntimeError) as exc_info:
+            await engine.generate_verdict(
                 question="What is the ruling on Article 220?",
                 facts=[],  # Empty facts — must abstain
             )
-
-        with pytest.raises(RuntimeError) as exc_info:
-            asyncio.get_event_loop().run_until_complete(run())
 
         msg = str(exc_info.value)
         assert "evidence" in msg.lower() or "verdict" in msg.lower(), (

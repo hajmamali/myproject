@@ -867,7 +867,7 @@ class EvidenceLinkedVerdictEngine:
         correlation_id = ctx.correlation_id
 
         # Generate execution context
-        execution_id = str(uuid.uuid4())
+        execution_id = str(uuid.uuid4())  # Lookup key only — not a determinism input. Replay correctness is verified via response_checksum comparison, not ID equality.
         execution_timestamp = datetime.now(UTC)
 
         entry = LedgerEntry(
@@ -879,6 +879,12 @@ class EvidenceLinkedVerdictEngine:
             invariant_version=INVARIANT_VERSION,
             guard_mode=get_guard_mode().value,
             created_at=fixed_timestamp,
+            # Provenance (v5.1 Integrity Closure - BL-2): actor pulled from the
+            # active GovernanceContext established at the API boundary.
+            actor_id=ctx.actor_id,
+            authorization_state="authorized",
+            source_event_id=None,
+            provenance_chain=None,
             # Validation fields will be populated by Fortress later
             # HIGH-007: Use ValidationStatus enum instead of None
             validation_status=ValidationStatus.PENDING,

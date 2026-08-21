@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@shared/styles/index.css";
-import { ProtectedRoute } from "@shared/components/auth/ProtectedRoute";
 
 // Lazy load DEVELOPER tools and monitoring dashboards
 const Dashboard = lazy(() => import("@shared/components/Dashboard"));
@@ -10,12 +9,13 @@ const DelayAnalysisDashboard = lazy(() => import("@shared/components/DelayAnalys
 const TimelineVisualization = lazy(() => import("@shared/components/TimelineVisualization"));
 const TrainingDashboard = lazy(() => import("@shared/components/TrainingDashboard"));
 const MonitoringDashboard = lazy(() => import("@shared/components/MonitoringDashboard"));
-const ABTestingDashboard = lazy(() => import("@shared/components/ABTestingDashboard"));
 const FineTuningDashboard = lazy(() => import("@shared/pages/FineTuningDashboard"));
 const GovernanceCenter = lazy(() => import("@shared/pages/GovernanceCenter"));
 const KnowledgeGraphCenter = lazy(() => import("@shared/pages/KnowledgeGraphCenter"));
 const CaseReviewWorkspace = lazy(() => import("@shared/pages/CaseReviewWorkspace"));
-const LoginPage = lazy(() => import("@shared/components/auth/LoginPage"));
+const SystemHealthDashboard = lazy(() => import("@shared/pages/SystemHealthDashboard"));
+const DatasetEngineering = lazy(() => import("@shared/pages/DatasetEngineering"));
+const ModelRegistry = lazy(() => import("@shared/pages/ModelRegistry"));
 
 // Loading fallback
 function LoadingFallback() {
@@ -49,22 +49,19 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Protected Developer Routes */}
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/monitoring" element={<ProtectedRoute><MonitoringDashboard /></ProtectedRoute>} />
-            <Route path="/delay-analysis" element={<ProtectedRoute><DelayAnalysisDashboard /></ProtectedRoute>} />
-            <Route path="/timeline" element={<ProtectedRoute><TimelineVisualization /></ProtectedRoute>} />
-            <Route path="/training" element={<ProtectedRoute><TrainingDashboard /></ProtectedRoute>} />
-            <Route path="/ab-testing" element={<ProtectedRoute><ABTestingDashboard /></ProtectedRoute>} />
-            <Route path="/fine-tuning" element={<ProtectedRoute><FineTuningDashboard /></ProtectedRoute>} />
-            <Route path="/governance" element={<ProtectedRoute><GovernanceCenter /></ProtectedRoute>} />
-            <Route path="/knowledge-graph" element={<ProtectedRoute><KnowledgeGraphCenter /></ProtectedRoute>} />
-            <Route path="/case-review" element={<ProtectedRoute><CaseReviewWorkspace /></ProtectedRoute>} />
-            
-            {/* Catch-all redirect to login if not authenticated */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Developer Routes - No auth required for dev console */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/system-health" element={<SystemHealthDashboard />} />
+            <Route path="/monitoring" element={<MonitoringDashboard />} />
+            <Route path="/delay-analysis" element={<DelayAnalysisDashboard />} />
+            <Route path="/timeline" element={<TimelineVisualization />} />
+            <Route path="/training" element={<TrainingDashboard />} />
+            <Route path="/fine-tuning" element={<FineTuningDashboard />} />
+            <Route path="/governance" element={<GovernanceCenter />} />
+            <Route path="/knowledge-graph" element={<KnowledgeGraphCenter />} />
+            <Route path="/case-review" element={<CaseReviewWorkspace />} />
+            <Route path="/dataset-engineering" element={<DatasetEngineering />} />
+            <Route path="/model-registry" element={<ModelRegistry />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

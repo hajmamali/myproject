@@ -332,6 +332,11 @@ class LedgerCommitService:
             invariant_version=entry.invariant_version,
             guard_mode=entry.guard_mode,
             created_at=entry.created_at,
+            # Provenance propagated from the original pending entry (v5.1 BL-2).
+            actor_id=entry.actor_id,
+            authorization_state=entry.authorization_state,
+            source_event_id=entry.source_event_id,
+            provenance_chain=entry.provenance_chain,
             
             # Updated fields
             event_type=entry.event_type or "VERDICT_EXECUTION",

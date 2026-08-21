@@ -3,9 +3,8 @@
  * 
  * تشخیص الگوهای مالی مشکوک برای بازپرس جرایم اقتصادی
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  AlertTriangleIcon,
   ExclamationTriangleIcon,
   BanknotesIcon,
   ArrowRightIcon,

@@ -13,8 +13,7 @@ the system cannot be trusted for legal decision-making.
 from dataclasses import dataclass
 from typing import List
 
-# Current invariant version - must be updated when invariants change
-INVARIANT_VERSION = "1.0.0"
+from mahoun.invariants.versions import INVARIANT_VERSION
 
 
 @dataclass(frozen=True)

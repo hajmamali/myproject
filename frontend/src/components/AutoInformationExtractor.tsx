@@ -2,7 +2,7 @@
  * Auto Information Extraction - استخراج خودکار اطلاعات از اسناد
  * fabrication-check-ok: demo UI with mock data for development
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   DocumentTextIcon, UserIcon, BuildingOfficeIcon,
   BanknotesIcon, CalendarIcon, MapPinIcon,

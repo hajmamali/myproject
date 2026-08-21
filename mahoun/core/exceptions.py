@@ -310,3 +310,17 @@ class AuditFailureException(BaseMahounError):
     """Immutable audit append failed — fail-closed before any mutation."""
     status_code = 500  # rare, but internal
     error_type = "audit_failure"
+
+
+# =============================================================================
+# Model/LLM Errors
+# =============================================================================
+
+class ModelLoadError(MahounError):
+    """Error loading or initializing an ML model."""
+    error_code = "MODEL_LOAD_ERROR"
+
+
+class ModelInferenceError(MahounError):
+    """Error during model inference/prediction."""
+    error_code = "MODEL_INFERENCE_ERROR"

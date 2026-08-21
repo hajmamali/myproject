@@ -48,7 +48,7 @@ from unittest.mock import Mock, patch
 
 # Core imports
 from mahoun.core.models import ReasoningResult, ReasoningStep
-from mahoun.core.exceptions_v2 import MahounException as BaseMahounError, LogicViolationException
+from mahoun.core.exceptions_v2 import BaseMahounError as MahounException, LogicViolationException
 
 # Graph imports
 from mahoun.graph.ultra_graph_builder import (

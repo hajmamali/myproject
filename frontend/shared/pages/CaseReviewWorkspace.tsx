@@ -13,7 +13,6 @@
  */
 
 import {
-  AlertTriangleIcon,
   CheckCircleIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
@@ -1241,7 +1240,7 @@ export default function CaseReviewWorkspace() {
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
                   <div className="mb-4 flex items-center gap-3">
-                    <AlertTriangleIcon className="h-5 w-5 text-red-300" />
+                    <ExclamationTriangleIcon className="h-5 w-5 text-red-300" />
                     <h2 className="text-lg font-semibold">تضادهای شناسایی شده</h2>
                   </div>
                   <div className="space-y-4">

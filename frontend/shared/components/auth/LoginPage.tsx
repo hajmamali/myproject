@@ -12,7 +12,8 @@ import React, { useState } from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth, LoginCredentials } from '../../stores/authStore';
 import { useGovernanceStore } from '../../stores/governanceStore';
-import { EyeIcon, EyeSlashIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, LockClosedIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
+import { generateRequestId, generateTraceId, generateAuditReference } from '../../utils/governance';
 
 interface LocationState {
   from?: Location;
@@ -122,29 +123,29 @@ export const LoginPage: React.FC = () => {
   const isBlocked = attempts >= 3;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-950 via-amber-900 to-amber-800">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center bg-primary-600 rounded-full">
-            <LockClosedIcon className="h-8 w-8 text-white" />
+          <div className="mx-auto h-16 w-16 flex items-center justify-center bg-amber-600 rounded-full">
+            <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
           </div>
           
-          <h2 className="mt-6 text-3xl font-bold text-slate-100">
-            ورود به سیستم ماحون
+          <h2 className="mt-6 text-3xl font-bold text-amber-100">
+            ورود به کنسول توسعه‌دهنده
           </h2>
           
-          <p className="mt-2 text-sm text-slate-400">
-            سیستم هوش مصنوعی حقوقی با ضمانت صفر توهم
+          <p className="mt-2 text-sm text-amber-400">
+            ماحون - Developer Console
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-8">
+        <div className="bg-amber-900 border border-amber-700 rounded-lg shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Username Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-amber-300 mb-2">
                 نام کاربری
               </label>
               <input
@@ -154,7 +155,7 @@ export const LoginPage: React.FC = () => {
                 disabled={isBlocked || isLoading}
                 value={credentials.username}
                 onChange={handleInputChange('username')}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 bg-amber-800 border border-amber-600 rounded-md text-amber-100 placeholder-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50"
                 placeholder="نام کاربری خود را وارد کنید"
                 dir="rtl"
               />
@@ -162,7 +163,7 @@ export const LoginPage: React.FC = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-amber-300 mb-2">
                 رمز عبور
               </label>
               <div className="relative">
@@ -173,14 +174,14 @@ export const LoginPage: React.FC = () => {
                   disabled={isBlocked || isLoading}
                   value={credentials.password}
                   onChange={handleInputChange('password')}
-                  className="w-full px-3 py-2 pr-10 bg-slate-800 border border-slate-600 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                  className="w-full px-3 py-2 pr-10 bg-amber-800 border border-amber-600 rounded-md text-amber-100 placeholder-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50"
                   placeholder="رمز عبور خود را وارد کنید"
                   dir="rtl"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-400 hover:text-amber-300"
                   disabled={isBlocked || isLoading}
                 >
                   {showPassword ? (
@@ -214,7 +215,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isBlocked || isLoading || !credentials.username || !credentials.password}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="flex items-center space-x-2">
@@ -225,7 +226,7 @@ export const LoginPage: React.FC = () => {
                   <span>در حال ورود...</span>
                 </div>
               ) : (
-                'ورود به سیستم'
+                'ورود به کنسول توسعه‌دهنده'
               )}
             </button>
           </form>
@@ -234,41 +235,26 @@ export const LoginPage: React.FC = () => {
           <div className="mt-6 text-center space-y-2">
             <Link 
               to="/forgot-password" 
-              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+              className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
             >
               فراموشی رمز عبور
             </Link>
             
-            <div className="text-xs text-slate-500">
-              سیستم ماحون v2.0.0 - {new Date().getFullYear()}
+            <div className="text-xs text-amber-500">
+              سیستم ماحون v2.0.0 - {new Date().getFullYear()} | Developer Console
             </div>
           </div>
         </div>
 
         {/* Security Notice */}
         <div className="text-center">
-          <p className="text-xs text-slate-500">
-            این سیستم دارای نظارت امنیتی کامل و ثبت تمامی فعالیت‌ها می‌باشد
+          <p className="text-xs text-amber-500">
+            ⚠️ این کنسول فقط برای توسعه‌دهندگان است - تمام فعالیت‌ها ثبت و نظارت شده‌اند
           </p>
         </div>
       </div>
     </div>
   );
 };
-
-// Utility functions
-function generateRequestId(): string {
-  return 'req_' + Math.random().toString(36).substr(2, 16);
-}
-
-function generateTraceId(): string {
-  return 'trace_' + Math.random().toString(36).substr(2, 16);
-}
-
-function generateAuditReference(): string {
-  const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const time = Date.now().toString(36);
-  return `audit_${date}_${time}`;
-}
-
+ 
 export default LoginPage;

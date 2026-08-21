@@ -105,32 +105,36 @@ class GovernanceContextMiddleware(BaseHTTPMiddleware):
             correlation_id = self._extract_correlation_id(request)
             actor_id = self._extract_actor_id(request)
 
-            # Create governance context at API boundary
-            governance_context = GovernanceContextManager.create_context(
+            # v5.1 Integrity Closure (BL-6): activate the governance context on the
+            # GovernanceContextManager ContextVar for the duration of the request so
+            # that downstream enforcement (GovernedNeo4jSession.require_context / the
+            # mutation boundary) actually sees it. Previously the context was only
+            # stashed in request.state, making this middleware window-dressing rather
+            # than the real enforcement point.
+            async with GovernanceContextManager.active_context(
                 correlation_id=correlation_id,
                 execution_mode=self.execution_mode,
                 actor_id=actor_id,
-            )
+            ) as governance_context:
+                # Inject into request.state for backward-compatible downstream access
+                request.state.governance_context = governance_context
 
-            # Inject into request.state for downstream access
-            request.state.governance_context = governance_context
+                logger.debug(
+                    f"Governance context created: {governance_context.context_id} "
+                    f"for {request.method} {request.url.path}"
+                )
 
-            logger.debug(
-                f"Governance context created: {governance_context.context_id} "
-                f"for {request.method} {request.url.path}"
-            )
+                # Process request with governance context
+                response = await call_next(request)
 
-            # Process request with governance context
-            response = await call_next(request)
+                # Log successful processing
+                duration_ms = (time.time() - start_time) * 1000
+                logger.debug(
+                    f"Request processed with governance: {request.method} {request.url.path} "
+                    f"({duration_ms:.2f}ms)"
+                )
 
-            # Log successful processing
-            duration_ms = (time.time() - start_time) * 1000
-            logger.debug(
-                f"Request processed with governance: {request.method} {request.url.path} "
-                f"({duration_ms:.2f}ms)"
-            )
-
-            return response
+                return response
 
         except Exception as e:
             # Log governance context creation failure

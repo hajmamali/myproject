@@ -63,6 +63,24 @@ else
 fi
 echo ""
 
+# Step 1.6: Run adversarial kernel runtime suite
+# This is the single strongest test file in the codebase.
+# Failures indicate security regression in mutation authorization,
+# context forgery resistance, or fail-closed guarantees.
+echo "Step 1.6: Running Adversarial Kernel Runtime Tests..."
+echo ""
+if python -m pytest tests/test_kernel_runtime_adversarial.py -v --tb=short; then
+    echo ""
+    echo -e "${GREEN}✓ Adversarial Kernel Runtime Tests Passed${NC}"
+else
+    echo ""
+    echo -e "${RED}✗ FAILED: Adversarial Kernel Runtime Tests Failed${NC}"
+    echo "Failures indicate a security regression in mutation authorization,"
+    echo "context forgery resistance, or fail-closed guarantees."
+    exit 1
+fi
+echo ""
+
 # Step 2: Verify GovernanceLock enforcement checks in UnifiedReasoningService
 echo "Step 2: Checking GovernanceLock enforcement in UnifiedReasoningService..."
 ROUTER_FILE="api/routers/reasoning.py"

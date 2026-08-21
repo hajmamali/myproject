@@ -30,7 +30,7 @@ const ModelSelector = lazy(() => import("./components/ModelSelector"));
 const TrainingDashboard = lazy(() => import("./components/TrainingDashboard"));
 const MonitoringDashboard = lazy(() => import("./components/MonitoringDashboard"));
 const ABTestingDashboard = lazy(() => import("./components/ABTestingDashboard"));
-const FineTuningDashboard = lazy(() => import("./pages/FineTuningDashboard"));
+const FineTuningDashboard = lazy(() => import("./components/FineTuningDashboard"));
 const KnowledgeGraphCenter = lazy(() => import("./pages/KnowledgeGraphCenter"));
 
 // Governance Center - The heart of MahouN!
@@ -42,8 +42,6 @@ const DatasetBrowser = lazy(() => import("./components/DatasetBrowser"));
 const DatasetUploader = lazy(() => import("./components/DatasetUploader"));
 
 // 🔍 Investigator Tools - Economic Crimes Branch Features
-const SuspiciousPatternDetector = lazy(() => import("./components/SuspiciousPatternDetector"));
-const AutoInformationExtractor = lazy(() => import("./components/AutoInformationExtractor"));
 
 // Create React Query client with governance integration
 const queryClient = new QueryClient({

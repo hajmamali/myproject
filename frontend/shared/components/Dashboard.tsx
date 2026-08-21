@@ -9,13 +9,20 @@
  */
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   DocumentTextIcon, 
   ChartBarIcon, 
   ClockIcon,
   QuestionMarkCircleIcon,
   DocumentArrowDownIcon,
-  PlusIcon
+  PlusIcon,
+  MagnifyingGlassIcon,
+  Cog6ToothIcon,
+  CubeTransparentIcon,
+  ChartPieIcon,
+  SparklesIcon,
+  AcademicCapIcon
 } from "@heroicons/react/24/outline";
 
 interface DashboardStats {
@@ -33,6 +40,7 @@ export default function Dashboard() {
     generated_reports: 0,
   });
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load dashboard stats
@@ -103,28 +111,70 @@ export default function Dashboard() {
       title: "آپلود مدرک",
       description: "آپلود و پردازش مدارک جدید",
       icon: PlusIcon,
-      href: "/upload",
+      route: "/upload",
       color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
     },
     {
       title: "تحلیل تأخیر",
       description: "تحلیل تأخیرات پروژه",
       icon: ChartBarIcon,
-      href: "/delay-analysis",
+      route: "/delay-analysis",
       color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
     },
     {
-      title: "تولید دعوی",
-      description: "تولید محتوای دعوی",
+      title: "نمایش زمان‌بندی",
+      description: "مخطط زمانی پروژه‌ها",
+      icon: ClockIcon,
+      route: "/timeline",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "نظارت و مانیتورینگ",
+      description: "نظارت بر عملکرد سیستم",
+      icon: MagnifyingGlassIcon,
+      route: "/monitoring",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "آموزش مدل",
+      description: "آموزش و فاین‌تیونینگ مدل‌ها",
+      icon: AcademicCapIcon,
+      route: "/training",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "تست A/B",
+      description: "مقایسه مدل‌ها و تست‌های A/B",
+      icon: ChartPieIcon,
+      route: "/ab-testing",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "فاین‌تیونینگ",
+      description: "فاین‌تیونینگ پیشرفته مدل‌ها",
+      icon: SparklesIcon,
+      route: "/fine-tuning",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "مرکز حاکمیت",
+      description: "مدیریت سیاست‌ها و نظارت",
+      icon: Cog6ToothIcon,
+      route: "/governance",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "گراف دانش",
+      description: "نمایش و بررسی گراف دانش",
+      icon: CubeTransparentIcon,
+      route: "/knowledge-graph",
+      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
+    },
+    {
+      title: "مرور پرونده",
+      description: "بررسی و تحلیل پرونده‌ها",
       icon: DocumentTextIcon,
-      href: "/claim-generator",
-      color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
-    },
-    {
-      title: "سؤال پیمانی",
-      description: "پرسش و پاسخ درباره قراردادها",
-      icon: QuestionMarkCircleIcon,
-      href: "/contract-qa",
+      route: "/case-review",
       color: "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700",
     },
   ];
@@ -192,8 +242,7 @@ export default function Dashboard() {
                 className={`${action.color} rounded-xl p-6 text-right transition-all hover:-translate-y-0.5 hover:shadow-md stagger-enter`}
                 style={{ animationDelay: `${index * 80}ms` }}
                 onClick={() => {
-                  // TODO: Implement navigation
-                  window.location.hash = action.href;
+                  navigate(action.route);
                 }}
               >
                 <div className="w-10 h-10 rounded-lg bg-primary-50 border border-primary-100 flex items-center justify-center mb-3">

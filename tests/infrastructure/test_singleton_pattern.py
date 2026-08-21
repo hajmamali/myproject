@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Singleton pattern validation — does NOT require live Neo4j connection.
