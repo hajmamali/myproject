@@ -126,5 +126,6 @@ export function getMonitoringSystemOverview() {
 }
 
 export function cleanupMonitoringOrphans(mode: 'safe' | 'aggressive' | 'manual-review', dry_run = true) {
-  return apiClient.post<CleanupResult>('/monitoring/maintenance/cleanup-orphans', undefined, { mode, dry_run });
+  return apiClient.post<CleanupResult>('/monitoring/maintenance/cleanup-orphans', undefined, { params: { mode, dry_run } });
 }
+
