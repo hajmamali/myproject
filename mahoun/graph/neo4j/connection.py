@@ -225,7 +225,7 @@ class Neo4jConnection:
         from mahoun.core.governance.mutation_boundary import MutationAuthorizationBoundary
         
         MutationAuthorizationBoundary.inspect(query)
-        with self.session(**kwargs) as s:
+        with self._session(**kwargs) as s:
             result = s.run(query, parameters or {})
             return [record for record in result]
 
@@ -342,7 +342,7 @@ class Neo4jConnection:
         Returns:
             Transaction result
         """
-        with self.session() as session:
+        with self._session() as session:
             return session.execute_read(func, *args, **kwargs)
     
     @retry_on_failure(max_attempts=3)
@@ -398,7 +398,7 @@ class Neo4jConnection:
             start_time = time.time()
             
             # Test basic connectivity
-            with self.session() as session:
+            with self._session() as session:
                 result = session.run("RETURN 1 AS num")
                 if result.single()["num"] != 1:
                     health_status["error"] = "Unexpected query result"
@@ -427,7 +427,7 @@ class Neo4jConnection:
     def verify_connectivity(self) -> bool:
         """Verify connection to Neo4j"""
         try:
-            with self.session() as session:
+            with self._session() as session:
                 result = session.run("RETURN 1 AS num")
                 return result.single()["num"] == 1
         except Exception as e:
@@ -469,7 +469,7 @@ class Neo4jConnection:
     
     def get_database_info(self) -> Dict[str, Any]:
         """Get database information"""
-        with self.session() as session:
+        with self._session() as session:
             # Node count
             node_result = session.run("MATCH (n) RETURN count(n) AS count")
             node_count = node_result.single()["count"]

@@ -5,7 +5,7 @@ Advanced Data Ingestion Pipeline
 Enterprise-grade data ingestion with parsers, validators, and orchestration
 """
 
-from pipelines.ingestion.data_orchestrator import (
+from mahoun.graph.ingestion.data_orchestrator import (
     DataIngestionOrchestrator,
     IngestionConfig,
     DataFile,
@@ -15,7 +15,7 @@ from pipelines.ingestion.data_orchestrator import (
     IngestionStatus,
 )
 
-from pipelines.ingestion.parsers import (
+from mahoun.graph.ingestion.parsers import (
     ParserFactory,
     BaseParser,
     PDFParser,
@@ -27,7 +27,7 @@ from pipelines.ingestion.parsers import (
     ParseResult,
 )
 
-from pipelines.ingestion.validators import (
+from mahoun.graph.ingestion.validators import (
     ValidatorChain,
     BaseValidator,
     FileValidator,
