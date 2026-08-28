@@ -208,10 +208,29 @@ class LegalCorpusParser:
     Deterministic Legal Corpus Parser with exact line accounting and DLQ emission.
     """
 
-    def __init__(self, source_path: Path):
+    def __init__(
+        self,
+        source_path: Path,
+        default_law_id: Optional[str] = None,
+        default_law_name: Optional[str] = None,
+    ):
         self.source_path = source_path
         self.normalizer = DeterministicLegalNormalizer()
         self.citation_extractor = CitationExtractor()
+
+        fname = source_path.name.lower()
+        if default_law_id:
+            self.default_law_id = default_law_id
+            self.default_law_name = default_law_name or default_law_id
+        elif "commercial_bill_1403" in fname or "لایحه" in fname:
+            self.default_law_id = "law:commercial_bill_1403"
+            self.default_law_name = "لایحه تجارت جمهوری اسلامی ایران مصوب ۱۴۰۳/۰۱/۲۸"
+        elif "commercial_code_full" in fname or "commercial code" in fname:
+            self.default_law_id = "law:commercial_code_full"
+            self.default_law_name = "قانون تجارت کامل (مصوب ۱۳۱۱ با اصلاحات ۱۳۴۷)"
+        else:
+            self.default_law_id = "law:constitution"
+            self.default_law_name = "قانون اساسی جمهوری اسلامی ایران"
 
         # Regex Patterns
         self.p_law_start = re.compile(
@@ -249,8 +268,43 @@ class LegalCorpusParser:
         articles: Dict[str, CanonicalArticle] = {}
         citations: List[CanonicalCitation] = []
 
-        current_law_id = "law:constitution"
-        current_chapter_id = "chapter:constitution:general"
+        current_law_id = self.default_law_id
+        law_slug = current_law_id.split(":", 1)[1]
+        current_chapter_id = f"chapter:{law_slug}:general"
+
+        if current_law_id not in laws:
+            laws[current_law_id] = CanonicalLaw(
+                id=current_law_id,
+                name=self.default_law_name,
+                raw_text=self.default_law_name,
+                normalized_text=self.normalizer.normalize(self.default_law_name),
+                provenance=ProvenanceSpan(
+                    source_file=str(self.source_path.name),
+                    source_line_start=1,
+                    source_line_end=1,
+                    source_char_start=0,
+                    source_char_end=len(self.default_law_name),
+                    text_hash=self.normalizer.compute_sha256(self.default_law_name),
+                ),
+            )
+            chapters[current_chapter_id] = CanonicalChapter(
+                id=current_chapter_id,
+                law_id=current_law_id,
+                number_or_slug="general",
+                title="کلیات",
+                raw_text="کلیات",
+                normalized_text="کلیات",
+                order=1,
+                provenance=ProvenanceSpan(
+                    source_file=str(self.source_path.name),
+                    source_line_start=1,
+                    source_line_end=1,
+                    source_char_start=0,
+                    source_char_end=5,
+                    text_hash=self.normalizer.compute_sha256("کلیات"),
+                ),
+            )
+
         current_article: Optional[CanonicalArticle] = None
         current_clause: Optional[CanonicalClause] = None
 
@@ -498,8 +552,14 @@ class LegalCorpusParser:
         return list(laws.values()), list(chapters.values()), list(articles.values()), citations, records, stats
 
     def _determine_law_slug(self, text: str) -> str:
-        if "اساسی" in text:
+        if self.default_law_id and self.default_law_id in ("law:commercial_code_full", "law:commercial_bill_1403"):
+            return self.default_law_id.split(":", 1)[1]
+        if "لایحه تجارت" in text or "لایحه" in text:
+            return "commercial_bill_1403"
+        elif "اساسی" in text:
             return "constitution"
+        elif "تجارت" in text and "سهامی" in text:
+            return "commercial_code_full"
         elif "تجارت" in text:
             return "commercial_code"
         elif "کیفری" in text:
@@ -918,7 +978,10 @@ class HardenedKnowledgeGraphCompiler:
                 cit_data,
             )
 
-        # 6. Finalize IngestionRun Status
+        # 6. Link Inter-Law Domain Relations (EXTENDS, SUPERSEDES) & Resolve Placeholders
+        self.link_inter_law_relations()
+
+        # 7. Finalize IngestionRun Status
         duration = time.time() - start_time
         final_status = "COMPLETED_WITH_ERRORS" if has_dlq else "COMPLETED"
         self.bridge.execute(
@@ -934,7 +997,7 @@ class HardenedKnowledgeGraphCompiler:
             """
         )
 
-        # 7. Compute Fingerprint
+        # 8. Compute Fingerprint
         fingerprint = self.compute_graph_fingerprint()
         logger.info(f"✅ Ingestion finalized in {duration:.2f}s. Graph Fingerprint: {fingerprint}")
         return {
@@ -943,6 +1006,51 @@ class HardenedKnowledgeGraphCompiler:
             "duration_sec": duration,
             "fingerprint": fingerprint,
         }
+
+    def link_inter_law_relations(self):
+        """
+        Create domain relationships between law corpuses and resolve placeholders.
+        """
+        logger.info("🔗 Linking inter-law relationships (EXTENDS, SUPERSEDES) and resolving cross-law placeholders...")
+        # 1. EXTENDS: commercial_code_full -> commercial_code
+        self.bridge.execute(
+            """
+            MATCH (full:Law {id: 'law:commercial_code_full'}), (base:Law {id: 'law:commercial_code'})
+            MERGE (full)-[r:EXTENDS]->(base)
+            ON CREATE SET r.description = 'Comprehensive commercial code with 1347 amendments', r.created_at = datetime();
+            """
+        )
+        # 2. SUPERSEDES: commercial_bill_1403 -> commercial_code
+        self.bridge.execute(
+            """
+            MATCH (bill:Law {id: 'law:commercial_bill_1403'}), (old:Law {id: 'law:commercial_code'})
+            MERGE (bill)-[r:SUPERSEDES]->(old)
+            ON CREATE SET r.effective_date = '1403/01/28', r.legislative_body = 'مجلس شورای اسلامی', r.created_at = datetime();
+            """
+        )
+        # 3. Resolve placeholder article:commercial_code:article:51 from article:commercial_code_full:article:51
+        self.bridge.execute(
+            """
+            MATCH (full_art:Article {id: 'article:commercial_code_full:article:51'}),
+                  (base_art:Article {id: 'article:commercial_code:article:51'})
+            SET base_art.raw_text = full_art.raw_text,
+                base_art.normalized_text = full_art.normalized_text,
+                base_art.text_hash = full_art.text_hash,
+                base_art.source_file = full_art.source_file,
+                base_art.source_line_start = full_art.source_line_start,
+                base_art.source_line_end = full_art.source_line_end,
+                base_art.source_char_start = full_art.source_char_start,
+                base_art.source_char_end = full_art.source_char_end,
+                base_art.parser_version = full_art.parser_version,
+                base_art.schema_version = full_art.schema_version,
+                base_art.status = 'resolved',
+                base_art.resolved_from = full_art.id,
+                base_art.updated_at = datetime()
+            WITH base_art
+            MATCH (c:Chapter {id: 'chapter:commercial_code:general'})
+            MERGE (c)-[:CONTAINS]->(base_art);
+            """
+        )
 
     def compute_graph_fingerprint(self) -> str:
         """Compute cryptographic graph fingerprint."""
@@ -1077,9 +1185,23 @@ def main() -> int:
     )
     parser.add_argument(
         "--file",
+        "--source",
+        dest="file",
         type=str,
         default="all_legal_sentences.txt",
         help="Path to legal sentences text file",
+    )
+    parser.add_argument(
+        "--default-law-id",
+        type=str,
+        default=None,
+        help="Optional explicit default law ID (e.g. law:commercial_code_full)",
+    )
+    parser.add_argument(
+        "--default-law-name",
+        type=str,
+        default=None,
+        help="Optional explicit default law title",
     )
     parser.add_argument(
         "--batch-size",
@@ -1132,7 +1254,11 @@ def main() -> int:
     logger.info(f"✅ Source Integrity Verified: {file_lines} lines | SHA-256: {source_sha256}")
 
     # 2. Parse Corpus & Extract Line Records
-    corpus_parser = LegalCorpusParser(source_path)
+    corpus_parser = LegalCorpusParser(
+        source_path,
+        default_law_id=args.default_law_id,
+        default_law_name=args.default_law_name,
+    )
     laws, chapters, articles, citations, records, stats = corpus_parser.parse()
 
     # 3. Line Accounting Invariant Check
