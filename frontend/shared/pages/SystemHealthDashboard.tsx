@@ -19,6 +19,7 @@ import {
   XCircleIcon,
   CheckCircleIcon,
   LinkIcon,
+  TrendingUpIcon,
 } from "@heroicons/react/24/outline";
 
 interface GraphHealth {
@@ -557,7 +558,7 @@ export default function SystemHealthDashboard() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Uptime:</span>
-                        <span className="text-md font-bold text-slate-900">{Math.floor(systemOverview.system.uptime_seconds / 86400)}d ${Math.floor((systemOverview.system.uptime_seconds % 86400) / 3600)}h ${Math.floor((systemOverview.system.uptime_seconds % 3600) % 60)}m</span>
+                        <span className="text-md font-bold text-slate-900">{Math.floor(systemOverview.system.uptime_seconds / 86400)}d {Math.floor((systemOverview.system.uptime_seconds % 86400) / 3600)}h {Math.floor((systemOverview.system.uptime_seconds % 3600) % 60)}m</span>
                       </div>
                     </div>
                   </div>

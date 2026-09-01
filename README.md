@@ -116,15 +116,14 @@ No agent, model, IDE, plugin, or client configuration may redefine MAHOUN archit
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-90%25-green.svg)
-![Bootstrap](https://img.shields.io/badge/bootstrap-12%20phases-green.svg)
-![Production](https://img.shields.io/badge/production-tier%201-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-development-yellow.svg)
 
-**Zero-Hallucination AI Reasoning for High-Stakes Decisions**
+**Evidence-Grounded AI Reasoning for High-Stakes Decisions**
 
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation) •
@@ -138,41 +137,32 @@ No agent, model, IDE, plugin, or client configuration may redefine MAHOUN archit
 
 ## 🎯 What is Mahoun?
 
-**Mahoun** is the world's first **audit-grade AI reasoning platform** that **mathematically guarantees zero hallucination** by grounding every conclusion in a verifiable knowledge graph.
+**Mahoun** is an **audit-grade AI reasoning platform** that **reduces hallucination risk** by grounding every conclusion in a verifiable knowledge graph with text-grounding verification.
 
 Unlike traditional AI systems (GPT-4, Claude, etc.) that generate probabilistic text, Mahoun:
-- ✅ **Proves every decision** with explicit evidence trails
-- ✅ **Eliminates hallucination** through graph-based reasoning
+- ✅ **Grounds every decision** with explicit evidence trails
+- ✅ **Reduces hallucination risk** through graph-based reasoning and NLI verification
 - ✅ **Provides full auditability** for regulated industries
 - ✅ **Handles contradictions** with deterministic resolution
 - ✅ **Scales to thousands** of complex legal/compliance rules
 
-### 🔥 What's New in v1.2.0
+### 🔥 Current Status (v0.1.0 - Development)
 
-**Enterprise Bootstrap & Architectural Refactoring** (July 2026):
-- ✅ **12-Phase Enterprise Bootstrap**: Complete governance-first system initialization
-- ✅ **Ultra-Advanced AI/ML Runtime**: Profile-aware loading (BASE/PLUS/ULTRA)
-- ✅ **Circuit Breaker Architecture**: Enterprise-grade fault isolation
-- ✅ **Fail-Closed Enforcement**: Zero-compromise governance at every layer
-- ✅ **Comprehensive Health Gates**: 6-category readiness validation
-- ✅ **P0 Architectural Refactoring**: Service extraction & coordinator pattern
-- ✅ **Behavior-Preserving Refactoring**: 100% backward compatibility
-- ✅ **DAG-Based Dependencies**: Mathematical dependency resolution
-- ✅ **Rollback Journal Pattern**: Transactional system state management
-- ✅ **Tier-1 Enterprise Quality**: Google/Microsoft infrastructure standards
+**Development Stage:**
+- 🔄 **Governance-First Architecture**: Constitutional framework with explicit authority hierarchy
+- 🔄 **Multi-Phase Bootstrap**: 12-phase system initialization with fail-closed enforcement
+- 🔄 **Dual-Mode Execution**: DESKTOP_MINIMAL (8GB) and ENTERPRISE_FULL (16GB+) modes
+- 🔄 **Advanced Reasoning Engine**: Rete algorithm with O(1) rule matching
+- 🔄 **Type Safety**: Frozen dataclasses with 100% type coverage
+- 🔄 **Memory Management**: Automatic cleanup and leak prevention
+- 🔄 **Text-Grounding Verification**: NLI ensemble for output validation
+- 🔄 **i18n Support**: Multi-language explanations (English, Farsi)
 
-**Previous Major Improvements** (May 2026):
-- ✅ **Complete Forensic Analysis**: 19/19 critical issues resolved
-- ✅ **Enterprise-Grade CI/CD Governance**: Automated AST scanners and determinism gates
-- ✅ **Dual-Mode Architecture**: DESKTOP_MINIMAL & ENTERPRISE_FULL modes
-- ✅ **Advanced Reasoning Engine**: Rete algorithm with O(1) rule matching
-- ✅ **Enhanced Type Safety**: 100% type-safe with frozen dataclasses
-- ✅ **Memory Management**: Automatic cleanup and leak prevention
-- ✅ **Timeout Protection**: DoS prevention with configurable timeouts
-- ✅ **External Ontology**: JSON/YAML configuration for legal predicates
-- ✅ **i18n Support**: Multi-language explanations (English, Farsi)
-
-See [PHASES_7_12_COMPLETION.md](mahoun/bootstrap/PHASES_7_12_COMPLETION.md) and [REFACTORING_ROADMAP.md](mahoun/bootstrap/REFACTORING_ROADMAP.md) for complete details.
+**Known Limitations:**
+- ⚠️ **Not Production-Ready**: Still in active development
+- ⚠️ **Technical Debt**: Some legacy references and duplicated components exist
+- ⚠️ **Dependency Bloat**: Contains 600+ packages (includes security tools)
+- ⚠️ **Large Repository Size**: ~19GB due to data files and models
 
 ### 🏆 The Mahoun Differentiator
 
