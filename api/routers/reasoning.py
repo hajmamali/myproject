@@ -37,6 +37,12 @@ from mahoun.api.errors import (
 from mahoun.core.governance import (
     GovernanceContextManager,
 )
+from mahoun.core.authorization.case_authorization import (
+    get_case_authorization_service,
+    authorize_case_access,
+    create_or_get_case,
+    CaseAuthorizationError,
+)
 from mahoun.core.fortress_validator import SecurityBreachException
 from mahoun.core.logging import setup_logger
 from mahoun.core.runtime_config import (
@@ -412,9 +418,43 @@ async def generate_verdict(
                 ledger_commit_service=ledger_commit_service
             )
 
-            # Execute reasoning (auto-validated through Fortress)
-            # Pass case_id through to the reasoning service for proper ledger storage
-            user_case_id = request.case_id or str(uuid.uuid4())  # Fallback case identifier only — not a determinism input.
+            # PHASE 2C: CASE AUTHORIZATION ENFORCEMENT
+            # Replace insecure case_id handling with proper authorization
+            
+            # Extract user ID (placeholder - integrate with your auth system)
+            user_id = getattr(request, 'user_id', 'anonymous')  # TODO: Extract from JWT/session
+            
+            try:
+                if request.case_id:
+                    # User provided case_id - authorize access to existing case
+                    log.info(f"Authorizing access to case {request.case_id} for user {user_id}")
+                    case_boundary = authorize_case_access(request.case_id, user_id, "write")
+                    authorized_case_id = case_boundary.identity.case_id
+                else:
+                    # No case_id provided - create new case with deterministic ID
+                    log.info(f"Creating new case for user {user_id}")
+                    case_boundary = create_or_get_case(
+                        question=request.question,
+                        facts=facts_list,
+                        owner_user_id=user_id,
+                        correlation_id=ctx.correlation_id
+                    )
+                    authorized_case_id = case_boundary.identity.case_id
+                
+                log.info(f"Case authorization successful: {authorized_case_id}")
+                
+            except CaseAuthorizationError as e:
+                log.error(f"Case authorization failed: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Case access denied: {e.reason}"
+                )
+            except Exception as e:
+                log.error(f"Case authorization error: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Case authorization failed"
+                )
             
             # Store execution context for potential replay capability
             from mahoun.execution.replay_service import store_verdict_execution_context, store_verdict_execution_result
@@ -423,8 +463,8 @@ async def generate_verdict(
                 question=request.question,
                 facts=facts_list,
                 correlation_id=ctx.correlation_id,
-                case_id=user_case_id,
-                user_id=getattr(request, 'user_id', None),  # Extract from request if available
+                case_id=authorized_case_id,  # Use authorized case_id
+                user_id=user_id,  # Use extracted user_id
                 session_id=getattr(request, 'session_id', None)
             )
             
@@ -436,7 +476,7 @@ async def generate_verdict(
                         "question": request.question,
                         "facts": facts_list,
                         "correlation_id": ctx.correlation_id,
-                        "case_id": user_case_id,
+                        "case_id": authorized_case_id,
                         "execution_id": execution_id,
                     },
                 )(),
@@ -463,7 +503,7 @@ async def generate_verdict(
         # Extract verdict_id and case_id from the response metadata
         # These are already set by the execution pipeline
         verdict_id = verdict.metadata.get("verdict_id", str(uuid.uuid4()))  # Fallback verdict identifier only — not a determinism input.
-        case_id = user_case_id
+        case_id = authorized_case_id
         
         # Extract steps from proof_tree if available (for backward compatibility)
         steps_data = []

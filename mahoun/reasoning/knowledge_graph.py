@@ -56,7 +56,7 @@ class LegalRule:
 @dataclass
 class LegalPrecedent:
     """Legal precedent case"""
-    case_id: str
+    precedent_id: str  # Renamed from case_id for semantic clarity (external legal case reference)
     facts: List[str]
     decision: str
     court: str
@@ -212,7 +212,7 @@ class LegalKnowledgeGraph:
         
         try:
             query = """
-            MERGE (p:LegalPrecedent {case_id: $case_id})
+            MERGE (p:LegalPrecedent {precedent_id: $precedent_id})
             SET p.facts = $facts,
                 p.decision = $decision,
                 p.court = $court,
@@ -227,7 +227,7 @@ class LegalKnowledgeGraph:
             """
             
             self._neo4j_connection._raw_execute(query, {
-                "case_id": prec.case_id,
+                "precedent_id": prec.precedent_id,
                 "facts": prec.facts,
                 "decision": prec.decision,
                 "court": prec.court,
@@ -243,7 +243,7 @@ class LegalKnowledgeGraph:
                 ) if prec.provenance else None,
             })
             
-            log.debug(f"Wrote precedent to Neo4j: {prec.case_id}")
+            log.debug(f"Wrote precedent to Neo4j: {prec.precedent_id}")
             
         except Exception as e:
             log.error(f"Failed to write precedent to Neo4j: {e}")
@@ -509,7 +509,7 @@ class LegalKnowledgeGraph:
     
     def add_precedent(
         self,
-        case_id: str,
+        precedent_id: str,  # Renamed from case_id for semantic clarity
         facts: List[str],
         decision: str,
         court: str,
@@ -522,7 +522,7 @@ class LegalKnowledgeGraph:
         If precedent exists, creates new version and archives old one.
         
         Args:
-            case_id: Unique case identifier
+            precedent_id: Unique precedent identifier (external legal case reference)
             facts: List of case facts
             decision: Court decision
             court: Court name
@@ -536,13 +536,13 @@ class LegalKnowledgeGraph:
         old_prec = None
         
         # Check if precedent exists (update with version history)
-        if case_id in self.precedents:
-            old_prec = self.precedents[case_id]
+        if precedent_id in self.precedents:
+            old_prec = self.precedents[precedent_id]
             
             # Archive old version
-            if case_id not in self._precedent_versions:
-                self._precedent_versions[case_id] = []
-            self._precedent_versions[case_id].append({
+            if precedent_id not in self._precedent_versions:
+                self._precedent_versions[precedent_id] = []
+            self._precedent_versions[precedent_id].append({
                 "version": old_prec.version,
                 "facts": old_prec.facts,
                 "decision": old_prec.decision,
@@ -552,7 +552,7 @@ class LegalKnowledgeGraph:
             # Create new version
             new_version = old_prec.version + 1
             prec = LegalPrecedent(
-                case_id=case_id,
+                precedent_id=precedent_id,
                 facts=facts,
                 decision=decision,
                 court=court,
@@ -562,11 +562,11 @@ class LegalKnowledgeGraph:
                 created_at=old_prec.created_at,
                 updated_at=now
             )
-            log.info(f"Updated precedent: {case_id} (v{new_version})")
+            log.info(f"Updated precedent: {precedent_id} (v{new_version})")
         else:
             # Create new precedent
             prec = LegalPrecedent(
-                case_id=case_id,
+                precedent_id=precedent_id,
                 facts=facts,
                 decision=decision,
                 court=court,
@@ -575,16 +575,16 @@ class LegalKnowledgeGraph:
                 created_at=now,
                 updated_at=now
             )
-            log.debug(f"Added precedent: {case_id}")
+            log.debug(f"Added precedent: {precedent_id}")
         
         prec.provenance = self._resolve_entity_provenance(
             source="knowledge_graph:add_precedent",
-            correlation_id=case_id,
+            correlation_id=precedent_id,
             author="mahoun_knowledge_graph",
             preserve_existing=old_prec.provenance if old_prec else None,
         )
 
-        self.precedents[case_id] = prec
+        self.precedents[precedent_id] = prec
         
         # Save to storage
         self._save_to_storage()

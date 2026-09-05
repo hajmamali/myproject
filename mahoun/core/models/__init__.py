@@ -25,6 +25,18 @@ from .reasoning import (
     RetrievalResult,
 )
 
+# Import Phase 2B Semantic models
+from .semantic import (
+    VerificationStatus,
+    SemanticIdentity,
+    SemanticFact,
+    SemanticAssertion,
+    ConditionClause,
+    SanctionClause,
+    ExceptionClause,
+    ArticleDecomposition,
+)
+
 # Import entity system
 from .entity import (
     Entity,

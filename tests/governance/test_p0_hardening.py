@@ -230,7 +230,7 @@ class TestP1_KnowledgeGraphProvenance:
     @pytest.mark.p2
     def test_legal_precedent_has_provenance_field(self):
         """P1: LegalPrecedent dataclass has a provenance field."""
-        prec = LegalPrecedent(case_id="c1", facts=["f"], decision="d", court="ct")
+        prec = LegalPrecedent(precedent_id="c1", facts=["f"], decision="d", court="ct")
         assert hasattr(prec, "provenance")
 
     @pytest.mark.p2

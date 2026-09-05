@@ -48,7 +48,7 @@ def legal_rule_strategy(draw):
 @st.composite
 def legal_precedent_strategy(draw):
     """Generate valid LegalPrecedent instances."""
-    case_id = draw(st.text(min_size=1, max_size=20, alphabet=st.characters(
+    precedent_id = draw(st.text(min_size=1, max_size=20, alphabet=st.characters(
         whitelist_categories=('Lu', 'Ll', 'Nd'), whitelist_characters='-_'
     )))
     facts = draw(st.lists(st.text(min_size=5, max_size=50), min_size=1, max_size=5))
@@ -57,7 +57,7 @@ def legal_precedent_strategy(draw):
     date = draw(st.sampled_from(["2020-01-01", "2021-06-15", "2022-12-31"]))
     
     return LegalPrecedent(
-        case_id=case_id,
+        precedent_id=precedent_id,
         facts=facts,
         decision=decision,
         court=court,
@@ -217,7 +217,7 @@ def test_property_idempotent_precedent_ingest(precedent):
         
         # Add precedent first time
         prec1 = kg.add_precedent(
-            case_id=precedent.case_id,
+            precedent_id=precedent.precedent_id,
             facts=precedent.facts,
             decision=precedent.decision,
             court=precedent.court,
@@ -228,7 +228,7 @@ def test_property_idempotent_precedent_ingest(precedent):
         
         # Add same precedent again (update)
         prec2 = kg.add_precedent(
-            case_id=precedent.case_id,
+            precedent_id=precedent.precedent_id,
             facts=precedent.facts + ["new fact"],
             decision=precedent.decision,
             court=precedent.court,
@@ -239,12 +239,12 @@ def test_property_idempotent_precedent_ingest(precedent):
         assert prec2.version == 2
         
         # Should have only one precedent with this ID
-        retrieved = kg.get_precedent(precedent.case_id)
+        retrieved = kg.get_precedent(precedent.precedent_id)
         assert retrieved is not None
         assert retrieved.version == 2
         
         # Old version should be in history
-        history = kg.get_precedent_history(precedent.case_id)
+        history = kg.get_precedent_history(precedent.precedent_id)
         assert len(history) == 1
         assert history[0]["version"] == 1
 

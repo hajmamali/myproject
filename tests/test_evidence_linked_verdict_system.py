@@ -46,11 +46,11 @@ class TestRealSystemScenarios:
         
         # اضافه کردن precedent واقعی
         kg.add_precedent(
-            "case_breach_2023",
-            ["قرارداد", "عدم اجرا", "خسارت"],
-            "دادگاه حکم به پرداخت خسارت داد",
-            "دادگاه تجدید نظر تهران",
-            "2023-06-15"
+            precedent_id="case_breach_2023",
+            facts=["قرارداد", "عدم اجرا", "خسارت"],
+            decision="دادگاه حکم به پرداخت خسارت داد",
+            court="دادگاه تجدید نظر تهران",
+            date="2023-06-15"
         )
         
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
@@ -124,11 +124,11 @@ class TestRealSystemScenarios:
         
         # Precedent
         kg.add_precedent(
-            "case_payment_2022",
-            ["خدمات", "عدم پرداخت"],
-            "دادگاه حکم به پرداخت حق الزحمه داد",
-            "دادگاه عمومی",
-            "2022-03-20"
+            precedent_id="case_payment_2022",
+            facts=["خدمات", "عدم پرداخت"],
+            decision="دادگاه حکم به پرداخت حق الزحمه داد",
+            court="دادگاه عمومی",
+            date="2022-03-20"
         )
         
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
@@ -598,7 +598,13 @@ class TestRealSystemIntegration:
         # Populate knowledge graph
         kg.add_legal_rule("e2e_rule_1", "واقعیت 1", "نتیجه 1", 0.9)
         kg.add_legal_rule("e2e_rule_2", "واقعیت 2", "نتیجه 2", 0.85)
-        kg.add_precedent("e2e_case_1", ["واقعیت 1"], "تصمیم 1", "دادگاه", "2023-01-01")
+        kg.add_precedent(
+            precedent_id="e2e_case_1",
+            facts=["واقعیت 1"],
+            decision="تصمیم 1",
+            court="دادگاه",
+            date="2023-01-01"
+        )
         
         engine = EvidenceLinkedVerdictEngine(builder, kg, ledger_writer)
         

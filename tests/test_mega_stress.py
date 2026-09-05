@@ -96,14 +96,14 @@ class MegaStressDemo:
         print("  - Injecting Universal Precedents...")
         
         # Historical Decisions
-        self.kg.add_precedent("P_TITAN_2018", ["Loss of Comms", "Emergency Landing"], "CLEAR_OF_NEGLIGENCE", "Supreme Court")
-        self.kg.add_precedent("P_BIO_2020", ["Pandemic", "Emergency Use"], "APPROVED_DESPITE_SIDE_EFFECTS", "FDA Tribunal")
-        self.kg.add_precedent("P_FIN_2019", ["Sanctioned List", "Humanitarian Aid"], "RELEASE_PARTIAL_FUNDS", "Hague")
-        self.kg.add_precedent("P_AIR_2022", ["War Zone", "Civilian Flight"], "STRICT_LIABILITY_OWNER", "ICC")
+        self.kg.add_precedent(precedent_id="P_TITAN_2018", facts=["Loss of Comms", "Emergency Landing"], decision="CLEAR_OF_NEGLIGENCE", court="Supreme Court")
+        self.kg.add_precedent(precedent_id="P_BIO_2020", facts=["Pandemic", "Emergency Use"], decision="APPROVED_DESPITE_SIDE_EFFECTS", court="FDA Tribunal")
+        self.kg.add_precedent(precedent_id="P_FIN_2019", facts=["Sanctioned List", "Humanitarian Aid"], decision="RELEASE_PARTIAL_FUNDS", court="Hague")
+        self.kg.add_precedent(precedent_id="P_AIR_2022", facts=["War Zone", "Civilian Flight"], decision="STRICT_LIABILITY_OWNER", court="ICC")
         
         # Mass Injection for Scaling
         for i in range(1, 20):
-            self.kg.add_precedent(f"P_CASE_{i}", [f"Fact_{i}", "Dispute"], "VARIABLE_DECISION", "Local Court")
+            self.kg.add_precedent(precedent_id=f"P_CASE_{i}", facts=[f"Fact_{i}", "Dispute"], decision="VARIABLE_DECISION", court="Local Court")
 
     def create_fact_pattern(self):
         """The Intertwined Crisis Pattern"""

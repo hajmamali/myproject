@@ -360,17 +360,17 @@ class DeepLegalReasoningEngine:
     
     def add_precedent(
         self,
-        case_id: str,
+        precedent_id: str,
         facts: List[str],
         decision: str,
         court: str
     ):
         """Add legal precedent"""
         self.knowledge_graph.add_precedent(
-            case_id,
-            facts,
-            decision,
-            court
+            precedent_id=precedent_id,
+            facts=facts,
+            decision=decision,
+            court=court
         )
     
     def add_causal_relationship(

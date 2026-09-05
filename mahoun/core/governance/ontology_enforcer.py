@@ -89,6 +89,18 @@ _DEFAULT_ONTOLOGY_RULES: Tuple[OntologyRule, ...] = (
     OntologyRule("Document", "REFERENCES", "LawArticle", "A document references a law article"),
     # Person reverse lookup
     OntologyRule("Person", "PARTY_TO", "Verdict", "A person is party to a verdict"),
+    # Phase 2B Semantic & Concept relationships
+    OntologyRule("Article", "REGULATES", "Concept", "An article regulates a legal concept"),
+    OntologyRule("Article", "APPLIES_TO", "Concept", "An article applies to a legal concept"),
+    OntologyRule("Article", "RESTRICTED_BY", "Concept", "An article is restricted by a legal concept"),
+    OntologyRule("Article", "HAS_CONDITION", "Condition", "An article defines a condition"),
+    OntologyRule("Article", "HAS_SANCTION", "Sanction", "An article defines a sanction or legal effect"),
+    OntologyRule("Article", "HAS_EXCEPTION", "Exception", "An article defines an exception"),
+    OntologyRule("Concept", "INHERITS_FROM", "Concept", "A concept inherits from a parent concept"),
+    OntologyRule("Concept", "RELATES_TO", "Concept", "A concept relates to another concept", bidirectional=True),
+    OntologyRule("Law", "MANDATES_COMPLIANCE", "Law", "A law mandates compliance on another law/standard"),
+    OntologyRule("Law", "SUBJECT_TO_PROCEDURE", "Law", "A law is subject to procedure of another law"),
+    OntologyRule("Law", "CONSTITUTIONAL_BASIS", "Law", "A law derives from a constitutional basis"),
 )
 
 

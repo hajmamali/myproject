@@ -552,10 +552,19 @@ class LegalCorpusParser:
         return list(laws.values()), list(chapters.values()), list(articles.values()), citations, records, stats
 
     def _determine_law_slug(self, text: str) -> str:
-        if self.default_law_id and self.default_law_id in ("law:commercial_code_full", "law:commercial_bill_1403"):
+        if self.default_law_id and self.default_law_id in (
+            "law:commercial_code_full",
+            "law:commercial_bill_1403",
+            "law:engineering_system",
+            "law:conditions_of_contract_4311"
+        ):
             return self.default_law_id.split(":", 1)[1]
         if "لایحه تجارت" in text or "لایحه" in text:
             return "commercial_bill_1403"
+        elif "نظام مهندسی" in text:
+            return "engineering_system"
+        elif "پیمان" in text or "۴۳۱۱" in text:
+            return "conditions_of_contract_4311"
         elif "اساسی" in text:
             return "constitution"
         elif "تجارت" in text and "سهامی" in text:

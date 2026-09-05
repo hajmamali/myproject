@@ -246,18 +246,22 @@ class VerdictEngineAdapter:
             # Extract request data with validation
             question = self._extract_question(request)
             facts = self._extract_facts(request)
-            # Extract case_id from request if available, otherwise use correlation_id
+            
+            # PHASE 2C: Fix case_id semantic inconsistency
+            # Always pass case_id as provided by API layer (already authorized)
+            # Let the engine handle deterministic generation if case_id is None
             request_case_id = getattr(request, "case_id", None)
-            case_id = request_case_id or correlation_id or "unknown"
+            case_id = request_case_id  # Don't fallback to correlation_id here
 
-            log.debug(f"[{case_id}] Adapting verdict request: question_len={len(question)}, facts_count={len(facts)}")
+            log.debug(f"[{case_id or 'auto-generated'}] Adapting verdict request: question_len={len(question)}, facts_count={len(facts)}")
 
             # Invoke underlying verdict engine with case_id
+            # Engine will generate deterministic case_id if None is passed
             # Now returns VerdictExecutionResult (RULE 3: Explicit contract)
             execution_result = await self.engine.generate_verdict(
                 question=question, 
                 facts=facts,
-                case_id=case_id
+                case_id=case_id  # Pass None if not provided, let engine decide
             )
 
             # Transform execution result to ReasoningResponse
@@ -428,7 +432,7 @@ class VerdictEngineAdapter:
         metadata = {
             "agreement_score": agreement_score,
             "verdict_id": verdict_id,
-            "case_id": ledger_entry.case_id if ledger_entry else correlation_id,
+            "case_id": execution_result.case_id if hasattr(execution_result, 'case_id') else ledger_entry.case_id if ledger_entry else "unknown",
             "correlation_id": use_correlation_id,
             "execution_id": execution_result.execution_id,
             "step_count": len(steps_dicts),
@@ -514,7 +518,7 @@ class VerdictEngineAdapter:
         metadata = {
             "agreement_score": agreement_score,
             "verdict_id": verdict_id,
-            "case_id": correlation_id,
+            "case_id": execution_result.case_id if hasattr(execution_result, 'case_id') else "unknown",
             "correlation_id": correlation_id,
             "step_count": len(steps_dicts),
             "evidence_node_count": proof_tree.get_proof_size(),

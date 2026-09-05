@@ -1963,6 +1963,7 @@ def _resolve_provenance(
                 source="_resolve_provenance",
                 correlation_id=correlation_id,
                 details={},
+
             )
         )
 

@@ -79,7 +79,7 @@ async def run_aml_demo():
     )
 
     kg.add_precedent(
-        case_id="FINRA_2022_AML_CASE",
+        precedent_id="FINRA_2022_AML_CASE",
         facts=["Multiple cash deposits under $10k", "Short time window"],
         decision="$5M fine for failing to detect structuring",
         court="FINRA",

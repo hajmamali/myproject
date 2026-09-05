@@ -141,7 +141,7 @@ class LegalDataSource:
         return {
             "id": precedent_id,
             "type": "precedent",
-            "case_id": f"Case_{precedent_id}",
+            "precedent_id": f"Case_{precedent_id}",
             "decision": f"Decision text for {precedent_id}",
             "court": "supreme" if precedent_id < 1001 else "admin" if precedent_id < 1501 else "commercial",
         }
@@ -229,7 +229,7 @@ class KnowledgeGraphLoader:
             conn = get_connection()
             query = """
             MERGE (p:Precedent {id: $id})
-            SET p.case_id = $case_id,
+            SET p.precedent_id = $precedent_id,
                 p.decision = $decision,
                 p.court = $court,
                 p.loaded_at = datetime()
@@ -237,7 +237,7 @@ class KnowledgeGraphLoader:
             """
             conn._raw_execute(query, {
                 "id": precedent_data["id"],
-                "case_id": precedent_data["case_id"],
+                "precedent_id": precedent_data["precedent_id"],
                 "decision": precedent_data["decision"],
                 "court": precedent_data["court"],
             })
