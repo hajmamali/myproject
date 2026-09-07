@@ -500,8 +500,8 @@ if HAS_SEARCH_ROUTER and search_router:
 if HAS_INGEST_ROUTER:
     from api.routers import ingest as ingest_router
 
-    app.include_router(ingest_router.router, prefix="/api/ingest")
-    logger.info("✓ Document ingest router registered at /api/ingest")
+    app.include_router(ingest_router.router, prefix="/api/v1/ingest")
+    logger.info("✓ Document ingest router registered at /api/v1/ingest")
 
 # Register MAHOUN router
 try:

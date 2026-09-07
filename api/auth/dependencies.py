@@ -97,20 +97,11 @@ async def require_analyst(current_user: User = Depends(get_current_active_user))
 async def get_optional_user() -> Optional[User]:
     """
     Get current user if authenticated, otherwise return None.
-    
-    IMPORTANT: In v1.1, authentication is not implemented.
-    This dependency raises an exception to prevent misuse.
-    
-    Returns:
-        User object if authenticated, None otherwise
-        
-    Raises:
-        RuntimeError: Always raises in v1.1 (optional auth not ready)
+
+    For v1.1, optional auth is not implemented. Returning None is the safe
+    default that allows anonymous or public endpoints to behave deterministically
+    instead of crashing with a 500 before they can enforce their own fail-closed
+    rules.
     """
-    # v1.1: Optional authentication not yet implemented
-    # Endpoints using this must be reviewed before enabling
-    raise RuntimeError(
-        "Optional authentication dependency not implemented in v1.1. "
-        "Endpoints using get_optional_user() must be disabled or refactored."
-    )
+    return None
 

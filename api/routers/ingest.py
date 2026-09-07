@@ -37,6 +37,25 @@ _ingestion_pipeline: Optional[Any] = None
 _unified_loader: Optional[Any] = None
 
 
+async def get_unified_loader() -> Optional[Any]:
+    """
+    Return the deprecated legacy loader only if a compatibility shim is actually
+    wired in. The canonical runtime intentionally uses GovernedIngestionRuntime,
+    so the absence of a UnifiedLoader is not an error condition for the API.
+
+    Returning None keeps the DLQ endpoints fail-closed instead of crashing with
+    NameError when the legacy symbol is missing.
+    """
+    global _unified_loader
+
+    if _unified_loader is not None:
+        return _unified_loader
+
+    logger.warning(
+        "UnifiedLoader is unavailable in the canonical runtime; DLQ retry/delete "
+        "endpoints are intentionally disabled."
+    )
+    return None
 
 
 async def get_ingestion_pipeline():
@@ -401,7 +420,7 @@ async def retry_dlq_job(
     if not loader:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unified loader not available",
+            detail="Unified loader not available; canonical ingestion runtime is active and DLQ retry is disabled.",
         )
 
     try:
@@ -470,7 +489,7 @@ async def delete_dlq_item(
     if not loader:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unified loader not available",
+            detail="Unified loader not available; canonical ingestion runtime is active and DLQ deletion is disabled.",
         )
 
     try:
