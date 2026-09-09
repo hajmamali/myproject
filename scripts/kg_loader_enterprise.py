@@ -19,10 +19,10 @@ Design Principles:
 
 Usage:
     # Option 1: Use exactly like before (no wrapper)
-    python scripts/build_legal_kg.py all_legal_sentences.txt
+    python scripts/build_legal_kg.py LAWS/all_legal_sentences.txt
     
     # Option 2: Use with enterprise features
-    python scripts/kg_loader_enterprise.py all_legal_sentences.txt --enable-batch --enable-metrics
+    python scripts/kg_loader_enterprise.py LAWS/all_legal_sentences.txt --enable-batch --enable-metrics
 """
 
 import argparse
@@ -48,6 +48,7 @@ from scripts.build_legal_kg import (
     PARSER_VERSION,
     SCHEMA_VERSION
 )
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 
 logger = logging.getLogger("kg_loader_enterprise")
 
@@ -306,6 +307,7 @@ class EnterpriseKGLoader:
 
 
 def main():
+    IngestionExecutionGate.require_active()
     """Main entry point"""
     parser = argparse.ArgumentParser(
         description="Enterprise KG Loader (Non-invasive wrapper for build_legal_kg.py)",
@@ -313,16 +315,16 @@ def main():
         epilog="""
 Examples:
   # Legacy mode (exactly like build_legal_kg.py)
-  python scripts/kg_loader_enterprise.py all_legal_sentences.txt
+  python scripts/kg_loader_enterprise.py LAWS/all_legal_sentences.txt
   
   # With batch processing
-  python scripts/kg_loader_enterprise.py all_legal_sentences.txt --enable-batch --workers 8
+  python scripts/kg_loader_enterprise.py LAWS/all_legal_sentences.txt --enable-batch --workers 8
   
   # With metrics
-  python scripts/kg_loader_enterprise.py all_legal_sentences.txt --enable-metrics
+  python scripts/kg_loader_enterprise.py LAWS/all_legal_sentences.txt --enable-metrics
   
   # All features
-  python scripts/kg_loader_enterprise.py all_legal_sentences.txt --enable-batch --enable-metrics --workers 8
+  python scripts/kg_loader_enterprise.py LAWS/all_legal_sentences.txt --enable-batch --enable-metrics --workers 8
         """
     )
     

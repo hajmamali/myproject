@@ -102,7 +102,6 @@ async def _run(args: argparse.Namespace) -> int:
         print(f"❌ File not found: {file_path}")
         return 1
 
-    text = _read_text_file(file_path)
     metadata = _build_metadata(args, file_path)
     doc_id = metadata.get("id") or f"cli-{file_path.stem}"
     actor_id = "cli_operator"
@@ -124,6 +123,10 @@ async def _run(args: argparse.Namespace) -> int:
         GovernedIngestionRuntime,
         IngestionAbortedError,
     )
+    from mahoun.core.governance.ingestion_execution_gate import (
+        IngestionExecutionGate,
+        IngestionExecutionRequest,
+    )
     from mahoun.graph.neo4j.connection import get_connection
 
     print("🔧 Initializing governed runtime (audit sink + context + session)...")
@@ -132,22 +135,31 @@ async def _run(args: argparse.Namespace) -> int:
     connection = get_connection()
 
     try:
-        async with GovernanceContextManager.active_context(
-            correlation_id=doc_id,
-            execution_mode="STRICT",
-            actor_id=actor_id,
-        ):
-            with connection.governed_session(
+        with IngestionExecutionGate.enter(
+            IngestionExecutionRequest(
+                source=str(file_path),
+                author_id=actor_id,
                 correlation_id=doc_id,
+                adapter_name="UnifiedTextIngestionCLI",
+            )
+        ):
+            text = _read_text_file(file_path)
+            async with GovernanceContextManager.active_context(
+                correlation_id=doc_id,
+                execution_mode="STRICT",
                 actor_id=actor_id,
-            ) as session:
-                runtime = GovernedIngestionRuntime(session=session)
-                result = runtime.ingest_document_atomic(
-                    doc_id=doc_id,
-                    text=text,
-                    metadata=metadata,
-                    author_id=actor_id,
-                )
+            ):
+                with connection.governed_session(
+                    correlation_id=doc_id,
+                    actor_id=actor_id,
+                ) as session:
+                    runtime = GovernedIngestionRuntime(session=session)
+                    result = runtime.ingest_document_atomic(
+                        doc_id=doc_id,
+                        text=text,
+                        metadata=metadata,
+                        author_id=actor_id,
+                    )
     except IngestionAbortedError as exc:
         print(f"\n❌ Ingestion aborted (governance failure): {exc}")
         logger.exception("Ingestion aborted")

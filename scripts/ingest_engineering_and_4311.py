@@ -23,6 +23,7 @@ from scripts.build_legal_kg import (
     PARSER_VERSION,
     SCHEMA_VERSION
 )
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 
 logging.basicConfig(
     level=logging.INFO,
@@ -133,6 +134,7 @@ def print_graph_summary(bridge: CypherBridge):
 
 
 def main():
+    IngestionExecutionGate.require_active()
     start_all = time.time()
     compiler = HardenedKnowledgeGraphCompiler(run_id=f"run_eng_4311_{int(time.time())}")
     

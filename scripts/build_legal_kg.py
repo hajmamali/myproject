@@ -21,8 +21,10 @@ import argparse
 import hashlib
 import json
 import logging
+import os
 import re
-import subprocess
+import ast
+import asyncio
 import sys
 import time
 from dataclasses import dataclass, field
@@ -37,6 +39,15 @@ if str(REPO_ROOT) not in sys.path:
 
 # MahouN Canonical Imports
 from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession  # noqa: F401
+from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
+from mahoun.core.governance.mutation_boundary import (
+    classify_cypher,
+    get_audit_sink,
+    set_audit_sink,
+)
+from mahoun.graph.neo4j.connection import get_connection
+from mahoun.infrastructure.audit.filesink import compose_default_filesystem_sink
 from mahoun.guardrails.ultra_citation_auditor import CitationExtractor
 from mahoun.nlp.ultra_persian_legal_nlp import PersianNormalizer
 
@@ -639,53 +650,47 @@ class CypherBridge:
     Unified, fail-safe Cypher execution bridge supporting APOC JSON batches.
     """
 
-    def __init__(self, connection=None, password: str = "dev_neo4j_password_2026"):
-        self.connection = connection
-        self.password = password
-        self._test_driver_connection()
+    def __init__(self, connection=None, password: Optional[str] = None):
+        self.connection = connection or get_connection()
 
-    def _test_driver_connection(self):
-        try:
-            if self.connection and self.connection.verify_connectivity():
-                self.mode = "driver"
-            else:
-                self.mode = "cypher_shell"
-        except Exception:
-            self.mode = "cypher_shell"
+    def execute(
+        self,
+        cypher: str,
+        parameters: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """Execute through the canonical read or governed mutation surface."""
+        if not classify_cypher(cypher):
+            return "\n".join(
+                str(dict(r))
+                for r in self.connection.execute_query(cypher, parameters)
+            )
 
-    def execute(self, cypher: str) -> str:
-        """Execute raw cypher statement script via cypher-shell."""
-        cmd = [
-            "docker",
-            "exec",
-            "-i",
-            "mahoun-neo4j",
-            "cypher-shell",
-            "-u",
-            "neo4j",
-            "-p",
-            self.password,
-            "--format",
-            "plain",
-        ]
-        p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        out, err = p.communicate(input=cypher)
-        if p.returncode != 0:
-            raise RuntimeError(f"Cypher execution failed (code {p.returncode}): {err}")
-        return out
+        async def execute_mutation():
+            if get_audit_sink() is None:
+                set_audit_sink(compose_default_filesystem_sink())
+            async with GovernanceContextManager.active_context(
+                correlation_id="legal-kg-build",
+                execution_mode="STRICT",
+                actor_id="legal-kg-builder",
+            ):
+                with self.connection.governed_session(
+                    correlation_id="legal-kg-build",
+                    actor_id="legal-kg-builder",
+                ) as session:
+                    output = []
+                    for statement in (part.strip() for part in cypher.split(";")):
+                        if statement:
+                            output.extend(session.execute_cypher(statement, parameters))
+                    return output
+
+        return "\n".join(str(dict(r)) for r in asyncio.run(execute_mutation()))
 
     def execute_apoc_batch(self, query: str, data_list: List[Dict[str, Any]]) -> str:
-        """Execute batch query via apoc.convert.fromJsonList."""
+        """Execute a batch without depending on optional APOC procedures."""
         if not data_list:
             return ""
-        s = json.dumps(data_list, ensure_ascii=False)
-        s = s.replace('\\', '\\\\')
-        s = s.replace("'", "\\'")
-        s = s.replace('\n', '\\n')
-        s = s.replace('\r', '\\r')
-        s = s.replace('\t', '\\t')
-        stmt = f"WITH apoc.convert.fromJsonList('{s}') AS items\nUNWIND items AS item\n{query}\n"
-        return self.execute(stmt)
+        stmt = f"UNWIND $items AS item\n{query}\n"
+        return self.execute(stmt, {"items": data_list})
 
 
 # ============================================================================
@@ -1080,9 +1085,22 @@ class HardenedKnowledgeGraphCompiler:
         logger.info("🔍 Running Forensic Integrity Audit Queries...")
         audit_results = {}
 
+        def count_result(output: str) -> int:
+            """Read the scalar count from the bridge's serialized Neo4j record."""
+            lines = output.strip().splitlines()
+            if not lines:
+                return 0
+            record = ast.literal_eval(lines[-1])
+            if not isinstance(record, dict) or len(record) != 1:
+                raise ValueError(f"Unexpected count query result: {lines[-1]!r}")
+            value = next(iter(record.values()))
+            if not isinstance(value, int):
+                raise ValueError(f"Count query returned non-integer value: {value!r}")
+            return value
+
         # 1. Duplicates
         out_dup = self.bridge.execute("MATCH (n) WITH n.id AS id, count(n) AS c WHERE c > 1 RETURN count(id);")
-        audit_results["duplicate_canonical_ids"] = int(out_dup.strip().splitlines()[-1] or 0)
+        audit_results["duplicate_canonical_ids"] = count_result(out_dup)
 
         # 2. Strict Single-Parent Structural Hierarchy (Must be 0)
         out_par = self.bridge.execute(
@@ -1094,7 +1112,7 @@ class HardenedKnowledgeGraphCompiler:
             RETURN count(a);
             """
         )
-        audit_results["hierarchy_parent_violations"] = int(out_par.strip().splitlines()[-1] or 0)
+        audit_results["hierarchy_parent_violations"] = count_result(out_par)
 
         # 3. Referential Consistency
         out_ref = self.bridge.execute(
@@ -1104,7 +1122,7 @@ class HardenedKnowledgeGraphCompiler:
             RETURN count(a);
             """
         )
-        audit_results["referential_violations"] = int(out_ref.strip().splitlines()[-1] or 0)
+        audit_results["referential_violations"] = count_result(out_ref)
 
         # 4. Placeholder Hygiene
         out_place = self.bridge.execute(
@@ -1114,7 +1132,7 @@ class HardenedKnowledgeGraphCompiler:
             RETURN count(a);
             """
         )
-        audit_results["unresolved_placeholder_violations"] = int(out_place.strip().splitlines()[-1] or 0)
+        audit_results["unresolved_placeholder_violations"] = count_result(out_place)
 
         # 5. Provenance Completeness
         out_prov = self.bridge.execute(
@@ -1124,7 +1142,7 @@ class HardenedKnowledgeGraphCompiler:
             RETURN count(a);
             """
         )
-        audit_results["incomplete_provenance_count"] = int(out_prov.strip().splitlines()[-1] or 0)
+        audit_results["incomplete_provenance_count"] = count_result(out_prov)
 
         # 6. Graph Summary Counts
         counts_cypher = """
@@ -1189,6 +1207,7 @@ def verify_source_file(file_path: Path) -> Tuple[bool, str, int, Optional[str]]:
 # ============================================================================
 
 def main() -> int:
+    IngestionExecutionGate.require_active()
     parser = argparse.ArgumentParser(
         description="Deterministic Legal Corpus Compiler & Knowledge Graph Ingestion Engine"
     )
@@ -1197,7 +1216,7 @@ def main() -> int:
         "--source",
         dest="file",
         type=str,
-        default="all_legal_sentences.txt",
+        default="LAWS/all_legal_sentences.txt",
         help="Path to legal sentences text file",
     )
     parser.add_argument(

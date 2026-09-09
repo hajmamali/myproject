@@ -20,6 +20,10 @@ from typing import Any
 
 from mahoun.core.exceptions import MahounError
 from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance.ingestion_contract import CanonicalIngestionBatch
+from mahoun.core.governance.ingestion_execution_gate import (
+    IngestionExecutionGate,
+)
 from mahoun.core.governance.mutation_boundary import GovernedNeo4jSession
 
 logger = logging.getLogger(__name__)
@@ -95,3 +99,136 @@ class GovernedIngestionRuntime:
             tx.abort()
             logger.error("[RUNTIME] Ingestion sequence aborted due to violation: %s", e)
             raise IngestionAbortedError(f"Deterministic ingestion failed: {e}") from e
+
+    def ingest_batch_atomic(
+        self,
+        batch: CanonicalIngestionBatch,
+        author_id: str,
+    ) -> dict[str, Any]:
+        """Atomically materialize a specialized adapter batch.
+
+        Adapters only emit the canonical contract. This method owns the
+        governed transaction, ontology boundary, provenance attestation, and
+        receipt collection.
+        """
+        if not isinstance(batch, CanonicalIngestionBatch):
+            raise IngestionAbortedError("ingestion batch has an invalid type")
+        if not batch.documents:
+            raise IngestionAbortedError(
+                "ingestion batch must contain a document"
+            )
+        permit = IngestionExecutionGate.require_active()
+        if permit.request.source != batch.documents[0].source_uri:
+            raise IngestionAbortedError(
+                "execution permit does not match batch source"
+            )
+
+        source = str(batch.documents[0].provenance["source"])
+        attested_provenance = GovernanceContextManager.require_provenance(
+            source=source,
+            author=author_id,
+        ).to_dict()
+        source_hashes = {
+            document.provenance["source_hash"] for document in batch.documents
+        }
+        document_ids = {document.document_id for document in batch.documents}
+        tx = self._session.begin_transaction()
+
+        try:
+            for document in batch.documents:
+                document_provenance = {
+                    **attested_provenance,
+                    "source_hash": document.provenance["source_hash"],
+                }
+                tx.queue_node(
+                    label="Document",
+                    node_data={
+                        "id": document.document_id,
+                        "source_uri": document.source_uri,
+                        "text_content": document.text[:2000],
+                        "source_hash": document.provenance["source_hash"],
+                        "provenance": document_provenance,
+                    },
+                    merge=True,
+                )
+
+            fact_by_object_id = {}
+            for fact in batch.facts:
+                if fact.provenance["source_hash"] not in source_hashes:
+                    raise IngestionAbortedError(
+                        "fact provenance is not bound to the batch: "
+                        f"{fact.fact_id}"
+                    )
+                if fact.object_id in fact_by_object_id:
+                    raise IngestionAbortedError(
+                        f"duplicate semantic target in batch: {fact.object_id}"
+                    )
+                fact_by_object_id[fact.object_id] = fact
+                tx.queue_node(
+                    label="LawArticle",
+                    node_data={
+                        "id": fact.object_id,
+                        "evidence_text": fact.evidence_text,
+                        "source_hash": fact.provenance["source_hash"],
+                        "provenance": {
+                            **attested_provenance,
+                            "source_hash": fact.provenance["source_hash"],
+                        },
+                    },
+                    merge=True,
+                )
+
+            for relationship in batch.relationships:
+                if relationship.source_id not in document_ids:
+                    raise IngestionAbortedError(
+                        "relationship source is not a document in the batch"
+                    )
+                if relationship.provenance["source_hash"] not in source_hashes:
+                    raise IngestionAbortedError(
+                        "relationship provenance is not bound to the batch"
+                    )
+                fact = fact_by_object_id.get(relationship.target_id)
+                if (
+                    fact is None
+                    or fact.predicate != relationship.relationship_type
+                ):
+                    raise IngestionAbortedError(
+                        "relationship is not backed by a matching "
+                        "semantic fact"
+                    )
+                tx.queue_relationship(
+                    source_type="Document",
+                    source_id=relationship.source_id,
+                    relationship_type=relationship.relationship_type,
+                    target_type="LawArticle",
+                    target_id=relationship.target_id,
+                    rel_data={
+                        **dict(relationship.properties),
+                        "provenance": {
+                            **attested_provenance,
+                            "source_hash": relationship.provenance[
+                                "source_hash"
+                            ],
+                        },
+                    },
+                    merge=True,
+                )
+
+            receipts = tx.commit()
+            return {
+                "status": "success",
+                "document_ids": [
+                    document.document_id for document in batch.documents
+                ],
+                "fact_count": len(batch.facts),
+                "relationship_count": len(batch.relationships),
+                "receipts": [receipt.receipt_id for receipt in receipts],
+            }
+        except Exception as exc:
+            if tx.is_open:
+                tx.abort()
+            if isinstance(exc, IngestionAbortedError):
+                raise
+            raise IngestionAbortedError(
+                f"Deterministic batch ingestion failed: {exc}"
+            ) from exc

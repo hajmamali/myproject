@@ -8,26 +8,29 @@ Enriches the MahouN Legal Knowledge Graph with:
 4. Taxonomic semantic assertions (Article -[:REGULATES]-> Concept)
 """
 
-import csv
 import json
 import logging
 import os
-import subprocess
 import sys
 import time
+import asyncio
 
 sys.path.insert(0, os.path.abspath("."))
 
 from mahoun.graph.ontology.legal_concepts import CANONICAL_LEGAL_CONCEPTS
 from mahoun.graph.extraction.semantic_extractor import SemanticExtractor
+from mahoun.graph.neo4j.connection import get_connection
+from mahoun.core.governance.governance_context import GovernanceContextManager
+from mahoun.core.governance.mutation_boundary import (
+    classify_cypher,
+    get_audit_sink,
+    set_audit_sink,
+)
+from mahoun.infrastructure.audit.filesink import compose_default_filesystem_sink
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
-
-NEO4J_CONTAINER = "mahoun-neo4j"
-NEO4J_USER = "neo4j"
-NEO4J_PASS = "dev_neo4j_password_2026"
-
 
 def to_cypher_literal(obj) -> str:
     """Recursively converts Python objects into valid Cypher map / list literal syntax."""
@@ -47,30 +50,29 @@ def to_cypher_literal(obj) -> str:
 
 
 def run_cypher_statement(cypher: str) -> str:
-    """Executes a single cypher statement inside the neo4j container."""
-    cypher_clean = cypher.strip()
-    if not cypher_clean.endswith(";"):
-        cypher_clean += ";"
-
-    cmd = [
-        "docker", "exec", "-i", NEO4J_CONTAINER,
-        "cypher-shell", "-u", NEO4J_USER, "-p", NEO4J_PASS
-    ]
-    process = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    stdout, stderr = process.communicate(input=cypher_clean)
-    if process.returncode != 0:
-        logger.error("Cypher execution failed: %s\nStatement snippet:\n%s", stderr, cypher_clean[:500])
-        raise RuntimeError(f"Cypher error: {stderr}")
-    return stdout
+    """Execute a read or governed mutation through the canonical connection."""
+    if classify_cypher(cypher):
+        async def execute_mutation():
+            if get_audit_sink() is None:
+                set_audit_sink(compose_default_filesystem_sink())
+            async with GovernanceContextManager.active_context(
+                correlation_id="phase-2b-semantic-materialization",
+                execution_mode="STRICT",
+                actor_id="phase-2b-materializer",
+            ):
+                with get_connection().governed_session(
+                    correlation_id="phase-2b-semantic-materialization",
+                    actor_id="phase-2b-materializer",
+                ) as session:
+                    return session.execute_cypher(cypher)
+        records = asyncio.run(execute_mutation())
+    else:
+        records = get_connection().execute_query(cypher)
+    return "\n".join(str(dict(record)) for record in records)
 
 
 def main():
+    IngestionExecutionGate.require_active()
     start_time = time.time()
     logger.info("Starting Phase 2B Semantic Layer Materialization...")
 
@@ -132,24 +134,14 @@ def main():
     MATCH (a:Article)
     RETURN a.id AS id, a.law_id AS law_id, coalesce(a.normalized_text, a.raw_text, '') AS text;
     """
-    cmd = [
-        "docker", "exec", NEO4J_CONTAINER,
-        "cypher-shell", "-u", NEO4J_USER, "-p", NEO4J_PASS,
-        "--format", "plain", fetch_cypher
+    articles = [
+        {
+            "id": record["id"],
+            "law_id": record["law_id"],
+            "text": record["text"],
+        }
+        for record in get_connection().execute_query(fetch_cypher)
     ]
-    raw_articles_out = subprocess.check_output(cmd, text=True)
-
-    articles = []
-    lines = raw_articles_out.strip().splitlines()
-    if lines:
-        reader = csv.reader(lines[1:])
-        for row in reader:
-            if len(row) >= 3:
-                articles.append({
-                    "id": row[0].strip(),
-                    "law_id": row[1].strip(),
-                    "text": row[2].strip()
-                })
 
     logger.info("Fetched %d articles for semantic decomposition.", len(articles))
 

@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from mahoun.pipelines.ingestion.legal_ner import LegalNEREngine
 from mahoun.graph.extraction.semantic_materializer import SemanticMaterializer
 from mahoun.core.governance.ingestion_runtime import GovernedIngestionRuntime
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 from mahoun.graph.neo4j.connection import get_connection
 from mahoun.core.models.case import Case
 from mahoun.core.models.semantic import SemanticEntity, SemanticRelation
@@ -42,6 +43,7 @@ from parse_ara_judgments import (
     Judgment,
     JudgmentMetadata
 )
+from scripts.build_judgment_kg import CanonicalJudgment, EnterpriseJudgmentCompiler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -340,71 +342,32 @@ class MahouNJudgmentIngestor:
         judgment: Judgment,
         author_id: str
     ) -> Optional[str]:
-        """Write to Neo4j using governance-aware runtime."""
-        
-        # For now, use direct Neo4j write
-        # TODO: Integrate with GovernedIngestionRuntime once it's ready
-        
-        try:
-            conn = self.neo4j_conn
-            
-            # Create Judgment node
-            cypher = """
-            CREATE (j:Judgment:ARACorpus {
-                judgment_id: $judgment_id,
-                title: $title,
-                full_text: $full_text,
-                court_level: $court_level,
-                legal_area: $legal_area,
-                date: $date,
-                quality_score: $quality_score,
-                word_count: $word_count,
-                import_timestamp: datetime(),
-                source: 'ara.jri.ac.ir'
-            })
-            RETURN j.judgment_id as node_id
-            """
-            
-            m = judgment.metadata
-            result = conn._raw_execute(cypher, {
-                'judgment_id': m.judgment_id,
-                'title': m.title,
-                'full_text': judgment.full_text[:10000],  # Limit size
-                'court_level': m.court_level,
-                'legal_area': m.legal_area,
-                'date': m.date,
-                'quality_score': m.quality_score,
-                'word_count': m.word_count
-            })
-            
-            node_id = result[0]['node_id'] if result else None
-            
-            # Create entity nodes (simplified for now)
-            for entity in entities[:20]:  # Limit to prevent explosion
-                entity_cypher = """
-                MERGE (e:Entity {entity_id: $entity_id})
-                SET e.name = $name,
-                    e.type = $type
-                WITH e
-                MATCH (j:Judgment {judgment_id: $judgment_id})
-                MERGE (j)-[:HAS_ENTITY]->(e)
-                """
-                
-                conn._raw_execute(entity_cypher, {
-                    'entity_id': entity.entity_id,
-                    'name': entity.name,
-                    'type': entity.entity_type,
-                    'judgment_id': m.judgment_id
-                })
-            
-            return node_id
-            
-        except Exception as e:
-            logger.error(f"Neo4j write failed: {e}")
-            raise
+        """Delegate writes to the canonical governed judgment compiler."""
+        m = judgment.metadata
+        canonical = CanonicalJudgment(
+            judgment_id=m.judgment_id,
+            title=m.title,
+            full_text=judgment.full_text,
+            court_level=m.court_level or "unknown",
+            legal_area=m.legal_area or "unknown",
+            verdict_type=m.verdict_type or "unknown",
+            date=m.date,
+            quality_score=m.quality_score,
+            word_count=m.word_count,
+            parties=m.parties,
+            legal_references=m.legal_references,
+            source_hash=hashlib.sha256(
+                judgment.full_text.encode("utf-8")
+            ).hexdigest(),
+        )
+        result = EnterpriseJudgmentCompiler().compile([canonical], batch_size=1)
+        if result["errors_count"]:
+            raise RuntimeError(f"Canonical judgment ingestion failed: {result}")
+        return m.judgment_id
 
 
 def main():
+    IngestionExecutionGate.require_active()
     parser = argparse.ArgumentParser(
         description='Ingest ARA judgments into MahouN knowledge graph'
     )

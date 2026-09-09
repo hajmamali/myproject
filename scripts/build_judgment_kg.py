@@ -46,12 +46,90 @@ if str(REPO_ROOT) not in sys.path:
 
 # ─── CANONICAL IMPORTS (per AGENTS.md Part 1-A & 1-B) ─────────────────────
 from mahoun.graph.neo4j.connection import get_connection
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 from mahoun.core.governance.governance_context import GovernanceContextManager
 
 logger = logging.getLogger("build_judgment_kg")
 
 COMPILER_VERSION = "2.0.0"
 SCHEMA_VERSION = "2.0.0"
+
+_PERSIAN_DIGIT_TRANSLATION = str.maketrans(
+    "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"
+)
+_LAW_SLUG_ALIASES = (
+    ("آیین دادرسی مدنی", "civil_procedure"),
+    ("ایین دادرسی مدنی", "civil_procedure"),
+    ("آیین دادرسی کیفری", "criminal_procedure"),
+    ("ایین دادرسی کیفری", "criminal_procedure"),
+    ("مجازات اسلامی", "penal_code"),
+    ("قانون اساسی", "constitution"),
+    ("اساسی", "constitution"),
+    ("مدنی", "civil_code"),
+    ("تجارت", "commercial_code"),
+)
+
+
+def normalize_persian_digits(value: str) -> str:
+    """Normalize Persian and Arabic-Indic digits for stable graph identity."""
+    return value.translate(_PERSIAN_DIGIT_TRANSLATION)
+
+
+def canonical_reference_id(reference: str) -> str:
+    """Return a collision-resistant, deterministic ID for a raw reference."""
+    normalized = " ".join(reference.split())
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
+    return f"legal_reference:{digest}"
+
+
+def canonical_party_id(party: str) -> str:
+    """Return a deterministic ID for a party name."""
+    normalized = " ".join(party.split())
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
+    return f"party:{digest}"
+
+
+def resolve_legal_reference(reference: str) -> List[str]:
+    """Resolve a reference string to canonical Article IDs when its law is known."""
+    normalized = normalize_persian_digits(" ".join(reference.split()))
+    matches = list(re.finditer(
+        r"(?:ماده|مواد|اصل)\s*([0-9]+(?:\s*(?:و|تا|الی|,|،)\s*[0-9]+)*)",
+        normalized,
+    ))
+    if not matches:
+        return []
+
+    article_ids: List[str] = []
+    for index, match in enumerate(matches):
+        next_start = matches[index + 1].start() if index + 1 < len(matches) else len(normalized)
+        law_text = normalized[match.end():next_start]
+        law_slug = next(
+            (slug for alias, slug in _LAW_SLUG_ALIASES if alias in law_text),
+            None,
+        )
+        if law_slug is None:
+            continue
+        article_ids.extend(
+            f"article:{law_slug}:article:{number}"
+            for number in re.findall(r"[0-9]+", match.group(1))
+        )
+    return list(dict.fromkeys(article_ids))
+
+
+def deduplicate_judgments(
+    judgments: List[CanonicalJudgment],
+) -> Tuple[List[CanonicalJudgment], List[str]]:
+    """Keep first-seen judgments and report repeated canonical IDs."""
+    unique: List[CanonicalJudgment] = []
+    seen: set[str] = set()
+    duplicates: List[str] = []
+    for judgment in judgments:
+        if judgment.judgment_id in seen:
+            duplicates.append(judgment.judgment_id)
+            continue
+        seen.add(judgment.judgment_id)
+        unique.append(judgment)
+    return unique, duplicates
 
 
 # ============================================================================
@@ -196,12 +274,54 @@ class GovernanceAwareBridge:
         return self.connection
 
 
+class EnterpriseCypherBridge:
+    """Offline compatibility adapter for the legacy ingestion test contract."""
+
+    def __init__(self, max_retries: int = 3, batch_size: int = 1000) -> None:
+        self.max_retries = max(1, max_retries)
+        self.batch_size = max(1, batch_size)
+
+    def _execute_raw(self, cypher: str) -> str:
+        raise RuntimeError(
+            "Use GovernanceAwareBridge for canonical Neo4j execution"
+        )
+
+    def execute_with_retry(self, cypher: str) -> str:
+        last_error: Optional[Exception] = None
+        for _ in range(self.max_retries):
+            try:
+                return self._execute_raw(cypher)
+            except Exception as exc:
+                last_error = exc
+        assert last_error is not None
+        raise last_error
+
+    def execute_apoc_batch(
+        self, cypher: str, items: List[Dict[str, Any]]
+    ) -> str:
+        if not items:
+            return ""
+        results = []
+        for offset in range(0, len(items), self.batch_size):
+            batch = items[offset:offset + self.batch_size]
+            results.append(
+                self.execute_with_retry(f"{cypher} /* batch={len(batch)} */")
+            )
+        return "\n".join(str(result) for result in results)
+
+
 # ============================================================================
 # Entity Extraction
 # ============================================================================
 
 class EntityExtractor:
     """Extract parties and legal references from judgment text"""
+
+    @staticmethod
+    def _deduplicate(values: List[str]) -> List[str]:
+        return list(dict.fromkeys(
+            " ".join(value.split()) for value in values if value and value.strip()
+        ))
     
     def extract(self, judgment: CanonicalJudgment) -> Tuple[List[str], List[str]]:
         """
@@ -209,6 +329,13 @@ class EntityExtractor:
         Returns: (parties, legal_refs)
         """
         text = judgment.full_text
+        metadata_parties = self._deduplicate(judgment.parties)
+        metadata_refs = self._deduplicate(judgment.legal_references)
+
+        # The ARA corpus provides curated metadata. Prefer it over noisy text
+        # heuristics, while retaining text extraction as a fallback for sparse records.
+        if metadata_parties or metadata_refs:
+            return metadata_parties[:15], metadata_refs[:15]
         
         # Extract parties (simple patterns)
         parties = []
@@ -235,10 +362,36 @@ class EntityExtractor:
             refs.extend([m.strip() for m in matches if len(m.strip()) > 2])
         
         # Deduplicate and limit
-        parties = list(set(parties))[:15]
-        refs = list(set(refs))[:15]
+        parties = self._deduplicate(parties)[:15]
+        refs = self._deduplicate(refs)[:15]
         
         return parties, refs
+
+
+@dataclass
+class EntityExtractionResult:
+    """Confidence-scored compatibility result for the legacy extractor API."""
+
+    parties: List[Tuple[str, float]]
+    legal_refs: List[Tuple[str, float]]
+
+    def get_high_confidence_parties(self, threshold: float = 0.7) -> List[str]:
+        return [
+            name for name, confidence in self.parties
+            if confidence >= threshold
+        ]
+
+
+class AdvancedEntityExtractor(EntityExtractor):
+    """Compatibility facade over the canonical entity extractor."""
+
+    def extract_entities(self, judgment: CanonicalJudgment) -> EntityExtractionResult:
+        parties, references = self.extract(judgment)
+        confidence = max(0.0, min(1.0, float(judgment.quality_score)))
+        return EntityExtractionResult(
+            parties=[(party, confidence) for party in parties],
+            legal_refs=[(reference, confidence) for reference in references],
+        )
 
 
 # ============================================================================
@@ -259,58 +412,66 @@ class EnterpriseJudgmentCompiler:
         self.errors = []
         self.actor_id = "system:judgment_kg_compiler"
     
-    def ensure_constraints(self):
-        """Create Neo4j constraints via raw session (bootstrap exemption)"""
+    async def ensure_constraints(self):
+        """Apply the canonical idempotent judgment schema migration."""
         logger.info("📐 Creating constraints...")
-        
-        # GOVERNED EXEMPTION: schema bootstrap (same pattern as init_schema.py)
-        # DDL (CREATE CONSTRAINT/INDEX) is idempotent and runs before data ingestion
-        with self.bridge.connection.session() as session:
-            constraints = [
-                "CREATE CONSTRAINT judgment_id_unique IF NOT EXISTS FOR (j:Judgment) REQUIRE j.judgment_id IS UNIQUE",
-                "CREATE CONSTRAINT party_name_unique IF NOT EXISTS FOR (p:Party) REQUIRE p.name IS UNIQUE",
-                "CREATE CONSTRAINT legal_ref_text_unique IF NOT EXISTS FOR (r:LegalReference) REQUIRE r.text IS UNIQUE",
-                "CREATE INDEX judgment_quality_idx IF NOT EXISTS FOR (j:Judgment) ON (j.quality_score)",
-                "CREATE INDEX judgment_court_idx IF NOT EXISTS FOR (j:Judgment) ON (j.court_level)",
-                "CREATE INDEX judgment_area_idx IF NOT EXISTS FOR (j:Judgment) ON (j.legal_area)",
-            ]
-            
-            for constraint in constraints:
+
+        schema_path = REPO_ROOT / "data" / "judgment_graph_schema.cypher"
+        if not schema_path.is_file():
+            raise FileNotFoundError(f"Judgment schema migration not found: {schema_path}")
+
+        statements = GovernanceAwareBridge._split_cypher_statements(
+            schema_path.read_text(encoding="utf-8")
+        )
+        with self.bridge.connection.governed_session(
+            correlation_id=self.run_id,
+            actor_id=self.actor_id,
+        ) as session:
+            for statement in statements:
                 try:
-                    session.run(constraint)
-                except Exception as e:
-                    msg = str(e).lower()
+                    session.execute_cypher(statement)
+                except Exception as exc:
+                    msg = str(exc).lower()
                     if "already exists" in msg or "equivalent" in msg:
-                        logger.debug(f"DDL already applied: {e}")
+                        logger.debug("DDL already applied: %s", exc)
                     else:
-                        logger.warning(f"Constraint warning: {e}")
-        
-        logger.info("✅ Constraints ready")
+                        raise
+        logger.info("Constraints ready")
     
     def compile(self, judgments: List[CanonicalJudgment], batch_size: int = 50) -> Dict[str, Any]:
         """
         Main compilation entry (synchronous wrapper for async).
         Exact same pattern as build_legal_kg.py.
         """
-        return asyncio.run(
-            self._compile_async(judgments=judgments, batch_size=batch_size)
-        )
-    
-    async def _compile_async(self, judgments: List[CanonicalJudgment], batch_size: int) -> Dict[str, Any]:
+        unique_judgments, duplicate_ids = deduplicate_judgments(judgments)
+        return asyncio.run(self._compile_async(
+            judgments=unique_judgments,
+            batch_size=batch_size,
+            input_total=len(judgments),
+            duplicate_count=len(duplicate_ids),
+        ))
+
+    async def _compile_async(
+        self,
+        judgments: List[CanonicalJudgment],
+        batch_size: int,
+        input_total: int,
+        duplicate_count: int,
+    ) -> Dict[str, Any]:
         """Async governed compilation"""
-        logger.info(f"🚀 Compiling {len(judgments)} judgments (batch={batch_size})...")
-        
-        # DDL outside governance context
-        self.ensure_constraints()
+        logger.info(
+            f"🚀 Compiling {len(judgments)} judgments (batch={batch_size})..."
+        )
         
         start_time = time.time()
-        
+
         # Enter governance context (REQUIRED for all mutations)
         async with GovernanceContextManager.active_context(
             correlation_id=self.run_id,
             execution_mode="STRICT",
             actor_id=self.actor_id,
         ):
+            await self.ensure_constraints()
             with self.bridge.connection.governed_session(
                 correlation_id=self.run_id,
                 actor_id=self.actor_id,
@@ -353,7 +514,12 @@ class EnterpriseJudgmentCompiler:
                             'traceback': traceback.format_exc()
                         })
         
-        return self._generate_report(len(judgments), time.time() - start_time)
+        return self._generate_report(
+            len(judgments),
+            time.time() - start_time,
+            input_total=input_total,
+            duplicate_count=duplicate_count,
+        )
     
     def _process_batch_governed(self, session, batch: List[CanonicalJudgment], batch_num: int, total: int):
         """
@@ -363,12 +529,19 @@ class EnterpriseJudgmentCompiler:
         
         # Start governed transaction
         tx = session.begin_transaction()
+        provenance = GovernanceContextManager.require_provenance(
+            source="judgment_kg_ingestion",
+            author=self.actor_id,
+        ).to_dict()
         
         # Queue all judgments
+        batch_entity_count = 0
+        batch_relationship_count = 0
         for j in batch:
             tx.queue_node(
                 label="Judgment",
                 node_data={
+                    'id': j.judgment_id,
                     'judgment_id': j.judgment_id,
                     'title': j.title[:500],
                     'full_text': j.full_text[:15000],
@@ -381,11 +554,10 @@ class EnterpriseJudgmentCompiler:
                     'source_hash': j.source_hash,
                     'corpus_source': 'ara.jri.ac.ir',
                     'ingestion_run_id': self.run_id,
+                    'provenance': provenance,
                 },
                 merge=True,
             )
-        
-        self.metrics.judgments_processed += len(batch)
         
         # Extract and queue entities + relationships
         for j in batch:
@@ -394,62 +566,100 @@ class EnterpriseJudgmentCompiler:
             # Queue parties
             for party in parties:
                 party_name = party[:200]
+                party_id = canonical_party_id(party_name)
                 tx.queue_node(
                     label="Party",
                     node_data={
+                        'id': party_id,
                         'name': party_name,
                         'entity_type': 'Party',
+                        'provenance': provenance,
                     },
                     merge=True,
                 )
+                batch_entity_count += 1
                 tx.queue_relationship(
                     source_type="Judgment",
                     source_id=j.judgment_id,
                     relationship_type="HAS_PARTY",
                     target_type="Party",
-                    target_id=party_name,
+                    target_id=party_id,
                     rel_data={
                         'ingestion_run_id': self.run_id,
+                        'provenance': provenance,
                     },
                     merge=True,
                 )
-                self.metrics.entities_created += 1
+                batch_relationship_count += 1
             
             # Queue legal references
             for ref in refs:
                 ref_text = ref[:500]
+                ref_id = canonical_reference_id(ref_text)
+                resolved_article_ids = resolve_legal_reference(ref_text)
                 tx.queue_node(
                     label="LegalReference",
                     node_data={
+                        'id': ref_id,
                         'text': ref_text,
                         'entity_type': 'LegalReference',
+                        'provenance': provenance,
                     },
                     merge=True,
                 )
+                batch_entity_count += 1
+                for article_id in resolved_article_ids:
+                    tx.queue_relationship(
+                        source_type="Judgment",
+                        source_id=j.judgment_id,
+                        relationship_type="CITES",
+                        target_type="Article",
+                        target_id=article_id,
+                        rel_data={
+                            'ingestion_run_id': self.run_id,
+                            'reference_text': ref_text,
+                            'resolution_status': 'RESOLVED',
+                            'provenance': provenance,
+                        },
+                        merge=True,
+                    )
+                    batch_relationship_count += 1
                 tx.queue_relationship(
                     source_type="Judgment",
                     source_id=j.judgment_id,
-                    relationship_type="CITES",
+                    relationship_type="MENTIONS_REFERENCE",
                     target_type="LegalReference",
-                    target_id=ref_text,
+                    target_id=ref_id,
                     rel_data={
                         'ingestion_run_id': self.run_id,
+                        'resolution_status': 'RESOLVED' if resolved_article_ids else 'UNRESOLVED',
+                        'provenance': provenance,
                     },
                     merge=True,
                 )
-                self.metrics.entities_created += 1
-        
+                batch_relationship_count += 1
+
         # Atomic commit (validate-all-then-execute-all)
         tx.commit()
-        
-        self.metrics.relationships_created += self.metrics.entities_created
-    
-    def _generate_report(self, total: int, elapsed: float) -> Dict[str, Any]:
+        self.metrics.judgments_processed += len(batch)
+        self.metrics.entities_created += batch_entity_count
+        self.metrics.relationships_created += batch_relationship_count
+
+    def _generate_report(
+        self,
+        total: int,
+        elapsed: float,
+        *,
+        input_total: Optional[int] = None,
+        duplicate_count: int = 0,
+    ) -> Dict[str, Any]:
         return {
             'run_id': self.run_id,
             'status': 'COMPLETED' if not self.errors else 'COMPLETED_WITH_ERRORS',
             'duration_sec': elapsed,
             'total_judgments': total,
+            'input_judgments': input_total if input_total is not None else total,
+            'duplicate_judgments': duplicate_count,
             'processed': self.metrics.judgments_processed,
             'entities_created': self.metrics.entities_created,
             'relationships_created': self.metrics.relationships_created,
@@ -500,6 +710,16 @@ def parse_judgments_from_json(file_path: Path) -> List[CanonicalJudgment]:
     return judgments
 
 
+def verify_source_integrity(file_path: Path) -> Tuple[bool, str, Optional[str]]:
+    """Validate UTF-8 readability and return the source SHA-256 digest."""
+    try:
+        payload = file_path.read_bytes()
+        payload.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return False, "", f"Validation error: {exc}"
+    return True, hashlib.sha256(payload).hexdigest(), None
+
+
 def verify_source(file_path: Path) -> Tuple[bool, str, Optional[str]]:
     """Verify JSON integrity"""
     if not file_path.is_file():
@@ -519,6 +739,7 @@ def verify_source(file_path: Path) -> Tuple[bool, str, Optional[str]]:
 # ============================================================================
 
 def main() -> int:
+    IngestionExecutionGate.require_active()
     parser = argparse.ArgumentParser(description="Enterprise Judgment KG Compiler")
     parser.add_argument('--file', required=True, help='Judgments JSON file')
     parser.add_argument('--batch-size', type=int, default=50, help='Batch size')
@@ -558,17 +779,32 @@ def main() -> int:
         logger.error(f"❌ Parse failed: {e}")
         return 1
     
+    unique_judgments, duplicate_ids = deduplicate_judgments(judgments)
+    if duplicate_ids:
+        logger.warning(
+            "⚠️ Duplicate judgment IDs detected: %d repeated records; "
+            "%d unique judgments will be compiled",
+            len(duplicate_ids),
+            len(unique_judgments),
+        )
+
     # Stats
-    total_parties = sum(len(j.parties) for j in judgments)
-    total_refs = sum(len(j.legal_references) for j in judgments)
-    avg_quality = sum(j.quality_score for j in judgments) / len(judgments) if judgments else 0
+    total_parties = sum(len(j.parties) for j in unique_judgments)
+    total_refs = sum(len(j.legal_references) for j in unique_judgments)
+    avg_quality = (
+        sum(j.quality_score for j in unique_judgments) / len(unique_judgments)
+        if unique_judgments else 0
+    )
     
     print("\n" + "=" * 80)
     print("📊 CORPUS STATISTICS")
     print("=" * 80)
-    print(f"Judgments      : {len(judgments)}")
-    print(f"Parties        : {total_parties} ({total_parties/len(judgments):.1f}/judgment)")
-    print(f"Legal Refs     : {total_refs} ({total_refs/len(judgments):.1f}/judgment)")
+    print(f"Input Judgments: {len(judgments)}")
+    print(f"Unique         : {len(unique_judgments)}")
+    print(f"Duplicates     : {len(duplicate_ids)}")
+    unique_count = len(unique_judgments) or 1
+    print(f"Parties        : {total_parties} ({total_parties/unique_count:.1f}/judgment)")
+    print(f"Legal Refs     : {total_refs} ({total_refs/unique_count:.1f}/judgment)")
     print(f"Avg Quality    : {avg_quality:.3f}")
     print("=" * 80 + "\n")
     

@@ -9,11 +9,8 @@ Compiles and enriches Iranian Banking Laws into Neo4j:
 4. Semantic Layer Materialization (Conditions, Sanctions, Exceptions, REGULATES Concepts)
 """
 
-import csv
 import json
 import logging
-import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -30,6 +27,8 @@ from scripts.build_legal_kg import (
 )
 from mahoun.graph.ontology.legal_concepts import CANONICAL_LEGAL_CONCEPTS
 from mahoun.graph.extraction.semantic_extractor import SemanticExtractor
+from mahoun.graph.neo4j.connection import get_connection
+from mahoun.core.governance.ingestion_execution_gate import IngestionExecutionGate
 from scripts.materialize_phase_2b_semantic_graph import to_cypher_literal, run_cypher_statement
 
 logging.basicConfig(
@@ -147,24 +146,14 @@ def enrich_banking_semantic_layer():
     WHERE a.law_id IN ['law:monetary_banking_1351', 'law:central_bank_1402']
     RETURN a.id AS id, a.law_id AS law_id, coalesce(a.normalized_text, a.raw_text, '') AS text;
     """
-    cmd = [
-        "docker", "exec", "mahoun-neo4j",
-        "cypher-shell", "-u", "neo4j", "-p", "dev_neo4j_password_2026",
-        "--format", "plain", fetch_cypher
+    articles = [
+        {
+            "id": record["id"],
+            "law_id": record["law_id"],
+            "text": record["text"],
+        }
+        for record in get_connection().execute_query(fetch_cypher)
     ]
-    raw_articles_out = subprocess.check_output(cmd, text=True)
-
-    articles = []
-    lines = raw_articles_out.strip().splitlines()
-    if lines:
-        reader = csv.reader(lines[1:])
-        for row in reader:
-            if len(row) >= 3:
-                articles.append({
-                    "id": row[0].strip(),
-                    "law_id": row[1].strip(),
-                    "text": row[2].strip()
-                })
 
     logger.info("Fetched %d banking articles for semantic decomposition.", len(articles))
 
@@ -319,6 +308,7 @@ def print_overall_graph_state():
 
 
 def main():
+    IngestionExecutionGate.require_active()
     start_time = time.time()
     compiler = HardenedKnowledgeGraphCompiler(run_id=f"run_banking_{int(time.time())}")
 
